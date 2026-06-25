@@ -29,6 +29,30 @@ services:
     container_name: rabbit3
     ports: ["5674:5672", "15674:15672"]
 
+  # Второй независимый кластер (одна нода) для cross-cluster federation demo.
+  # Отдельный erlang cookie — rabbit-b не вступает в кластер rabbit1/2/3.
+  # rabbit-b — DOWNSTREAM: федерирует с rabbit1 (UPSTREAM) по AMQP через сеть rabbitnet.
+  # Порты: AMQP 5681, Management 15681 (не конфликтуют с rabbit1-3, rabbit-legacy, prometheus, grafana).
+  rabbit-b:
+    image: rabbitmq:4.3-management
+    hostname: rabbit-b
+    container_name: rabbit-b
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "CLUSTERB_COOKIE_XYZ"
+    volumes:
+      - ./cluster/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+      - ./cluster-b/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./cluster-b/definitions.json:/etc/rabbitmq/definitions.json:ro
+    ports: ["5681:5672", "15681:15672"]
+    networks:
+      - default
+      - rabbitnet-b
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
   prometheus:
     image: prom/prometheus:v3.10.0
     container_name: prometheus
@@ -59,3 +83,5 @@ services:
 networks:
   default:
     name: rabbitnet
+  rabbitnet-b:
+    name: rabbitnet-b

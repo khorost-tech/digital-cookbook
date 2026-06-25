@@ -1,0 +1,9 @@
+{
+  "users": [
+    { "name": "demo", "password": "demo", "tags": ["administrator"] }
+  ],
+  "vhosts": [{ "name": "/", "metadata": { "default_queue_type": "quorum" } }],
+  "permissions": [
+    { "user": "demo", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*" }
+  ]
+}
