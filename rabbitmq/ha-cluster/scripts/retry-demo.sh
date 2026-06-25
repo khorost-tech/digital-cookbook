@@ -103,9 +103,28 @@ echo ""
 pause ">> Нажмите Enter, чтобы подождать TTL (~5 сек) и проверить возврат"
 
 # ── Шаг 5: ждём TTL и проверяем, что сообщение вернулось в demo.orders ──
-echo "[$(ts)] Ожидаем истечения TTL (5 сек)..."
-sleep 6
-echo "[$(ts)] Шаг 5 — проверяем очереди после TTL:"
+# TTL = 5 сек. Quorum-очереди могут слегка задерживать dead-lettering — ждём
+# пока demo.orders получит ≥ 1 сообщение (до 15 сек), затем делаем get.
+echo "[$(ts)] Ожидаем истечения TTL (5 сек) + возврата сообщения в demo.orders..."
+WAIT_ITERS=15
+ARRIVED=0
+for i in $(seq 1 $WAIT_ITERS); do
+  sleep 1
+  ORDERS_COUNT=$(docker exec rabbit1 rabbitmqctl list_queues name messages 2>/dev/null \
+    | awk '$1=="demo.orders"{print $2}')
+  if [ "${ORDERS_COUNT:-0}" -ge 1 ] 2>/dev/null; then
+    echo "[$(ts)] Сообщение вернулось в demo.orders (${i}s после reject)."
+    ARRIVED=1
+    break
+  fi
+done
+if [ "$ARRIVED" -eq 0 ]; then
+  echo "[$(ts)] ОШИБКА: сообщение не вернулось в demo.orders за ${WAIT_ITERS} сек." >&2
+  echo "        Состояние очередей:" >&2
+  docker exec rabbit1 rabbitmqctl list_queues name messages | grep demo >&2 || true
+  exit 1
+fi
+echo "[$(ts)] Шаг 5 — очереди после TTL:"
 docker exec rabbit1 rabbitmqctl list_queues name messages | grep demo || true
 echo ""
 
@@ -121,21 +140,37 @@ echo "$RECEIVED"
 
 if echo "$RECEIVED" | grep -q "$MSG"; then
   echo ""
-  echo "[$(ts)] УСПЕХ: сообщение '$MSG' вернулось в demo.orders после TTL и успешно обработано."
+  echo "[$(ts)] Сообщение '$MSG' получено и заакано из demo.orders."
 elif echo "$RECEIVED" | grep -qi "payload\|body\|message"; then
   echo ""
-  echo "[$(ts)] УСПЕХ: сообщение получено из demo.orders (retry сработал)."
+  echo "[$(ts)] Сообщение получено и заакано из demo.orders."
 else
   echo ""
-  echo "[$(ts)] Сообщение пока не вернулось (TTL ещё не истёк или задержка брокера)."
-  echo "        Подождите ещё немного и проверьте вручную:"
-  echo "        docker exec rabbit1 rabbitmqctl list_queues name messages | grep demo"
+  echo "[$(ts)] ОШИБКА: get не вернул ожидаемое сообщение (demo.orders могла опустеть раньше?)." >&2
+  docker exec rabbit1 rabbitmqctl list_queues name messages | grep demo >&2 || true
+  exit 1
 fi
+
+# ── Assert: demo.orders должна быть пустой после успешного ack ──
+# Даём quorum-очереди 2 сек на синхронизацию состояния.
+echo ""
+echo "[$(ts)] Assert: проверяем, что demo.orders = 0 после ack..."
+sleep 2
+FINAL_COUNT=$(docker exec rabbit1 rabbitmqctl list_queues name messages 2>/dev/null \
+  | awk '$1=="demo.orders"{print $2}')
+echo "[$(ts)] demo.orders после ack: ${FINAL_COUNT:-0} сообщений"
+if [ "${FINAL_COUNT:-0}" -ne 0 ]; then
+  echo ""
+  echo "[$(ts)] ASSERT FAILED: demo.orders не пуста (${FINAL_COUNT} сообщений) — сообщение НЕ было заакано." >&2
+  echo "        Диагностика:" >&2
+  docker exec rabbit1 rabbitmqctl list_queues name messages >&2 || true
+  exit 1
+fi
+echo "[$(ts)] УСПЕХ: сообщение обработано и очередь demo.orders пуста (0)."
 
 echo ""
 echo "=== Итог ==="
 echo "Финальное состояние очередей:"
-sleep 1
 docker exec rabbit1 rabbitmqctl list_queues name messages | grep demo || true
 echo ""
 echo "Паттерн продемонстрирован:"
@@ -143,4 +178,4 @@ echo "  1. Сообщение опубликовано в demo.orders"
 echo "  2. Consumer сделал reject (nack без requeue)"
 echo "  3. Брокер переслал в demo.dlx → demo.retry (quorum, TTL 5 сек)"
 echo "  4. После истечения TTL demo.retry → default exchange → demo.orders"
-echo "  5. Сообщение снова доступно для обработки"
+echo "  5. Сообщение успешно обработано (ack) — demo.orders = 0"
