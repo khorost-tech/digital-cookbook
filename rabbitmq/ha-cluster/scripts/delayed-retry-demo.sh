@@ -87,7 +87,6 @@ MSG="native-dr-$(date +%s)"
 docker exec rabbit1 rabbitmqadmin \
   --username demo --password demo \
   publish message \
-    --exchange "" \
     -k demo.orders \
     -m "$MSG" 2>&1
 echo "[$(ts)] Опубликовано: $MSG"

@@ -59,7 +59,8 @@ func main() {
 					now.Format("15:04:05.000"), iter+1, *n+1, dc)
 			} else {
 				delay := now.Sub(tPrev).Round(time.Millisecond)
-				// expected delay = min_delay * dc (dc уже обновлён брокером)
+				// expected delay = min(min_delay × dc, max_delay); dc уже обновлён брокером
+				// (инкремент происходит на стороне брокера при implicit nack — до этой доставки)
 				expectedDelay := dc * 2000
 				fmt.Printf("[%s] Iter %d/%d: delivery_count=%d — redelivery delay=%v (expected ~%dms)\n",
 					now.Format("15:04:05.000"), iter+1, *n+1, dc, delay,
@@ -69,6 +70,9 @@ func main() {
 			tPrev = now
 
 			if iter < *n {
+				// Следующая задержка = min((dc+1) × min_delay, max_delay).
+				// Брокер инкрементирует dc ПОСЛЕ закрытия соединения (implicit nack),
+				// поэтому здесь используем (dc+1) — значение после инкремента на стороне брокера.
 				fmt.Printf("  -> Closing connection (implicit nack). Next retry in ~%dms\n", (dc+1)*2000)
 				conn.Close()
 			} else {

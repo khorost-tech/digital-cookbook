@@ -235,6 +235,8 @@ AUTO=1 bash scripts/delayed-retry-demo.sh
 
 Скрипт применяет policy с `delayed-retry-type=all`, `delayed-retry-min=2000` (2 сек), `delayed-retry-max=10000` (10 сек) на очередь `demo.orders`, публикует сообщение и симулирует implicit nack (закрытие AMQP-соединения без ack). Quorum-очередь откладывает повторную доставку: ~2 сек после первого нака, ~4 сек после второго, ~6 сек после третьего.
 
+**Типы `delayed-retry-type`:** `all` — задержка для всех возвращённых сообщений; `failed` — только при инкременте delivery-count (implicit nack / reject / закрытие соединения); `returned` — только без инкремента (Basic.Nack с requeue / AMQP modified delivery\_failed=false). Демо с типом `all`/`failed` срабатывает именно на закрытие соединения.
+
 > **Важно:** нативный delayed retry срабатывает при **implicit nack** (закрытие соединения или канала без ack). Явный `Basic.Nack(requeue=false)` — это dead-lettering, а **не** delayed retry.
 
 **Отличие от TTL-подхода (`retry-demo.sh`):**
