@@ -152,21 +152,30 @@ else
 fi
 
 # ── Assert: demo.orders должна быть пустой после успешного ack ──
-# Даём quorum-очереди 2 сек на синхронизацию состояния.
+# Quorum-очередь может слегка задержать синхронизацию после ack.
+# Опрашиваем до 15 сек (шаг 1 сек) — проходим как только demo.orders = 0.
 echo ""
-echo "[$(ts)] Assert: проверяем, что demo.orders = 0 после ack..."
-sleep 2
-FINAL_COUNT=$(docker exec rabbit1 rabbitmqctl list_queues name messages 2>/dev/null \
-  | awk '$1=="demo.orders"{print $2}')
-echo "[$(ts)] demo.orders после ack: ${FINAL_COUNT:-0} сообщений"
-if [ "${FINAL_COUNT:-0}" -ne 0 ]; then
-  echo ""
-  echo "[$(ts)] ASSERT FAILED: demo.orders не пуста (${FINAL_COUNT} сообщений) — сообщение НЕ было заакано." >&2
-  echo "        Диагностика:" >&2
-  docker exec rabbit1 rabbitmqctl list_queues name messages >&2 || true
-  exit 1
-fi
-echo "[$(ts)] УСПЕХ: сообщение обработано и очередь demo.orders пуста (0)."
+echo "[$(ts)] Assert: ожидаем demo.orders = 0 после ack (до 15 сек)..."
+ASSERT_ELAPSED=0
+ASSERT_TIMEOUT=15
+while true; do
+  FINAL_COUNT=$(docker exec rabbit1 rabbitmqctl list_queues name messages 2>/dev/null \
+    | awk '$1=="demo.orders"{print $2}')
+  if [ "${FINAL_COUNT:-0}" -eq 0 ] 2>/dev/null; then
+    echo "[$(ts)] УСПЕХ: demo.orders = 0 (${ASSERT_ELAPSED}с после ack)."
+    break
+  fi
+  if [ $ASSERT_ELAPSED -ge $ASSERT_TIMEOUT ]; then
+    echo ""
+    echo "[$(ts)] ASSERT FAILED: demo.orders не пуста (${FINAL_COUNT:-?} сообщений) за ${ASSERT_TIMEOUT}с — сообщение НЕ было заакано." >&2
+    echo "        Диагностика:" >&2
+    docker exec rabbit1 rabbitmqctl list_queues name messages >&2 || true
+    exit 1
+  fi
+  sleep 1
+  ASSERT_ELAPSED=$((ASSERT_ELAPSED + 1))
+  echo "[$(ts)]   ... demo.orders=${FINAL_COUNT:-?} (${ASSERT_ELAPSED}/${ASSERT_TIMEOUT}с)"
+done
 
 echo ""
 echo "=== Итог ==="

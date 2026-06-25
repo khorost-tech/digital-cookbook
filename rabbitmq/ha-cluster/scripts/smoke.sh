@@ -72,32 +72,14 @@ while true; do
 done
 echo ""
 
-# ── 3. Retry-loop для cluster_status — ждём все 3 ноды в Running Nodes ──
-echo "[$(ts)] Шаг 3 — cluster_status (retry-loop, до 60 сек, шаг 5 сек)..."
-CS_ELAPSED=0
-CS_TIMEOUT=60
-while true; do
-  CLUSTER_OUT=$(docker exec rabbit1 rabbitmqctl cluster_status 2>&1 || true)
-  ALL_NODES_UP=true
-  for node in rabbit@rabbit1 rabbit@rabbit2 rabbit@rabbit3; do
-    if ! echo "$CLUSTER_OUT" | grep -q "$node"; then
-      ALL_NODES_UP=false
-      break
-    fi
-  done
-  if $ALL_NODES_UP; then
-    echo "[$(ts)] Кластер OK: все 3 ноды найдены в cluster_status (прошло ${CS_ELAPSED}с)"
-    echo "$CLUSTER_OUT"
-    break
-  fi
-  if [ $CS_ELAPSED -ge $CS_TIMEOUT ]; then
-    echo "$CLUSTER_OUT"
-    fail "Не все 3 ноды появились в cluster_status за ${CS_TIMEOUT}с"
-  fi
-  sleep 5
-  CS_ELAPSED=$((CS_ELAPSED + 5))
-  echo "[$(ts)]   ... cluster_status: ноды ещё не все up (${CS_ELAPSED}/${CS_TIMEOUT}с)"
-done
+# ── 3. Ждём все 3 ноды online через rabbitmqctl await_online_nodes ──
+echo "[$(ts)] Шаг 3 — ожидаем 3 ноды online (await_online_nodes 3, таймаут 60 сек)..."
+if ! docker exec rabbit1 rabbitmqctl await_online_nodes 3 --timeout 60; then
+  fail "await_online_nodes 3 завершился с ошибкой — менее 3 нод online за 60 сек"
+fi
+echo "[$(ts)] Кластер OK: все 3 ноды online (await_online_nodes 3 успешен)"
+# Для наглядности — показываем cluster_status после успешного await
+docker exec rabbit1 rabbitmqctl cluster_status 2>&1 || true
 echo ""
 
 # ── 4. Быстрый прогон producer + consumer ──
