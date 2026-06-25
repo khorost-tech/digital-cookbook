@@ -7,7 +7,7 @@
 
 | Пример | Описание | Статьи |
 |--------|----------|--------|
-| [`rabbitmq/ha-cluster`](rabbitmq/ha-cluster) | Отказоустойчивый кластер RabbitMQ 4.x: quorum-очереди, failover, DLQ, federation, мониторинг | [Серия «Высокодоступный RabbitMQ»](https://khorost.tech/series/rabbitmq-ha/) |
+| [`rabbitmq/ha-cluster`](rabbitmq/ha-cluster) | Отказоустойчивый кластер RabbitMQ 4.x: quorum-очереди, failover, DLQ, federation, мониторинг | [Серия «Высокодоступный RabbitMQ»](https://khorost.tech/messaging/rabbitmq-ha-cluster-quorum-failover/) |
 
 ## Лицензия
 
