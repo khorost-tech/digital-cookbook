@@ -1,0 +1,9 @@
+services:
+  rabbit-legacy:
+    image: rabbitmq:3.13-management
+    hostname: rabbit-legacy
+    container_name: rabbit-legacy
+    ports: ["5680:5672", "15680:15672"]
+    environment:
+      RABBITMQ_DEFAULT_USER: demo
+      RABBITMQ_DEFAULT_PASS: demo

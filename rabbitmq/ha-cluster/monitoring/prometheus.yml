@@ -1,0 +1,11 @@
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: rabbitmq
+    static_configs:
+      - targets:
+          - 'rabbit1:15692'
+          - 'rabbit2:15692'
+          - 'rabbit3:15692'

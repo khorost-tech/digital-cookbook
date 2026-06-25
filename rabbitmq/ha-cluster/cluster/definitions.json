@@ -1,0 +1,22 @@
+{
+  "users": [
+    { "name": "demo", "password": "demo", "tags": ["administrator"] }
+  ],
+  "vhosts": [{ "name": "/", "metadata": { "default_queue_type": "quorum" } }],
+  "permissions": [
+    { "user": "demo", "vhost": "/", "configure": ".*", "write": ".*", "read": ".*" }
+  ],
+  "policies": [
+    {
+      "vhost": "/", "name": "dlx-orders", "pattern": "^demo\\.orders$",
+      "apply-to": "queues", "priority": 2,
+      "definition": { "dead-letter-exchange": "demo.dlx", "delivery-limit": 5 }
+    }
+  ],
+  "exchanges": [
+    { "name": "demo.orders", "vhost": "/", "type": "direct", "durable": true },
+    { "name": "demo.dlx", "vhost": "/", "type": "fanout", "durable": true }
+  ],
+  "queues": [],
+  "bindings": []
+}
