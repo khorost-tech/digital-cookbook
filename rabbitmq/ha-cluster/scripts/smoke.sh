@@ -72,12 +72,26 @@ while true; do
 done
 echo ""
 
-# ── 3. Ждём все 3 ноды online через rabbitmqctl await_online_nodes ──
-echo "[$(ts)] Шаг 3 — ожидаем 3 ноды online (await_online_nodes 3, таймаут 60 сек)..."
-if ! docker exec rabbit1 rabbitmqctl await_online_nodes 3 --timeout 60; then
-  fail "await_online_nodes 3 завершился с ошибкой — менее 3 нод online за 60 сек"
-fi
-echo "[$(ts)] Кластер OK: все 3 ноды online (await_online_nodes 3 успешен)"
+# ── 3. Ждём готовность rabbit-app и все 3 ноды online ──
+# Docker healthcheck зеленеет раньше, чем rabbit-app готов принимать CLI-команды.
+# Retry-loop повторяет await_online_nodes, пока не пройдёт или не истечёт общий таймаут.
+echo "[$(ts)] Шаг 3 — ожидаем готовность rabbit-app и 3 ноды online..."
+AW_ELAPSED=0
+AW_TIMEOUT=90
+while true; do
+  AW_OUT=$(docker exec rabbit1 rabbitmqctl await_online_nodes 3 --timeout 15 2>&1) && AW_RC=0 || AW_RC=$?
+  if [ $AW_RC -eq 0 ]; then
+    echo "[$(ts)] Кластер OK: 3 ноды online (ждали ${AW_ELAPSED}с)"
+    break
+  fi
+  if [ $AW_ELAPSED -ge $AW_TIMEOUT ]; then
+    echo "$AW_OUT" >&2
+    fail "await_online_nodes 3 не удался за ${AW_TIMEOUT}с (rabbit-app не готов или <3 нод online)"
+  fi
+  echo "[$(ts)]   ... rabbit-app/кластер ещё не готов, повтор через 5с (${AW_ELAPSED}/${AW_TIMEOUT}с)"
+  sleep 5
+  AW_ELAPSED=$((AW_ELAPSED + 5))
+done
 # Для наглядности — показываем cluster_status после успешного await
 docker exec rabbit1 rabbitmqctl cluster_status 2>&1 || true
 echo ""
