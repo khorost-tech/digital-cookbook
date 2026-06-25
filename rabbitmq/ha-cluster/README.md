@@ -166,7 +166,38 @@ bash scripts/failover.sh
 AUTO=1 bash scripts/failover.sh
 ```
 
-### 3. Dead Letter Queue (DLQ)
+### 3. Отложенная доставка через retry-queue
+
+```bash
+bash scripts/retry-demo.sh
+```
+
+Неинтерактивный режим:
+
+```bash
+AUTO=1 bash scripts/retry-demo.sh
+```
+
+**Схема:** `demo.orders` → *(reject без requeue)* → `demo.dlx` → `demo.retry` *(quorum, TTL 5 сек)* → `demo.orders`
+
+Механизм:
+1. Consumer делает **nack без requeue** — симулирует временный сбой обработчика.
+2. Брокер пересылает сообщение в `demo.dlx` (dead-letter-exchange из политики `dlx-orders`).
+3. `demo.dlx` — fanout; его единственный подписчик — `demo.retry` (quorum-очередь с `x-message-ttl=5000`).
+4. Через 5 секунд TTL истекает, и `demo.retry` dead-letter'ит сообщение обратно в default exchange с routing-key `demo.orders`.
+5. Сообщение снова появляется в `demo.orders` — готово к повторной попытке.
+
+> **Отличие от DLQ-паттерна:** в DLQ сообщение после `delivery-limit` вынимается из основного потока навсегда.
+> В retry-queue сообщение автоматически возвращается к повторной обработке с задержкой, что позволяет
+> пережить временные сбои (недоступность базы данных, внешнего API и т.д.).
+
+Проверить циркуляцию сообщения:
+
+```bash
+docker exec rabbit1 rabbitmqctl list_queues name messages | grep demo
+```
+
+### 5. Dead Letter Queue (DLQ)
 
 ```bash
 bash scripts/dlq-demo.sh
@@ -183,7 +214,7 @@ requeue) сообщение автоматически уходит в `demo.dlq
 docker exec rabbit1 rabbitmqctl list_queues name messages | grep demo
 ```
 
-### 4. Federation
+### 6. Federation
 
 ```bash
 bash scripts/federation-demo.sh
@@ -201,7 +232,7 @@ docker exec rabbit1 rabbitmqctl list_parameters
 docker exec rabbit1 rabbitmqctl eval 'rabbit_federation_status:status().'
 ```
 
-### 5. Legacy: classic mirrored queues на RabbitMQ 3.13
+### 7. Legacy: classic mirrored queues на RabbitMQ 3.13
 
 **Шаг 1.** Поднять legacy-стенд (один контейнер `rabbit-legacy`):
 

@@ -17,6 +17,28 @@
     { "name": "demo.orders", "vhost": "/", "type": "direct", "durable": true },
     { "name": "demo.dlx", "vhost": "/", "type": "fanout", "durable": true }
   ],
-  "queues": [],
-  "bindings": []
+  "queues": [
+    {
+      "name": "demo.retry",
+      "vhost": "/",
+      "durable": true,
+      "auto_delete": false,
+      "arguments": {
+        "x-queue-type": "quorum",
+        "x-message-ttl": 5000,
+        "x-dead-letter-exchange": "",
+        "x-dead-letter-routing-key": "demo.orders"
+      }
+    }
+  ],
+  "bindings": [
+    {
+      "source": "demo.dlx",
+      "vhost": "/",
+      "destination": "demo.retry",
+      "destination_type": "queue",
+      "routing_key": "",
+      "arguments": {}
+    }
+  ]
 }
