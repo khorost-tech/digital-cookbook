@@ -259,8 +259,15 @@ bash scripts/dlq-demo.sh
 
 Скрипт создаёт очередь `demo.dlq` (тип `quorum`) и привязывает её к exchange `demo.dlx`.
 Политика `dlx-orders` уже задана в `cluster/definitions.json`:
-`dead-letter-exchange=demo.dlx`, `delivery-limit=5`. После 5 неудачных доставок (nack без
-requeue) сообщение автоматически уходит в `demo.dlq`.
+`dead-letter-exchange=demo.dlx`, `delivery-limit=5`.
+
+Два пути попадания в DLQ (в RabbitMQ 4.x):
+- **`Basic.Nack(requeue=false)`** или **`Basic.Reject(requeue=false)`** — немедленный dead-letter,
+  минуя счётчик доставок (`delivery-count`).
+- **Закрытие соединения/канала с unacked-сообщением** — инкрементирует `delivery-count`; когда он
+  достигает `delivery-limit` (5), сообщение уходит в `demo.dlq`.
+
+`dlq-demo.sh` демонстрирует второй путь (implicit nack через закрытие соединения + `delivery-limit`).
 
 Проверить количество сообщений в очередях:
 

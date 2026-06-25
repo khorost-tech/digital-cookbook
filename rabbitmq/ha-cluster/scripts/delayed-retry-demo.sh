@@ -50,14 +50,11 @@ echo "          явный Nack(requeue=false) → dead-lettering (НЕ delayed 
 echo ""
 
 # ── Шаг 1: компиляция Go delayed-retry-demo-linux ──
+# Всегда пересобираем — go build дёшев и гарантирует свежесть бинарника.
 DEMO_BIN="$GO_DIR/delayed-retry-demo-linux"
-if [ ! -f "$DEMO_BIN" ]; then
-  echo "[$(ts)] Шаг 1 — компилируем delayed-retry-demo для Linux..."
-  ( cd "$GO_DIR" && GOOS=linux GOARCH=amd64 go build -o delayed-retry-demo-linux ./cmd/delayed-retry-demo )
-  echo "[$(ts)] OK."
-else
-  echo "[$(ts)] Шаг 1 — delayed-retry-demo-linux уже есть."
-fi
+echo "[$(ts)] Шаг 1 — компилируем delayed-retry-demo для Linux..."
+( cd "$GO_DIR" && GOOS=linux GOARCH=amd64 go build -o delayed-retry-demo-linux ./cmd/delayed-retry-demo )
+echo "[$(ts)] OK."
 echo ""
 
 # ── Шаг 2: копируем бинарник в контейнер ──

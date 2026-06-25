@@ -2,12 +2,13 @@
 set -euo pipefail
 # Сквозная проверка всего demo-стенда (неинтерактивно):
 #   1. docker compose up -d
-#   2. Ожидание healthcheck (~45 сек)
-#   3. cluster_status (проверить 3 ноды)
+#   2. Ожидание healthcheck (~45 сек) — rabbit1/2/3 + rabbit-b
+#   3. cluster_status (retry-loop — ждём все 3 ноды в Running Nodes)
 #   4. Go producer (-n 20) + consumer (с ограничением по времени)
 #   5. retry-demo.sh (AUTO)
 #   6. delayed-retry-demo.sh (AUTO)
-#   7. docker compose down -v
+#   7. federation-demo.sh (AUTO)
+#   8. docker compose down -v (через trap EXIT — срабатывает всегда)
 #
 # Использование:
 #   bash scripts/smoke.sh
@@ -21,10 +22,16 @@ ts() {
   date '+%H:%M:%S'
 }
 
+# ── Trap: гасить стенд при ЛЮБОМ выходе (успех, ошибка, прерывание) ──
+cleanup() {
+  echo "" >&2
+  echo "[$(ts)] Trap EXIT — docker compose down -v..." >&2
+  docker compose -f "$ROOT_DIR/docker-compose.yml" down -v 2>/dev/null || true
+}
+trap cleanup EXIT
+
 fail() {
   echo "[$(ts)] ОШИБКА: $1" >&2
-  echo "[$(ts)] Останавливаем стенд..." >&2
-  docker compose -f "$ROOT_DIR/docker-compose.yml" down -v 2>/dev/null || true
   exit 1
 }
 
@@ -39,13 +46,13 @@ echo "[$(ts)] Шаг 1 — docker compose up -d..."
 docker compose -f "$ROOT_DIR/docker-compose.yml" up -d
 echo ""
 
-# ── 2. Ждём healthcheck ──
+# ── 2. Ждём healthcheck (rabbit1/2/3 + rabbit-b) ──
 echo "[$(ts)] Шаг 2 — ожидаем healthcheck (до 90 сек)..."
 ELAPSED=0
 TIMEOUT=90
 while true; do
   ALL_HEALTHY=true
-  for node in rabbit1 rabbit2 rabbit3; do
+  for node in rabbit1 rabbit2 rabbit3 rabbit-b; do
     STATUS=$(docker inspect --format='{{.State.Health.Status}}' "$node" 2>/dev/null || echo "missing")
     if [ "$STATUS" != "healthy" ]; then
       ALL_HEALTHY=false
@@ -57,7 +64,7 @@ while true; do
     break
   fi
   if [ $ELAPSED -ge $TIMEOUT ]; then
-    fail "Ноды не стали healthy за ${TIMEOUT}с. Статус: $(docker inspect --format='{{.Name}} {{.State.Health.Status}}' rabbit1 rabbit2 rabbit3)"
+    fail "Ноды не стали healthy за ${TIMEOUT}с. Статус: $(docker inspect --format='{{.Name}} {{.State.Health.Status}}' rabbit1 rabbit2 rabbit3 rabbit-b 2>/dev/null || true)"
   fi
   sleep 5
   ELAPSED=$((ELAPSED + 5))
@@ -65,18 +72,32 @@ while true; do
 done
 echo ""
 
-# ── 3. Проверяем cluster_status ──
-echo "[$(ts)] Шаг 3 — cluster_status (ожидаем 3 ноды)..."
-CLUSTER_OUT=$(docker exec rabbit1 rabbitmqctl cluster_status 2>&1)
-echo "$CLUSTER_OUT"
-echo ""
-
-for node in rabbit@rabbit1 rabbit@rabbit2 rabbit@rabbit3; do
-  if ! echo "$CLUSTER_OUT" | grep -q "$node"; then
-    fail "Нода $node не найдена в cluster_status"
+# ── 3. Retry-loop для cluster_status — ждём все 3 ноды в Running Nodes ──
+echo "[$(ts)] Шаг 3 — cluster_status (retry-loop, до 60 сек, шаг 5 сек)..."
+CS_ELAPSED=0
+CS_TIMEOUT=60
+while true; do
+  CLUSTER_OUT=$(docker exec rabbit1 rabbitmqctl cluster_status 2>&1 || true)
+  ALL_NODES_UP=true
+  for node in rabbit@rabbit1 rabbit@rabbit2 rabbit@rabbit3; do
+    if ! echo "$CLUSTER_OUT" | grep -q "$node"; then
+      ALL_NODES_UP=false
+      break
+    fi
+  done
+  if $ALL_NODES_UP; then
+    echo "[$(ts)] Кластер OK: все 3 ноды найдены в cluster_status (прошло ${CS_ELAPSED}с)"
+    echo "$CLUSTER_OUT"
+    break
   fi
+  if [ $CS_ELAPSED -ge $CS_TIMEOUT ]; then
+    echo "$CLUSTER_OUT"
+    fail "Не все 3 ноды появились в cluster_status за ${CS_TIMEOUT}с"
+  fi
+  sleep 5
+  CS_ELAPSED=$((CS_ELAPSED + 5))
+  echo "[$(ts)]   ... cluster_status: ноды ещё не все up (${CS_ELAPSED}/${CS_TIMEOUT}с)"
 done
-echo "[$(ts)] Кластер OK: все 3 ноды в строю."
 echo ""
 
 # ── 4. Быстрый прогон producer + consumer ──
@@ -130,12 +151,15 @@ echo ""
 echo "[$(ts)] delayed-retry-demo.sh OK"
 echo ""
 
-# ── 7. Останавливаем и чистим ──
-echo "[$(ts)] Шаг 7 — docker compose down -v..."
-docker compose -f "$ROOT_DIR/docker-compose.yml" down -v
+# ── 7. federation-demo.sh ──
+echo "[$(ts)] Шаг 7 — AUTO=1 bash scripts/federation-demo.sh..."
+AUTO=1 bash "$SCRIPT_DIR/federation-demo.sh"
+echo ""
+echo "[$(ts)] federation-demo.sh OK"
 echo ""
 
 echo "============================================================"
 echo " Smoke test ПРОЙДЕН"
 echo " Время финиша: $(ts)"
 echo "============================================================"
+# Стенд будет погашен через trap EXIT автоматически.
