@@ -191,13 +191,23 @@ AUTO=1 bash scripts/retry-demo.sh
 > В retry-queue сообщение автоматически возвращается к повторной обработке с задержкой, что позволяет
 > пережить временные сбои (недоступность базы данных, внешнего API и т.д.).
 
+> **Нюанс петли (обучающий момент):** `demo.dlx` — fanout, и **единственный** его подписчик —
+> `demo.retry`. Если `delivery-limit=5` исчерпан, а очередь `demo.dlq` к `demo.dlx` не привязана,
+> сообщение после истечения TTL вернётся в `demo.orders`, будет отклонено снова и попадёт
+> обратно в `demo.retry` — потенциальная бесконечная петля. В production к `demo.dlx` привязывают
+> как `demo.retry`, так и `demo.dlq`, чтобы сообщение после превышения лимита уходило в DLQ.
+
+> **Изоляция сценариев:** скрипты `dlq-demo.sh` и `retry-demo.sh` конкурируют за подписчиков
+> `demo.dlx`. Запускайте их раздельно, выполняя между прогонами `docker compose down -v` для
+> сброса привязок и состояния очередей.
+
 Проверить циркуляцию сообщения:
 
 ```bash
 docker exec rabbit1 rabbitmqctl list_queues name messages | grep demo
 ```
 
-### 5. Dead Letter Queue (DLQ)
+### 4. Dead Letter Queue (DLQ)
 
 ```bash
 bash scripts/dlq-demo.sh
@@ -214,7 +224,7 @@ requeue) сообщение автоматически уходит в `demo.dlq
 docker exec rabbit1 rabbitmqctl list_queues name messages | grep demo
 ```
 
-### 6. Federation
+### 5. Federation
 
 ```bash
 bash scripts/federation-demo.sh
@@ -232,7 +242,7 @@ docker exec rabbit1 rabbitmqctl list_parameters
 docker exec rabbit1 rabbitmqctl eval 'rabbit_federation_status:status().'
 ```
 
-### 7. Legacy: classic mirrored queues на RabbitMQ 3.13
+### 6. Legacy: classic mirrored queues на RabbitMQ 3.13
 
 **Шаг 1.** Поднять legacy-стенд (один контейнер `rabbit-legacy`):
 

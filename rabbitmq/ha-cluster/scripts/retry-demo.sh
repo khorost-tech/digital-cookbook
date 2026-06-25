@@ -135,6 +135,7 @@ fi
 echo ""
 echo "=== Итог ==="
 echo "Финальное состояние очередей:"
+sleep 1
 docker exec rabbit1 rabbitmqctl list_queues name messages | grep demo || true
 echo ""
 echo "Паттерн продемонстрирован:"
