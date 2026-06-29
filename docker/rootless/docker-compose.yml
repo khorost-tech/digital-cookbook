@@ -1,0 +1,12 @@
+services:
+  probe:
+    build: ./probe
+    # 8080 выбран намеренно: порт <1024 в rootless требует
+    # net.ipv4.ip_unprivileged_port_start (см. README и статью).
+    ports:
+      - "8080:8080"
+    volumes:
+      # bind mount — на нём и видна разница владельца файла
+      # между rootful и rootless.
+      - ./data:/data
+    restart: "no"
