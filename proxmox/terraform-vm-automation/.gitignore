@@ -1,0 +1,17 @@
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+
+# .terraform.lock.hcl НЕ игнорируем — коммитим для воспроизводимости версий провайдера
+# (генерируется при terraform init)
+
+# Локальные переменные с секретами (храним только *.example)
+terraform.tfvars
+*.auto.tfvars
+*.auto.tfvars.json
+
+# План в бинарном виде
+*.tfplan

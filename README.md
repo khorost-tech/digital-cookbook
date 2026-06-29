@@ -8,6 +8,7 @@
 | Пример | Описание | Статьи |
 |--------|----------|--------|
 | [`rabbitmq/ha-cluster`](rabbitmq/ha-cluster) | Отказоустойчивый кластер RabbitMQ 4.x: quorum-очереди, failover, DLQ, federation, мониторинг | [Серия «Высокодоступный RabbitMQ»](https://khorost.tech/messaging/rabbitmq-ha-cluster-quorum-failover/) |
+| [`proxmox/terraform-vm-automation`](proxmox/terraform-vm-automation) | Terraform для Proxmox: создание VM (клон шаблона или импорт cloud image) и LXC, cloud-init, `for_each` | [Proxmox + Terraform](https://khorost.tech/infrastructure/proxmox-terraform-vm-automation/) |
 
 ## Лицензия
 
