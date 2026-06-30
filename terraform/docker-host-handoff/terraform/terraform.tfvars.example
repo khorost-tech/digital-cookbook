@@ -1,0 +1,16 @@
+proxmox_url          = "https://pve.local:8006/"
+proxmox_token_id     = "terraform@pam!tf-token"
+proxmox_token_secret = "REPLACE-ME"
+
+target_node    = "pve"
+ssh_public_key = "ssh-ed25519 AAAA... ops@workstation"
+gateway        = "10.10.10.1"
+
+docker_hosts = {
+  "docker-1" = {
+    cores  = 2
+    memory = 2048
+    disk   = 20
+    ip     = "10.10.10.111/24"
+  }
+}

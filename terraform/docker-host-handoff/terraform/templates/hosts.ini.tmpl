@@ -1,0 +1,10 @@
+# ВНИМАНИЕ: файл сгенерирован Terraform (inventory.tf). Не редактировать вручную.
+# Источник истины — карта docker_hosts в terraform.tfvars.
+
+[docker_hosts]
+%{ for name, ip in hosts ~}
+${name} ansible_host=${ip} ansible_user=${user}
+%{ endfor ~}
+
+[docker_hosts:vars]
+ansible_python_interpreter=/usr/bin/python3
