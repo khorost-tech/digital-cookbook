@@ -1,7 +1,7 @@
-# distributed-config — etcd, Consul, Vault на живом стенде
+# distributed-config — etcd, ZooKeeper, Consul, Vault на живом стенде
 
 Стенд к статье [«Распределённые конфигурации»](https://khorost.tech/architecture/distributed-configuration/).
-Одной командой поднимаются три инструмента и PostgreSQL, а demo-скрипты показывают,
+Одной командой поднимаются четыре инструмента и PostgreSQL, а demo-скрипты показывают,
 **какую задачу решает каждый** — на их собственных сильных сторонах.
 
 ## Что демонстрирует
@@ -13,8 +13,9 @@
 | **Consul** | `consul-demo.sh` | KV-хранилище и service discovery (регистрация + поиск сервиса) |
 | **Vault** | `vault-demo.sh` | **динамические** credentials: Vault сам создаёт временную учётку в PostgreSQL с TTL |
 
-Идея стенда — показать, что etcd / Consul / Vault не взаимозаменяемы: etcd про
-координацию и watch, Consul про discovery, Vault про секреты.
+Идея стенда — показать, что инструменты не взаимозаменяемы: etcd и ZooKeeper про
+координацию, Consul про discovery, Vault про секреты (а ZooKeeper здесь ещё и как
+исторический предок этого ландшафта).
 
 ## Запуск
 
@@ -22,7 +23,7 @@
 **только для демонстрации, не для production** (Vault dev без печати, без TLS).
 
 ```bash
-# полная демонстрация: поднять всё, прогнать три демо, погасить
+# полная демонстрация: поднять всё, прогнать четыре демо, погасить
 bash scripts/smoke.sh
 ```
 
@@ -30,6 +31,7 @@ bash scripts/smoke.sh
 
 ```bash
 bash scripts/etcd-demo.sh
+bash scripts/zookeeper-demo.sh
 bash scripts/consul-demo.sh
 bash scripts/vault-demo.sh
 ```
