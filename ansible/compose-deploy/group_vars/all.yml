@@ -1,0 +1,28 @@
+---
+# Общие переменные для всех окружений
+# Переопределяются в group_vars/dev.yml, stage.yml, prod.yml
+
+# Имя стека (используется в путях и именах)
+stack_name: compose-demo
+
+# Базовый каталог для деплоя стеков
+deploy_dir: /opt/stacks/{{ stack_name }}
+
+# Имя проекта Docker Compose
+compose_project: "{{ stack_name }}"
+
+# Образы (версии пинуются; не используем latest)
+app_image: "traefik/whoami:v1.10"
+proxy_image: "caddy:2.8-alpine"
+
+# Порт приложения внутри compose-сети
+app_port: 8080
+
+# Домен для виртуального хоста (Caddy)
+app_domain: "localhost"
+
+# Количество реплик приложения
+app_replicas: 1
+
+# Имя окружения (dev/stage/prod)
+env_name: "all"

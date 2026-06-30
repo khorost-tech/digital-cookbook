@@ -1,0 +1,20 @@
+---
+# Defaults для роли compose_stack.
+# Эти значения имеют наименьший приоритет и переопределяются
+# через group_vars, host_vars или явные vars в плейбуке.
+
+stack_name: compose-demo
+deploy_dir: /opt/stacks/{{ stack_name }}
+compose_project: "{{ stack_name }}"
+
+app_image: "traefik/whoami:v1.10"
+proxy_image: "caddy:2.8-alpine"
+
+app_port: 8080
+app_domain: "localhost"
+app_replicas: 1
+
+env_name: "dev"
+
+# Секрет — НЕ задавать здесь. Должен приходить из зашифрованного secrets.yml.
+# app_admin_token: "" # обязательная переменная, без дефолта

@@ -1,0 +1,20 @@
+---
+# Плейбук деплоя Docker Compose стека через роль compose_stack
+#
+# Использование:
+#   ansible-playbook deploy.yml -l dev              # деплой на dev
+#   ansible-playbook deploy.yml -l stage            # деплой на stage
+#   ansible-playbook deploy.yml -l prod --ask-vault-pass  # деплой на prod (с секретами)
+#
+# Проверка синтаксиса (без подключения к хостам):
+#   ansible-playbook deploy.yml --syntax-check
+#
+# Dry-run (без реального применения):
+#   ansible-playbook deploy.yml --check --diff -l dev
+
+- name: Деплой Docker Compose стека
+  hosts: all
+  gather_facts: true
+
+  roles:
+    - role: compose_stack

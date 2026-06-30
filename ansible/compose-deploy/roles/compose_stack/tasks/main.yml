@@ -1,0 +1,29 @@
+---
+# Роль compose_stack: деплой Docker Compose стека через Ansible
+
+- name: Создать каталог деплоя
+  ansible.builtin.file:
+    path: "{{ deploy_dir }}"
+    state: directory
+    mode: "0750"
+
+- name: Отрендерить docker-compose.yml из шаблона
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ deploy_dir }}/docker-compose.yml"
+    mode: "0640"
+  notify: Перезапустить стек
+
+- name: Отрендерить .env из шаблона
+  ansible.builtin.template:
+    src: env.j2
+    dest: "{{ deploy_dir }}/.env"
+    mode: "0640"
+  notify: Перезапустить стек
+
+- name: Поднять Docker Compose стек
+  community.docker.docker_compose_v2:
+    project_src: "{{ deploy_dir }}"
+    project_name: "{{ compose_project }}"
+    state: present
+    pull: missing

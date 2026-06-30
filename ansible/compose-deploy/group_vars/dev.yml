@@ -1,0 +1,6 @@
+---
+# Переменные окружения DEV
+env_name: "dev"
+app_domain: "localhost"
+app_port: 8080
+app_replicas: 1

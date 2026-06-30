@@ -1,0 +1,6 @@
+---
+# Переменные окружения STAGE
+env_name: "stage"
+app_domain: "stage.example.com"
+app_port: 8080
+app_replicas: 1
