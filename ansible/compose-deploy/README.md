@@ -188,7 +188,7 @@ ansible-vault edit group_vars/prod/secrets.yml
 ```bash
 echo "vault_password_here" > ~/.vault_pass
 chmod 600 ~/.vault_pass
-ansible-playbook deploy.yml -l prod --vault-password-file ~/.vault_pass
+ansible-playbook -i inventory/hosts.ini deploy.yml -l prod --vault-password-file ~/.vault_pass
 ```
 
 ---
@@ -210,11 +210,11 @@ ansible-playbook deploy.yml -l prod --vault-password-file ~/.vault_pass
 
 ```bash
 # Остановить и удалить стек (без удаления volumes):
-ansible -l dev -m community.docker.docker_compose_v2 \
+ansible -i inventory/hosts.ini -l dev -m community.docker.docker_compose_v2 \
   -a "project_src={{ deploy_dir }} project_name={{ compose_project }} state=absent"
 
-# Или напрямую на хосте:
-cd /opt/stacks/compose-demo
+# Или напрямую на хосте (путь зависит от окружения: dev — ~/stacks, prod — /opt/stacks):
+cd ~/stacks/compose-demo        # для prod: cd /opt/stacks/compose-demo
 docker compose down
 
 # Удалить с volumes:

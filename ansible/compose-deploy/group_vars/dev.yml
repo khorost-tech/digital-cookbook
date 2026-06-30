@@ -6,4 +6,4 @@ app_port: 8080
 app_replicas: 1
 
 # В dev деплоим в домашний каталог — стенд поднимается без sudo/become.
-deploy_dir: "{{ ansible_user_dir }}/stacks/{{ stack_name }}"
+deploy_dir: "{{ ansible_facts.user_dir }}/stacks/{{ stack_name }}"
