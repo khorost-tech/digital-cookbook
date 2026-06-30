@@ -24,5 +24,5 @@ app_domain: "localhost"
 # Количество реплик приложения
 app_replicas: 1
 
-# Имя окружения (dev/stage/prod)
-env_name: "all"
+# Имя окружения (dev/stage/prod); переопределяется в group_vars каждого окружения
+env_name: "dev"
