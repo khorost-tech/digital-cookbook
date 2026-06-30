@@ -11,6 +11,7 @@
 | [`proxmox/terraform-vm-automation`](proxmox/terraform-vm-automation) | Terraform для Proxmox: создание VM (клон шаблона или импорт cloud image) и LXC, cloud-init, `for_each` | [Proxmox + Terraform](https://khorost.tech/infrastructure/proxmox-terraform-vm-automation/) |
 | [`docker/rootless`](docker/rootless) | rootful vs rootless Docker на живом стенде: владелец файлов в volume, ограничение портов <1024 | [Rootless Docker](https://khorost.tech/docker/rootless-docker/) |
 | [`distributed-config`](distributed-config) | etcd, ZooKeeper, Consul, Vault и PostgreSQL: watch, znodes, service discovery, динамические credentials | [Распределённые конфигурации](https://khorost.tech/architecture/distributed-configuration/) |
+| [`ansible/compose-deploy`](ansible/compose-deploy) | Деплой Docker Compose стека через Ansible: `community.docker.docker_compose_v2`, group_vars, Jinja2-шаблоны, ansible-vault | [Деплой Docker Compose через Ansible](https://khorost.tech/infrastructure/ansible-docker-compose-deploy/) |
 
 ## Лицензия
 
