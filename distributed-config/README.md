@@ -8,7 +8,7 @@
 
 | Инструмент | Демо | Что видно |
 |---|---|---|
-| **etcd** | `etcd-demo.sh` | put/get и `watch` — реакция на изменение ключа в реальном времени |
+| **etcd** | `etcd-demo.sh` | put/get, `watch` (реакция на изменение) и транзакция (CAS / leader election) |
 | **ZooKeeper** | `zookeeper-demo.sh` | persistent znode (config) и ephemeral znode (liveness — исчезает со смертью сессии) |
 | **Consul** | `consul-demo.sh` | KV-хранилище и service discovery (регистрация + поиск сервиса) |
 | **Vault** | `vault-demo.sh` | **динамические** credentials: Vault сам создаёт временную учётку в PostgreSQL с TTL |

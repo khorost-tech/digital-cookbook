@@ -24,11 +24,23 @@ wait "$WPID" 2>/dev/null || true   # timeout штатно завершит watch
 
 echo "Получено watch:"
 cat "$WATCH_OUT"
-if grep -q "/config/feature/new-ui" "$WATCH_OUT"; then
-  rm -f "$WATCH_OUT"
-  echo "etcd-demo: ок (watch реально увидел изменение ключа)."
-else
-  rm -f "$WATCH_OUT"
-  echo "etcd-demo: ОШИБКА — watch не увидел изменение" >&2
-  exit 1
-fi
+grep -q "/config/feature/new-ui" "$WATCH_OUT" \
+  || { rm -f "$WATCH_OUT"; echo "etcd-demo: ОШИБКА — watch не увидел изменение" >&2; exit 1; }
+rm -f "$WATCH_OUT"
+echo "watch реально увидел изменение ключа."
+
+echo ""
+echo "── etcd: транзакция (CAS / leader election) ─────────────────"
+# Атомарно занять /election/leader, только если ключа ещё нет (version == 0).
+# При конфликте сработает ветка failure — и мы увидим текущего лидера.
+$E del /election/leader >/dev/null 2>&1 || true   # сброс от прошлых прогонов
+echo "nodeA пытается стать лидером:"
+printf 'version("/election/leader") = "0"\n\nput /election/leader "nodeA"\n\nget /election/leader\n\n' | $E txn
+echo "nodeB пытается стать лидером (ключ уже занят → ветка failure):"
+printf 'version("/election/leader") = "0"\n\nput /election/leader "nodeB"\n\nget /election/leader\n\n' | $E txn
+LEADER="$($E get /election/leader --print-value-only)"
+[ "$LEADER" = "nodeA" ] \
+  || { echo "etcd-demo: ОШИБКА — CAS не защитил лидера (получили: $LEADER)" >&2; exit 1; }
+
+echo ""
+echo "etcd-demo: ок (watch увидел изменение; CAS-транзакция защитила лидера = $LEADER)."
