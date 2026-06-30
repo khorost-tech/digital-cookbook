@@ -3,23 +3,20 @@
 
 services:
 
+  # whoami собран FROM scratch — нет shell/wget, поэтому healthcheck вынесен на proxy (см. ниже).
   # Приложение: traefik/whoami — отвечает на HTTP-запросы,
   # возвращает информацию о запросе (хост, IP, заголовки).
   # Удобно для проверки маршрутизации и балансировки.
   app:
     image: {{ app_image }}
     restart: unless-stopped
-    deploy:
-      replicas: {{ app_replicas }}
     networks:
       - internal
     environment:
       - APP_ENV={{ env_name }}
-    healthcheck:
-      test: ["CMD", "/whoami", "--port={{ app_port }}"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
+    # deploy.replicas учитывается docker compose up в Compose v2 (стенд на неё и рассчитан).
+    deploy:
+      replicas: {{ app_replicas }}
 
   # Reverse-proxy: Caddy автоматически проксирует запросы к приложению.
   # В реальном деплое Caddy может завершать TLS через Let's Encrypt.
@@ -43,7 +40,7 @@ services:
     depends_on:
       - app
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:80/healthz"]
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
       interval: 15s
       timeout: 5s
       retries: 3

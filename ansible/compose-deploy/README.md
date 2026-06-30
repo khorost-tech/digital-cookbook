@@ -26,8 +26,8 @@
 
 | Компонент | Версия |
 |-----------|--------|
-| Ansible core | 2.17+ (минимум 2.15) |
-| Коллекция `community.docker` | 3.10+ |
+| Ansible core | 2.20.3 (минимум 2.15) |
+| Коллекция `community.docker` | 5.0.6 |
 | Docker Engine | 26.x+ |
 | Docker Compose plugin | v2.27+ (`docker compose`) |
 | ОС целевого хоста | Ubuntu 24.04 LTS / Debian 12 |

@@ -16,5 +16,5 @@ app_replicas: 1
 
 env_name: "dev"
 
-# Секрет — НЕ задавать здесь. Должен приходить из зашифрованного secrets.yml.
-# app_admin_token: "" # обязательная переменная, без дефолта
+# Дефолт-заглушка — реальное значение задаётся в group_vars/prod/secrets.yml через ansible-vault.
+app_admin_token: "REPLACE-ME"
