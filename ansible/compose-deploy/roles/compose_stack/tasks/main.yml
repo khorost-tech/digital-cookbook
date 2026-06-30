@@ -12,15 +12,15 @@
     src: docker-compose.yml.j2
     dest: "{{ deploy_dir }}/docker-compose.yml"
     mode: "0640"
-  notify: Перезапустить стек
 
 - name: Отрендерить .env из шаблона
   ansible.builtin.template:
     src: env.j2
     dest: "{{ deploy_dir }}/.env"
     mode: "0640"
-  notify: Перезапустить стек
 
+# docker_compose_v2 идемпотентен: запускается всегда, но реально пересоздаёт
+# контейнеры только при изменении docker-compose.yml/.env или образов.
 - name: Поднять Docker Compose стек
   community.docker.docker_compose_v2:
     project_src: "{{ deploy_dir }}"

@@ -4,3 +4,6 @@ env_name: "dev"
 app_domain: "localhost"
 app_port: 8080
 app_replicas: 1
+
+# В dev деплоим в домашний каталог — стенд поднимается без sudo/become.
+deploy_dir: "{{ ansible_user_dir }}/stacks/{{ stack_name }}"

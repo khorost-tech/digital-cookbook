@@ -4,3 +4,6 @@ env_name: "prod"
 app_domain: "app.example.com"
 app_port: 8080
 app_replicas: 2
+
+# prod деплоит в /opt/stacks (из all.yml) — нужен root, поэтому become.
+ansible_become: true

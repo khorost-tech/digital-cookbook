@@ -1,16 +1,17 @@
 ---
 # Плейбук деплоя Docker Compose стека через роль compose_stack
 #
-# Использование:
-#   ansible-playbook deploy.yml -l dev              # деплой на dev
-#   ansible-playbook deploy.yml -l stage            # деплой на stage
-#   ansible-playbook deploy.yml -l prod --ask-vault-pass  # деплой на prod (с секретами)
+# Использование (флаг -i указывает inventory явно — надёжнее, чем полагаться
+# на ansible.cfg, который Ansible игнорирует, например, на world-writable путях):
+#   ansible-playbook -i inventory/hosts.ini deploy.yml -l dev              # деплой на dev
+#   ansible-playbook -i inventory/hosts.ini deploy.yml -l stage            # деплой на stage
+#   ansible-playbook -i inventory/hosts.ini deploy.yml -l prod --ask-vault-pass  # prod (с секретами)
 #
 # Проверка синтаксиса (без подключения к хостам):
-#   ansible-playbook deploy.yml --syntax-check
+#   ansible-playbook -i inventory/hosts.ini deploy.yml --syntax-check
 #
 # Dry-run (без реального применения):
-#   ansible-playbook deploy.yml --check --diff -l dev
+#   ansible-playbook -i inventory/hosts.ini deploy.yml --check --diff -l dev
 
 - name: Деплой Docker Compose стека
   hosts: all
