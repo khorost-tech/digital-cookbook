@@ -1,0 +1,50 @@
+# distributed-config — etcd, Consul, Vault на живом стенде
+
+Стенд к статье [«Распределённые конфигурации»](https://khorost.tech/architecture/distributed-configuration/).
+Одной командой поднимаются три инструмента и PostgreSQL, а demo-скрипты показывают,
+**какую задачу решает каждый** — на их собственных сильных сторонах.
+
+## Что демонстрирует
+
+| Инструмент | Демо | Что видно |
+|---|---|---|
+| **etcd** | `etcd-demo.sh` | put/get и `watch` — реакция на изменение ключа в реальном времени |
+| **Consul** | `consul-demo.sh` | KV-хранилище и service discovery (регистрация + поиск сервиса) |
+| **Vault** | `vault-demo.sh` | **динамические** credentials: Vault сам создаёт временную учётку в PostgreSQL с TTL |
+
+Идея стенда — показать, что etcd / Consul / Vault не взаимозаменяемы: etcd про
+координацию и watch, Consul про discovery, Vault про секреты.
+
+## Запуск
+
+Требуется Docker и `docker compose`. Все сервисы поднимаются в dev-режиме —
+**только для демонстрации, не для production** (Vault dev без печати, без TLS).
+
+```bash
+# полная демонстрация: поднять всё, прогнать три демо, погасить
+bash scripts/smoke.sh
+```
+
+Отдельные демо (стенд должен быть поднят — `docker compose up -d`):
+
+```bash
+bash scripts/etcd-demo.sh
+bash scripts/consul-demo.sh
+bash scripts/vault-demo.sh
+```
+
+## Структура
+
+```
+distributed-config/
+  docker-compose.yml      # etcd + consul + vault (dev) + postgres
+  scripts/
+    smoke.sh              # up → три демо → down (trap)
+    etcd-demo.sh          # put/get/watch
+    consul-demo.sh        # KV + service discovery
+    vault-demo.sh         # динамические креды к PostgreSQL
+```
+
+## Лицензия
+
+MIT — см. [LICENSE](../LICENSE) в корне репозитория.

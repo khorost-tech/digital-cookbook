@@ -1,0 +1,41 @@
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.13
+    command: >
+      etcd
+      --name s1
+      --listen-client-urls http://0.0.0.0:2379
+      --advertise-client-urls http://etcd:2379
+    ports:
+      - "2379:2379"
+
+  consul:
+    image: hashicorp/consul:1.18
+    command: agent -dev -client=0.0.0.0
+    ports:
+      - "8500:8500"
+      - "8600:8600/udp"
+
+  vault:
+    image: hashicorp/vault:1.16
+    cap_add:
+      - IPC_LOCK
+    environment:
+      VAULT_DEV_ROOT_TOKEN_ID: root
+      VAULT_DEV_LISTEN_ADDRESS: 0.0.0.0:8200
+    ports:
+      - "8200:8200"
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: app
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d app"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
