@@ -35,6 +35,7 @@ $DC up -d || fail "compose up не удался"
 echo "[$(ts)] Ожидание готовности сервисов..."
 for i in $(seq 1 30); do
   if $DC exec -T etcd etcdctl endpoint health >/dev/null 2>&1 \
+     && $DC exec -T zookeeper zkServer.sh status >/dev/null 2>&1 \
      && $DC exec -T consul consul members >/dev/null 2>&1 \
      && $DC exec -T -e VAULT_ADDR=http://127.0.0.1:8200 vault vault status >/dev/null 2>&1 \
      && $DC exec -T postgres pg_isready -U postgres -d app >/dev/null 2>&1; then
@@ -45,9 +46,11 @@ for i in $(seq 1 30); do
 done
 
 echo ""
-bash "$SCRIPT_DIR/etcd-demo.sh"   || fail "etcd-demo"
+bash "$SCRIPT_DIR/etcd-demo.sh"      || fail "etcd-demo"
 echo ""
-bash "$SCRIPT_DIR/consul-demo.sh" || fail "consul-demo"
+bash "$SCRIPT_DIR/zookeeper-demo.sh" || fail "zookeeper-demo"
+echo ""
+bash "$SCRIPT_DIR/consul-demo.sh"   || fail "consul-demo"
 echo ""
 bash "$SCRIPT_DIR/vault-demo.sh"  || fail "vault-demo"
 

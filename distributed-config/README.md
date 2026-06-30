@@ -9,6 +9,7 @@
 | Инструмент | Демо | Что видно |
 |---|---|---|
 | **etcd** | `etcd-demo.sh` | put/get и `watch` — реакция на изменение ключа в реальном времени |
+| **ZooKeeper** | `zookeeper-demo.sh` | persistent znode (config) и ephemeral znode (liveness — исчезает со смертью сессии) |
 | **Consul** | `consul-demo.sh` | KV-хранилище и service discovery (регистрация + поиск сервиса) |
 | **Vault** | `vault-demo.sh` | **динамические** credentials: Vault сам создаёт временную учётку в PostgreSQL с TTL |
 
@@ -37,10 +38,11 @@ bash scripts/vault-demo.sh
 
 ```
 distributed-config/
-  docker-compose.yml      # etcd + consul + vault (dev) + postgres
+  docker-compose.yml      # etcd + zookeeper + consul + vault (dev) + postgres
   scripts/
-    smoke.sh              # up → три демо → down (trap)
+    smoke.sh              # up → четыре демо → down (trap)
     etcd-demo.sh          # put/get/watch
+    zookeeper-demo.sh     # persistent + ephemeral znodes
     consul-demo.sh        # KV + service discovery
     vault-demo.sh         # динамические креды к PostgreSQL
 ```
