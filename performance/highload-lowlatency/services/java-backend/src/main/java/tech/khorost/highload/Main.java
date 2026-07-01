@@ -19,12 +19,15 @@ import java.util.regex.Pattern;
  * Транспорт: HTTP/2 cleartext (h2c). Helidon 4 WebServer (Nima) обрабатывает
  * каждый запрос на отдельном virtual thread по умолчанию — без явной настройки
  * пулов потоков. Модуль {@code helidon-webserver-http2} регистрируется через
- * ServiceLoader/SPI и добавляет HTTP/2 upgrade codec: сервер принимает
- * HTTP/2-соединения как через Upgrade (h2), так и по prior-knowledge (h2c без
- * Upgrade-заголовка) на одном и том же plaintext-порту — именно так, как
- * HAProxy обращается к бэкенду директивой {@code server ... proto h2}.
- * Никакого TLS, никакой дополнительной конфигурации для h2c не требуется:
- * присутствия зависимости на classpath достаточно.
+ * ServiceLoader/SPI: сервер принимает HTTP/2 по prior-knowledge (h2c без
+ * Upgrade-заголовка, детекция по преамбуле RFC 7540 §3.4) на plaintext-порту —
+ * именно так, как HAProxy обращается к бэкенду директивой
+ * {@code server ... proto h2}. Механизм HTTP/1.1-Upgrade (RFC 7540 §3.2) этот
+ * listener НЕ обрабатывает: клиент, приславший только {@code Upgrade: h2c}
+ * (например JDK {@code java.net.http.HttpClient}), получает ответ по HTTP/1.1 —
+ * см. разбор в {@code clients/java/.../Client.java}. Никакого TLS и никакой
+ * дополнительной конфигурации для h2c не требуется: присутствия зависимости
+ * {@code helidon-webserver-http2} на classpath достаточно.
  *
  * Контракт (см. performance/highload-lowlatency/README.md):
  * {@code POST /check} — имитация синхронной проверки полезной нагрузки
