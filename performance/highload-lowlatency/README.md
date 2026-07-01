@@ -63,15 +63,84 @@
 
 ## Запуск
 
-TODO — заполнится в Task 7.
+```bash
+cd topology
+docker compose up -d --build
+```
+
+Поднимает HAProxy (два фронтенда, `:8080` и `:8081`) и пул бэкендов (`go-backend-1/2/3`,
+`java-backend`) с health-check'ами. Клиенты-нагрузчики не стартуют автоматически — у них
+свои `profiles`, запускаются по требованию:
+
+```bash
+# Go-клиент — идёт в h2c-фронтенд :8080 (HTTP/2 end-to-end)
+docker compose --profile load run --rm client-go
+
+# Java-клиент — идёт в HTTP/1.1-фронтенд :8081 (см. "Что наблюдать" ниже)
+docker compose --profile load-java run --rm client-java
+```
+
+Оба клиента управляются переменными окружения `TARGET` / `CONCURRENCY` / `REQUESTS` /
+`CONNS` / `TIMEOUT_MS` / `PAYLOAD` (см. Dockerfile'ы клиентов), например:
+
+```bash
+docker compose --profile load run --rm -e REQUESTS=5000 -e CONCURRENCY=200 client-go
+```
+
+Остановить и снести стенд:
+
+```bash
+docker compose down
+```
 
 ## Что наблюдать
 
-TODO — заполнится в Task 7.
+- **Распределение по пулу.** Отчёт клиента в конце прогона печатает таблицу
+  `backend distribution` — доли `go-1` / `go-2` / `go-3` / `java-1`. На L7-фронтенде
+  (`fe_http2` для Go, `fe_h1` для Java) HAProxy распределяет каждый HTTP-запрос
+  индивидуально (round-robin по streams/запросам), поэтому при достаточном числе
+  запросов доли получаются близкими к 25% на каждый инстанс — независимо от того,
+  что клиент держит всего `CONNS` TCP/H2-соединений в пуле.
+- **Latency.** Каждый бэкенд имитирует синхронную проверку случайной длительностью
+  100–200 мс (`sleep`), поэтому у p50 стоит ожидать значение в этом диапазоне,
+  у p95/p99 — ближе к верхней границе и выше за счёт хвоста и накладных расходов
+  HAProxy/сети. Полный бюджет запроса — SLA < 300 мс (см. таймауты в `haproxy.cfg`
+  и `TIMEOUT_MS` клиента).
+- **L7 vs L4.** В `topology/haproxy/` рядом лежит `haproxy-l4.cfg` — конфиг ДЛЯ
+  СРАВНЕНИЯ, в `mode tcp`. Чтобы увидеть разницу, временно подмените
+  `haproxy.cfg` на `haproxy-l4.cfg` в volume-маунте `haproxy`-сервиса (или
+  скопируйте поверх) и перезапустите: в L4-режиме балансировка происходит один
+  раз на TCP-соединение целиком, а не на отдельный HTTP/2-запрос — при малом
+  числе долгоживущих h2-соединений клиента распределение по `backend
+  distribution` станет заметно неравномерным (вплоть до того, что часть
+  инстансов пула не получит ни одного запроса). Подробное объяснение — в
+  комментариях `haproxy-l4.cfg` и в статье про L4/L7/HTTP/2.
+- **Почему Java-клиент ходит в `:8081`, а не в `:8080`.** JDK
+  `java.net.http.HttpClient` не умеет h2c prior-knowledge: вместо того чтобы сразу
+  открыть HTTP/2-соединение без TLS, он отправляет HTTP/1.1-запрос с заголовком
+  `Upgrade: h2c` и ждёт ответа `101 Switching Protocols`. Фронтенд `fe_http2`
+  (`bind :8080 proto h2`) настроен на приём готового HTTP/2 prior-knowledge и
+  на такой апгрейд отвечает `<BADREQ>`. Поэтому для Java-клиента в `haproxy.cfg`
+  заведён отдельный фронтенд `fe_h1` (`bind :8081`, обычный HTTP/1.1) —
+  client↔HAProxy идёт по HTTP/1.1, а HAProxy↔backend всё равно поднимается по
+  HTTP/2 (`proto h2` на серверах в `be_check_pool`, тот же пул для обоих
+  фронтендов). Отчёт `client-java` печатает поле `protocol: [HTTP_1_1]`,
+  подтверждающее эту схему. Это осознанная демонстрация ограничения JDK —
+  подробнее разобрано в статье про JVM-клиент серии.
+- **Таймаут < SLA.** У клиентов `TIMEOUT_MS` по умолчанию — 280 мс, чуть меньше
+  общего бюджета в 300 мс: часть запросов, у которых бэкенд выбрал длительность
+  проверки ближе к верхней границе 200 мс плюс накладные расходы, не укладывается
+  в этот таймаут и уходит в `timeouts` в отчёте клиента (а не в `errors` —
+  клиент различает их). Это ожидаемое поведение стенда, а не баг: таймаут
+  клиента — часть бюджета SLA, а не механическое ожидание "пока бэкенд ответит".
 
 ## Статьи серии
 
-TODO — заполнится в Task 7.
+1. [Бюджет латентности и выбор транспорта](https://khorost.tech/performance/latency-budget-and-transport/)
+2. [HAProxy: L4 vs L7 и HTTP/2](https://khorost.tech/performance/haproxy-l4-l7-http2/)
+3. [Go-клиент для highload: пул соединений](https://khorost.tech/performance/go-highload-client-pooling/)
+4. [JVM-сервис для highload](https://khorost.tech/performance/jvm-highload-service/)
+5. [JVM-клиент для highload](https://khorost.tech/performance/jvm-highload-client/)
 
 ## Лицензия
 

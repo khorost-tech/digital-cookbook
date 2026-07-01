@@ -1,0 +1,123 @@
+# ============================================================================
+# Стенд highload-lowlatency: HAProxy L7 + пул Go/Java-бэкендов + клиенты-нагрузчики
+# ============================================================================
+#
+# Топология:
+#   client-go   --h2c (HTTP/2 cleartext, prior-knowledge)--> haproxy:8080 --\
+#                                                                            +--> be_check_pool (proto h2)
+#   client-java --HTTP/1.1------------------------------------> haproxy:8081 --/       go-backend-1/2/3, java-backend
+#
+# Клиенты запускаются по требованию через profiles (см. README, раздел "Запуск"):
+#   docker compose --profile load run --rm client-go
+#   docker compose --profile load-java run --rm client-java
+#
+# Почему у Java-клиента отдельный фронтенд :8081, а не :8080 — см.
+# комментарий у frontend fe_h1 в haproxy/haproxy.cfg и README стенда
+# (JDK java.net.http.HttpClient не умеет h2c prior-knowledge).
+
+services:
+  haproxy:
+    image: haproxy:3.0-alpine
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "8080:8080"   # h2c prior-knowledge (fe_http2) — для client-go
+      - "8081:8081"   # HTTP/1.1 (fe_h1) — для client-java (см. haproxy.cfg)
+    depends_on:
+      go-backend-1:
+        condition: service_healthy
+      go-backend-2:
+        condition: service_healthy
+      go-backend-3:
+        condition: service_healthy
+      java-backend:
+        condition: service_healthy
+    networks:
+      - stand
+
+  # --------------------------------------------------------------------------
+  # Пул бэкендов: 3 инстанса Go + 1 инстанс Java, все на одном контракте
+  # POST /check + GET /healthz (см. README стенда).
+  # --------------------------------------------------------------------------
+  go-backend-1:
+    build: ../services/go-backend
+    environment:
+      BACKEND_NAME: go-1
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:9000/healthz"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    networks:
+      - stand
+
+  go-backend-2:
+    build: ../services/go-backend
+    environment:
+      BACKEND_NAME: go-2
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:9000/healthz"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    networks:
+      - stand
+
+  go-backend-3:
+    build: ../services/go-backend
+    environment:
+      BACKEND_NAME: go-3
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:9000/healthz"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+    networks:
+      - stand
+
+  java-backend:
+    build: ../services/java-backend
+    environment:
+      BACKEND_NAME: java-1
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://localhost:9000/healthz"]
+      interval: 5s
+      timeout: 2s
+      retries: 5
+      start_period: 15s   # JVM-старту нужно чуть больше времени, чем Go-бинарнику
+    networks:
+      - stand
+
+  # --------------------------------------------------------------------------
+  # Клиенты-нагрузчики. Не стартуют при `docker compose up` — только по
+  # запросу через свой profile, см. README ("Запуск").
+  # --------------------------------------------------------------------------
+  client-go:
+    build: ../clients/go
+    profiles: ["load"]
+    environment:
+      TARGET: http://haproxy:8080/check   # h2c prior-knowledge, полный HTTP/2 end-to-end
+      PAYLOAD: /payload/sample-request.json
+    volumes:
+      - ./payload:/payload:ro
+    depends_on:
+      - haproxy
+    networks:
+      - stand
+
+  client-java:
+    build: ../clients/java
+    profiles: ["load-java"]
+    environment:
+      TARGET: http://haproxy:8081/check   # HTTP/1.1-фронтенд — см. комментарий в haproxy.cfg
+      PAYLOAD: /payload/sample-request.json
+    volumes:
+      - ./payload:/payload:ro
+    depends_on:
+      - haproxy
+    networks:
+      - stand
+
+networks:
+  stand:
+    driver: bridge
