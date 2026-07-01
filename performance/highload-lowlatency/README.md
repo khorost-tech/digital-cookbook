@@ -54,6 +54,25 @@
 
 - Ответ: `200`, тело `"ok"`.
 
+### gRPC-эквивалент (`highload.CheckService/Check`)
+
+Тот же контракт, что и `POST /check`, но как unary gRPC RPC вместо JSON поверх HTTP/2.
+Контракт: [`grpc/proto/check.proto`](grpc/proto/check.proto). Сгенерированный Go-код
+закоммичен в [`grpc/gen/highload/`](grpc/gen/highload/) (свой модуль
+`khorost.tech/highload-grpc-gen`) — читателю не нужен `protoc`, чтобы собрать стенд.
+
+- Транспорт: HTTP/2 cleartext (h2c prior-knowledge) — стандартный транспорт grpc-go,
+  никаких дополнительных настроек не требуется (в отличие от `net/http`, которому нужен
+  `golang.org/x/net/http2/h2c`).
+- Порт бэкенда: `9100` (сервис `services/grpc-backend`, отдельно от REST-пула на `9000`).
+- Поля `CheckRequest`/`CheckResponse` — те же, что в JSON-контракте выше (`request_id`,
+  `issued_at`, `items[]` / `request_id`, `backend`, `runtime`, `check_ms`, `in_flight_peak`),
+  `runtime` = `go-grpc`.
+- Health-check: стандартный `grpc.health.v1.Health` (`google.golang.org/grpc/health`).
+- gRPC-клиент и включение `grpc-backend` в балансировку HAProxy — отдельная задача серии,
+  сейчас сервис поднимается самостоятельно (`docker compose up grpc-backend`), вне
+  `haproxy`-пула.
+
 ### Переменные окружения бэкенда
 
 | Переменная | Назначение | По умолчанию |

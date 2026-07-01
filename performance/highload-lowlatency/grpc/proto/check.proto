@@ -1,0 +1,49 @@
+// Contract for the gRPC equivalent of the shared POST /check REST/HTTP2
+// contract documented in performance/highload-lowlatency/README.md.
+//
+// This is the gRPC counterpart to the JSON contract served by
+// services/go-backend and services/java-backend: same simulated 100-200ms
+// synchronous check, same response fields (backend/runtime/check_ms/
+// in_flight_peak), just carried over a unary gRPC call instead of JSON over
+// HTTP/2.
+syntax = "proto3";
+
+package highload;
+
+// go_package points at the generated-code module under grpc/gen/highload so
+// the package can be committed once and imported both by the server in
+// services/grpc-backend and by a future gRPC client, each via a `replace`
+// directive to this relative path (see grpc/gen/go.mod).
+option go_package = "khorost.tech/highload-grpc-gen/highload;highloadpb";
+
+// Item is one padding entry in a CheckRequest. The client fills `items` with
+// enough entries to reach the ~8KB payload size used across the stand; the
+// message itself has no special handling for that, it is a plain repeated
+// field.
+message Item {
+  int64 id = 1;
+  string code = 2;
+  double value = 3;
+  string note = 4;
+}
+
+// CheckRequest mirrors the POST /check JSON request body.
+message CheckRequest {
+  string request_id = 1;
+  string issued_at = 2;
+  repeated Item items = 3;
+}
+
+// CheckResponse mirrors the POST /check JSON response body.
+message CheckResponse {
+  string request_id = 1;
+  string backend = 2;
+  string runtime = 3;
+  int64 check_ms = 4;
+  int64 in_flight_peak = 5;
+}
+
+// CheckService is the gRPC equivalent of POST /check.
+service CheckService {
+  rpc Check(CheckRequest) returns (CheckResponse);
+}
