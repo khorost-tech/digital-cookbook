@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>tech.khorost</groupId>
+  <artifactId>highload-java-backend</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <helidon.version>4.3.2</helidon.version>
+    <exec.mainClass>tech.khorost.highload.Main</exec.mainClass>
+  </properties>
+
+  <dependencies>
+    <!-- Helidon 4 (Nima) WebServer: virtual-thread-per-request by default. -->
+    <dependency>
+      <groupId>io.helidon.webserver</groupId>
+      <artifactId>helidon-webserver</artifactId>
+      <version>${helidon.version}</version>
+    </dependency>
+    <!--
+      helidon-webserver-http2 регистрируется через ServiceLoader/SPI и добавляет
+      HTTP/2 upgrade codec: сервер начинает принимать HTTP/2-соединения как по
+      upgrade (h2), так и по prior-knowledge (h2c без Upgrade-заголовка) на том же
+      plaintext-порту — без TLS и без дополнительного кода/конфигурации.
+      Это и есть требуемый транспорт для HAProxy `server ... proto h2`.
+    -->
+    <dependency>
+      <groupId>io.helidon.webserver</groupId>
+      <artifactId>helidon-webserver-http2</artifactId>
+      <version>${helidon.version}</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>highload-java-backend</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <configuration>
+          <mainClass>${exec.mainClass}</mainClass>
+        </configuration>
+      </plugin>
+      <!--
+        shade-plugin собирает единственный runnable jar со всеми зависимостями —
+        нужен для multi-stage Dockerfile (JRE runtime без maven и без repo кэша).
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>${exec.mainClass}</mainClass>
+                </transformer>
+                <!-- Helidon полагается на ServiceLoader (META-INF/services) для регистрации HTTP/2 SPI. -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>module-info.class</exclude>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
