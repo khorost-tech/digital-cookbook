@@ -27,9 +27,9 @@ import (
 )
 
 const (
-	// defaultTarget points at the gRPC front-end HAProxy will add in a later
-	// stand task (C4). Until then it can be pointed directly at the gRPC
-	// backend, e.g. TARGET=grpc-backend:9100 or TARGET=localhost:19100 for a
+	// defaultTarget points at the stand's gRPC front-end (HAProxy fe_grpc on
+	// :8090 → be_grpc pool). It can also be pointed directly at a backend,
+	// e.g. TARGET=grpc-backend-1:9100 or TARGET=localhost:19100 for a
 	// standalone smoke test.
 	defaultTarget      = "haproxy:8090"
 	defaultConcurrency = 200
@@ -204,7 +204,7 @@ type pooledConn struct {
 // credentials is what makes the connection cleartext HTTP/2 — the same
 // prior-knowledge transport grpc-go's server side always speaks (see
 // services/grpc-backend/main.go) — which is exactly what HAProxy's `proto
-// h2` front-end (added in C4) and the plain grpc-backend both expect.
+// h2` front-end (fe_grpc on :8090) and the plain grpc-backend both expect.
 // grpc.NewClient does not dial eagerly; the first RPC establishes the
 // connection lazily, which is fine here since the pool is built once at
 // startup, well before the load loop begins.

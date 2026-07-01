@@ -68,7 +68,10 @@
 - Поля `CheckRequest`/`CheckResponse` — те же, что в JSON-контракте выше (`request_id`,
   `issued_at`, `items[]` / `request_id`, `backend`, `runtime`, `check_ms`, `in_flight_peak`),
   `runtime` = `go-grpc`.
-- Health-check: стандартный `grpc.health.v1.Health` (`google.golang.org/grpc/health`).
+- Health-check: сервис регистрирует стандартный `grpc.health.v1.Health`
+  (`google.golang.org/grpc/health`), но HAProxy в этом стенде проверяет
+  gRPC-бэкенды обычным TCP-check (`check` без `option httpchk`) — проще и
+  достаточно для демо; см. комментарий в `haproxy.cfg` (backend `be_grpc`).
 - Балансировка HAProxy: пул из 2 инстансов (`grpc-backend-1`, `grpc-backend-2`) заведён во
   фронтенд `fe_grpc` (`:8090 proto h2` → backend `be_grpc`, round-robin), см. раздел
   "gRPC-профиль" ниже.
@@ -195,8 +198,9 @@ docker compose --profile load-grpc-java run --rm client-grpc-java
   Java-клиент ходит в `:8081`, а не в `:8080`" выше: там `java.net.http.HttpClient`
   пытается HTTP/1.1 `Upgrade: h2c` и ловит `<BADREQ>` от h2c-only фронтенда — а
   `ManagedChannel` того же JDK/JVM-приложения проходит `:8090` без единой правки,
-  потому что у gRPC этой развилки (Upgrade vs prior-knowledge) в принципе нет: cleartext
-  всегда prior-knowledge. Практический вывод: если для JVM-highload-клиента обязателен
+  потому что реализации gRPC в этом стенде (grpc-go с `insecure` и grpc-java с
+  `usePlaintext()`) по cleartext сразу шлют HTTP/2-преамбулу prior-knowledge, а не
+  идут через HTTP/1.1-Upgrade. Практический вывод: если для JVM-highload-клиента обязателен
   HTTP/2 без TLS и упираетесь в ограничение JDK `HttpClient` — gRPC `ManagedChannel`
   (или любой другой prior-knowledge-клиент) закрывает эту проблему архитектурно, а не
   обходным путём вроде принудительного даунгрейда до HTTP/1.1.

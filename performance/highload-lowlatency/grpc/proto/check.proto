@@ -12,8 +12,9 @@ package highload;
 
 // go_package points at the generated-code module under grpc/gen/highload so
 // the package can be committed once and imported both by the server in
-// services/grpc-backend and by a future gRPC client, each via a `replace`
-// directive to this relative path (see grpc/gen/go.mod).
+// services/grpc-backend and by the Go gRPC client in clients/grpc-go, each via
+// a `replace` directive to this relative path (see grpc/gen/go.mod). The Java
+// client (clients/grpc-java) generates its own stubs from this .proto at build.
 option go_package = "khorost.tech/highload-grpc-gen/highload;highloadpb";
 
 // Item is one padding entry in a CheckRequest. The client fills `items` with
