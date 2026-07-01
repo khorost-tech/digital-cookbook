@@ -104,6 +104,14 @@ docker compose --profile load-grpc run --rm client-grpc-go
 docker compose --profile load-grpc-java run --rm client-grpc-java
 ```
 
+> **⚠️ gRPC-Java и прокси.** Netty-клиент gRPC уважает прокси-окружение
+> (`GRPC_PROXY_EXP`, `-Dhttps.proxyHost`). Достаточно даже *пустой* переменной
+> `GRPC_PROXY_EXP=` — `ProxyDetectorImpl` решит, что прокси задан, и все вызовы
+> `client-grpc-java` упадут при полностью живом бэкенде. «Отключать прокси» надо
+> не пустой строкой, а не задавая переменную вовсе (или через `NO_PROXY`).
+> Go-клиент (`grpc.NewClient`) к пустой переменной устойчив. По умолчанию compose
+> её не ставит — оба клиента работают из коробки.
+
 Клиенты управляются переменными окружения `TARGET` / `CONCURRENCY` / `REQUESTS` /
 `CONNS` / `TIMEOUT_MS` / `PAYLOAD` (см. Dockerfile'ы клиентов), например:
 
