@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>tech.khorost</groupId>
+  <artifactId>highload-java-client</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <exec.mainClass>tech.khorost.highload.Client</exec.mainClass>
+  </properties>
+
+  <!--
+    Зависимостей нет: java.net.http.HttpClient (HTTP/2) — часть JDK 21, JSON
+    ответа парсим вручную (та же схема, что у Go/Java-бэкенда — плоский объект
+    из 5 полей, полноценный парсер избыточен).
+  -->
+
+  <build>
+    <finalName>highload-java-client</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <configuration>
+          <mainClass>${exec.mainClass}</mainClass>
+        </configuration>
+      </plugin>
+      <!--
+        Jar без внешних зависимостей — достаточно maven-jar-plugin с
+        Main-Class в манифесте (shade-plugin не нужен, нечего шейдить), но
+        так multi-stage Dockerfile получает runnable jar единообразно с
+        остальными Java-образами стенда.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.4.1</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>${exec.mainClass}</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>
