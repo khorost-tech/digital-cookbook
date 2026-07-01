@@ -1,0 +1,158 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>tech.khorost</groupId>
+  <artifactId>highload-grpc-java-client</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <exec.mainClass>tech.khorost.highload.Client</exec.mainClass>
+
+    <grpc.version>1.68.1</grpc.version>
+    <protobuf.version>3.25.5</protobuf.version>
+    <protoc-gen-grpc-java.version>1.68.1</protoc-gen-grpc-java.version>
+  </properties>
+
+  <dependencies>
+    <!--
+      gRPC-Java транспорт: netty-shaded так же, как у grpc-backend/grpc-go
+      клиента на стороне Go — переиспользуется прямо cleartext HTTP/2
+      (usePlaintext) без TLS, независимая шейдированная копия Netty, чтобы не
+      тащить в classpath отдельную версию Netty и не конфликтовать с прочими
+      зависимостями.
+    -->
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-netty-shaded</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-protobuf</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.grpc</groupId>
+      <artifactId>grpc-stub</artifactId>
+      <version>${grpc.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>${protobuf.version}</version>
+    </dependency>
+    <!--
+      Сгенерённые protoc-gen-grpc-java стабы аннотируют методы
+      @Generated(...), которого в JDK9+ больше нет в java.se (javax.annotation
+      был вырезан из java.se в JDK 11). Явно тянем tomcat-annotations-api как
+      источник javax.annotation.Generated — тот же обходной путь, что
+      используют официальные gRPC-Java примеры на JDK 11+.
+    -->
+    <dependency>
+      <groupId>org.apache.tomcat</groupId>
+      <artifactId>annotations-api</artifactId>
+      <version>6.0.53</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>highload-grpc-java-client</finalName>
+    <extensions>
+      <!--
+        os-maven-plugin детектит os/arch classifier ОС сборки (linux-x86_64
+        внутри maven:3.9-eclipse-temurin-21 в Dockerfile) — нужен
+        protobuf-maven-plugin'у, чтобы подобрать нативный protoc-бинарник под
+        платформу через classifier в артефакте com.google.protobuf:protoc.
+      -->
+      <extension>
+        <groupId>kr.motd.maven</groupId>
+        <artifactId>os-maven-plugin</artifactId>
+        <version>1.7.1</version>
+      </extension>
+    </extensions>
+    <plugins>
+      <!--
+        Генерация Java-стабов прямо из контракта стенда:
+        performance/highload-lowlatency/grpc/proto/check.proto (см.
+        <protoSourceRoot>) — так же, как Go-сторона коммитит сгенерённый код
+        в grpc/gen/highload, но для Java генерация происходит на месте при
+        каждой сборке (protoc-плагины детерминированы, коммитить
+        сгенерённый Java не нужно — в отличие от Go-модуля, у Java-клиента
+        нет читателя, которому нужно собрать стенд без protoc: сборка и так
+        идёт через Maven/Docker).
+      -->
+      <plugin>
+        <groupId>org.xolstice.maven.plugins</groupId>
+        <artifactId>protobuf-maven-plugin</artifactId>
+        <version>0.6.1</version>
+        <configuration>
+          <protocArtifact>com.google.protobuf:protoc:${protobuf.version}:exe:${os.detected.classifier}</protocArtifact>
+          <pluginId>grpc-java</pluginId>
+          <pluginArtifact>io.grpc:protoc-gen-grpc-java:${protoc-gen-grpc-java.version}:exe:${os.detected.classifier}</pluginArtifact>
+          <protoSourceRoot>${project.basedir}/../../grpc/proto</protoSourceRoot>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>compile</goal>
+              <goal>compile-custom</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+        <configuration>
+          <mainClass>${exec.mainClass}</mainClass>
+        </configuration>
+      </plugin>
+      <!--
+        shade-plugin: в отличие от clients/java (REST, без внешних
+        зависимостей), этому клиенту нужны gRPC/Netty/Protobuf на рантайме —
+        единственный runnable jar со всеми зависимостями для multi-stage
+        Dockerfile (тот же подход, что у services/java-backend).
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>${exec.mainClass}</mainClass>
+                </transformer>
+                <!-- gRPC регистрирует NameResolverProvider/LoadBalancerProvider через META-INF/services — merge обязателен, иначе shaded jar теряет "dns"/"pick_first" резолверы. -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>
