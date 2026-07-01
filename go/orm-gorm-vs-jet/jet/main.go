@@ -28,7 +28,7 @@ func main() {
 	// 1. CRUD
 	insert := Posts.INSERT(Posts.UserID, Posts.Title, Posts.Metadata).
 		VALUES(int64(1), "Hello (jet)", `{"source":"blog"}`).
-		RETURNING(Posts.ID)
+		RETURNING(Posts.AllColumns) // вернём всю строку в model.Posts
 	var created model.Posts
 	if err := insert.Query(db, &created); err != nil {
 		log.Fatal(err)
