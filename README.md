@@ -13,6 +13,7 @@
 | [`distributed-config`](distributed-config) | etcd, ZooKeeper, Consul, Vault и PostgreSQL: watch, znodes, service discovery, динамические credentials | [Распределённые конфигурации](https://khorost.tech/architecture/distributed-configuration/) |
 | [`ansible/compose-deploy`](ansible/compose-deploy) | Деплой Docker Compose стека через Ansible: `community.docker.docker_compose_v2`, group_vars, Jinja2-шаблоны, ansible-vault | [Деплой Docker Compose через Ansible](https://khorost.tech/infrastructure/ansible-docker-compose-deploy/) |
 | [`terraform/docker-host-handoff`](terraform/docker-host-handoff) | Стык Terraform → Ansible: Terraform поднимает docker-хост + firewall и генерирует Ansible inventory, Ansible готовит хост | [Terraform для Docker-хостов и сетей](https://khorost.tech/infrastructure/terraform-docker-hosts-and-networks/) |
+| [`redis/client-resilience`](redis/client-resilience) | Клиенты Go/Java/Rust под нагрузкой: Redis Cluster и Sentinel на живом стенде, reconnect и failover при падении узла | [Подключение к Redis из Go, Java и Rust](https://khorost.tech/databases/redis-clients-go-java-rust/) |
 
 ## Лицензия
 

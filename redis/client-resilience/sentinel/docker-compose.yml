@@ -1,0 +1,103 @@
+# Redis Sentinel: 1 primary + 2 replica + 3 sentinel (кворум 2).
+# Отдельная подсеть (172.29.x), чтобы можно было держать рядом с кластерным стендом.
+# Клиенты — контейнеры в той же сети (профили go/java/rust).
+#
+#   docker compose --profile go   up --build
+#   docker compose --profile java up --build
+#   docker compose --profile rust up --build
+#
+# Failover-упражнение: уронить primary и смотреть, как Sentinel промотирует реплику,
+# а клиент переподключается к новому primary:
+#   docker kill client-resilience-sentinel-redis-primary-1
+
+x-sentinel: &sentinel
+  image: redis:8.8
+  restart: unless-stopped
+  depends_on: [redis-primary, redis-replica-1, redis-replica-2]
+
+services:
+  redis-primary:
+    image: redis:8.8
+    restart: unless-stopped
+    command: redis-server --port 6379 --appendonly yes
+    networks: { redis: { ipv4_address: 172.29.0.1 } }
+
+  redis-replica-1:
+    image: redis:8.8
+    restart: unless-stopped
+    depends_on: [redis-primary]
+    command: redis-server --port 6379 --replicaof 172.29.0.1 6379 --appendonly yes
+    networks: { redis: { ipv4_address: 172.29.0.2 } }
+
+  redis-replica-2:
+    image: redis:8.8
+    restart: unless-stopped
+    depends_on: [redis-primary]
+    command: redis-server --port 6379 --replicaof 172.29.0.1 6379 --appendonly yes
+    networks: { redis: { ipv4_address: 172.29.0.3 } }
+
+  # Sentinel пишет свой конфиг обратно в файл, поэтому конфиг генерируем в /tmp (writable).
+  sentinel-1:
+    <<: *sentinel
+    command:
+      - sh
+      - -c
+      - >
+        printf 'port 26379\nsentinel monitor mymaster 172.29.0.1 6379 2\nsentinel down-after-milliseconds mymaster 5000\nsentinel failover-timeout mymaster 10000\nsentinel parallel-syncs mymaster 1\n' > /tmp/sentinel.conf &&
+        redis-sentinel /tmp/sentinel.conf
+    networks: { redis: { ipv4_address: 172.29.0.11 } }
+  sentinel-2:
+    <<: *sentinel
+    command:
+      - sh
+      - -c
+      - >
+        printf 'port 26379\nsentinel monitor mymaster 172.29.0.1 6379 2\nsentinel down-after-milliseconds mymaster 5000\nsentinel failover-timeout mymaster 10000\nsentinel parallel-syncs mymaster 1\n' > /tmp/sentinel.conf &&
+        redis-sentinel /tmp/sentinel.conf
+    networks: { redis: { ipv4_address: 172.29.0.12 } }
+  sentinel-3:
+    <<: *sentinel
+    command:
+      - sh
+      - -c
+      - >
+        printf 'port 26379\nsentinel monitor mymaster 172.29.0.1 6379 2\nsentinel down-after-milliseconds mymaster 5000\nsentinel failover-timeout mymaster 10000\nsentinel parallel-syncs mymaster 1\n' > /tmp/sentinel.conf &&
+        redis-sentinel /tmp/sentinel.conf
+    networks: { redis: { ipv4_address: 172.29.0.13 } }
+
+  client-go:
+    build: ../clients/go
+    profiles: ["go"]
+    depends_on: [sentinel-1, sentinel-2, sentinel-3]
+    environment:
+      REDIS_MODE: sentinel
+      REDIS_MASTER: mymaster
+      REDIS_SENTINELS: "172.29.0.11:26379,172.29.0.12:26379,172.29.0.13:26379"
+    networks: [redis]
+
+  client-java:
+    build: ../clients/java
+    profiles: ["java"]
+    depends_on: [sentinel-1, sentinel-2, sentinel-3]
+    environment:
+      REDIS_MODE: sentinel
+      REDIS_MASTER: mymaster
+      REDIS_SENTINELS: "172.29.0.11:26379,172.29.0.12:26379,172.29.0.13:26379"
+    networks: [redis]
+
+  client-rust:
+    build: ../clients/rust
+    profiles: ["rust"]
+    depends_on: [sentinel-1, sentinel-2, sentinel-3]
+    environment:
+      REDIS_MODE: sentinel
+      REDIS_MASTER: mymaster
+      REDIS_SENTINELS: "172.29.0.11:26379,172.29.0.12:26379,172.29.0.13:26379"
+    networks: [redis]
+
+networks:
+  redis:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.29.0.0/16

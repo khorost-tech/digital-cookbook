@@ -1,0 +1,14 @@
+[package]
+name = "redis-client-resilience"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# redis-rs 1.x (проверено против 1.3): async/cluster/sentinel API стабилизирован в 1.0.
+# Команды — через трейт AsyncTypedCommands (get -> Option<String>, set_ex(_, _, u64)).
+redis = { version = "1", features = ["tokio-comp", "cluster-async", "sentinel"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+
+[[bin]]
+name = "redis-client-resilience"
+path = "src/main.rs"

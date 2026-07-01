@@ -1,0 +1,93 @@
+# Redis Cluster: 6 узлов (3 primary + 3 replica), шардирование по слотам.
+# Статические IP + --cluster-announce-ip — иначе узлы гоняют gossip по недоступным адресам.
+# Клиенты запускаются как контейнеры в той же сети (профили go/java/rust).
+#
+#   docker compose --profile go   up --build
+#   docker compose --profile java up --build
+#   docker compose --profile rust up --build
+#
+# Failover-упражнение: в другом терминале уронить primary и смотреть логи клиента:
+#   docker kill client-resilience-cluster-redis-1-1
+
+x-node: &node
+  image: redis:8.8
+  restart: unless-stopped
+
+services:
+  redis-1:
+    <<: *node
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --cluster-announce-ip 172.28.0.1
+    networks: { redis: { ipv4_address: 172.28.0.1 } }
+  redis-2:
+    <<: *node
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --cluster-announce-ip 172.28.0.2
+    networks: { redis: { ipv4_address: 172.28.0.2 } }
+  redis-3:
+    <<: *node
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --cluster-announce-ip 172.28.0.3
+    networks: { redis: { ipv4_address: 172.28.0.3 } }
+  redis-4:
+    <<: *node
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --cluster-announce-ip 172.28.0.4
+    networks: { redis: { ipv4_address: 172.28.0.4 } }
+  redis-5:
+    <<: *node
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --cluster-announce-ip 172.28.0.5
+    networks: { redis: { ipv4_address: 172.28.0.5 } }
+  redis-6:
+    <<: *node
+    command: redis-server --port 6379 --cluster-enabled yes --cluster-config-file nodes.conf --cluster-node-timeout 5000 --appendonly yes --cluster-announce-ip 172.28.0.6
+    networks: { redis: { ipv4_address: 172.28.0.6 } }
+
+  # Одноразовый инициализатор: собирает кластер из 6 узлов (3 primary + по 1 реплике).
+  cluster-init:
+    image: redis:8.8
+    depends_on: [redis-1, redis-2, redis-3, redis-4, redis-5, redis-6]
+    restart: "no"
+    entrypoint:
+      - sh
+      - -c
+      - >
+        sleep 5 &&
+        redis-cli --cluster create
+        172.28.0.1:6379 172.28.0.2:6379 172.28.0.3:6379
+        172.28.0.4:6379 172.28.0.5:6379 172.28.0.6:6379
+        --cluster-replicas 1 --cluster-yes
+    networks: [redis]
+
+  client-go:
+    build: ../clients/go
+    profiles: ["go"]
+    depends_on:
+      cluster-init: { condition: service_completed_successfully }
+    environment:
+      REDIS_MODE: cluster
+      REDIS_ADDRS: "172.28.0.1:6379,172.28.0.2:6379,172.28.0.3:6379"
+    networks: [redis]
+
+  client-java:
+    build: ../clients/java
+    profiles: ["java"]
+    depends_on:
+      cluster-init: { condition: service_completed_successfully }
+    environment:
+      REDIS_MODE: cluster
+      REDIS_ADDRS: "172.28.0.1:6379,172.28.0.2:6379,172.28.0.3:6379"
+    networks: [redis]
+
+  client-rust:
+    build: ../clients/rust
+    profiles: ["rust"]
+    depends_on:
+      cluster-init: { condition: service_completed_successfully }
+    environment:
+      REDIS_MODE: cluster
+      REDIS_ADDRS: "172.28.0.1:6379,172.28.0.2:6379,172.28.0.3:6379"
+    networks: [redis]
+
+networks:
+  redis:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
