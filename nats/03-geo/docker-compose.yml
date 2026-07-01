@@ -1,0 +1,45 @@
+services:
+  a1:
+    image: nats:2.12
+    hostname: a1
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - "./cluster-a/nats-a1.conf:/etc/nats/nats.conf:ro"
+      - "./data-a1:/data"
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  b1:
+    image: nats:2.12
+    hostname: b1
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - "./cluster-b/nats-b1.conf:/etc/nats/nats.conf:ro"
+      - "./data-b1:/data"
+    ports:
+      - "4223:4222"
+      - "8223:8222"
+
+  b2:
+    image: nats:2.12
+    hostname: b2
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - "./cluster-b/nats-b2.conf:/etc/nats/nats.conf:ro"
+      - "./data-b2:/data"
+    ports:
+      - "4225:4222"
+      - "8225:8222"
+
+  leaf1:
+    image: nats:2.12
+    hostname: leaf1
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - "./leaf/nats-leaf1.conf:/etc/nats/nats.conf:ro"
+    ports:
+      - "4224:4222"
+      - "8224:8222"
+    depends_on:
+      - a1
