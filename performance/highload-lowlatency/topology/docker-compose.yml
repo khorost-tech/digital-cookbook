@@ -7,13 +7,23 @@
 #                                                                            +--> be_check_pool (proto h2)
 #   client-java --HTTP/1.1------------------------------------> haproxy:8081 --/       go-backend-1/2/3, java-backend
 #
+#   client-grpc-go   --h2c prior-knowledge (grpc.NewClient, insecure)--> haproxy:8090 --\
+#                                                                                         +--> be_grpc (proto h2)
+#   client-grpc-java --h2c prior-knowledge (ManagedChannel.usePlaintext())--> haproxy:8090 --/   grpc-backend-1/2
+#
 # Клиенты запускаются по требованию через profiles (см. README, раздел "Запуск"):
 #   docker compose --profile load run --rm client-go
 #   docker compose --profile load-java run --rm client-java
+#   docker compose --profile load-grpc run --rm client-grpc-go
+#   docker compose --profile load-grpc-java run --rm client-grpc-java
 #
 # Почему у Java-клиента отдельный фронтенд :8081, а не :8080 — см.
 # комментарий у frontend fe_h1 в haproxy/haproxy.cfg и README стенда
-# (JDK java.net.http.HttpClient не умеет h2c prior-knowledge).
+# (JDK java.net.http.HttpClient не умеет h2c prior-knowledge). А вот у
+# gRPC-клиентов (Go и Java) такой проблемы нет: у gRPC cleartext-транспорт
+# по умолчанию уже prior-knowledge (нет отдельного HTTP/1.1-Upgrade-пути),
+# поэтому оба ходят в один и тот же h2c-фронтенд `:8090` (см. frontend
+# fe_grpc в haproxy/haproxy.cfg) — это и есть контраст с REST/JDK-веткой.
 
 services:
   haproxy:
@@ -23,6 +33,7 @@ services:
     ports:
       - "8080:8080"   # h2c prior-knowledge (fe_http2) — для client-go
       - "8081:8081"   # HTTP/1.1 (fe_h1) — для client-java (см. haproxy.cfg)
+      - "8090:8090"   # h2c prior-knowledge, gRPC (fe_grpc) — для client-grpc-go/client-grpc-java
     depends_on:
       go-backend-1:
         condition: service_healthy
@@ -32,6 +43,10 @@ services:
         condition: service_healthy
       java-backend:
         condition: service_healthy
+      grpc-backend-1:
+        condition: service_started
+      grpc-backend-2:
+        condition: service_started
     networks:
       - stand
 
@@ -90,20 +105,28 @@ services:
 
   # --------------------------------------------------------------------------
   # gRPC-эквивалент go-backend: тот же контракт (см. grpc/proto/check.proto),
-  # но rpc highload.CheckService/Check вместо POST /check. Не заведён в
-  # haproxy-пул (haproxy.cfg сейчас только про REST/HTTP2) — самостоятельный
-  # профиль без HAProxy, gRPC-клиент и балансировка перед ним — отдельная
-  # задача серии. Порт :9100 (не :9000, чтобы не конфликтовать с go-backend
-  # при локальном запуске обоих одновременно).
+  # но rpc highload.CheckService/Check вместо POST /check. Пул из 2 инстансов
+  # заведён в HAProxy (frontend fe_grpc :8090 → backend be_grpc, см.
+  # haproxy/haproxy.cfg) — отдельно от be_check_pool, т.к. gRPC-бэкенды не
+  # REST. Порт :9100 (не :9000, чтобы не конфликтовать с go-backend при
+  # локальном запуске обоих одновременно). Публикация порта наружу не нужна —
+  # доступ только через haproxy:8090.
   # --------------------------------------------------------------------------
-  grpc-backend:
+  grpc-backend-1:
     build:
       context: ..
       dockerfile: services/grpc-backend/Dockerfile
     environment:
       BACKEND_NAME: grpc-1
-    ports:
-      - "9100:9100"
+    networks:
+      - stand
+
+  grpc-backend-2:
+    build:
+      context: ..
+      dockerfile: services/grpc-backend/Dockerfile
+    environment:
+      BACKEND_NAME: grpc-2
     networks:
       - stand
 
@@ -134,6 +157,45 @@ services:
       - ./payload:/payload:ro
     depends_on:
       - haproxy
+    networks:
+      - stand
+
+  # gRPC-клиенты: build context — корень стенда (см. clients/grpc-go/Dockerfile
+  # и clients/grpc-java/Dockerfile — оба тянут grpc/gen или grpc/proto вместе
+  # с исходниками клиента). TARGET здесь — голый host:port (grpc.NewClient /
+  # ManagedChannelBuilder.forTarget ожидают именно так, без схемы http://),
+  # в отличие от client-go/client-java, где TARGET — полный URL.
+  client-grpc-go:
+    build:
+      context: ..
+      dockerfile: clients/grpc-go/Dockerfile
+    profiles: ["load-grpc"]
+    environment:
+      TARGET: haproxy:8090   # h2c prior-knowledge (fe_grpc) — см. haproxy.cfg
+      PAYLOAD: /payload/sample-request.json
+    volumes:
+      - ./payload:/payload:ro
+    depends_on:
+      - haproxy
+      - grpc-backend-1
+      - grpc-backend-2
+    networks:
+      - stand
+
+  client-grpc-java:
+    build:
+      context: ..
+      dockerfile: clients/grpc-java/Dockerfile
+    profiles: ["load-grpc-java"]
+    environment:
+      TARGET: haproxy:8090   # h2c prior-knowledge (fe_grpc) — контраст с client-java на :8081/<BADREQ> на :8080
+      PAYLOAD: /payload/sample-request.json
+    volumes:
+      - ./payload:/payload:ro
+    depends_on:
+      - haproxy
+      - grpc-backend-1
+      - grpc-backend-2
     networks:
       - stand
 

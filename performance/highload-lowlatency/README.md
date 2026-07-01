@@ -69,9 +69,9 @@
   `issued_at`, `items[]` / `request_id`, `backend`, `runtime`, `check_ms`, `in_flight_peak`),
   `runtime` = `go-grpc`.
 - Health-check: стандартный `grpc.health.v1.Health` (`google.golang.org/grpc/health`).
-- gRPC-клиент и включение `grpc-backend` в балансировку HAProxy — отдельная задача серии,
-  сейчас сервис поднимается самостоятельно (`docker compose up grpc-backend`), вне
-  `haproxy`-пула.
+- Балансировка HAProxy: пул из 2 инстансов (`grpc-backend-1`, `grpc-backend-2`) заведён во
+  фронтенд `fe_grpc` (`:8090 proto h2` → backend `be_grpc`, round-robin), см. раздел
+  "gRPC-профиль" ниже.
 
 ### Переменные окружения бэкенда
 
@@ -87,9 +87,10 @@ cd topology
 docker compose up -d --build
 ```
 
-Поднимает HAProxy (два фронтенда, `:8080` и `:8081`) и пул бэкендов (`go-backend-1/2/3`,
-`java-backend`) с health-check'ами. Клиенты-нагрузчики не стартуют автоматически — у них
-свои `profiles`, запускаются по требованию:
+Поднимает HAProxy (три фронтенда, `:8080`, `:8081` и `:8090`), пул REST-бэкендов
+(`go-backend-1/2/3`, `java-backend`) с health-check'ами и пул gRPC-бэкендов
+(`grpc-backend-1/2`). Клиенты-нагрузчики не стартуют автоматически — у них свои
+`profiles`, запускаются по требованию:
 
 ```bash
 # Go-клиент — идёт в h2c-фронтенд :8080 (HTTP/2 end-to-end)
@@ -97,9 +98,13 @@ docker compose --profile load run --rm client-go
 
 # Java-клиент — идёт в HTTP/1.1-фронтенд :8081 (см. "Что наблюдать" ниже)
 docker compose --profile load-java run --rm client-java
+
+# gRPC-клиенты (Go и Java) — оба идут в h2c-фронтенд :8090 (см. "gRPC-профиль" ниже)
+docker compose --profile load-grpc run --rm client-grpc-go
+docker compose --profile load-grpc-java run --rm client-grpc-java
 ```
 
-Оба клиента управляются переменными окружения `TARGET` / `CONCURRENCY` / `REQUESTS` /
+Клиенты управляются переменными окружения `TARGET` / `CONCURRENCY` / `REQUESTS` /
 `CONNS` / `TIMEOUT_MS` / `PAYLOAD` (см. Dockerfile'ы клиентов), например:
 
 ```bash
@@ -152,6 +157,41 @@ docker compose down
   в этот таймаут и уходит в `timeouts` в отчёте клиента (а не в `errors` —
   клиент различает их). Это ожидаемое поведение стенда, а не баг: таймаут
   клиента — часть бюджета SLA, а не механическое ожидание "пока бэкенд ответит".
+
+## gRPC-профиль
+
+Отдельный фронтенд HAProxy `fe_grpc` (`bind :8090 proto h2` → `backend be_grpc`, см.
+`topology/haproxy/haproxy.cfg`) перед пулом из 2 gRPC-бэкендов (`grpc-backend-1/2`,
+контракт `highload.CheckService/Check`, см. выше). Запуск клиентов:
+
+```bash
+docker compose --profile load-grpc run --rm client-grpc-go
+docker compose --profile load-grpc-java run --rm client-grpc-java
+```
+
+Что наблюдать:
+
+- **Распределение по пулу.** Как и у REST-клиентов, отчёт печатает таблицу `backend
+  distribution` — при достаточном числе запросов доли `grpc-1` / `grpc-2` близки к 50%
+  каждая: `fe_grpc` балансирует по отдельным HTTP/2-запросам (unary RPC), а не по
+  TCP-соединению целиком, то же самое L7-поведение, что и у `fe_http2`/`fe_h1`.
+- **Латентность.** Тот же контракт имитации проверки (100–200 мс `sleep`), тот же
+  бюджет SLA < 300 мс и тот же принцип таймаута клиента (`TIMEOUT_MS` по умолчанию
+  280 мс) — см. "Таймаут < SLA" выше, справедливо и для gRPC-клиентов.
+- **Главный тезис раздела — почему `:8090`, а не `:8080`/`:8081`.** У gRPC нет отдельного
+  HTTP/1.1-Upgrade-пути на cleartext: и `grpc.NewClient` с insecure-credentials
+  (`clients/grpc-go`), и `ManagedChannelBuilder.usePlaintext()` (`clients/grpc-java`) по
+  умолчанию сразу отправляют HTTP/2-преамбулу (`PRI * HTTP/2.0`) — то есть h2c
+  prior-knowledge с первого байта, тот же режим, что и ожидает `fe_grpc` (`proto h2`,
+  как и `fe_http2` на `:8080`). Это прямо противоположно ситуации из раздела "Почему
+  Java-клиент ходит в `:8081`, а не в `:8080`" выше: там `java.net.http.HttpClient`
+  пытается HTTP/1.1 `Upgrade: h2c` и ловит `<BADREQ>` от h2c-only фронтенда — а
+  `ManagedChannel` того же JDK/JVM-приложения проходит `:8090` без единой правки,
+  потому что у gRPC этой развилки (Upgrade vs prior-knowledge) в принципе нет: cleartext
+  всегда prior-knowledge. Практический вывод: если для JVM-highload-клиента обязателен
+  HTTP/2 без TLS и упираетесь в ограничение JDK `HttpClient` — gRPC `ManagedChannel`
+  (или любой другой prior-knowledge-клиент) закрывает эту проблему архитектурно, а не
+  обходным путём вроде принудительного даунгрейда до HTTP/1.1.
 
 ## Статьи серии
 
