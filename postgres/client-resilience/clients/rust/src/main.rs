@@ -135,7 +135,10 @@ async fn write_row(pool: &Pool<Postgres>) -> Result<i64, sqlx::Error> {
 
             match tokio::time::timeout(OP_TIMEOUT, fut).await {
                 Ok(res) => res,
-                Err(_) => Err(sqlx::Error::PoolTimedOut),
+                Err(_) => Err(sqlx::Error::Io(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    "operation timed out",
+                ))),
             }
         }
     })
@@ -149,7 +152,12 @@ async fn read_rows(pool: &Pool<Postgres>) -> Result<Vec<String>, sqlx::Error> {
 
         let rows = match tokio::time::timeout(OP_TIMEOUT, fut).await {
             Ok(res) => res?,
-            Err(_) => return Err(sqlx::Error::PoolTimedOut),
+            Err(_) => {
+                return Err(sqlx::Error::Io(std::io::Error::new(
+                    std::io::ErrorKind::TimedOut,
+                    "operation timed out",
+                )))
+            }
         };
 
         let mut out = Vec::with_capacity(rows.len());
