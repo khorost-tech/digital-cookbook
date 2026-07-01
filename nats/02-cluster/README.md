@@ -43,7 +43,7 @@ curl -s localhost:8222/jsz | jq '.meta_cluster'
 
 ## R3-стрим
 
-Создать stream `EVENTS` с тремя репликами (RAFF-группа поверх meta-group):
+Создать stream `EVENTS` с тремя репликами (RAFT-группа поверх meta-group):
 
 ```bash
 nats stream add EVENTS --subjects "events.>" --replicas 3 --storage file --defaults
