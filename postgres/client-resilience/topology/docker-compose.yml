@@ -1,0 +1,126 @@
+# PostgreSQL: 1 primary + 1 streaming replica (async) + pgbouncer (transaction mode перед primary).
+# Статические IP в отдельной подсети — клиенты подключаются к сервисам по DNS-имени (compose).
+#
+#   docker compose --profile go   up --build
+#   docker compose --profile java up --build
+#   docker compose --profile rust up --build
+#
+# Failover-упражнение (без Patroni, ручной промоушен): в другом терминале
+#   docker exec client-resilience-topology-pg-primary-1 pg_ctl stop -D /var/lib/postgresql/pgdata -m fast
+#   docker exec client-resilience-topology-pg-replica-1 pg_ctl promote -D /var/lib/postgresql/pgdata
+# и смотреть, как клиент с MULTIHOST_DSN (target_session_attrs=read-write) переключается на реплику.
+#
+# Примечание: начиная с postgres:18 официальный образ ожидает VOLUME на /var/lib/postgresql
+# (не .../data) — PGDATA задаём явно в подкаталог, чтобы путь не зависел от мажорной версии.
+
+services:
+  pg-primary:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: app_pw
+      PGDATA: /var/lib/postgresql/pgdata
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - max_wal_senders=10
+      - -c
+      - max_replication_slots=10
+      - -c
+      - wal_keep_size=256MB
+    volumes:
+      - pg-primary-data:/var/lib/postgresql
+      - ./init-primary.sh:/docker-entrypoint-initdb.d/init-primary.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      pg: { ipv4_address: 172.30.0.10 }
+
+  pg-replica:
+    image: postgres:18
+    restart: unless-stopped
+    depends_on:
+      pg-primary:
+        condition: service_healthy
+    environment:
+      PGDATA: /var/lib/postgresql/pgdata
+    entrypoint: ["/bin/entrypoint-replica.sh"]
+    volumes:
+      - pg-replica-data:/var/lib/postgresql
+      - ./entrypoint-replica.sh:/bin/entrypoint-replica.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    networks:
+      pg: { ipv4_address: 172.30.0.11 }
+
+  pgbouncer:
+    image: edoburu/pgbouncer:v1.25.2-p0
+    restart: unless-stopped
+    depends_on:
+      pg-primary:
+        condition: service_healthy
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    networks:
+      pg: { ipv4_address: 172.30.0.20 }
+
+  client-go:
+    build: ../clients/go
+    profiles: ["go"]
+    depends_on:
+      pg-primary: { condition: service_healthy }
+      pg-replica: { condition: service_healthy }
+      pgbouncer: { condition: service_started }
+    environment:
+      PGBOUNCER_DSN: "postgres://app:app_pw@pgbouncer:6432/app"
+      REPLICA_DSN: "postgres://app:app_pw@pg-replica:5432/app"
+      MULTIHOST_DSN: "postgres://app:app_pw@pg-primary:5432,pg-replica:5432/app?target_session_attrs=read-write"
+    networks: [pg]
+
+  client-java:
+    build: ../clients/java
+    profiles: ["java"]
+    depends_on:
+      pg-primary: { condition: service_healthy }
+      pg-replica: { condition: service_healthy }
+      pgbouncer: { condition: service_started }
+    environment:
+      PGBOUNCER_DSN: "postgres://app:app_pw@pgbouncer:6432/app"
+      REPLICA_DSN: "postgres://app:app_pw@pg-replica:5432/app"
+      MULTIHOST_DSN: "postgres://app:app_pw@pg-primary:5432,pg-replica:5432/app?target_session_attrs=read-write"
+    networks: [pg]
+
+  client-rust:
+    build: ../clients/rust
+    profiles: ["rust"]
+    depends_on:
+      pg-primary: { condition: service_healthy }
+      pg-replica: { condition: service_healthy }
+      pgbouncer: { condition: service_started }
+    environment:
+      PGBOUNCER_DSN: "postgres://app:app_pw@pgbouncer:6432/app"
+      REPLICA_DSN: "postgres://app:app_pw@pg-replica:5432/app"
+      MULTIHOST_DSN: "postgres://app:app_pw@pg-primary:5432,pg-replica:5432/app?target_session_attrs=read-write"
+    networks: [pg]
+
+networks:
+  pg:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
+
+volumes:
+  pg-primary-data:
+  pg-replica-data:
