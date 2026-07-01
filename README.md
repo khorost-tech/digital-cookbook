@@ -16,6 +16,7 @@
 | [`redis/client-resilience`](redis/client-resilience) | Клиенты Go/Java/Rust под нагрузкой: Redis Cluster и Sentinel на живом стенде, reconnect и failover при падении узла | [Подключение к Redis из Go, Java и Rust](https://khorost.tech/databases/redis-clients-go-java-rust/) |
 | [`postgres/client-resilience`](postgres/client-resilience) | Клиенты Go/Java/Rust к PostgreSQL: primary+replica+pgbouncer, пул, чтение с реплики, reconnect и failover | [Клиенты Go, Java и Rust к PostgreSQL: надёжность подключений](https://khorost.tech/databases/postgres-clients-reliability-go-java-rust/) |
 | [`performance/highload-lowlatency`](performance/highload-lowlatency) | Highload под SLA < 300 мс: HAProxy L7 (HTTP/2 cleartext, h2c) + пул Go/Java-бэкендов + клиенты-нагрузчики, сравнение L4 vs L7 | [Бюджет латентности и выбор транспорта](https://khorost.tech/performance/latency-budget-and-transport/) |
+| [`nats`](nats) | NATS 2.12: Core, JetStream, кластер, гео, безопасность, клиенты Go/Java | [Серия «Погружение в NATS»](https://khorost.tech/messaging/nats-core-subjects-request-reply/) |
 
 ## Лицензия
 
