@@ -106,10 +106,16 @@ docker exec client-resilience-topology-pg-replica-1 pg_ctl promote -D /var/lib/p
 `MULTIHOST_DSN` задан как
 `postgres://app:app_pw@pg-primary:5432,pg-replica:5432/app?target_session_attrs=read-write`.
 
-- **Go (pgx)** и **Java (pgjdbc)** умеют multi-host DSN: драйвер перебирает хосты и
-  выбирает тот, что отвечает как read-write. После промоушена реплики следующее
-  подключение по тому же DSN уедет на новый primary без изменений в коде клиента.
-- **Rust (sqlx) этого не поддерживает.** sqlx — не обёртка над `libpq`, а собственная
+- **Go (pgx)** подключается по `MULTIHOST_DSN` как есть: pgx понимает libpq-параметр
+  `target_session_attrs=read-write` напрямую из DSN, перебирает хосты и выбирает тот, что
+  отвечает как read-write.
+- **Java (pgjdbc) `target_session_attrs` не понимает.** У pgjdbc свой параметр для той же
+  задачи — `targetServerType=primary`. Клиент стенда отбрасывает исходный query из
+  `MULTIHOST_DSN` и подставляет `targetServerType=primary`, чтобы получить тот же результат
+  (подключение к текущему read-write primary) через pgjdbc-совместимый параметр.
+- И в Go, и в Java: после промоушена реплики следующее подключение уедет на новый primary
+  без изменений в коде клиента — просто разными параметрами DSN.
+- **Rust (sqlx) не поддерживает ни то, ни другое.** sqlx — не обёртка над `libpq`, а собственная
   реализация протокола Postgres на чистом Rust, и парсер DSN у неё рассчитан ровно на один
   host; `target_session_attrs` не распознаётся. Это открытый feature-request
   ([launchbadge/sqlx#3333](https://github.com/launchbadge/sqlx/issues/3333) «Multiple Hosts,
