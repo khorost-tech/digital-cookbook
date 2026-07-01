@@ -59,7 +59,7 @@ func main() {
 		UserID int64
 		Cnt    int64
 	}
-	if err := SELECT(Posts.UserID, COUNT(Posts.ID).AS("cnt")).
+	if err := SELECT(Posts.UserID.AS("user_id"), COUNT(Posts.ID).AS("cnt")).
 		FROM(Posts).GROUP_BY(Posts.UserID).Query(db, &rows); err != nil {
 		log.Fatal(err)
 	}
