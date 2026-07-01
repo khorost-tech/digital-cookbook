@@ -237,8 +237,9 @@ public class App {
     private static String mustGetenv(String key) {
         String v = System.getenv(key);
         if (v == null || v.isBlank()) {
-            System.out.println("[java] FATAL: не задана переменная окружения " + key);
-            System.exit(1);
+            String msg = "[java] FATAL: не задана переменная окружения " + key;
+            System.out.println(msg);
+            throw new IllegalStateException(msg);
         }
         return v;
     }
@@ -257,8 +258,9 @@ public class App {
         static PgUrl parse(String dsn) {
             Matcher m = PATTERN.matcher(dsn);
             if (!m.matches()) {
-                System.out.println("[java] FATAL: не удалось разобрать DSN: " + dsn);
-                System.exit(1);
+                String msg = "[java] FATAL: не удалось разобрать DSN: " + dsn;
+                System.out.println(msg);
+                throw new IllegalArgumentException(msg);
             }
             String user = m.group(1);
             String password = m.group(2);
