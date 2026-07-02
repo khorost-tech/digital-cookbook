@@ -1,0 +1,15 @@
+# nsc stores и keystore — приватные ключи operator/account/user. НЕ коммитить.
+nsc/stores/
+nsc/keys/
+nsc/nsc-data/
+nsc-scratch-*/
+*.creds
+
+# сгенерированные resolver-конфиги с embedded JWT (создаются nsc generate config)
+resolver.generated.conf
+
+# сгенерированные TLS-ключи и сертификаты — кроме демо-CA (ca.pem), который
+# коммитится намеренно, с явной пометкой "демо, не для продакшна"
+tls/*.pem
+!tls/ca.pem
+tls/*.srl
