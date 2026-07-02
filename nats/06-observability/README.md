@@ -45,7 +45,7 @@ grafana/
     nats-observability.json  # дашборд «NATS — Observability demo»
 ```
 
-Дашборд загружается автоматически — откройте http://localhost:3000 → Dashboards → «NATS — Observability demo». Панели: активные соединения, `in_client_msgs`/`out_client_msgs` (rate, метрики, добавленные в nats-server 2.11), `in_client_bytes`/`out_client_bytes` (rate), память/диск JetStream.
+Дашборд загружается автоматически — откройте http://localhost:3000 → Dashboards → «NATS — Observability demo». Панели: активные соединения, `in_client_msgs`/`out_client_msgs` (rate, метрики, добавленные в nats-server 2.12.9), `in_client_bytes`/`out_client_bytes` (rate), память/диск JetStream.
 
 ## prometheus.yml
 
@@ -59,7 +59,7 @@ scrape_configs:
           - 'nats-exporter:7777'
 ```
 
-Экспортёр запущен с флагами `-varz -connz -routez -subz -jsz=all` — метрики из monitoring endpoints `/varz`, `/connz`, `/routez`, `/subz`, `/jsz` (последний — с полной детализацией по streams и consumers). Каждая метрика получает префикс `gnatsd_`, например `/varz` → `gnatsd_varz_connections`, `gnatsd_varz_in_client_msgs`.
+Экспортёр запущен с флагами `-varz -connz -routez -subz -jsz=streams` — метрики из monitoring endpoints `/varz`, `/connz`, `/routez`, `/subsz`, `/jsz` (значение `-jsz` — список фильтров, здесь `streams`; полный набор задаётся перечислением `streams,consumers,accounts`). Каждая метрика получает префикс `gnatsd_`, например `/varz` → `gnatsd_varz_connections`, `gnatsd_varz_in_client_msgs`.
 
 ## Сценарий: backup и restore stream
 

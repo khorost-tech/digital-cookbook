@@ -10,7 +10,7 @@ services:
 
   nats-exporter:
     image: natsio/prometheus-nats-exporter:latest
-    command: ["-varz", "-connz", "-routez", "-subz", "-jsz=all", "-p", "7777", "http://nats:8222"]
+    command: ["-varz", "-connz", "-routez", "-subz", "-jsz=streams", "-p", "7777", "http://nats:8222"]
     ports:
       - "7777:7777"
     depends_on:
