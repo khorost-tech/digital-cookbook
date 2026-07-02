@@ -8,6 +8,9 @@
 (`reader` / `writer` / `admin` над индексами `app-logs-*`) — тот же inventory, `group_vars`
 и `securityconfig`, что разобраны в статье.
 
+Этот пример зеркалит статью и рассчитан на проверку на реальном 3-нодном стенде — перед
+запуском выполните `certs/gen-self-signed.sh` (см. [Запуск](#запуск)).
+
 **Отличие от статьи: без Vault.** В статье сертификаты выпускаются из HashiCorp Vault PKI.
 Здесь — тот же результат (TLS для transport-mTLS и REST), но без внешней зависимости от
 Vault: `certs/gen-self-signed.sh` генерирует demo-CA и сертификаты нод/admin локально,
@@ -61,9 +64,9 @@ opensearch/cluster/
 │                                        # устанавливает OpenSearch, раскладывает TLS,
 │                                        # применяет securityconfig
 ├── inventory/
-│   └── hosts.ini                       # Группа [os-cluster]: os-node-1/2/3
+│   └── hosts.ini                       # Группа [os-cluster]: os-node-1/2/3, ip= и roles= на хост
 ├── group_vars/
-│   └── all.yml                         # Версия OpenSearch, heap, роли нод, пути TLS
+│   └── all.yml                         # os_version, xms_value/xmx_value, пути TLS
 ├── certs/
 │   └── gen-self-signed.sh              # Demo-CA + node/admin сертификаты (PKCS#8, без Vault)
 └── securityconfig/
@@ -90,8 +93,9 @@ cd ..
 
 ### 2. Заполнить inventory реальными хостами
 
-Отредактируйте `inventory/hosts.ini` — замените синтетические `10.0.0.11/12/13` на IP/FQDN
-своих 3 тестовых хостов, проверьте `ansible_user` и SSH-доступ.
+Отредактируйте `inventory/hosts.ini` — замените синтетические `10.0.0.11/12/13` в
+`ansible_host=`/`ip=` на IP/FQDN своих 3 тестовых хостов, проверьте `ansible_user`,
+SSH-доступ и при необходимости скорректируйте `roles=` под свою топологию.
 
 ### 3. Поднять кластер
 
@@ -102,8 +106,13 @@ ansible-playbook -i inventory/hosts.ini deploy.yml
 Плейбук по шагам:
 
 1. клонирует `opensearch-project/ansible-playbook` в `.upstream/` (или обновляет, если уже клонирован);
-2. запускает upstream `opensearch.yml` с нашим `group_vars/all.yml` — установка пакета,
-   роли нод, heap, discovery из inventory;
+2. импортирует upstream `opensearch.yml` — Ansible на весь прогон автоматически подхватывает
+   наш `group_vars/all.yml` (`os_version`, `xms_value`/`xmx_value`) и `inventory/hosts.ini`
+   (`ip=`/`roles=` на каждый хост — из них upstream-плейбук сам выводит discovery.seed_hosts
+   и cluster.initial_cluster_manager_nodes); upstream-репозиторий при этом не модифицируется.
+   Если вашей топологии нужны переменные, которых нет в нашем `group_vars/all.yml`, —
+   посмотрите дефолты upstream в `.upstream/ansible-playbook/inventories/opensearch/group_vars/all/all.yml`
+   и добавьте нужное в свой `group_vars/all.yml` (не редактируя upstream-каталог);
 3. раскладывает self-signed сертификаты из `certs/out/` на все ноды кластера
    и перезапускает сервис;
 4. на первой ноде группы применяет `securityconfig/` через `securityadmin.sh`

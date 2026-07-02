@@ -5,8 +5,16 @@
 # кластер поднимается не самописной ролью, а официальным плейбуком
 # opensearch-project/ansible-playbook: он лучше самописной роли знает про поддерживаемые
 # дистрибутивы, версии Java, systemd-юнит и обновления между минорами. Здесь плейбук
-# клонируется в рабочую директорию и запускается с этим inventory/group_vars — а поверх
-# накатываются TLS (self-signed demo-серты вместо Vault PKI из статьи) и securityconfig.
+# клонируется в рабочую директорию и его opensearch.yml импортируется через
+# import_playbook — а поверх накатываются TLS (self-signed demo-серты вместо Vault PKI
+# из статьи) и securityconfig.
+#
+# group_vars: Ansible сам подхватывает group_vars/all.yml ИЗ ЭТОЙ директории на весь
+# прогон (запуск идёт с -i inventory/hosts.ini из opensearch/cluster/), в том числе
+# и для импортированного upstream opensearch.yml — копировать наш all.yml поверх
+# upstream-репозитория не нужно (и вредно: затёрло бы дефолты upstream). Если upstream
+# ожидает дополнительные переменные, которых нет в нашем group_vars/all.yml, — см.
+# README.md, там ссылка на upstream inventories/opensearch/group_vars/all/all.yml.
 #
 # Использование:
 #   1) сгенерировать demo-сертификаты (один раз):
@@ -36,16 +44,10 @@
       ansible.builtin.debug:
         msg: >-
           Upstream-плейбук в {{ upstream_dir }}.
-          Дальше запускается opensearch.yml из этого каталога с нашими
-          inventory/hosts.ini и group_vars/all.yml (симлинк/копия ниже).
-
-    # Официальный плейбук ожидает group_vars/inventory рядом со своим opensearch.yml.
-    # Копируем наш group_vars поверх, чтобы не форкать upstream-репозиторий.
-    - name: "Скопировать group_vars стенда в upstream-каталог"
-      ansible.builtin.copy:
-        src: "{{ playbook_dir }}/group_vars/all.yml"
-        dest: "{{ upstream_dir }}/group_vars/all.yml"
-        mode: "0644"
+          Дальше импортируется его opensearch.yml — переменные берутся из
+          НАШЕГО group_vars/all.yml (Ansible подхватывает его автоматически
+          для всего прогона, т.к. запуск идёт из этой директории), upstream-репозиторий
+          не модифицируется.
 
 - name: "Установка и базовая конфигурация OpenSearch (upstream opensearch.yml)"
   import_playbook: "{{ playbook_dir }}/.upstream/ansible-playbook/opensearch.yml"

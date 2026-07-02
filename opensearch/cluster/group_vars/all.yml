@@ -5,20 +5,21 @@
 
 # Версия OpenSearch. Пин к конкретному минору 3.x — проверьте актуальный минор перед
 # запуском (например, на момент написания примера — 3.5.x), не полагайтесь на "latest".
-opensearch_version: "3.5.x"          # проверить минор перед использованием
+os_version: "3.5.x"          # проверено на 3.5; актуальный минор уточните
 
-# Heap не больше 50% RAM ноды и обязательно ниже порога compressed oops (~32g).
-# Значение ниже — иллюстративное для тестовых VM, сверьте с реальным профилем нагрузки.
-opensearch_heap_size: "2g"
+# Heap не больше 50% RAM ноды и обязательно ниже порога compressed oops (~32 GB).
+# xms_value/xmx_value — целые числа в GB (не строка вида "2g"), так их ожидает
+# официальный плейбук. Значения ниже — иллюстративные для тестовых VM, сверьте
+# с реальным профилем нагрузки.
+xms_value: 2
+xmx_value: 2
 
-# Роли нод: три master-eligible (кворум 2 из 3), две ноды дополнительно ingest.
-opensearch_node_roles:
-  os-node-1: [cluster_manager, data, ingest]
-  os-node-2: [cluster_manager, data]
-  os-node-3: [cluster_manager, data, ingest]
+# Роли нод НЕ задаются здесь маппингом — официальный плейбук читает их per-host
+# из inventory (inventory/hosts.ini, атрибут roles=; там же ip= для discovery).
 
 # discovery.seed_hosts и cluster.initial_cluster_manager_nodes официальный плейбук
-# выводит из inventory-группы [os-cluster] — здесь их прописывать не нужно.
+# выводит из inventory-группы [os-cluster] (roles=/ip= каждого хоста) — здесь их
+# прописывать не нужно.
 
 # --- TLS (self-signed demo-путь, без Vault — см. certs/gen-self-signed.sh) ---
 opensearch_tls_dir: "/etc/opensearch/tls"
