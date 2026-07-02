@@ -1,0 +1,139 @@
+---
+# deploy.yml — точка входа демо-стенда opensearch/cluster.
+#
+# Как и в статье (https://khorost.tech/infrastructure/opensearch-cluster-ansible/),
+# кластер поднимается не самописной ролью, а официальным плейбуком
+# opensearch-project/ansible-playbook: он лучше самописной роли знает про поддерживаемые
+# дистрибутивы, версии Java, systemd-юнит и обновления между минорами. Здесь плейбук
+# клонируется в рабочую директорию и запускается с этим inventory/group_vars — а поверх
+# накатываются TLS (self-signed demo-серты вместо Vault PKI из статьи) и securityconfig.
+#
+# Использование:
+#   1) сгенерировать demo-сертификаты (один раз):
+#        cd certs && ./gen-self-signed.sh && cd ..
+#   2) поднять кластер:
+#        ansible-playbook -i inventory/hosts.ini deploy.yml
+#
+# Подробности и troubleshooting — в README.md.
+
+- name: "Клонировать официальный opensearch-project/ansible-playbook"
+  hosts: localhost
+  gather_facts: false
+  vars:
+    upstream_repo: "https://github.com/opensearch-project/ansible-playbook"
+    upstream_dir: "{{ playbook_dir }}/.upstream/ansible-playbook"
+
+  tasks:
+    - name: "Клонировать (или обновить) upstream-репозиторий плейбука"
+      ansible.builtin.git:
+        repo: "{{ upstream_repo }}"
+        dest: "{{ upstream_dir }}"
+        version: main
+        depth: 1
+      register: upstream_checkout
+
+    - name: "Сообщить путь к upstream-плейбуку"
+      ansible.builtin.debug:
+        msg: >-
+          Upstream-плейбук в {{ upstream_dir }}.
+          Дальше запускается opensearch.yml из этого каталога с нашими
+          inventory/hosts.ini и group_vars/all.yml (симлинк/копия ниже).
+
+    # Официальный плейбук ожидает group_vars/inventory рядом со своим opensearch.yml.
+    # Копируем наш group_vars поверх, чтобы не форкать upstream-репозиторий.
+    - name: "Скопировать group_vars стенда в upstream-каталог"
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/group_vars/all.yml"
+        dest: "{{ upstream_dir }}/group_vars/all.yml"
+        mode: "0644"
+
+- name: "Установка и базовая конфигурация OpenSearch (upstream opensearch.yml)"
+  import_playbook: "{{ playbook_dir }}/.upstream/ansible-playbook/opensearch.yml"
+
+- name: "Разложить demo-сертификаты (self-signed, без Vault) на ноды кластера"
+  hosts: os-cluster
+  become: true
+  vars:
+    tls_dir: "{{ opensearch_tls_dir | default('/etc/opensearch/tls') }}"
+    certs_out: "{{ playbook_dir }}/certs/out"
+
+  tasks:
+    - name: "Проверить, что demo-сертификаты сгенерированы (certs/gen-self-signed.sh)"
+      ansible.builtin.stat:
+        path: "{{ certs_out }}/node.pem"
+      delegate_to: localhost
+      become: false
+      register: node_cert_stat
+      run_once: true
+
+    - name: "Прервать выполнение, если сертификаты не сгенерированы"
+      ansible.builtin.fail:
+        msg: >-
+          Не найден {{ certs_out }}/node.pem — сначала выполните
+          `cd certs && ./gen-self-signed.sh`.
+      when: not node_cert_stat.stat.exists
+      run_once: true
+
+    - name: "Создать каталог для TLS-материала"
+      ansible.builtin.file:
+        path: "{{ tls_dir }}"
+        state: directory
+        owner: opensearch
+        group: opensearch
+        mode: "0750"
+
+    - name: "Разложить CA, node cert и node key (уже PKCS#8 — конвертация не нужна)"
+      ansible.builtin.copy:
+        src: "{{ certs_out }}/{{ item.src }}"
+        dest: "{{ tls_dir }}/{{ item.dest }}"
+        owner: opensearch
+        group: opensearch
+        mode: "{{ item.mode }}"
+      loop:
+        - { src: "root-ca.pem", dest: "root-ca.pem", mode: "0644" }
+        - { src: "node.pem", dest: "node.pem", mode: "0644" }
+        - { src: "node-key.pem", dest: "node-key.pem", mode: "0600" }
+      notify: "Перезапустить opensearch"
+
+  handlers:
+    - name: "Перезапустить opensearch"
+      ansible.builtin.systemd:
+        name: opensearch
+        state: restarted
+
+- name: "Применить securityconfig через securityadmin.sh (run_once — общий индекс на весь кластер)"
+  hosts: os-cluster[0]
+  become: true
+  vars:
+    tls_dir: "{{ opensearch_tls_dir | default('/etc/opensearch/tls') }}"
+    opensearch_home: "/usr/share/opensearch"
+
+  tasks:
+    - name: "Скопировать admin-сертификат и ключ на управляющую ноду"
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/certs/out/{{ item.src }}"
+        dest: "{{ tls_dir }}/{{ item.dest }}"
+        owner: opensearch
+        group: opensearch
+        mode: "{{ item.mode }}"
+      loop:
+        - { src: "admin.pem", dest: "admin.pem", mode: "0644" }
+        - { src: "admin-key.pem", dest: "admin-key.pem", mode: "0600" }
+
+    - name: "Скопировать securityconfig/ на ноду"
+      ansible.builtin.copy:
+        src: "{{ playbook_dir }}/securityconfig/"
+        dest: "/tmp/securityconfig/"
+        mode: "0644"
+
+    - name: "Запустить securityadmin.sh"
+      ansible.builtin.command:
+        cmd: >-
+          {{ opensearch_home }}/plugins/opensearch-security/tools/securityadmin.sh
+          -cd /tmp/securityconfig
+          -icl -nhnv
+          -cacert {{ tls_dir }}/root-ca.pem
+          -cert {{ tls_dir }}/admin.pem
+          -key {{ tls_dir }}/admin-key.pem
+          -h {{ inventory_hostname }}
+      changed_when: true

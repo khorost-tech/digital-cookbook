@@ -1,0 +1,44 @@
+---
+# roles.yml — RBAC на уровне индекс-паттерна app-logs-*.
+# Загружается в кластер через securityadmin.sh (см. deploy.yml / README.md), не читается
+# напрямую из opensearch.yml.
+#
+# Три роли поверх одного семейства индексов app-logs-*: reader — только чтение,
+# writer — пишет и создаёт индексы, admin — управление настройками/удалением.
+# index_patterns — именно паттерн, а не список: роль автоматически действует и на
+# будущие app-logs-2026.08.*, app-logs-2026.09.* и так далее.
+
+_meta:
+  type: "roles"
+  config_version: 2
+
+reader:
+  cluster_permissions:
+    - "cluster_monitor"
+  index_permissions:
+    - index_patterns:
+        - "app-logs-*"
+      allowed_actions:
+        - "read"
+
+writer:
+  cluster_permissions:
+    - "cluster_monitor"
+  index_permissions:
+    - index_patterns:
+        - "app-logs-*"
+      allowed_actions:
+        - "write"
+        - "create_index"
+        - "indices:data/write/bulk*"
+
+admin:
+  cluster_permissions:
+    - "cluster_monitor"
+    - "cluster_manage_index_templates"
+    - "indices:admin/template/*"
+  index_permissions:
+    - index_patterns:
+        - "app-logs-*"
+      allowed_actions:
+        - "indices_all"

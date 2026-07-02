@@ -1,0 +1,38 @@
+---
+# internal_users.yml — локальные пользователи security-плагина: логин + bcrypt-хеш пароля
+# + backend_roles (промежуточная метка, которую использует roles_mapping.yml).
+#
+# Пароль в открытом виде здесь никогда не хранится — только хеш, полученный утилитой
+# hash.sh (hash.bat на Windows) из комплекта OpenSearch:
+#   plugins/opensearch-security/tools/hash.sh -p '<пароль>'
+#
+# ВНИМАНИЕ — DEMO CREDENTIALS. Хеш пользователя admin ниже — это ОБЩЕИЗВЕСТНЫЙ demo-хеш
+# пароля "admin", который сам OpenSearch использует в demo-конфигурации дистрибутива
+# (install_demo_configuration.sh). Он одинаков на каждой инсталляции OpenSearch с demo-
+# конфигурацией по умолчанию и НЕ является секретом. Использовать этот хеш где-либо,
+# кроме локального/тестового стенда, нельзя — см. README.md, раздел "Demo credentials".
+# Перед любым использованием за пределами localhost сгенерируйте новый пароль через
+# hash.sh и замените хеш ниже.
+
+_meta:
+  type: "internalusers"
+  config_version: 2
+
+admin:
+  hash: "$2y$12$DpwmetHKwgYnorbgdvORCenv4NAK8cPUg8AI6pxLCuWf/ObSrbCzK"   # demo-only: пароль "admin"
+  reserved: true
+  backend_roles:
+    - "admin"
+  description: "Demo admin — сменить пароль перед любым использованием вне localhost"
+
+app_reader:
+  hash: "<BCRYPT_HASH>"   # сгенерировать: plugins/opensearch-security/tools/hash.sh -p '<пароль>'
+  backend_roles:
+    - "reader"
+  description: "Demo read-only пользователь для app-logs-*"
+
+app_writer:
+  hash: "<BCRYPT_HASH>"   # сгенерировать hash.sh, не хранить пароль в открытом виде
+  backend_roles:
+    - "writer"
+  description: "Demo write-пользователь для app-logs-*"

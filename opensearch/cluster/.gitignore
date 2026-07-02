@@ -1,0 +1,9 @@
+# Сгенерированные demo-сертификаты (certs/gen-self-signed.sh) — не коммитятся,
+# каждый прогон создаёт свои.
+certs/out/
+
+# Локальный клон upstream-плейбука (deploy.yml клонирует opensearch-project/ansible-playbook)
+.upstream/
+
+# Ansible retry files
+*.retry

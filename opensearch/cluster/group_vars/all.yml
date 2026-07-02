@@ -1,0 +1,39 @@
+---
+# group_vars для стенда opensearch/cluster.
+# Эти переменные передаются официальному плейбуку opensearch-project/ansible-playbook
+# (см. README.md — deploy.yml клонирует и вызывает его с этим inventory/group_vars).
+
+# Версия OpenSearch. Пин к конкретному минору 3.x — проверьте актуальный минор перед
+# запуском (например, на момент написания примера — 3.5.x), не полагайтесь на "latest".
+opensearch_version: "3.5.x"          # проверить минор перед использованием
+
+# Heap не больше 50% RAM ноды и обязательно ниже порога compressed oops (~32g).
+# Значение ниже — иллюстративное для тестовых VM, сверьте с реальным профилем нагрузки.
+opensearch_heap_size: "2g"
+
+# Роли нод: три master-eligible (кворум 2 из 3), две ноды дополнительно ingest.
+opensearch_node_roles:
+  os-node-1: [cluster_manager, data, ingest]
+  os-node-2: [cluster_manager, data]
+  os-node-3: [cluster_manager, data, ingest]
+
+# discovery.seed_hosts и cluster.initial_cluster_manager_nodes официальный плейбук
+# выводит из inventory-группы [os-cluster] — здесь их прописывать не нужно.
+
+# --- TLS (self-signed demo-путь, без Vault — см. certs/gen-self-signed.sh) ---
+opensearch_tls_dir: "/etc/opensearch/tls"
+opensearch_tls_ca_cert: "{{ opensearch_tls_dir }}/root-ca.pem"
+opensearch_tls_node_cert: "{{ opensearch_tls_dir }}/node.pem"
+opensearch_tls_node_key: "{{ opensearch_tls_dir }}/node-key.pem"   # уже PKCS#8 — gen-self-signed.sh не требует конвертации
+opensearch_tls_admin_cert: "{{ opensearch_tls_dir }}/admin.pem"
+opensearch_tls_admin_key: "{{ opensearch_tls_dir }}/admin-key.pem"
+
+# DN admin-сертификата — должен совпадать с тем, что сгенерирует certs/gen-self-signed.sh
+# (plugins.security.authcz.admin_dn). Значение по умолчанию скрипта:
+opensearch_admin_dn: "CN=admin,OU=digital-cookbook,O=khorost.tech,L=Demo,C=RU"
+
+# --- Security plugin ---
+# securityconfig/ применяется securityadmin.sh отдельным шагом (не самим opensearch.yml) —
+# см. deploy.yml и README.md. Demo-пароль ниже — ТОЛЬКО для локального стенда,
+# смените перед любым использованием за пределами localhost/тестовых VM.
+opensearch_security_demo_admin_password: "admin"   # demo-only, см. securityconfig/internal_users.yml
