@@ -8,6 +8,7 @@
 | Пример | Описание | Статьи |
 |--------|----------|--------|
 | [`rabbitmq/ha-cluster`](rabbitmq/ha-cluster) | Отказоустойчивый кластер RabbitMQ 4.x: quorum-очереди, failover, DLQ, federation, мониторинг | [Серия «Высокодоступный RabbitMQ»](https://khorost.tech/messaging/rabbitmq-ha-cluster-quorum-failover/) |
+| [`rabbitmq/streams`](rabbitmq/streams) | RabbitMQ Streams 4.x: append-only лог, publish confirms и offset tracking, super streams (партиционирование), доступ через AMQP | [RabbitMQ Streams vs Kafka](https://khorost.tech/messaging/rabbitmq-streams-vs-kafka/) |
 | [`proxmox/terraform-vm-automation`](proxmox/terraform-vm-automation) | Terraform для Proxmox: создание VM (клон шаблона или импорт cloud image) и LXC, cloud-init, `for_each` | [Proxmox + Terraform](https://khorost.tech/infrastructure/proxmox-terraform-vm-automation/) |
 | [`docker/rootless`](docker/rootless) | rootful vs rootless Docker на живом стенде: владелец файлов в volume, ограничение портов <1024 | [Rootless Docker](https://khorost.tech/docker/rootless-docker/) |
 | [`distributed-config`](distributed-config) | etcd, ZooKeeper, Consul, Vault и PostgreSQL: watch, znodes, service discovery, динамические credentials | [Распределённые конфигурации](https://khorost.tech/architecture/distributed-configuration/) |
