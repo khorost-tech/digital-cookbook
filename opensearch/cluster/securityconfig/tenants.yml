@@ -1,0 +1,7 @@
+---
+# tenants.yml — мультитенантность Dashboards. Здесь пусто (только _meta), но файл
+# обязателен для securityadmin.sh -cd (см. комментарий в action_groups.yml).
+
+_meta:
+  type: "tenants"
+  config_version: 2

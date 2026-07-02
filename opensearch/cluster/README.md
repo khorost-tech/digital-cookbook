@@ -35,13 +35,15 @@ Vault: `certs/gen-self-signed.sh` генерирует demo-CA и сертифи
 ## Демо-credentials
 
 > **Пароли и сертификаты в этом примере — только для локального/тестового стенда.**
-> `securityconfig/internal_users.yml` содержит общеизвестный demo-хеш пароля `admin`/`admin`
-> (тот же, что OpenSearch кладёт в свою собственную demo-конфигурацию) и плейсхолдеры
-> `<BCRYPT_HASH>` для остальных пользователей. `certs/gen-self-signed.sh` генерирует
-> самоподписанный CA и сертификаты без пароля на ключах. **Ничего из этого нельзя
-> использовать за пределами тестового окружения.** Перед любым использованием ближе к
-> реальной нагрузке: сгенерируйте новые пароли через `hash.sh` из дистрибутива OpenSearch,
-> замените демо-сертификаты на выпущенные вашим CA/PKI (например, Vault — см. статью).
+> `securityconfig/internal_users.yml` содержит рабочие bcrypt-хеши демо-паролей
+> `admin`/`admin`, `app_reader`/`reader123`, `app_writer`/`writer123` (проверены живым
+> прогоном на OpenSearch 3.1.0; у OpenSearch нет единого «одинакового на всех инсталляциях»
+> demo-хеша — bcrypt солёный, подходит любой валидный хеш нужного пароля).
+> `certs/gen-self-signed.sh` генерирует самоподписанный CA и сертификаты без пароля на
+> ключах. **Ничего из этого нельзя использовать за пределами тестового окружения.** Перед
+> любым использованием ближе к реальной нагрузке: сгенерируйте новые пароли через `hash.sh`
+> из дистрибутива OpenSearch, замените демо-сертификаты на выпущенные вашим CA/PKI
+> (например, Vault — см. статью).
 
 ---
 
@@ -69,10 +71,14 @@ opensearch/cluster/
 │   └── all.yml                         # os_version, xms_value/xmx_value, пути TLS
 ├── certs/
 │   └── gen-self-signed.sh              # Demo-CA + node/admin сертификаты (PKCS#8, без Vault)
-└── securityconfig/
-    ├── internal_users.yml              # admin (demo-хеш) + app_reader/app_writer (плейсхолдеры)
+└── securityconfig/                     # securityadmin.sh -cd требует ВСЕ типы файлами
+    ├── config.yml                      # authc-домен (basic auth) — без него нет аутентификации
+    ├── internal_users.yml              # admin / app_reader / app_writer (рабочие demo-хеши)
     ├── roles.yml                       # reader / writer / admin над app-logs-*
-    └── roles_mapping.yml               # Пользователи/backend_roles → роли
+    ├── roles_mapping.yml               # Пользователи/backend_roles → роли
+    ├── action_groups.yml              # пусто (_meta) — но обязателен, иначе securityadmin exit 255
+    ├── tenants.yml                     # пусто (_meta) — обязателен
+    └── nodes_dn.yml                    # пусто (_meta) — обязателен
 ```
 
 ---

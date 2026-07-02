@@ -6,33 +6,34 @@
 # hash.sh (hash.bat на Windows) из комплекта OpenSearch:
 #   plugins/opensearch-security/tools/hash.sh -p '<пароль>'
 #
-# ВНИМАНИЕ — DEMO CREDENTIALS. Хеш пользователя admin ниже — это ОБЩЕИЗВЕСТНЫЙ demo-хеш
-# пароля "admin", который сам OpenSearch использует в demo-конфигурации дистрибутива
-# (install_demo_configuration.sh). Он одинаков на каждой инсталляции OpenSearch с demo-
-# конфигурацией по умолчанию и НЕ является секретом. Использовать этот хеш где-либо,
-# кроме локального/тестового стенда, нельзя — см. README.md, раздел "Demo credentials".
-# Перед любым использованием за пределами localhost сгенерируйте новый пароль через
-# hash.sh и замените хеш ниже.
+# ВНИМАНИЕ — DEMO CREDENTIALS. Хеши ниже — рабочие bcrypt-хеши демо-паролей,
+# сгенерированные через hash.sh для этого примера (admin/admin, app_reader/reader123,
+# app_writer/writer123). Проверены живым прогоном на OpenSearch 3.1.0. Это НЕ секреты и
+# годны ТОЛЬКО для локального/тестового стенда. Перед любым использованием за пределами
+# localhost сгенерируйте собственные пароли и замените хеши:
+#   plugins/opensearch-security/tools/hash.sh -p '<пароль>'
+# (У OpenSearch нет единого «одинакового на всех инсталляциях» demo-хеша — bcrypt солёный;
+# подходит любой валидный хеш нужного пароля.)
 
 _meta:
   type: "internalusers"
   config_version: 2
 
 admin:
-  hash: "$2y$12$DpwmetHKwgYnorbgdvORCenv4NAK8cPUg8AI6pxLCuWf/ObSrbCzK"   # demo-only: пароль "admin"
+  hash: "$2y$12$7jV.0lSqi.chiGK9xn8dS./8QDufSHZs3dqZN/nJW0EFcaW63qN1C"   # demo-only: пароль "admin"
   reserved: true
   backend_roles:
     - "admin"
   description: "Demo admin — сменить пароль перед любым использованием вне localhost"
 
 app_reader:
-  hash: "<BCRYPT_HASH>"   # сгенерировать: plugins/opensearch-security/tools/hash.sh -p '<пароль>'
+  hash: "$2y$12$mTDAJjg.pdfkvAUfrgDo2.P68UPG8d/r0WNFmoJy04jtfgOQ8z5K."   # demo-only: пароль "reader123"
   backend_roles:
     - "reader"
   description: "Demo read-only пользователь для app-logs-*"
 
 app_writer:
-  hash: "<BCRYPT_HASH>"   # сгенерировать hash.sh, не хранить пароль в открытом виде
+  hash: "$2y$12$XbAozZaIxl4Jlc6vQNgF6.4bgsF4tnDfBmjf6eqq5kOg63XcUbH2."   # demo-only: пароль "writer123"
   backend_roles:
     - "writer"
   description: "Demo write-пользователь для app-logs-*"

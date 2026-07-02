@@ -1,0 +1,8 @@
+---
+# nodes_dn.yml — динамический allowlist DN нод (дополняет plugins.security.nodes_dn из
+# opensearch.yml). Здесь пусто (только _meta) — node-DN заданы статически в opensearch.yml,
+# но файл обязателен для securityadmin.sh -cd (см. комментарий в action_groups.yml).
+
+_meta:
+  type: "nodesdn"
+  config_version: 2

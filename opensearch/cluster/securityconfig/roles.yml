@@ -24,6 +24,11 @@ reader:
 writer:
   cluster_permissions:
     - "cluster_monitor"
+    # Одиночный PUT /_doc и POST /_bulk резолвятся в cluster-level action
+    # indices:data/write/bulk — без него writer получает 403 на ЛЮБУЮ запись,
+    # даже с полными index_permissions. Ограничение по app-logs-* при этом
+    # продолжает работать (см. README, раздел RBAC).
+    - "indices:data/write/bulk"
   index_permissions:
     - index_patterns:
         - "app-logs-*"
@@ -37,6 +42,8 @@ admin:
     - "cluster_monitor"
     - "cluster_manage_index_templates"
     - "indices:admin/template/*"
+    - "indices:data/write/bulk"   # тот же cluster-level gate, что и у writer
+
   index_permissions:
     - index_patterns:
         - "app-logs-*"
