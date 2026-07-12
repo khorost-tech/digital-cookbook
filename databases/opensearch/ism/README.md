@@ -27,13 +27,16 @@ curl -s localhost:9218/_cluster/health?pretty
 docker run --rm --network ism_default --entrypoint /bin/sh minio/mc \
   -c "mc alias set m http://ism-minio:9000 minioadmin 'IsmDemo#2026' && mc mb -p m/snapshots"
 
-cd opensearch && ./ism.sh                 # весь цикл: репо + политика + bootstrap + rollover + переходы (~4-5 мин)
+cd opensearch && ./ism.sh                 # весь цикл: репо + политика + bootstrap + rollover + переходы
+#   (если ./ism.sh ругается на права — запустите: bash ism.sh)
 ./ism.sh explain                          # текущее состояние индексов в любой момент
 ```
 
-`ism.sh` регистрирует S3-репозиторий, создаёт ISM-политику (`policy.json`), заводит index-шаблон с
-`rollover_alias` и bootstrap-индекс `app-logs-000001` под write-алиасом `app-logs`, заливает
-документы и ждёт, пока индекс пройдёт весь цикл.
+`ism.sh` регистрирует S3-репозиторий, создаёт ISM-политику (`policy.json`), заводит index-шаблон
+(`rollover_alias` + hot-размещение + 0 реплик, чтобы rolled-over `app-logs-000002` не сел на warm-ноду)
+и bootstrap-индекс `app-logs-000001` под write-алиасом `app-logs`, заливает документы и ждёт каждого
+перехода **по факту** — опросом `_plugins/_ism/explain` с таймаутом, а не фиксированными паузами
+(ISM двигает индексы на прогонах фоновой джобы `job_interval`, а не ровно по возрасту).
 
 ## Ускоренные пороги (demo)
 

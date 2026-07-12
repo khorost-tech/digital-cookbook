@@ -3,9 +3,12 @@
 # rollover под write-алиасом -> hot -> warm (allocation) -> snapshot (MinIO) -> delete.
 # Стенд: docker compose up -d  (2 ноды hot/warm + MinIO, см. docker-compose.yml)
 #
-# Запуск:  ./ism.sh            — весь сценарий (займёт ~4-5 минут: ускоренные пороги 1m/2m/3m)
+# Запуск:  ./ism.sh            — весь сценарий; каждый шаг ждётся по _ism/explain, а не по таймеру
+#          (ускоренные пороги 1m/2m/3m, но фактическое время плавает: переходы идут на прогонах
+#           ISM-джобы job_interval, обычно несколько минут суммарно)
+#          bash ism.sh         — то же, если у файла не выставлен executable-бит
 #          ./ism.sh setup      — только репозиторий + политика + bootstrap-индекс
-#          ./ism.sh explain     — текущее состояние индексов
+#          ./ism.sh explain    — текущее состояние индексов
 set -euo pipefail
 
 HOT="${HOT:-http://localhost:9218}"
@@ -25,10 +28,16 @@ repo() {
 # --- 1. ISM-политика + bootstrap write-алиаса ---
 setup() {
   repo
-  # index-шаблон: rollover_alias для ВСЕХ app-logs-* (иначе rolled-over индексы застревают на "Missing rollover_alias")
+  # index-шаблон для ВСЕХ app-logs-*: не только rollover_alias (иначе rolled-over индексы застревают
+  # на "Missing rollover_alias"), но и hot-размещение + 0 реплик — иначе новый app-logs-000002 наследует
+  # дефолтную аллокацию и садится на warm-ноду с репликой, хотя bootstrap-индекс был hot/0-реплик.
   curl -s -X PUT "$HOT/_index_template/app-logs-template" "${J[@]}" -d '{
     "index_patterns": ["app-logs-*"],
-    "template": { "settings": { "plugins.index_state_management.rollover_alias": "app-logs" } }
+    "template": { "settings": {
+      "plugins.index_state_management.rollover_alias": "app-logs",
+      "index.number_of_replicas": 0,
+      "index.routing.allocation.require.box_type": "hot"
+    } }
   }'; echo
   curl -s -X PUT "$HOT/_plugins/_ism/policies/app-logs-policy" "${J[@]}" --data-binary @policy.json; echo
   # bootstrap: первый индекс с write-алиасом app-logs и rollover_alias
@@ -59,13 +68,43 @@ shards()  { req "$HOT/_cat/shards/app-logs-*?v&h=index,shard,prirep,state,node";
 explain() { req "$HOT/_plugins/_ism/explain/app-logs-*?pretty"; }
 snaps()   { req "$HOT/_snapshot/$REPO/_all?pretty"; }
 
-# --- полный сценарий с ожиданием переходов ---
+# --- ожидание реального состояния (polling _ism/explain), а не фиксированные sleep ---
+# ISM двигает индексы на прогонах фоновой джобы (job_interval), а не ровно по возрасту,
+# поэтому шаги ждём по факту наступления, а не по часам.
+http_code()    { curl -s -o /dev/null -w '%{http_code}' "$HOT/$1"; }
+index_exists() { [[ "$(http_code "$1")" == 200 ]]; }
+index_absent() { [[ "$(http_code "$1")" == 404 ]]; }
+in_state()     { curl -s "$HOT/_plugins/_ism/explain/$1" | grep -q "\"state\":{\"name\":\"$2\""; }
+snapshot_taken() { curl -s "$HOT/_snapshot/$REPO/_all" | grep -q '"snapshot"'; }
+
+# wait_for <описание> <таймаут_сек> <команда-предикат...>
+wait_for() {
+  local desc="$1" timeout="$2"; shift 2
+  local waited=0
+  echo "== ждём: $desc (таймаут ${timeout}s, poll 5s) =="
+  until "$@"; do
+    if (( waited >= timeout )); then
+      echo "!! ТАЙМАУТ ${timeout}s: '$desc' не наступило. Текущее состояние ISM:" >&2
+      explain >&2
+      return 1
+    fi
+    sleep 5; waited=$((waited+5))
+  done
+  echo "-> $desc: наступило через ~${waited}s"
+}
+
+# --- полный сценарий: каждый шаг ждём по _ism/explain, а не по таймеру ---
 run() {
   setup; load
-  echo "== ждём rollover (порог 5 доков, job_interval 1m) =="; sleep 90; indices; aliases; explain
-  echo "== ждём hot->warm (min_index_age 1m) =="; sleep 60; shards; explain
-  echo "== ждём warm->snapshot (2m) =="; sleep 90; snaps; explain
-  echo "== ждём snapshot->delete (3m) =="; sleep 90; indices; explain
+  wait_for "rollover → создан app-logs-000002"        180 index_exists app-logs-000002
+  indices; aliases; explain
+  wait_for "app-logs-000001 → warm"                   180 in_state    app-logs-000001 warm
+  shards; explain
+  wait_for "snapshot app-logs-000001 снят в MinIO"    180 snapshot_taken
+  snaps; explain
+  wait_for "app-logs-000001 удалён (delete отработал)" 240 index_absent app-logs-000001
+  indices; explain
+  echo "== цикл завершён: app-logs-000001 прошёл rollover → warm → snapshot → delete =="
 }
 
 if [[ $# -eq 0 ]]; then run; else "$@"; fi
