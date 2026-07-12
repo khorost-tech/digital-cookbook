@@ -40,13 +40,18 @@ setup() {
     } }
   }'; echo
   curl -s -X PUT "$HOT/_plugins/_ism/policies/app-logs-policy" "${J[@]}" --data-binary @policy.json; echo
-  # bootstrap: первый индекс с write-алиасом app-logs и rollover_alias
+  # bootstrap: первый индекс с write-алиасом app-logs и rollover_alias.
+  # policy_id ЯВНО в настройках, а не через ism_template: bootstrap создаётся сразу за политикой,
+  # и ism_template может не успеть распространиться по кластеру — тогда индекс остался бы без политики
+  # НАВСЕГДА (ism_template не привязывается задним числом) → нет state, нет rollover. Явный policy_id
+  # привязывает детерминированно. ism_template в policy.json остаётся для rolled-over app-logs-000002.
   curl -s -X PUT "$HOT/app-logs-000001" "${J[@]}" -d '{
     "settings": {
       "index.number_of_shards": 1,
       "index.number_of_replicas": 0,
       "index.routing.allocation.require.box_type": "hot",
-      "plugins.index_state_management.rollover_alias": "app-logs"
+      "plugins.index_state_management.rollover_alias": "app-logs",
+      "plugins.index_state_management.policy_id": "app-logs-policy"
     },
     "aliases": { "app-logs": { "is_write_index": true } }
   }'; echo
