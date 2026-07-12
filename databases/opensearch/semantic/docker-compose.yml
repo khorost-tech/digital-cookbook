@@ -1,0 +1,40 @@
+# Стенд для статьи «Семантический поиск в OpenSearch: k-NN, эмбеддинги и гибридный поиск»
+# https://khorost.tech/databases/opensearch-semantic-search/
+#
+# OpenSearch 3.5.0 с k-NN / ml-commons / neural-search (уже в образе) + Python (sentence-transformers)
+# для внешней генерации эмбеддингов. Модель — paraphrase-multilingual-MiniLM-L12-v2 (384-dim, мультиязычная).
+#
+# DEMO-ONLY: security ОТКЛЮЧЁН (plain HTTP) — фокус статьи на семантике, а не на TLS (TLS/security — тема #1).
+# Модель (~135 МБ) качается из интернета: при необходимости пробросьте HTTP-прокси (см. закомментированные строки).
+services:
+  opensearch:
+    image: opensearchproject/opensearch:3.5.0
+    container_name: sem-os
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g"               # запас памяти под ml-модель и векторный поиск (про k-NN память — в статье)
+      # Прокси для загрузки модели ml-commons (модель качает движок OpenSearch по JVM-опциям).
+      # Если прямого интернета нет — раскомментируйте и подставьте свой прокси-хост:
+      # - "OPENSEARCH_JAVA_OPTS=-Xms2g -Xmx2g -Dhttp.proxyHost=<proxy-host> -Dhttp.proxyPort=3128 -Dhttps.proxyHost=<proxy-host> -Dhttps.proxyPort=3128"
+      - "DISABLE_SECURITY_PLUGIN=true"                      # DEMO-ONLY: plain HTTP
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    ports:
+      - "9223:9200"
+
+  python:
+    image: python:3.12-slim
+    container_name: sem-py
+    command: sleep infinity
+    working_dir: /work
+    volumes:
+      - ./:/work
+    environment:
+      # прокси для загрузки модели sentence-transformers (если нужен):
+      # - "HTTP_PROXY=http://<proxy-host>:3128"
+      # - "HTTPS_PROXY=http://<proxy-host>:3128"
+      - "OS_URL=http://sem-os:9200"
+    depends_on:
+      - opensearch

@@ -1,0 +1,21 @@
+# Demo-стенд к статье «Streams в RabbitMQ: Kafka-подобный лог и можно ли заменить Kafka».
+# Одна нода RabbitMQ 4.3 со включённым stream-плагином (порт 5552) + management.
+services:
+  rabbit:
+    image: rabbitmq:4.3-management
+    hostname: rabbit-stream
+    container_name: rabbit-stream
+    environment:
+      RABBITMQ_ERLANG_COOKIE: "STREAMDEMO0123456789"
+    ports:
+      - "5552:5552"    # stream protocol
+      - "5672:5672"    # AMQP 0.9.1
+      - "15672:15672"  # management UI
+    volumes:
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf:ro
+      - ./rabbitmq/enabled_plugins:/etc/rabbitmq/enabled_plugins:ro
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 12

@@ -1,0 +1,14 @@
+{
+  "template": {
+    "mappings": {
+      "properties": {
+        "ts":         { "type": "date" },
+        "level":      { "type": "keyword" },
+        "service":    { "type": "keyword" },
+        "message":    { "type": "text", "fields": { "keyword": { "type": "keyword", "ignore_above": 512 } } },
+        "status":     { "type": "short" },
+        "latency_ms": { "type": "float" }
+      }
+    }
+  }
+}

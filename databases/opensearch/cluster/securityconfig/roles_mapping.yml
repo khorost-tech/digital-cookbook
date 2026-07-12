@@ -1,0 +1,33 @@
+---
+# roles_mapping.yml — связывает роль из roles.yml либо с backend_roles (из
+# internal_users.yml), либо с конкретным именем пользователя. Обе формы можно
+# комбинировать в одной роли.
+
+_meta:
+  type: "rolesmapping"
+  config_version: 2
+
+all_access:
+  backend_roles:
+    - "admin"
+  users:
+    - "admin"
+  description: "Demo admin — полный доступ (встроенная роль all_access)"
+
+reader:
+  backend_roles:
+    - "reader"
+  users:
+    - "app_reader"
+
+writer:
+  backend_roles:
+    - "writer"
+  users:
+    - "app_writer"
+
+admin:
+  backend_roles:
+    - "admin"
+  users:
+    - "admin"

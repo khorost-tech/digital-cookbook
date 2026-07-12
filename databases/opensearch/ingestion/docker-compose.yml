@@ -1,0 +1,12 @@
+# Одноузловой OpenSearch 3.5.0 для прогона клиентов из ../clients и бенчмарка ../bench.
+# demo security (self-signed TLS, пароль ниже) — ТОЛЬКО для локального стенда.
+services:
+  opensearch:
+    image: opensearchproject/opensearch:3.5.0
+    container_name: ing-os
+    environment:
+      - "discovery.type=single-node"
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=IngDemo#2026"   # demo-only
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+    ports:
+      - "9214:9200"

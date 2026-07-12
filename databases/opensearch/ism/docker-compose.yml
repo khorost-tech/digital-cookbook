@@ -1,0 +1,67 @@
+# Стенд для статьи «Retention в OpenSearch: ISM, rollover и жизненный цикл индексов»
+# https://khorost.tech/databases/opensearch-ism-retention/
+#
+# Мульти-нодовый кластер (hot + warm) для демонстрации живой миграции индексов
+# hot -> warm -> snapshot -> delete под управлением ISM. MinIO — S3-репозиторий снапшотов.
+#
+# DEMO-ONLY: security ОТКЛЮЧЁН (plain HTTP) — фокус статьи на ISM, а не на TLS (TLS/security — тема #1).
+# Пароли ниже — только для локального стенда.
+services:
+  os-hot:
+    build: .
+    image: ism-opensearch-s3:3.5.0
+    container_name: ism-os-hot
+    environment:
+      - cluster.name=ism-demo
+      - node.name=ism-os-hot
+      - node.attr.box_type=hot
+      - discovery.seed_hosts=ism-os-hot,ism-os-warm
+      - cluster.initial_cluster_manager_nodes=ism-os-hot,ism-os-warm
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "DISABLE_SECURITY_PLUGIN=true"                      # DEMO-ONLY: plain HTTP
+      - "plugins.index_state_management.job_interval=1"     # ISM опрашивает раз в минуту (ускорено)
+      - "s3.client.default.endpoint=ism-minio:9000"
+      - "s3.client.default.protocol=http"
+      - "s3.client.default.path_style_access=true"
+      - "s3.client.default.region=us-east-1"
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    ports:
+      - "9218:9200"
+
+  os-warm:
+    build: .
+    image: ism-opensearch-s3:3.5.0
+    container_name: ism-os-warm
+    environment:
+      - cluster.name=ism-demo
+      - node.name=ism-os-warm
+      - node.attr.box_type=warm
+      - discovery.seed_hosts=ism-os-hot,ism-os-warm
+      - cluster.initial_cluster_manager_nodes=ism-os-hot,ism-os-warm
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "DISABLE_SECURITY_PLUGIN=true"
+      - "plugins.index_state_management.job_interval=1"
+      - "s3.client.default.endpoint=ism-minio:9000"
+      - "s3.client.default.protocol=http"
+      - "s3.client.default.path_style_access=true"
+      - "s3.client.default.region=us-east-1"
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    ports:
+      - "9219:9200"
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: ism-minio
+    command: server /data --console-address ":9321"
+    environment:
+      - MINIO_ROOT_USER=minioadmin           # DEMO-ONLY
+      - MINIO_ROOT_PASSWORD=IsmDemo#2026      # DEMO-ONLY
+    ports:
+      - "9320:9000"
+      - "9321:9321"

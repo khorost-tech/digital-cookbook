@@ -1,0 +1,26 @@
+---
+# Тонкий слой поверх Terraform-handoff: проверяем связность и ставим Docker Engine.
+# Полный деплой Compose-стека — отдельный пример: ansible/compose-deploy.
+#
+# Запуск (inventory сгенерирован Terraform):
+#   ansible-playbook -i inventory/hosts.ini site.yml
+
+- name: Подготовка docker-хостов
+  hosts: docker_hosts
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Проверить связность (handoff Terraform → Ansible работает)
+      ansible.builtin.ping:
+
+    - name: Установить Docker Engine из официального скрипта
+      ansible.builtin.shell:
+        cmd: curl -fsSL https://get.docker.com | sh
+        creates: /usr/bin/docker
+
+    - name: Добавить пользователя в группу docker
+      ansible.builtin.user:
+        name: "{{ ansible_user }}"
+        groups: docker
+        append: true

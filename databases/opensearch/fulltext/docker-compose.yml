@@ -1,0 +1,38 @@
+# Стенд для статьи «Полнотекстовый поиск в OpenSearch»
+# https://khorost.tech/databases/opensearch-fulltext-search/
+#
+# Три движка на одних демо-данных для честного сравнения FTS:
+#   opensearch — 3.5.0, demo security (self-signed TLS), порт 9215
+#   postgres   — tsvector/GIN, порт 5442
+#   mongo      — text index, порт 27027
+#
+# DEMO-ONLY: пароли ниже — только для локального стенда, не для прода.
+services:
+  opensearch:
+    image: opensearchproject/opensearch:3.5.0
+    container_name: ft-os
+    environment:
+      - discovery.type=single-node
+      - bootstrap.memory_lock=true
+      - "OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m"
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=FtDemo#2026"   # DEMO-ONLY
+    ulimits:
+      memlock: { soft: -1, hard: -1 }
+      nofile: { soft: 65536, hard: 65536 }
+    ports:
+      - "9215:9200"
+
+  postgres:
+    image: postgres:17.9
+    container_name: ft-pg
+    environment:
+      - POSTGRES_PASSWORD=FtDemo#2026   # DEMO-ONLY
+      - POSTGRES_DB=fulltext
+    ports:
+      - "5442:5432"
+
+  mongo:
+    image: mongo:8.2.11
+    container_name: ft-mongo
+    ports:
+      - "27027:27017"

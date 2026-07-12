@@ -1,0 +1,5 @@
+# Зашифрованные секреты (создаются из *.example.yml через ansible-vault)
+group_vars/prod/secrets.yml
+
+# Ansible retry files
+*.retry

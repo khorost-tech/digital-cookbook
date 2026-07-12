@@ -1,0 +1,7 @@
+services:
+  nats:
+    image: nats:2.12
+    command: ["-m", "8222"]           # мониторинг на :8222; JetStream не включаем — это Core-демо
+    ports:
+      - "4222:4222"
+      - "8222:8222"

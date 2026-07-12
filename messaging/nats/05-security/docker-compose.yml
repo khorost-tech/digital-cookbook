@@ -1,0 +1,21 @@
+services:
+  nats-static:
+    image: nats:2.12
+    hostname: nats-static
+    command: ["-c", "/etc/nats/nats.conf"]
+    volumes:
+      - "./static-accounts.conf:/etc/nats/nats.conf:ro"
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+  nats-mtls:
+    image: nats:2.12
+    hostname: nats-mtls
+    command: ["-c", "/etc/nats/mtls.conf"]
+    volumes:
+      - "./mtls.conf:/etc/nats/mtls.conf:ro"
+      - "./tls:/etc/nats/tls:ro"
+    ports:
+      - "4223:4222"
+      - "8223:8222"

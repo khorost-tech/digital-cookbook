@@ -1,0 +1,54 @@
+# Managed by Ansible — do not edit manually
+# Stack: {{ stack_name }} | Env: {{ env_name }}
+
+services:
+
+  # whoami собран FROM scratch — нет shell/wget, поэтому healthcheck вынесен на proxy (см. ниже).
+  # Приложение: traefik/whoami — отвечает на HTTP-запросы,
+  # возвращает информацию о запросе (хост, IP, заголовки).
+  # Удобно для проверки маршрутизации и балансировки.
+  app:
+    image: {{ app_image }}
+    restart: unless-stopped
+    networks:
+      - internal
+    environment:
+      - APP_ENV={{ env_name }}
+    # deploy.replicas учитывается docker compose up в Compose v2 (стенд на неё и рассчитан).
+    deploy:
+      replicas: {{ app_replicas }}
+
+  # Reverse-proxy: Caddy автоматически проксирует запросы к приложению.
+  # В реальном деплое Caddy может завершать TLS через Let's Encrypt.
+  proxy:
+    image: {{ proxy_image }}
+    restart: unless-stopped
+    ports:
+      - "{{ app_port }}:80"
+    volumes:
+      - caddy_data:/data
+      - caddy_config:/config
+    networks:
+      - internal
+    environment:
+      - APP_DOMAIN={{ app_domain }}
+      - APP_BACKEND=app:80
+    command: >
+      caddy reverse-proxy
+      --from :80
+      --to app:80
+    depends_on:
+      - app
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

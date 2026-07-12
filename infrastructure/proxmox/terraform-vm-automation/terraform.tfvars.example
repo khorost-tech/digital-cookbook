@@ -1,0 +1,35 @@
+# Скопируйте в terraform.tfvars и подставьте свои значения.
+# terraform.tfvars в .gitignore — секреты не попадут в репозиторий.
+
+proxmox_url          = "https://pve.lab.local:8006"
+proxmox_token_id     = "terraform@pam!tf-token"
+proxmox_token_secret = "xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+target_node          = "pve"
+
+# Способ создания VM: "import" (без шаблона, всё в Terraform) или "clone" (из шаблона).
+vm_source = "import"
+
+# Для vm_source = "clone" укажите ID подготовленного шаблона:
+# vm_template_id = 9000
+
+ssh_public_key = "ssh-ed25519 AAAA...замените... user@host"
+
+# Сеть (подгоните под свою лабораторию)
+gateway     = "10.10.10.1"
+dns_servers = ["1.1.1.1", "8.8.8.8"]
+
+vms = {
+  "docker-host" = { cores = 4, memory = 4096, disk = 40, ip = "10.10.10.101/24" }
+  "k3s-node"    = { cores = 2, memory = 2048, disk = 20, ip = "10.10.10.102/24" }
+  "monitoring"  = { cores = 2, memory = 2048, disk = 30, ip = "10.10.10.103/24" }
+}
+
+containers = {
+  "dns-server" = {
+    cores    = 1
+    memory   = 256
+    disk     = 4
+    ip       = "10.10.10.201/24"
+    template = "local:vztmpl/debian-13-standard_13.1-2_amd64.tar.zst"
+  }
+}

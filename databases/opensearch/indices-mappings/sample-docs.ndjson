@@ -1,0 +1,6 @@
+{ "index": { "_index": "app-logs-2026.08" } }
+{ "ts": "2026-07-03T10:00:00Z", "level": "error", "service": "service-a", "message": "disk full on node", "status": 500, "latency_ms": 12.7 }
+{ "index": { "_index": "app-logs-2026.08" } }
+{ "ts": "2026-07-03T10:00:05Z", "level": "info", "service": "service-a", "message": "request handled", "status": 200, "latency_ms": 4.1 }
+{ "index": { "_index": "app-logs-2026.08" } }
+{ "ts": "2026-07-03T10:00:07Z", "level": "warn", "service": "service-b", "message": "retry scheduled", "status": 429, "latency_ms": 8.9 }

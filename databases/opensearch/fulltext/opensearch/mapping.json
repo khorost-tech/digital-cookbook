@@ -1,0 +1,51 @@
+{
+  "settings": {
+    "index": {
+      "number_of_shards": 1,
+      "number_of_replicas": 0
+    },
+    "analysis": {
+      "filter": {
+        "ru_stop":      { "type": "stop",    "stopwords": "_russian_" },
+        "ru_stemmer":   { "type": "stemmer", "language": "russian" },
+        "en_stop":      { "type": "stop",    "stopwords": "_english_" },
+        "en_stemmer":   { "type": "stemmer", "language": "english" }
+      },
+      "analyzer": {
+        "ru_custom": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "ru_stop", "ru_stemmer"]
+        },
+        "en_custom": {
+          "type": "custom",
+          "tokenizer": "standard",
+          "filter": ["lowercase", "en_stop", "en_stemmer"]
+        }
+      }
+    }
+  },
+  "mappings": {
+    "properties": {
+      "title": {
+        "type": "text",
+        "analyzer": "ru_custom",
+        "fields": {
+          "en":      { "type": "text",    "analyzer": "en_custom" },
+          "keyword": { "type": "keyword" }
+        }
+      },
+      "body": {
+        "type": "text",
+        "analyzer": "ru_custom",
+        "fields": {
+          "en": { "type": "text", "analyzer": "en_custom" }
+        }
+      },
+      "tags":         { "type": "keyword" },
+      "category":     { "type": "keyword" },
+      "author":       { "type": "keyword" },
+      "published_at": { "type": "date", "format": "yyyy-MM-dd" }
+    }
+  }
+}

@@ -1,0 +1,11 @@
+# Databases — примеры
+
+Реляционные, документные, колоночные и KV-хранилища, поиск, индексы, транзакции, WAL.
+
+| Стенд | Описание | Статья |
+|---|---|---|
+| [`opensearch/`](opensearch/) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
+
+---
+
+Навигация: [все категории](../README.md) · [полный список примеров](../INDEX.md)

@@ -1,0 +1,12 @@
+# Go бинарники (собранные локально)
+go/consumer
+go/consumer.exe
+go/producer
+go/producer.exe
+go/consumer-linux
+go/producer-linux
+go/delayed-retry-demo-linux
+go/nack_test_linux
+
+# Тестовые бинарники
+go/cmd/nack_test/

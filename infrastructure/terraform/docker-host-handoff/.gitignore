@@ -1,0 +1,7 @@
+# Terraform
+terraform/.terraform/
+terraform/*.tfstate*
+terraform/terraform.tfvars
+
+# Сгенерированный Terraform inventory
+ansible/inventory/hosts.ini

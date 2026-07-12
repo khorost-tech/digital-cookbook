@@ -1,0 +1,6 @@
+# сборочные артефакты клиентов
+clients/java/target/
+clients/rust/target/
+clients/python/.venv/
+**/__pycache__/
+*.class

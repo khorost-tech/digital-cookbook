@@ -1,0 +1,39 @@
+---
+# internal_users.yml — локальные пользователи security-плагина: логин + bcrypt-хеш пароля
+# + backend_roles (промежуточная метка, которую использует roles_mapping.yml).
+#
+# Пароль в открытом виде здесь никогда не хранится — только хеш, полученный утилитой
+# hash.sh (hash.bat на Windows) из комплекта OpenSearch:
+#   plugins/opensearch-security/tools/hash.sh -p '<пароль>'
+#
+# ВНИМАНИЕ — DEMO CREDENTIALS. Хеши ниже — рабочие bcrypt-хеши демо-паролей,
+# сгенерированные через hash.sh для этого примера (admin/admin, app_reader/reader123,
+# app_writer/writer123). Проверены живым прогоном на OpenSearch 3.5.0. Это НЕ секреты и
+# годны ТОЛЬКО для локального/тестового стенда. Перед любым использованием за пределами
+# localhost сгенерируйте собственные пароли и замените хеши:
+#   plugins/opensearch-security/tools/hash.sh -p '<пароль>'
+# (У OpenSearch нет единого «одинакового на всех инсталляциях» demo-хеша — bcrypt солёный;
+# подходит любой валидный хеш нужного пароля.)
+
+_meta:
+  type: "internalusers"
+  config_version: 2
+
+admin:
+  hash: "$2y$12$7jV.0lSqi.chiGK9xn8dS./8QDufSHZs3dqZN/nJW0EFcaW63qN1C"   # demo-only: пароль "admin"
+  reserved: true
+  backend_roles:
+    - "admin"
+  description: "Demo admin — сменить пароль перед любым использованием вне localhost"
+
+app_reader:
+  hash: "$2y$12$mTDAJjg.pdfkvAUfrgDo2.P68UPG8d/r0WNFmoJy04jtfgOQ8z5K."   # demo-only: пароль "reader123"
+  backend_roles:
+    - "reader"
+  description: "Demo read-only пользователь для app-logs-*"
+
+app_writer:
+  hash: "$2y$12$XbAozZaIxl4Jlc6vQNgF6.4bgsF4tnDfBmjf6eqq5kOg63XcUbH2."   # demo-only: пароль "writer123"
+  backend_roles:
+    - "writer"
+  description: "Demo write-пользователь для app-logs-*"
