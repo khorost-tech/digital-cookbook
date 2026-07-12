@@ -1,0 +1,11 @@
+# NDJSON для _bulk и shell-скрипты требуют LF-переводов строк,
+# иначе на Windows-клонах ломаются загрузка bulk и исполнение скриптов.
+*.ndjson text eol=lf
+*.sh     text eol=lf
+*.js     text eol=lf
+
+# Gradle wrapper: shell-скрипт — LF (исполняется на Unix/WSL),
+# Windows-батник — CRLF (иначе git diff --check на WSL видит CR как
+# trailing whitespace по всем строкам gradlew.bat).
+gradlew  text eol=lf
+*.bat    text eol=crlf
