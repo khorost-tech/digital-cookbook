@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tech.khorost</groupId>
+  <artifactId>event-payload-cookbook-java</artifactId>
+  <version>0.1.0</version>
+
+  <!-- Java-пример к статье «Что кладём в событие: notification vs event-carried
+       state transfer» (https://khorost.tech/architecture/event-notification-vs-state-transfer/).
+       Полный аналог Go-стенда, тот же сценарий IN-PROCESS: поток «заказ оплачен»
+       в двух формах события (тонкой notification и толстой state-transfer),
+       сравнение по трём осям — обращения к источнику, размер payload, свежесть.
+       Без БД и брокеров: источник — Map под замком со счётчиком, «шина» —
+       сериализованные байты события, консьюмеры — методы. JSON сериализуется
+       вручную (без внешних зависимостей), чтобы совпасть с Go байт-в-байт. -->
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <exec.mainClass>tech.khorost.eventpayload.Main</exec.mainClass>
+  </properties>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,30 @@
+# Стенд к статье "Хореография vs оркестрация" на khorost.tech:
+#   https://khorost.tech/architecture/choreography-vs-orchestration/
+#
+# Лёгкий dev-сервер Temporal (`temporal server start-dev`) — всё в одном процессе:
+# встроенное хранилище (in-memory), frontend gRPC и веб-UI. Ни Postgres, ни
+# Elasticsearch не требуется — стенд самодостаточен, поднимается одной командой.
+#
+# Порты (host):
+#   7233 — gRPC frontend (сюда подключается Go-воркер и клиент, SDK)
+#   8233 — веб-UI (http://localhost:8233 — статусы workflow, история шагов)
+#
+# --ip 0.0.0.0 обязателен: без него dev-сервер слушает только 127.0.0.1 ВНУТРИ
+# контейнера и снаружи недоступен.
+
+services:
+  temporal:
+    image: temporalio/temporal:1.7.2   # CLI 1.7.2 = Server 1.31.1, UI 2.49.1 (docker pull --version, 2026-07-08)
+    container_name: evcoord-temporal
+    command:
+      - server
+      - start-dev
+      - --ip
+      - 0.0.0.0
+      - --port
+      - "7233"
+      - --ui-port
+      - "8233"
+    ports:
+      - "7233:7233"   # gRPC frontend
+      - "8233:8233"   # web UI

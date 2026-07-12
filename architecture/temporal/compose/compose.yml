@@ -1,0 +1,48 @@
+# Стенд к серии статей «Temporal: durable execution вглубь» на khorost.tech.
+# https://khorost.tech/architecture/ (серия из 8 статей; см. temporal/README.md)
+#
+# Temporal в режиме `server start-dev` — единственный контейнер, поднимающий
+# сразу всё, что нужно для локальной разработки: сервер (frontend/history/
+# matching/worker), встроенное хранилище (in-memory SQLite) и Web UI. Это
+# НЕ прод-топология (в проде — отдельные роли + PostgreSQL/Cassandra +
+# Elasticsearch), а компактный фундамент, на котором стоят все суб-стенды
+# серии (00-paradigm … 07-languages).
+#
+# Хостовые порты выбраны так, чтобы не конфликтовать с соседними стендами
+# репозитория, которые тоже завязаны на Temporal/оркестрацию:
+#   7253 (gRPC frontend) — 7233 занят стендом event-coordination,
+#                          7243 — стендом saga; берём следующий свободный 7253.
+#   8253 (Web UI)        — по аналогии сдвинут с дефолтного 8233 на 8253.
+# При конфликте на другой машине — поменяйте левую часть в ports и порт
+# в клиентах Go (по умолчанию SDK ходит на localhost:7253, см. go/00-paradigm).
+#
+# Данные эфемерны (in-memory dev store): после `down` вся история воркфлоу
+# пропадает — это осознанный выбор для стенда, каждый прогон демонстрации
+# начинается с чистого листа. Долговечность (durable execution) здесь
+# демонстрируется в пределах ЖИЗНИ сервера при падении ВОРКЕРА, а не при
+# перезапуске самого сервера.
+
+# Явное имя проекта — иначе docker compose берёт имя каталога (`compose`),
+# общее у всех стендов репозитория (kafka/compose, event-coordination/compose,
+# …), и `up` начинает считать чужие контейнеры «орфанами»/пересоздавать их.
+name: temporal-cookbook
+
+services:
+  temporal:
+    image: temporalio/temporal:1.7.2   # CLI 1.7.2 = Server 1.31.1, UI 2.49.1 (сверено живьём 2026-07-08)
+    container_name: temporal-devserver
+    command:
+      - server
+      - start-dev
+      - --ip=0.0.0.0
+      - --port=7233
+      - --ui-port=8233
+    ports:
+      - "7253:7233"   # gRPC frontend — сюда подключается SDK-клиент/воркер
+      - "8253:8233"   # Web UI — http://localhost:8253
+    healthcheck:
+      # `temporal` CLI внутри образа умеет ходить в собственный frontend
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
+      interval: 5s
+      timeout: 5s
+      retries: 20

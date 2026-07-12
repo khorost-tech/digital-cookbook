@@ -1,0 +1,14 @@
+# Go
+bin/
+idempotency-cookbook
+idempotency-cookbook.exe
+
+# Java / Maven (порт стенда — TODO)
+target/
+*.jar
+*.class
+dependency-reduced-pom.xml
+
+# окружение
+.env
+*-cookbook

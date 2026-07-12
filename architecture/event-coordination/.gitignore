@@ -1,0 +1,7 @@
+# Go
+bin/
+event-coordination-cookbook
+event-coordination-cookbook.exe
+
+# окружение
+.env

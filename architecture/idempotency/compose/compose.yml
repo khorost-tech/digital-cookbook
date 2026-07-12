@@ -1,0 +1,28 @@
+# Стенд к статье «Гарантии доставки и идемпотентность» на khorost.tech.
+# https://khorost.tech/architecture/delivery-guarantees-idempotency/
+#
+# Одиночный Postgres 16 для демонстрации идемпотентного консьюмера поверх
+# at-least-once доставки (dedup-ключ и естественная идемпотентность). Схему
+# создаёт и сбрасывает сам Go-клиент при старте (см. go/main.go, setupSchema) —
+# отдельный init-SQL не нужен, чтобы `go run .` был воспроизводим между прогонами.
+#
+# Хостовый порт 5450 выбран свободным на момент создания стенда (2026-07-08):
+# в репозитории уже заняты 5432/5433/5440/5441/5442 (postgres других стендов).
+# При конфликте на другой машине — поменяйте левую часть в ports и порт в
+# DATABASE_URL (по умолчанию клиент ходит на localhost:5450).
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: idem-postgres
+    environment:
+      POSTGRES_USER: idem
+      POSTGRES_PASSWORD: idem
+      POSTGRES_DB: idem
+    ports:
+      - "5450:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U idem -d idem"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

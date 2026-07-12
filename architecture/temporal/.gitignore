@@ -1,0 +1,10 @@
+# Go
+bin/
+temporal-cookbook
+temporal-cookbook.exe
+paradigm
+paradigm.exe
+paradigm-linux
+
+# окружение
+.env
