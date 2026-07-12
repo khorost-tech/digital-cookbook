@@ -27,6 +27,7 @@
   },
   "mappings": {
     "properties": {
+      "id":           { "type": "integer" },
       "title": {
         "type": "text",
         "analyzer": "ru_custom",

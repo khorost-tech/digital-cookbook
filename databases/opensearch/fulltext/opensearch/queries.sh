@@ -84,10 +84,10 @@ pagination() {
 JSON
   # search_after: sort последнего hit листа 1 подставить в search_after листа 2
   q POST articles/_search <<'JSON'
-{"size":3,"sort":[{"published_at":"desc"},{"_id":"asc"}],"query":{"match_all":{}}}
+{"size":3,"sort":[{"published_at":"desc"},{"id":"asc"}],"query":{"match_all":{}}}
 JSON
   q POST articles/_search <<'JSON'
-{"size":3,"sort":[{"published_at":"desc"},{"_id":"asc"}],"search_after":[1775347200000,"4"],"query":{"match_all":{}}}
+{"size":3,"sort":[{"published_at":"desc"},{"id":"asc"}],"search_after":[1775347200000,4],"query":{"match_all":{}}}
 JSON
 }
 
