@@ -30,7 +30,8 @@ git worktree add /tmp/dc-src 76ca0516c94865d6495c15910680bd6ebe910436
 go install github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.4.0
 # --format json ОБЯЗАТЕЛЕН: по умолчанию osv-scanner печатает таблицу, а не JSON
 osv-scanner scan --recursive --format json /tmp/dc-src > osv-repro.json
-# сравнить osv-repro.json с osv-results.json (снят той же командой на том же исходнике)
+# сравнивать НЕ побайтово (пути G:/... vs /tmp/dc-src/... и часть полей advisory отличаются),
+# а СЕМАНТИЧЕСКИ — по набору (package, version, vuln-ID); плюс помнить, что OSV — живая база
 
 # Dependabot-счётчик (нужен gh auth) — ожидаемо 0
 gh api -X GET repos/khorost-tech/digital-cookbook/dependabot/alerts \
@@ -61,7 +62,21 @@ gh api -X GET repos/khorost-tech/digital-cookbook/dependabot/alerts \
 
 То есть в человекочитаемой таблице `osv-scanner` прячет `called:false`, а в JSON — оставляет с аннотацией; поэтому `x/crypto` виден в JSON дважды (nats + orm), а в таблице — один раз (только orm).
 
-**Доказательство отсева `openpgp`** — [`govulncheck-nats.txt`](govulncheck-nats.txt) (`govulncheck -show verbose ./...` в `messaging/nats/clients/go`): `GO-2026-5932` попадает в секцию **«Module Results»** с припиской «modules you require, but your code doesn't appear to call these vulnerabilities». То есть `x/crypto/openpgp` в дереве есть, но не вызывается — call-graph корректно не считает его достижимой уязвимостью. (`go/orm-gorm-vs-jet` для такого анализа требует предварительного codegen — см. README самого стенда.)
+### openpgp — корректная presence-находка, а не «ошибка сканера»
+
+[`govulncheck-nats.txt`](govulncheck-nats.txt) (`govulncheck -show verbose ./...` в `messaging/nats/clients/go`) кладёт `GO-2026-5932` в секцию **«Module Results»** — «modules you require, but your code doesn't appear to call these vulnerabilities». Важная формулировка: presence-сканер сработал **правильно** — уязвимый модуль `golang.org/x/crypto` в дереве действительно есть. Это **не ложное срабатывание**, а корректная presence-находка, **применимость которой снижает контекст приложения**: подпакет `openpgp` не вызывается, поэтому call-graph (`govulncheck`) её не считает достижимой. Разница важна: сканер не ошибся — решение «можно понизить приоритет» принимаете вы, зная, что символ недостижим.
+
+### Тот же артефакт честно показывает 3 ДОСТИЖИМЫЕ stdlib-уязвимости
+
+`govulncheck-nats.txt` в секции **«Symbol Results»** сообщает, что код **достижимо** затронут тремя уязвимостями стандартной библиотеки **Go 1.26.3** (это toolchain снимка):
+
+| ID | Пакет stdlib | Фикс |
+|---|---|---|
+| `GO-2026-5856` | `crypto/tls` (утечка приватности в Encrypted Client Hello) | go1.26.5 |
+| `GO-2026-5039` | `net/textproto` (неэкранированный ввод в ошибках) | go1.26.4 |
+| `GO-2026-5037` | `crypto/x509` (неэффективный разбор hostname) | go1.26.4 |
+
+Это **не** про зависимости: dependency-remediation в снимке завершена (Dependabot 0), но **стандартная библиотека Go 1.26.3 требует обновления до 1.26.5**. Урок ровно в этом: **SCA манифестов зависимостей не заменяет проверку stdlib/toolchain** — их ловит `govulncheck` по версии `go`, а не osv-scanner/Dependabot по манифестам. Полное «в ноль» здесь = бампы зависимостей **плюс** обновление Go. (`go/orm-gorm-vs-jet` для такого анализа требует предварительного codegen — см. README самого стенда.)
 
 ## Оговорка про приватную часть
 
