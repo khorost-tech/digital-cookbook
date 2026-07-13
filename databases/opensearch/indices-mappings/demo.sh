@@ -12,16 +12,17 @@
 
 set -euo pipefail
 
-NAME="${NAME:-osim-demo}"
+# имя контейнера — через OSIM_NAME (специфичная переменная), чтобы не подхватить чужой $NAME из окружения
+OSIM_NAME="${OSIM_NAME:-osim-demo}"
 PORT="${PORT:-9210}"
 PASS="${OPENSEARCH_INITIAL_ADMIN_PASSWORD:-ImDemo#2026}"   # demo-only
 IMAGE="${IMAGE:-opensearchproject/opensearch:3.5.0}"
 OS="curl -sk -u admin:${PASS} https://localhost:${PORT}"
 DIR="$(cd "$(dirname "$0")" && pwd)"
 
-echo "==> Поднимаю контейнер ${NAME} (${IMAGE}) на порту ${PORT}"
-docker rm -f "${NAME}" >/dev/null 2>&1 || true
-docker run -d --name "${NAME}" -p "${PORT}:9200" \
+echo "==> Поднимаю контейнер ${OSIM_NAME} (${IMAGE}) на порту ${PORT}"
+docker rm -f "${OSIM_NAME}" >/dev/null 2>&1 || true
+docker run -d --name "${OSIM_NAME}" -p "${PORT}:9200" \
   -e discovery.type=single-node \
   -e OPENSEARCH_INITIAL_ADMIN_PASSWORD="${PASS}" \
   -e OPENSEARCH_JAVA_OPTS='-Xms1g -Xmx1g' \
@@ -73,4 +74,4 @@ ${OS}/_aliases -XPOST -H 'Content-Type: application/json' -d '{"actions":[
 ]}' >/dev/null
 ${OS}/_cat/aliases/app-logs?v'&'h=alias,index,is_write_index
 
-echo; echo "==> Готово. Убрать контейнер: docker rm -f ${NAME}"
+echo; echo "==> Готово. Убрать контейнер: docker rm -f ${OSIM_NAME}"

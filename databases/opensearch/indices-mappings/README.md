@@ -17,7 +17,7 @@ docker rm -f osim-demo
 ```
 
 Требуется Docker. По умолчанию контейнер `osim-demo` на порту `9210`. Переопределить:
-`PORT=9300 NAME=my-os ./demo.sh`.
+`PORT=9300 OSIM_NAME=my-os ./demo.sh`.
 
 ## Состав
 
