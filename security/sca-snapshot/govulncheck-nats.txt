@@ -1,0 +1,39 @@
+=== Symbol Results ===
+
+Vulnerability #1: GO-2026-5856
+    Invoking Encrypted Client Hello privacy leak in crypto/tls
+  More info: https://pkg.go.dev/vuln/GO-2026-5856
+  Standard library
+    Found in: crypto/tls@go1.26.3
+    Fixed in: crypto/tls@go1.26.5
+    Example traces found:
+      #1: internal/natsconn/natsconn.go:61:25: natsconn.Connect calls nats.Connect, which eventually calls tls.Conn.Handshake
+      #2: internal/natsconn/natsconn.go:61:25: natsconn.Connect calls nats.Connect, which eventually calls tls.Conn.Read
+      #3: internal/natsconn/natsconn.go:94:11: natsconn.Shutdown calls nats.Conn.Close, which eventually calls tls.Conn.Write
+
+Vulnerability #2: GO-2026-5039
+    Arbitrary inputs are included in errors without any escaping in
+    net/textproto
+  More info: https://pkg.go.dev/vuln/GO-2026-5039
+  Standard library
+    Found in: net/textproto@go1.26.3
+    Fixed in: net/textproto@go1.26.4
+    Example traces found:
+      #1: internal/natsconn/natsconn.go:61:25: natsconn.Connect calls nats.Connect, which eventually calls textproto.Reader.ReadMIMEHeader
+
+Vulnerability #3: GO-2026-5037
+    Inefficient candidate hostname parsing in crypto/x509
+  More info: https://pkg.go.dev/vuln/GO-2026-5037
+  Standard library
+    Found in: crypto/x509@go1.26.3
+    Fixed in: crypto/x509@go1.26.4
+    Example traces found:
+      #1: internal/natsconn/natsconn.go:94:11: natsconn.Shutdown calls nats.Conn.Close, which eventually calls x509.Certificate.Verify
+      #2: internal/natsconn/natsconn.go:94:11: natsconn.Shutdown calls nats.Conn.Close, which eventually calls x509.Certificate.VerifyHostname
+      #3: cmd/core-pubsub/main.go:35:2: core.main calls nats.Subscription.Unsubscribe, which eventually calls x509.HostnameError.Error
+
+Your code is affected by 3 vulnerabilities from the Go standard library.
+This scan also found 2 vulnerabilities in packages you import and 1
+vulnerability in modules you require, but your code doesn't appear to call these
+vulnerabilities.
+Use '-show verbose' for more details.
