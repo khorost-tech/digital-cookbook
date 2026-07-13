@@ -2,7 +2,7 @@
 
 Приложение к статье [«Сканирование уязвимых зависимостей (SCA): Dependabot, osv-scanner, govulncheck»](https://khorost.tech/security/dependency-scanning-sca-dependabot-osv/).
 
-Снимок состояния публичного репозитория `digital-cookbook` **после** ремедиации: показывает контраст «Dependabot видит 0 — osv-scanner видит остаток» и два «краевых» кейса статьи (ложное срабатывание на уровне модуля и расхождение диапазонов между базами).
+Снимок состояния публичного репозитория `digital-cookbook` **после** ремедиации: показывает контраст «Dependabot видит 0 — osv-scanner видит остаток» и два «краевых» кейса статьи (корректная presence-находка, недостижимая в приложении, и расхождение диапазонов между базами).
 
 ## Два коммита — важно для воспроизводимости
 
@@ -49,7 +49,7 @@ gh api -X GET repos/khorost-tech/digital-cookbook/dependabot/alerts \
 
 | Пакет | Версия | Advisory | Манифесты | Почему остаётся |
 |---|---|---|---|---|
-| `golang.org/x/crypto` | 0.52.0 | `GO-2026-5932` | `go/orm-gorm-vs-jet`, `messaging/nats/clients/go` | про подпакет `openpgp`, который стенды **не импортируют** → ложное на уровне модуля; severity в записи — `Unknown` |
+| `golang.org/x/crypto` | 0.52.0 | `GO-2026-5932` | `go/orm-gorm-vs-jet`, `messaging/nats/clients/go` | про подпакет `openpgp`, который стенды **не импортируют** → корректная presence-находка, недостижимая в приложении (не «ложное»); severity в записи — `Unknown` |
 | `com.fasterxml.jackson.core:jackson-databind` | 2.18.9 | `GHSA-5jmj-h7xm-6q6v` | `databases/opensearch/ingestion/clients/java` | расхождение баз: Dependabot считает 2.18.9 фиксом, а в OSV на старом координате нет `fixed`-событий (фикс только на `tools.jackson.core` 3.x) |
 
 ## Как читать osv-results.json: смешанный результат (presence + Go-reachability)
