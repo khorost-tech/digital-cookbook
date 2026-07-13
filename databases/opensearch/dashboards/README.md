@@ -22,6 +22,7 @@ curl -s -u admin:'DashDemo#2026' http://localhost:5602/api/status | jq .status.o
 
 ```bash
 ./setup.sh                    # данные app-logs + saved objects (import) + RBAC (reader-роль/юзер)
+# если ./setup.sh ругается на права — запустите: bash setup.sh
 ./setup.sh load               # только демо-данные
 ./setup.sh objects            # только импорт saved-objects.ndjson (index-pattern/visualization/dashboard)
 ./setup.sh rbac               # только reader-роль/role_mapping/юзер
