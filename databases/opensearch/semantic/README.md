@@ -38,8 +38,13 @@ docker exec -it sem-py python embed.py             # считает эмбедд
 MODEL_ID=<id> ./queries.sh                          # match-промах / neural / pure-semantic / hybrid
 ```
 
-Модель качает сам движок OpenSearch. Если прямого интернета нет — пробросьте прокси через JVM-опции
-в `docker-compose.yml` (закомментированный вариант `OPENSEARCH_JAVA_OPTS` с `-Dhttp.proxyHost=...`).
+Движок OpenSearch на этом шаге качает **две** вещи: саму модель (~135 МБ, на `register`) и **PyTorch
+native runtime** (DJL, на `deploy`). Именно загрузка native-runtime при `deploy` чаще всего рвётся на
+нестабильной сети — `DEPLOY_FAILED` с `Premature EOF`. Поэтому `setup.sh mlcommons` **ретраит deploy (3×)**
+и на каждом шаге печатает реальный статус/ошибку (`register`/`deploy` → `COMPLETED`/`DEPLOYED` или диагностика).
+Если и с ретраем не выходит — пробросьте HTTP(S)-прокси через JVM-опции в `docker-compose.yml`
+(закомментированный `OPENSEARCH_JAVA_OPTS` с `-Dhttp.proxyHost=...`/`-Dhttps.proxyHost=...`): он покрывает
+и модель, и native-runtime. Проверено вживую: через прокси `register→deploy` проходит стабильно.
 
 `queries.sh` показывает контраст на точном термине **BM25**: чистая семантика «размазывает» выдачу,
 а гибрид (лексика + семантика через `hybrid`-запрос и search-pipeline) ставит точное совпадение первым.

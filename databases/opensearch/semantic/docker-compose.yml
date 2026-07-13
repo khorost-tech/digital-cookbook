@@ -5,7 +5,9 @@
 # для внешней генерации эмбеддингов. Модель — paraphrase-multilingual-MiniLM-L12-v2 (384-dim, мультиязычная).
 #
 # DEMO-ONLY: security ОТКЛЮЧЁН (plain HTTP) — фокус статьи на семантике, а не на TLS (TLS/security — тема #1).
-# Модель (~135 МБ) качается из интернета: при необходимости пробросьте HTTP-прокси (см. закомментированные строки).
+# На шаге ml-commons движок качает модель (~135 МБ, register) И PyTorch native runtime (DJL, deploy —
+# тут чаще всего рвётся «Premature EOF»). Оба идут по JVM-прокси: при нестабильной сети раскомментируйте
+# строки прокси ниже. setup.sh при этом ретраит deploy 3× и печатает статус/ошибку.
 services:
   opensearch:
     image: opensearchproject/opensearch:3.5.0
