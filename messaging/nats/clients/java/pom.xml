@@ -17,6 +17,16 @@
          (релиз 2026-05-07, https://github.com/nats-io/nats.java/releases). -->
     <jnats.version>2.25.3</jnats.version>
   </properties>
+  <dependencyManagement>
+    <dependencies>
+      <!-- security-пины транзитивных зависимостей (osv-scanner) -->
+      <dependency>
+        <groupId>org.bouncycastle</groupId>
+        <artifactId>bcprov-lts8on</artifactId>
+        <version>2.73.11</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
 
   <dependencies>
     <dependency>

@@ -1,1 +1,4 @@
 opensearch-py==3.2.0
+# security-пины транзитивов (osv-scanner): urllib3<2.7 и idna<3.15 уязвимы
+urllib3>=2.7.0,<3
+idna>=3.15

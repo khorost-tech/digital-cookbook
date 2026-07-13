@@ -8,6 +8,16 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <exec.mainClass>Main</exec.mainClass>
   </properties>
+  <dependencyManagement>
+    <dependencies>
+      <!-- security-пины транзитивных зависимостей (osv-scanner) -->
+      <dependency>
+        <groupId>org.apache.httpcomponents.client5</groupId>
+        <artifactId>httpclient5</artifactId>
+        <version>5.6.1</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
   <dependencies>
     <dependency>
       <groupId>org.opensearch.client</groupId>
