@@ -28,8 +28,9 @@ git worktree add /tmp/dc-src 76ca0516c94865d6495c15910680bd6ebe910436
 
 # ПИН версии сканера — иначе не воспроизводимо
 go install github.com/google/osv-scanner/v2/cmd/osv-scanner@v2.4.0
-osv-scanner scan --recursive /tmp/dc-src > osv-repro.json
-# сравнить osv-repro.json с osv-results.json (снят на том же исходнике)
+# --format json ОБЯЗАТЕЛЕН: по умолчанию osv-scanner печатает таблицу, а не JSON
+osv-scanner scan --recursive --format json /tmp/dc-src > osv-repro.json
+# сравнить osv-repro.json с osv-results.json (снят той же командой на том же исходнике)
 
 # Dependabot-счётчик (нужен gh auth) — ожидаемо 0
 gh api -X GET repos/khorost-tech/digital-cookbook/dependabot/alerts \
@@ -50,17 +51,17 @@ gh api -X GET repos/khorost-tech/digital-cookbook/dependabot/alerts \
 | `golang.org/x/crypto` | 0.52.0 | `GO-2026-5932` | `go/orm-gorm-vs-jet`, `messaging/nats/clients/go` | про подпакет `openpgp`, который стенды **не импортируют** → ложное на уровне модуля; severity в записи — `Unknown` |
 | `com.fasterxml.jackson.core:jackson-databind` | 2.18.9 | `GHSA-5jmj-h7xm-6q6v` | `databases/opensearch/ingestion/clients/java` | расхождение баз: Dependabot считает 2.18.9 фиксом, а в OSV на старом координате нет `fixed`-событий (фикс только на `tools.jackson.core` 3.x) |
 
-## Presence vs call-analysis (отсев openpgp)
+## Как читать osv-results.json: смешанный результат (presence + Go-reachability)
 
-`osv-results.json` — **чистый presence-скан**: `osv-scanner` по умолчанию call-analysis **не** запускает (в JSON нет `experimentalAnalysis`), он включается **явным** флагом `--call-analysis=<lang>`.
+Честно: `osv-results.json` — **не чистый presence**. Команда, которой он создан, — `osv-scanner scan --recursive --format json <repo>` (без `--call-analysis`), но `osv-scanner 2.4.0` для **собирающихся Go-модулей** делает анализ достижимости **по умолчанию** и кладёт в JSON поле `experimental_analysis.called`. Фактическая сводка файла:
 
-Что call-graph реально отсекает `openpgp` — в [`govulncheck-nats.txt`](govulncheck-nats.txt): модуль `messaging/nats/clients/go` тянет `golang.org/x/crypto v0.52.0` (в затронутом диапазоне `GO-2026-5932`), но `govulncheck` эту запись **не показывает** — openpgp не вызывается; в выводе только достижимые stdlib-уязвимости. Эквивалент через osv-scanner (для собирающихся модулей):
+- **3 вхождения** по манифестам;
+- **2 уникальных** package/version (`x/crypto 0.52.0`, `jackson-databind 2.18.9`);
+- **1 группа с результатом call-analysis**: `x/crypto` в `messaging/nats/clients/go` → `GO-2026-5932: {"called": false}` — модуль собирается, osv определил, что `openpgp` не вызывается. У `x/crypto` в `go/orm-gorm-vs-jet` анализа нет (модуль не собирается без codegen) → presence; у jackson — Maven, presence.
 
-```bash
-osv-scanner scan --call-analysis=go ./messaging/nats/clients/go
-```
+То есть в человекочитаемой таблице `osv-scanner` прячет `called:false`, а в JSON — оставляет с аннотацией; поэтому `x/crypto` виден в JSON дважды (nats + orm), а в таблице — один раз (только orm).
 
-(`go/orm-gorm-vs-jet` для call-analysis требует предварительного codegen — см. README самого стенда.)
+**Доказательство отсева `openpgp`** — [`govulncheck-nats.txt`](govulncheck-nats.txt) (`govulncheck -show verbose ./...` в `messaging/nats/clients/go`): `GO-2026-5932` попадает в секцию **«Module Results»** с припиской «modules you require, but your code doesn't appear to call these vulnerabilities». То есть `x/crypto/openpgp` в дереве есть, но не вызывается — call-graph корректно не считает его достижимой уязвимостью. (`go/orm-gorm-vs-jet` для такого анализа требует предварительного codegen — см. README самого стенда.)
 
 ## Оговорка про приватную часть
 

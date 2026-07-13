@@ -1,3 +1,22 @@
+Fetching vulnerabilities from the database...
+
+Checking the code against the vulnerabilities...
+
+The package pattern matched the following 5 root packages:
+  nats-cookbook-go/internal/natsconn
+  nats-cookbook-go/cmd/core-pubsub
+  nats-cookbook-go/cmd/jetstream-pull
+  nats-cookbook-go/cmd/kv
+  nats-cookbook-go/cmd/request-reply
+Govulncheck scanned the following 7 modules and the go1.26.3 standard library:
+  nats-cookbook-go
+  github.com/klauspost/compress@v1.18.5
+  github.com/nats-io/nats.go@v1.52.0
+  github.com/nats-io/nkeys@v0.4.15
+  github.com/nats-io/nuid@v1.0.1
+  golang.org/x/crypto@v0.52.0
+  golang.org/x/sys@v0.45.0
+
 === Symbol Results ===
 
 Vulnerability #1: GO-2026-5856
@@ -32,8 +51,33 @@ Vulnerability #3: GO-2026-5037
       #2: internal/natsconn/natsconn.go:94:11: natsconn.Shutdown calls nats.Conn.Close, which eventually calls x509.Certificate.VerifyHostname
       #3: cmd/core-pubsub/main.go:35:2: core.main calls nats.Subscription.Unsubscribe, which eventually calls x509.HostnameError.Error
 
+=== Package Results ===
+
+Vulnerability #1: GO-2026-5038
+    Quadratic complexity in WordDecoder.DecodeHeader in mime
+  More info: https://pkg.go.dev/vuln/GO-2026-5038
+  Standard library
+    Found in: mime@go1.26.3
+    Fixed in: mime@go1.26.4
+
+Vulnerability #2: GO-2026-4970
+    Root escape via symlink plus trailing slash in os
+  More info: https://pkg.go.dev/vuln/GO-2026-4970
+  Standard library
+    Found in: os@go1.26.3
+    Fixed in: os@go1.26.5
+
+=== Module Results ===
+
+Vulnerability #1: GO-2026-5932
+    The golang.org/x/crypto/openpgp package is unmaintained, unsafe by design,
+    and has known security issues
+  More info: https://pkg.go.dev/vuln/GO-2026-5932
+  Module: golang.org/x/crypto
+    Found in: golang.org/x/crypto@v0.52.0
+    Fixed in: N/A
+
 Your code is affected by 3 vulnerabilities from the Go standard library.
 This scan also found 2 vulnerabilities in packages you import and 1
 vulnerability in modules you require, but your code doesn't appear to call these
 vulnerabilities.
-Use '-show verbose' for more details.
