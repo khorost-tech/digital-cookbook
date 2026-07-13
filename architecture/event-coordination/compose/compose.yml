@@ -28,3 +28,12 @@ services:
     ports:
       - "7233:7233"   # gRPC frontend
       - "8233:8233"   # web UI
+    # dev-сервер не имеет встроенного healthcheck — добавляем свой, чтобы
+    # `docker compose ps` показывал healthy, а не только Up. `temporal operator
+    # cluster health` возвращает SERVING, когда frontend gRPC готов принимать SDK.
+    healthcheck:
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
