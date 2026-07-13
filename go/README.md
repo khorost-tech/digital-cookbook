@@ -4,8 +4,8 @@
 
 | Стенд | Описание | Статья |
 |---|---|---|
-| [`orm-gorm-vs-jet/`](orm-gorm-vs-jet/) | ORM в Go: GORM vs go-jet | [статья](https://khorost.tech/go/go-orm-gorm-vs-go-jet/) |
-| [`slog/`](slog/) | Структурированное логирование log/slog: хендлеры, группы, ContextHandler, бенчи | [статья](https://khorost.tech/go/go-slog/) |
+| [`orm-gorm-vs-jet/`](orm-gorm-vs-jet/) | ORM в Go: GORM vs go-jet | 🔜 скоро |
+| [`slog/`](slog/) | Структурированное логирование log/slog: хендлеры, группы, ContextHandler, бенчи | 🔜 скоро |
 
 ---
 
