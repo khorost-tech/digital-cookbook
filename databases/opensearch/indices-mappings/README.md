@@ -11,6 +11,7 @@ dynamic mapping → component/index templates → `_simulate` → `_analyze` →
 
 ```bash
 ./demo.sh
+# если ./demo.sh ругается на права — запустите: bash demo.sh
 # убрать контейнер после:
 docker rm -f osim-demo
 ```

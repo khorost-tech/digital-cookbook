@@ -8,7 +8,7 @@
 # Dockerfile is the highload-lowlatency stand root, not this directory —
 # see topology/docker-compose.yml (`context: .. , dockerfile:
 # services/grpc-backend/Dockerfile`).
-FROM golang:1.23-alpine AS build
+FROM golang:1.25-alpine AS build
 WORKDIR /src
 
 # Copy both modules before `go mod download` so the relative replace
