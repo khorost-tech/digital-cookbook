@@ -4,7 +4,7 @@
 
 | Стенд | Описание | Статья |
 |---|---|---|
-| [`rootless/`](rootless/) | Rootful vs rootless Docker на живом стенде | 🔜 скоро |
+| [`rootless/`](rootless/) | Rootful vs rootless Docker на живом стенде | [статья](https://khorost.tech/docker/rootless-docker/) |
 
 ---
 

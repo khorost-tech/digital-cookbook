@@ -1,0 +1,16 @@
+[package]
+name = "tokio-async-demo"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Демо к статье «Rust async runtime: Tokio изнутри»
+# https://khorost.tech/rust/rust-async-tokio/
+
+[dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time", "sync"] }
+
+# reqwest/anyhow нужны только сетевому примеру examples/parallel_http.rs
+[dev-dependencies]
+reqwest = "0.12"
+anyhow = "1"

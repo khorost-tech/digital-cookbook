@@ -11,6 +11,7 @@
 - [**go/**](go/) — Язык Go вглубь: конкурентность, память, дженерики, net/http, slog, итераторы, рефлексия, ассемблер, ORM.
 - [**performance/**](performance/) — Высокая нагрузка и низкая задержка, вероятностные структуры данных.
 - [**infrastructure/**](infrastructure/) — Инфраструктура как код и деплой: Ansible, Terraform, Proxmox.
+- [**rust/**](rust/) — Rust для backend: async/Tokio, web-фреймворки, production-практики, минимальные образы.
 - [**docker/**](docker/) — Контейнеризация: rootful vs rootless.
 
 Полный список примеров со ссылками на статьи — [INDEX.md](INDEX.md).
