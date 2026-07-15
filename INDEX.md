@@ -18,6 +18,7 @@
 |---|---|---|
 | [`databases/opensearch`](databases/opensearch) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
 | [`databases/redis/client-resilience`](databases/redis/client-resilience) | Клиенты Go/Java/Rust к Redis: Cluster/Sentinel, reconnect и failover | 🔜 скоро |
+| [`databases/transactions`](databases/transactions) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | 🔜 скоро |
 
 ## Messaging
 
@@ -52,6 +53,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`rust/tokio`](rust/tokio) | Rust async: Tokio на практике | 🔜 скоро |
+| [`rust/web-frameworks`](rust/web-frameworks) | Rust web-фреймворки: Axum vs Actix | 🔜 скоро |
 
 ## Docker
 

@@ -1,0 +1,24 @@
+# Стенд к статье #3 «KV и документные: транзакций почти нет — Redis, MongoDB, ScyllaDB».
+# https://khorost.tech/databases/transactions-kv-document-redis-mongo-scylla/
+# demo-стенд, локальный. Mongo — single-node replica set (нужен для multi-document tx).
+services:
+  redis:
+    image: redis:8-alpine
+    container_name: tx-redis
+    ports:
+      - "6390:6379"
+
+  mongo:
+    image: mongo:8
+    container_name: tx-mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27027:27017"
+
+  scylla:
+    image: scylladb/scylla:6.2
+    container_name: tx-scylla
+    # ограничиваем ресурсы: Scylla по умолчанию забирает всё железо
+    command: ["--smp", "1", "--memory", "1G", "--overprovisioned", "1", "--developer-mode", "1"]
+    ports:
+      - "9052:9042"

@@ -1,0 +1,7 @@
+# Workspace к статье «Rust web-фреймворки: Axum vs Actix и выбор под задачу»
+# https://khorost.tech/rust/rust-web-frameworks/
+#
+# Один и тот же REST API (POST /users с валидацией) на двух фреймворках — для сравнения.
+[workspace]
+resolver = "2"
+members = ["axum-api", "actix-api"]

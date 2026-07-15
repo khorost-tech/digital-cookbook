@@ -1,0 +1,40 @@
+# Стенд к статье #4 «Брокеры и стриминг: транзакции в очереди и логе — RabbitMQ и Kafka».
+# https://khorost.tech/databases/transactions-brokers-rabbitmq-kafka/
+# demo-стенд, локальный. Kafka — KRaft single-node с отдельным HOST-listener'ом для доступа с хоста.
+services:
+  rabbitmq:
+    image: rabbitmq:4-management
+    container_name: tx-rabbit
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+
+  kafka:
+    image: apache/kafka:3.9.0
+    container_name: tx-kafka
+    ports:
+      - "9095:9094"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,HOST://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,HOST://localhost:9095
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # single-node: все фактор-репликации = 1, иначе транзакции/оффсеты не поднимутся
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  postgres:
+    image: postgres:18
+    container_name: tx-outbox-pg
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo
+    ports:
+      - "5441:5432"

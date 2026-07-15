@@ -1,0 +1,33 @@
+# Стенд №2 к финальной статье #5 «Мульти-хранилищный стенд и карта выбора».
+# https://khorost.tech/databases/transactions-multistore-benchmark-decision-map/
+# Один сценарий (списание с инвариантом «баланс ≥ 0») по всем хранилищам одним нагрузчиком.
+services:
+  postgres:
+    image: postgres:18
+    container_name: ms-pg
+    environment:
+      POSTGRES_USER: demo
+      POSTGRES_PASSWORD: demo
+      POSTGRES_DB: demo
+    ports:
+      - "5442:5432"
+
+  redis:
+    image: redis:8-alpine
+    container_name: ms-redis
+    ports:
+      - "6391:6379"
+
+  mongo:
+    image: mongo:8
+    container_name: ms-mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]
+    ports:
+      - "27028:27017"
+
+  scylla:
+    image: scylladb/scylla:6.2
+    container_name: ms-scylla
+    command: ["--smp", "1", "--memory", "1G", "--overprovisioned", "1", "--developer-mode", "1"]
+    ports:
+      - "9053:9042"

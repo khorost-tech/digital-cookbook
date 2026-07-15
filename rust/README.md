@@ -5,6 +5,7 @@ Rust для backend: async/Tokio, web-фреймворки, production-прак�
 | Стенд | Описание | Статья |
 |---|---|---|
 | [`tokio/`](tokio/) | Rust async: Tokio на практике | 🔜 скоро |
+| [`web-frameworks/`](web-frameworks/) | Rust web-фреймворки: Axum vs Actix | 🔜 скоро |
 
 ---
 

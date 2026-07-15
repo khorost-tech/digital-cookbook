@@ -1,0 +1,13 @@
+[package]
+name = "actix-api"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[dependencies]
+actix-web = "4"
+actix-cors = "0.7"
+serde = { version = "1", features = ["derive"] }
+
+[dev-dependencies]
+serde_json = "1"   # test::TestRequest::set_json в тестах

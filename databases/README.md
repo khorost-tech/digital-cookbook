@@ -6,6 +6,7 @@
 |---|---|---|
 | [`opensearch/`](opensearch/) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
 | [`redis/client-resilience/`](redis/client-resilience/) | Клиенты Go/Java/Rust к Redis: Cluster/Sentinel, reconnect и failover | 🔜 скоро |
+| [`transactions/`](transactions/) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | 🔜 скоро |
 
 ---
 
