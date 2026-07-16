@@ -1,17 +1,39 @@
 # Go — скомпилированные бинарники стендов (go build без -o кладёт исполняемый
 # файл с именем каталога main-пакета; в git должен быть только исходник).
+# ⚠️ Список ПОИМЁННЫЙ и потому хрупкий: у Go-бинарника нет ни расширения, ни
+# фиксированного имени, обобщённым паттерном его не поймать. При добавлении
+# нового модуля — дописать сюда (или собирать через `go build -o`).
+# Первая редакция этого файла перечисляла только dataset/structures/streams-lua/
+# ops-stand, а eventloop/persistence/topology/memory-eviction пропустила — их
+# бинарники висели неотслеживаемыми и ждали случайного `git add -A`.
+# Настоящий гейт — .githooks/pre-commit в корне репо (проверяет содержимое).
 bin/
 /dataset/dataset
+/dataset/dataset.exe
 /dataset/main
 /structures/structures
 /structures/structures.exe
 /structures/main
+/eventloop/eventloop
+/eventloop/eventloop.exe
+/eventloop/main
+/persistence/persistence
+/persistence/persistence.exe
+/persistence/main
+/topology/topology
+/topology/topology.exe
+/topology/main
+/memory-eviction/memory-eviction
+/memory-eviction/memory-eviction.exe
+/memory-eviction/main
 /streams-lua/streams-lua
 /streams-lua/streams-lua.exe
 /streams-lua/main
 /ops-stand/go/go
 /ops-stand/go/go.exe
 /ops-stand/go/main
+/ops-stand/go/ops-stand
+/ops-stand/go/ops-stand.exe
 
 # Maven — Стенд #7 (java/, ops-stand/java/); собирается в WSL на нативной
 # FS (~/osvbuild), а не прямо в этом дереве, но target/ игнорируем на

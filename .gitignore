@@ -181,9 +181,11 @@ atlas.sum
 *.test
 *.out
 bin/
-# уже утёкшие бинарники — поимённо (при добавлении нового Go-стенда
-# либо собирать через `go build -o`, либо дописать сюда):
+# Go-бинарники стендов — поимённо (при добавлении нового Go-стенда либо
+# собирать через `go build -o` в bin/, либо дописать сюда). Стенды со своим
+# .gitignore (напр. databases/redis/deep-dive) ведут свой список у себя.
 databases/transactions/brokers/go/tx-brokers
+databases/redis/client-resilience/clients/go/redis-client-resilience-go
 # Java/Maven, Rust
 target/
 dependency-reduced-pom.xml
