@@ -52,6 +52,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
+| [`rust/docker-minimal`](rust/docker-minimal) | Rust: минимальные Docker-образы | 🔜 скоро |
 | [`rust/tokio`](rust/tokio) | Rust async: Tokio на практике | 🔜 скоро |
 | [`rust/web-frameworks`](rust/web-frameworks) | Rust web-фреймворки: Axum vs Actix | 🔜 скоро |
 

@@ -1,0 +1,21 @@
+[package]
+name = "app"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Минимальный HTTP-сервис к статье «Rust в Docker: минимальные образы и cross-compilation».
+# https://khorost.tech/rust/rust-docker-minimal-images/
+# Имя бинарника `app` — на него ссылаются Dockerfile'ы (COPY .../release/app).
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "net"] }
+
+# Release-профиль под минимальный размер бинарника (из раздела статьи «Оптимизация бинарника»).
+[profile.release]
+strip = true          # убрать символы отладки
+lto = true            # link-time optimization
+codegen-units = 1     # лучше оптимизация (медленнее сборка)
+panic = "abort"       # без раскрутки стека — меньше кода
+opt-level = "z"       # оптимизация по размеру ("s" — компромисс, 3 — по скорости)

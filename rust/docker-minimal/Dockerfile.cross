@@ -1,0 +1,27 @@
+# Cross-компиляция под aarch64 (ARM64) с x86_64-хоста через cargo-zigbuild.
+# Сборка (ОБЯЗАТЕЛЬНО buildx с явной целевой платформой — иначе итоговый образ
+# получит архитектуру ХОСТА, amd64, при arm64-бинарнике внутри):
+#   docker buildx build --platform linux/arm64 -f Dockerfile.cross -t rust-app:arm64 --load .
+# Проверить: docker image inspect rust-app:arm64 --format '{{.Architecture}}'  → arm64
+#
+# zig выступает универсальным кросс-линкером — не нужно вручную ставить cross-тулчейн и
+# разбираться с линковкой C-зависимостей под чужую архитектуру. Полезно, когда CI x86_64,
+# а деплой на ARM64 (Graviton/Ampere).
+FROM --platform=$BUILDPLATFORM rust:1-alpine AS builder
+# cargo-zigbuild использует zig как линкер, но сам zig не ставит — доустанавливаем через pip.
+RUN apk add --no-cache musl-dev python3 py3-pip && \
+    pip install ziglang --break-system-packages && \
+    cargo install cargo-zigbuild --locked && \
+    rustup target add aarch64-unknown-linux-musl
+WORKDIR /app
+COPY . .
+RUN cargo zigbuild --release --target aarch64-unknown-linux-musl
+
+# Финальная стадия пинится на целевую arm64 — иначе манифест образа возьмёт архитектуру
+# сборочного хоста (amd64), и arm64-бинарник окажется в amd64-помеченном образе.
+FROM --platform=linux/arm64 scratch
+COPY --from=builder /app/target/aarch64-unknown-linux-musl/release/app /app
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+USER 1000:1000
+EXPOSE 8080
+ENTRYPOINT ["/app"]

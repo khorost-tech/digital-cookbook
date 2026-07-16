@@ -1,0 +1,23 @@
+# glibc-бинарник в distroless/cc: без musl-нюансов, чуть больше образ, но есть CA-серты,
+# непривилегированный пользователь и tzdata. Компромисс, когда статика не нужна любой ценой.
+# Сборка: docker build -f Dockerfile.distroless -t rust-app:distroless .
+FROM rust:1 AS builder
+WORKDIR /app
+RUN cargo install cargo-chef --locked
+
+FROM builder AS planner
+COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
+
+FROM builder AS build
+COPY --from=planner /app/recipe.json recipe.json
+RUN cargo chef cook --release --recipe-path recipe.json
+COPY . .
+RUN cargo build --release
+
+# distroless/cc — glibc + libgcc + CA-серты, без shell и пакетного менеджера.
+FROM gcr.io/distroless/cc-debian12
+COPY --from=build /app/target/release/app /app
+USER 1000:1000
+EXPOSE 8080
+ENTRYPOINT ["/app"]

@@ -4,6 +4,7 @@ Rust для backend: async/Tokio, web-фреймворки, production-прак�
 
 | Стенд | Описание | Статья |
 |---|---|---|
+| [`docker-minimal/`](docker-minimal/) | Rust: минимальные Docker-образы | 🔜 скоро |
 | [`tokio/`](tokio/) | Rust async: Tokio на практике | 🔜 скоро |
 | [`web-frameworks/`](web-frameworks/) | Rust web-фреймворки: Axum vs Actix | 🔜 скоро |
 
