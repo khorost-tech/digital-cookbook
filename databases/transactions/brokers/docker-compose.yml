@@ -5,6 +5,15 @@ services:
   rabbitmq:
     image: rabbitmq:4-management
     container_name: tx-rabbit
+    # НЕ УБИРАТЬ: стартуем сразу под rabbitmq, без root-фазы. entrypoint образа заходит в ветку
+    # `[[ "$1" == rabbitmq* ]] && [ "$(id -u)" = 0 ]` → chown + `exec gosu rabbitmq`; если
+    # drop привилегий не отрабатывает, Erlang стартует под root и создаёт
+    # /var/lib/rabbitmq/.erlang.cookie (в образе на него смотрит симлинк /root/.erlang.cookie)
+    # с правами 0400 root:root — после чего брокер под rabbitmq(999) прочитать его не может:
+    # «Error when reading /var/lib/rabbitmq/.erlang.cookie: eacces», контейнер выходит с кодом 1.
+    # При user: rabbitmq root-фазы нет вовсе, поэтому cookie может создать только 999.
+    # Проверено в среде, где отказ воспроизводился стабильно: чистые старты проходят.
+    user: rabbitmq
     ports:
       - "5673:5672"
       - "15673:15672"

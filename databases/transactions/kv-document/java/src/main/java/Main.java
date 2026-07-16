@@ -40,8 +40,11 @@ public class Main {
         }
     }
 
-    // Redis: WATCH + MULTI/EXEC — оптимистичный CAS. exec() возвращает null, если ключ изменился
-    // после WATCH; повторяем. Это единственная «транзакционность» Redis: не изоляция, не rollback.
+    // Redis: MULTI/EXEC исполняет очередь команд изолированно — не впуская чужие команды, — но
+    // rollback'а у него нет и read-modify-write он не закрывает (чтение сделано до транзакции).
+    // Это закрывает WATCH: оптимистичный CAS — exec() возвращает null, если ключ изменился после
+    // WATCH; повторяем. Альтернатива для серверной логики — Lua/FUNCTION (для голого инкремента
+    // достаточно INCR).
     static void redis() throws Exception {
         String[] hp = env("REDIS_ADDR", "localhost:6390").split(":");
         String host = hp[0];

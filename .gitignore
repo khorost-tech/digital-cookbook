@@ -169,3 +169,39 @@ deploy/*.env
 atlas.sum
 /.claude/worktrees/***
 /.claude/launch.json
+
+# ── Build-выхлоп полиглот-стендов (глобально; раньше гейтился per-stand и nats выпал) ──
+# Go. ВНИМАНИЕ: `go build` без -o кладёт исполняемый файл С ИМЕНЕМ КАТАЛОГА
+# main-пакета и БЕЗ расширения — обобщённым паттерном такое не отловить
+# (в отличие от target/ или *.class). Отсюда и утечка: 18-МБ ELF
+# `databases/transactions/brokers/go/tx-brokers` пролежал в git в ОБОИХ репо,
+# включая публичный. Ловим что можем; настоящая защита — хук .githooks/pre-commit
+# (включается `git config core.hooksPath .githooks`), он режет ELF/PE/Mach-O.
+*.exe
+*.test
+*.out
+bin/
+# уже утёкшие бинарники — поимённо (при добавлении нового Go-стенда
+# либо собирать через `go build -o`, либо дописать сюда):
+databases/transactions/brokers/go/tx-brokers
+# Java/Maven, Rust
+target/
+dependency-reduced-pom.xml
+*.class
+# Gradle/Kotlin
+build/
+.gradle/
+.kotlin/
+# Python
+__pycache__/
+*.py[cod]
+# стенд-кэши (монтируемые GOMODCACHE/.m2 и т.п.)
+.gocache*/
+.gomodcache*/
+.m2cache*/
+.ap-cache/
+
+# Коллизия имени: go/testing/coverage/ — это Go-пакет (артефакт покрытия),
+# а не выхлоп JS coverage-тулинга, который матчит правило "coverage" выше.
+!go/testing/coverage/
+!go/testing/coverage/**

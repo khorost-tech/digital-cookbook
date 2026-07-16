@@ -46,8 +46,8 @@ func runKafka() {
 			fmt.Println("end tx:", err)
 		}
 	}
-	produceTx("aborted", false)   // 10 записей в прерванной транзакции
-	produceTx("committed", true)  // 10 записей в закоммиченной
+	produceTx("aborted", false)  // 10 записей в прерванной транзакции
+	produceTx("committed", true) // 10 записей в закоммиченной
 
 	cons, err := kgo.NewClient(
 		kgo.SeedBrokers(broker),
