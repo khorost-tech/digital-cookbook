@@ -1,0 +1,53 @@
+name: redis-cookbook
+networks:
+  redis-cookbook-net:
+    name: redis-cookbook-net
+services:
+  redis-master:
+    image: ${REDIS_IMAGE:-redis:8.8}
+    container_name: redis-master
+    # Персистентность параметризована через env — так Стенд #3
+    # (persistence/) переключает RDB-only / AOF-always / AOF-everysec /
+    # AOF-no / hybrid, не создавая отдельных compose-файлов и не трогая
+    # синтаксис command построчно. Значения по умолчанию (60/1/yes/everysec)
+    # — оригинальная конфигурация (hybrid), поведение без переопределений не
+    # меняется. REDIS_SAVE_SECONDS/REDIS_SAVE_CHANGES выставляются заведомо
+    # большими (напр. 3600/1000000) там, где RDB-снапшот не должен успеть
+    # сработать за время теста — так проверяется AOF в изоляции, без
+    # RDB-снапшота, случайно подстраховавшего результат.
+    #
+    # REDIS_MAXMEMORY/REDIS_MAXMEMORY_POLICY — то же самое для Стенда #5
+    # (memory-eviction/): дефолт maxmemory=0 (без лимита) сохраняет прежнее
+    # поведение для остальных стендов, которые эту переменную не задают.
+    command: >-
+      redis-server
+      --save ${REDIS_SAVE_SECONDS:-60} ${REDIS_SAVE_CHANGES:-1}
+      --appendonly ${REDIS_APPENDONLY:-yes}
+      --appendfsync ${REDIS_APPENDFSYNC:-everysec}
+      --maxmemory ${REDIS_MAXMEMORY:-0}
+      --maxmemory-policy ${REDIS_MAXMEMORY_POLICY:-noeviction}
+    ports: ["6379:6379"]
+    networks: [redis-cookbook-net]
+    volumes:
+      - redis-master-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+  redis-replica:
+    image: ${REDIS_IMAGE:-redis:8.8}
+    container_name: redis-replica
+    command: redis-server --replicaof redis-master 6379
+    ports: ["6380:6379"]
+    networks: [redis-cookbook-net]
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+volumes:
+  redis-master-data:

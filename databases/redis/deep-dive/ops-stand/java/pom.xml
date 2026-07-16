@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>tech.khorost</groupId>
+    <artifactId>redis-deep-dive-parent</artifactId>
+    <version>0.1.0</version>
+    <relativePath>../../java/pom.xml</relativePath>
+  </parent>
+  <artifactId>ops-stand</artifactId>
+  <packaging>jar</packaging>
+  <properties>
+    <exec.mainClass>tech.khorost.redis.ops.App</exec.mainClass>
+  </properties>
+  <dependencies>
+    <!-- Версия — из dependencyManagement родителя (${lettuce.version}), не
+         дублируется здесь: иначе апгрейд Lettuce пришлось бы делать в двух
+         местах и они молча разъехались бы. -->
+    <dependency>
+      <groupId>io.lettuce</groupId>
+      <artifactId>lettuce-core</artifactId>
+    </dependency>
+    <!-- commons-pool2 — не в примере задания дословно, но обязателен:
+         io.lettuce.core.support.ConnectionPoolSupport.createGenericObjectPool
+         строится поверх org.apache.commons.pool2.impl.GenericObjectPool,
+         указанного прямо в задании ("GenericObjectPool<StatefulRedisConnection
+         <String,String>>") — без этой зависимости стенд не скомпилируется. -->
+    <dependency>
+      <groupId>org.apache.commons</groupId>
+      <artifactId>commons-pool2</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+    </dependency>
+  </dependencies>
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <configuration>
+          <mainClass>${exec.mainClass}</mainClass>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

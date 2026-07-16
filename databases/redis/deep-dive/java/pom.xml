@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tech.khorost</groupId>
+  <artifactId>redis-deep-dive-parent</artifactId>
+  <version>0.1.0</version>
+  <packaging>pom</packaging>
+
+  <!-- Реактор для Java-стендов серии «Redis/Valkey: глубокое погружение»
+       (databases/redis/deep-dive/). Первый и пока единственный модуль —
+       ops-stand/java (Стенд #7: пул соединений Lettuce). Остальные Go-стенды
+       серии — самостоятельные go-модули без Maven, сюда не входят.
+       lettuce-core пин 7.6.0.RELEASE — совпадает с соседним стендом
+       databases/redis/client-resilience/clients/java (та же технология,
+       разные статьи, версия должна совпадать намеренно). -->
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <lettuce.version>7.6.0.RELEASE</lettuce.version>
+    <!-- commons-pool2: latest stable на Maven Central (проверено 2026-07-16
+         через maven-metadata.xml). -->
+    <commons-pool2.version>2.13.1</commons-pool2.version>
+    <exec-maven-plugin.version>3.5.0</exec-maven-plugin.version>
+    <slf4j.version>2.0.17</slf4j.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>io.lettuce</groupId>
+        <artifactId>lettuce-core</artifactId>
+        <version>${lettuce.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.apache.commons</groupId>
+        <artifactId>commons-pool2</artifactId>
+        <version>${commons-pool2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${exec-maven-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <modules>
+    <module>../ops-stand/java</module>
+  </modules>
+</project>

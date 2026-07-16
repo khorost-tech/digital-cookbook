@@ -1,0 +1,15 @@
+name: redis-cluster-cookbook
+networks:
+  redis-cluster-net:
+    name: redis-cluster-net
+x-node: &node
+  image: ${REDIS_IMAGE:-redis:8.8}
+  command: redis-server --cluster-enabled yes --cluster-config-file nodes.conf --appendonly yes
+  networks: [redis-cluster-net]
+services:
+  redis-c1: { <<: *node, container_name: redis-c1, ports: ["7001:6379"] }
+  redis-c2: { <<: *node, container_name: redis-c2, ports: ["7002:6379"] }
+  redis-c3: { <<: *node, container_name: redis-c3, ports: ["7003:6379"] }
+  redis-c4: { <<: *node, container_name: redis-c4, ports: ["7004:6379"] }
+  redis-c5: { <<: *node, container_name: redis-c5, ports: ["7005:6379"] }
+  redis-c6: { <<: *node, container_name: redis-c6, ports: ["7006:6379"] }
