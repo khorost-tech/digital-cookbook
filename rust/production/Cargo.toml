@@ -1,0 +1,28 @@
+[package]
+name = "production-service"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+# Production-паттерны Rust-сервиса к статье «Rust в production: паттерны для надёжного backend».
+# https://khorost.tech/rust/rust-production-patterns/
+# config(env/fail-fast) + graceful shutdown + tracing(JSON) + liveness/readiness +
+# error handling(thiserror/anyhow → problem+json) + sqlx(Postgres, compile-time checked).
+
+[dependencies]
+axum = "0.8"
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "signal", "net"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+# sqlx без TLS-фичи: локальный demo-Postgres — plain TCP (sslmode=disable). В проде добавьте
+# tls-native-tls или tls-rustls и sslmode=require.
+sqlx = { version = "0.8", features = ["runtime-tokio", "postgres", "macros", "migrate"] }
+envy = "0.4"
+anyhow = "1"
+thiserror = "2"
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "json"] }
+
+[dev-dependencies]
+tower = { version = "0.5", features = ["util"] }                                   # ServiceExt::oneshot
+testcontainers-modules = { version = "0.15", features = ["postgres"] }             # реальный Postgres на время теста
