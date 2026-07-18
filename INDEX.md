@@ -56,7 +56,7 @@
 | [`rust/docker-minimal`](rust/docker-minimal) | Rust: минимальные Docker-образы | 🔜 скоро |
 | [`rust/production`](rust/production) | Rust в production: каркас надёжного сервиса | 🔜 скоро |
 | [`rust/tokio`](rust/tokio) | Rust async: Tokio на практике | [статья](https://khorost.tech/rust/rust-async-tokio/) |
-| [`rust/web-frameworks`](rust/web-frameworks) | Rust web-фреймворки: Axum vs Actix | 🔜 скоро |
+| [`rust/web-frameworks`](rust/web-frameworks) | Rust web-фреймворки: Axum vs Actix | [статья](https://khorost.tech/rust/rust-web-frameworks/) |
 
 ## Docker
 
