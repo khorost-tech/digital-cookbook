@@ -1,0 +1,12 @@
+services:
+  postgres:
+    image: postgres:18.4
+    environment:
+      POSTGRES_PASSWORD: idxdemo
+      POSTGRES_DB: idxdemo
+    ports: ["5433:5432"]
+    # random_page_cost=1.1: SSD/NVMe-реалистичное значение (default 4.0 предполагает HDD).
+    # На дефолте планировщик предпочитал Bitmap Heap/Index Scan вместо чистого
+    # Index Scan / Index Only Scan для ~25 разрозненных строк из 2М. SSD-costing
+    # одновременно реалистичнее для современных стендов и даёт чистые планы.
+    command: ["postgres", "-c", "shared_buffers=256MB", "-c", "work_mem=32MB", "-c", "max_parallel_workers_per_gather=0", "-c", "random_page_cost=1.1"]
