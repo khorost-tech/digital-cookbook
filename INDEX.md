@@ -41,7 +41,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`performance/highload-lowlatency`](performance/highload-lowlatency) | Highload под SLA < 300 мс: HAProxy L7 (h2c) + пул Go/Java-бэкендов, L4 vs L7 | [статья](https://khorost.tech/performance/latency-budget-and-transport/) |
-| [`performance/probabilistic`](performance/probabilistic) | Вероятностные структуры: Bloom и родственники | 🔜 скоро |
+| [`performance/probabilistic`](performance/probabilistic) | Вероятностные структуры: Bloom и родственники | [статья](https://khorost.tech/performance/bloom-filters-probabilistic-structures/) |
 
 ## Infrastructure
 
