@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>tech.khorost</groupId>
+    <artifactId>java-deep-dive</artifactId>
+    <version>0.1.0</version>
+  </parent>
+
+  <artifactId>data-access</artifactId>
+  <packaging>jar</packaging>
+
+  <!-- Стенд к статье №6 "JDBC vs JPA/Hibernate vs jOOQ" — один и тот же доступ
+       к данным (authors 1:N books) тремя способами на живом Postgres:
+         - JDBC:  ручной SQL + ResultSet, полный контроль над запросом.
+         - JPA:   EntityManager/Hibernate, N+1 живьём (лениво тянутые books
+                  по каждому author) → фикс через JOIN FETCH / @EntityGraph.
+         - jOOQ:  типобезопасный DSL БЕЗ кодогенерации (codegen требовал бы
+                  живой БД на этапе mvn generate-sources — усложняет Docker-сборку
+                  без сети/зависимостей; вместо этого Field/Table объявлены вручную
+                  через DSL.name(), это по-прежнему типобезопасный DSL, просто
+                  без автогенерации из схемы).
+       + HikariCP: общий пул соединений для JDBC/jOOQ-демо с метриками
+       (active/idle/total/waiting) под конкурентной нагрузкой. -->
+
+  <dependencies>
+    <!-- ПОДВОДНЫЙ КАМЕНЬ Hibernate 7: parent-BOM spring-boot-dependencies (3.5.3, для другого
+         модуля spring-vs-quarkus) управляет jakarta.persistence-api версией 3.1.0
+         (под Hibernate 6.x). Hibernate 7.0.2.Final требует Jakarta Persistence 3.2
+         (PersistenceUnitTransactionType и др. новые классы появились в 3.2) —
+         без явного оверрайда версии здесь схлопывается NoClassDefFoundError на
+         старте EntityManagerFactory. Явная версия ниже побеждает managed-версию
+         из унаследованного BOM (прямая версия на <dependency> всегда сильнее
+         dependencyManagement). -->
+    <dependency>
+      <groupId>jakarta.persistence</groupId>
+      <artifactId>jakarta.persistence-api</artifactId>
+      <version>3.2.0</version>
+    </dependency>
+    <dependency>
+      <groupId>org.hibernate.orm</groupId>
+      <artifactId>hibernate-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.jooq</groupId>
+      <artifactId>jooq</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>com.zaxxer</groupId>
+      <artifactId>HikariCP</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>data-access</finalName>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>tech.khorost.dataaccess.Main</mainClass>
+                </transformer>
+                <!-- Обязательно: сливает META-INF/services из postgresql-driver
+                     (java.sql.Driver), Hibernate (PersistenceProvider) и jOOQ SPI —
+                     без слияния shade перезатирает файлы одного провайдера другим. -->
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

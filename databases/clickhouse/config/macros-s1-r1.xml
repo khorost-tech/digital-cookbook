@@ -1,0 +1,17 @@
+<!--
+  macros-s1-r1.xml — подставляется ТОЛЬКО в ch-s1-r1 (compose/cluster.yml).
+  {shard}/{replica} используются в пути ReplicatedMergeTree
+  ('/clickhouse/tables/{shard}/events', '{replica}') при CREATE TABLE ...
+  ON CLUSTER events_cluster (одна и та же DDL-строка выполняется на всех 4
+  нодах, макросы резолвятся локально per-нода) — обе реплики шарда 1
+  (ch-s1-r1, ch-s1-r2) получат ОДИНАКОВЫЙ path (/clickhouse/tables/1/events),
+  но РАЗНЫЙ replica-идентификатор (r1/r2) — это и есть тот путь в Keeper,
+  через который ReplicatedMergeTree координирует репликацию.
+-->
+<clickhouse>
+    <macros>
+        <shard>1</shard>
+        <replica>r1</replica>
+        <cluster>events_cluster</cluster>
+    </macros>
+</clickhouse>

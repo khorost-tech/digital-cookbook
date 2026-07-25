@@ -1,0 +1,15 @@
+<!--
+  Стенд #6 (ops-stand, Step 3 брифа): BACKUP TABLE ... TO File(...) требует
+  явного allowed_path в конфиге сервера, иначе ClickHouse отказывает с
+  "path not allowed". Путь — внутри УЖЕ существующего docker-тома
+  clickhouse-data (/var/lib/clickhouse/...), отдельный backup-диск/volume не
+  понадобился. Смонтировано в ../compose/compose.yml (services.clickhouse.
+  volumes) — общий single-node compose серии, используется всеми стендами,
+  влияет только на добавление allowed_path (не меняет поведение других
+  стендов).
+-->
+<clickhouse>
+    <backups>
+        <allowed_path>/var/lib/clickhouse/backups/</allowed_path>
+    </backups>
+</clickhouse>

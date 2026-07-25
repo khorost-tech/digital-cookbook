@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>tech.khorost</groupId>
+    <artifactId>java-deep-dive</artifactId>
+    <version>0.1.0</version>
+  </parent>
+
+  <artifactId>build-packaging</artifactId>
+  <packaging>jar</packaging>
+
+  <!-- Стенд для статьи #7 серии про JVM/Java: один и тот же plain-Java HTTP-сервис
+       ("hello" + /health, только java.base + jdk.httpserver, БЕЗ внешних зависимостей)
+       собирается и упаковывается 5 способами — JVM fat-jar, JVM layered-jar (Docker-кеш
+       слоёв, не про startup), JVM+AppCDS, GraalVM native-image, jlink custom runtime.
+       Отсутствие зависимостей — осознанный выбор (риск GraalVM native с внешними
+       библиотеками): избегаем reflection-конфигов сторонних библиотек для native-image,
+       чтобы получить честные числа без борьбы с толчком стенда, а не с самой темой
+       статьи. См. Dockerfile.* и bench.sh для сборки/замера всех 5 режимов. -->
+
+  <build>
+    <finalName>app</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifest>
+              <mainClass>tech.khorost.buildpackaging.app.App</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

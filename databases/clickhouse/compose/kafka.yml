@@ -1,0 +1,63 @@
+# kafka.yml — single-node KRaft Kafka для стенда #4 (materialized-views):
+# живой Kafka -> ClickHouse пайплайн через ENGINE=Kafka + MV. Отдельный
+# однонодовый брокер (не переиспользует 3-брокерный kafka-cookbook-net
+# кластер из ../../kafka/compose/compose.yml — другая сеть, другой стенд,
+# минимальная топология достаточна для демонстрации CH Kafka consumer
+# engine). apache/kafka:4.3.1 — та же версия, что kafka-серия.
+#
+# Поднимается ПОВЕРХ уже запущенного compose/compose.yml (общая сеть
+# clickhouse-cookbook-net, network external:true — тот же паттерн, что
+# ../../kafka/compose/ecosystem.yml поверх ../../kafka/compose/compose.yml):
+#   docker compose -f compose/compose.yml -f compose/kafka.yml up -d kafka
+# Снос (без остановки CH/PG):
+#   docker compose -f compose/compose.yml -f compose/kafka.yml rm -sf kafka
+#
+# Порты хоста: в репо уже заняты 9092/9096 (java-deep-dive), 19092-19094
+# (kafka-серия), 29092 (kafka/mm2 us-west). Этот стенд использует 39092
+# (host) для листенера HOST — свободен на момент создания (2026-07-10).
+#
+# Внутри сети (franz-go продюсер + ClickHouse ENGINE=Kafka):
+#   bootstrap.servers=kafka:9092
+# С хоста (опционально, для отладки kafka-console-*):
+#   bootstrap.servers=localhost:39092
+#
+# CLUSTER_ID — сгенерирован отдельно для этого одноузлового брокера (НЕ тот
+# же ID, что 3-брокерный kafka-cookbook-net — разные, несвязанные кластеры).
+
+services:
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: clickhouse-cookbook-kafka
+    hostname: kafka
+    environment:
+      CLUSTER_ID: "sqtKr6esj4jz_vWOAvfb3A"
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,HOST://:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,HOST://localhost:39092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      # single-node: RF=1 — нет второго брокера, которому реплицировать.
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    ports:
+      - "39092:9094"
+    networks:
+      - clickhouse-cookbook-net
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 20s
+
+networks:
+  clickhouse-cookbook-net:
+    name: clickhouse-cookbook-net
+    external: true

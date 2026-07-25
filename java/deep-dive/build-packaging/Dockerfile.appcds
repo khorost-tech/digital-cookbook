@@ -1,0 +1,36 @@
+# Режим 3: JVM + AppCDS (Application Class-Data Sharing), динамический архив.
+# Тренировочный прогон выполняется НА ЭТАПЕ СБОРКИ образа (build stage):
+# поднимаем сервис с -XX:ArchiveClassesAtExit, дожидаемся живого /health,
+# посылаем SIGTERM (штатное завершение JVM дампит архив), забираем app.jsa
+# в финальный слой. Так продовый образ всегда несёт уже готовый архив —
+# нет двусмысленности "первый прогон медленнее, второй быстрее", как было бы
+# с -XX:+AutoCreateSharedArchive на лету.
+FROM eclipse-temurin:25-jre AS trainer
+WORKDIR /app
+COPY target/app.jar /app/app.jar
+ENV MODE=appcds-train
+RUN bash -c '\
+    java -XX:ArchiveClassesAtExit=/app/app.jsa -jar /app/app.jar & \
+    PID=$!; \
+    ok=0; \
+    for i in $(seq 1 50); do \
+      if exec 3<>/dev/tcp/127.0.0.1/8080 2>/dev/null; then \
+        printf "GET /health HTTP/1.0\r\n\r\n" >&3; \
+        resp=$(head -1 <&3); \
+        exec 3<&- 3>&-; \
+        if echo "$resp" | grep -q 200; then ok=1; break; fi; \
+      fi; \
+      sleep 0.1; \
+    done; \
+    echo "training poll ok=$ok"; \
+    kill $PID; \
+    wait $PID || true; \
+    test -s /app/app.jsa'
+
+FROM eclipse-temurin:25-jre
+WORKDIR /app
+COPY --from=trainer /app/app.jar /app/app.jar
+COPY --from=trainer /app/app.jsa /app/app.jsa
+ENV MODE=appcds
+EXPOSE 8080
+CMD ["java", "-XX:SharedArchiveFile=/app/app.jsa", "-jar", "/app/app.jar"]

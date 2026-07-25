@@ -1,0 +1,23 @@
+# Режим 5: jlink custom runtime. Сервис остаётся обычным неомодуляризованным
+# jar (module-info.java не нужен) — jlink строит урезанный JRE только из тех
+# JDK-модулей, что реально требуются (см. jdeps ниже), а сам jar запускается
+# этим кастомным java как обычно. Смысл — сузить РАНТАЙМ-образ (JRE целиком
+# ~200 МБ у temurin -> десятки МБ у custom runtime), а не сам jar.
+FROM eclipse-temurin:25-jdk AS linker
+WORKDIR /build
+COPY target/app.jar /build/app.jar
+# jdeps печатает точный список модулей, которые использует байткод сервиса —
+# для этого стенда всегда java.base,jdk.httpserver,
+# но пересчитываем на этапе сборки, чтобы не рассинхронизироваться с кодом.
+RUN jdeps --print-module-deps --ignore-missing-deps /build/app.jar > /build/modules.txt \
+ && jlink --add-modules "$(cat /build/modules.txt)" \
+      --strip-debug --no-man-pages --no-header-files --compress zip-6 \
+      --output /build/customjre
+
+FROM debian:bookworm-slim
+WORKDIR /app
+COPY --from=linker /build/customjre /opt/customjre
+COPY --from=linker /build/app.jar /app/app.jar
+ENV MODE=jlink
+EXPOSE 8080
+CMD ["/opt/customjre/bin/java", "-jar", "/app/app.jar"]

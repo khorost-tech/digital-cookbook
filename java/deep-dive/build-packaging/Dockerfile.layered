@@ -1,0 +1,19 @@
+# Режим 2: JVM layered-jar. Тот же байткод, что и в fat-jar, но раскладывается
+# по ДВУМ отдельным COPY-слоям вместо одного jar-файла:
+#   - lib/  — "библиотечный" код (ResponseFormatter), меняется редко
+#   - app/  — прикладной код (App, HTTP-хендлеры), меняется часто
+# Смысл режима — НЕ рантайм-числа (они совпадают с fat-jar с точностью до шума
+# измерения, ведь исполняется тот же байткод в том же JRE), а кеш слоёв Docker:
+# при правке только App.java пересобирается/перекачивается только второй слой,
+# первый остаётся в кеше. См. README.md, раздел "layered — проверка кеша".
+#
+# У Spring Boot layertools (dependencies/spring-boot-loader/app) аналогичная идея
+# для приложений с внешними зависимостями; здесь зависимостей нет (см. pom.xml),
+# поэтому разделение проведено по признаку "частота изменений", а не "своё/чужое".
+FROM eclipse-temurin:25-jre
+WORKDIR /app
+COPY target/classes/tech/khorost/buildpackaging/lib /app/classes/tech/khorost/buildpackaging/lib
+COPY target/classes/tech/khorost/buildpackaging/app /app/classes/tech/khorost/buildpackaging/app
+ENV MODE=layered-jar
+EXPOSE 8080
+CMD ["java", "-cp", "/app/classes", "tech.khorost.buildpackaging.app.App"]

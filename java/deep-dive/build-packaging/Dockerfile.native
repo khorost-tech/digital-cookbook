@@ -1,0 +1,23 @@
+# Режим 4: GraalVM native-image. Тулчейн — ghcr.io/graalvm/native-image-community:25
+# (GraalVM CE 25.0.2, собран на JVMCI JDK 25) — тянется с ghcr.io без прокси,
+# native-image для JDK 25 работает "из коробки" (проверено вручную перед тем,
+# как класть в Dockerfile). Fallback на Liberica NIK/24
+# НЕ понадобился.
+#
+# Сервис намеренно без внешних зависимостей (только java.base + jdk.httpserver,
+# без Spring Boot/Jackson) — так что --no-fallback компилируется без единого
+# reflect-config/resource-config: com.sun.net.httpserver не требует reflection.
+FROM ghcr.io/graalvm/native-image-community:25 AS builder
+WORKDIR /build
+COPY target/classes /build/classes
+RUN native-image --no-fallback -cp /build/classes tech.khorost.buildpackaging.app.App -o /build/app
+
+# Бинарник — динамически слинкованный ELF (glibc), не статический (ldd подтверждает
+# зависимость на /lib64/ld-linux-x86-64.so.2) — нужен glibc-рантайм, поэтому
+# debian:bookworm-slim, а не scratch/distroless-static.
+FROM debian:bookworm-slim
+WORKDIR /app
+COPY --from=builder /build/app /app/app
+ENV MODE=native
+EXPOSE 8080
+CMD ["/app/app"]

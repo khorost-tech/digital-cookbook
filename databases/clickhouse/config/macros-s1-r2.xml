@@ -1,0 +1,12 @@
+<!--
+  macros-s1-r2.xml — подставляется ТОЛЬКО в ch-s1-r2 (compose/cluster.yml).
+  Тот же shard=1, что ch-s1-r1 (одна и та же ReplicatedMergeTree-таблица —
+  вторая реплика шарда 1), но replica=r2 — см. пояснение в macros-s1-r1.xml.
+-->
+<clickhouse>
+    <macros>
+        <shard>1</shard>
+        <replica>r2</replica>
+        <cluster>events_cluster</cluster>
+    </macros>
+</clickhouse>

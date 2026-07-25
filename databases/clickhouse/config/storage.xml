@@ -1,0 +1,59 @@
+<!--
+  Стенд #7 (s3, Step 1 брифа): storage_configuration с s3-диском поверх
+  MinIO + storage policy hot_cold (default локальный том + s3-холодный
+  том). Смонтировано в ../compose/compose.yml (services.clickhouse.volumes)
+  — общий single-node compose серии, используется всеми стендами, влияет
+  только на добавление диска/политики (не меняет поведение других стендов,
+  которые её не используют).
+
+  Требует, чтобы бакет chdata на MinIO уже существовал ДО старта ClickHouse
+  с этим конфигом (ClickHouse не создаёт бакет сам) — см.
+  ../ops/s3-demo.sh (шаг minio-init, `mc mb`).
+
+  Dev-ключи (minioadmin/minioadmin123) — НЕ секрет, локальный стенд.
+-->
+<clickhouse>
+    <storage_configuration>
+        <disks>
+            <s3>
+                <type>s3</type>
+                <endpoint>http://minio:9000/chdata/</endpoint>
+                <access_key_id>minioadmin</access_key_id>
+                <secret_access_key>minioadmin123</secret_access_key>
+                <metadata_type>local</metadata_type>
+                <!-- compose/compose.yml (общий для ВСЕЙ серии) монтирует
+                     этот файл БЕЗУСЛОВНО — другие стенды запускают
+                     `docker compose -f compose/compose.yml up -d` БЕЗ
+                     compose/minio.yml, MinIO в такие моменты не работает.
+                     Без skip_access_check ClickHouse проверяет доступность
+                     диска при старте сервера и может не подняться вовсе,
+                     если MinIO/бакет недоступны — это сломало бы ВСЕ
+                     остальные стенды серии, не только этот. Реальная
+                     проверка доступности диска — живая, в phasePolicy
+                     (../s3/policy.go), запускается уже ПОСЛЕ того, как
+                     ops/s3-demo.sh поднял minio.yml и создал бакет. -->
+                <skip_access_check>true</skip_access_check>
+            </s3>
+        </disks>
+        <policies>
+            <!-- hot_cold: том "hot" — существующий локальный default-диск
+                 (данные ClickHouse на /var/lib/clickhouse, тот же, что все
+                 остальные стенды серии), том "cold" — s3-диск выше. Явные
+                 volumes (а не одиночный <disk>) нужны, чтобы TTL ... TO
+                 VOLUME 'cold' в DDL стенда мог адресовать том по имени; TO
+                 DISK 's3' (используется в живом прогоне для детерминизма,
+                 см. tiering.go) адресует диск напрямую, volumes для этого
+                 необязательны, но нужны для поддержки TO VOLUME в DDL. -->
+            <hot_cold>
+                <volumes>
+                    <hot>
+                        <disk>default</disk>
+                    </hot>
+                    <cold>
+                        <disk>s3</disk>
+                    </cold>
+                </volumes>
+            </hot_cold>
+        </policies>
+    </storage_configuration>
+</clickhouse>

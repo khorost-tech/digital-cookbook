@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>tech.khorost</groupId>
+    <artifactId>java-deep-dive</artifactId>
+    <version>0.1.0</version>
+  </parent>
+
+  <artifactId>testing</artifactId>
+  <packaging>jar</packaging>
+
+  <!-- Стенд к статье №10 "Тестирование на JVM: unit vs integration, Testcontainers" —
+       контраст двух уровней тестов на одном и том же кусочке бизнес-логики
+       (репозиторий заказов над Postgres):
+         - OrderServiceUnitTest: юнит-тест бизнес-правила (сумма заказа, статус)
+           над ручным stub-репозиторием (без Mockito-рефлексии, простой Java-класс,
+           реализующий интерфейс) — миллисекунды, без Docker.
+         - OrderRepositoryIntegrationTest: @Testcontainers + @Container
+           PostgreSQLContainer(postgres:18.4) — реальная схема (DDL из
+           src/test/resources/schema.sql), реальный INSERT/SELECT через JDBC,
+           проверка, что бизнес-код действительно работает против настоящей БД
+           (не просто компилируется под mock).
+       Версия JUnit 5 (junit-jupiter) — 5.14.4, актуальный latest stable на Maven
+       Central (проверено 2026-07-08 через maven-metadata.xml, ветка 5.x — JUnit 6.x
+       существует, но Testcontainers 1.21.3 таргетирует JUnit 5 API через свой
+       модуль org.testcontainers:junit-jupiter, версия которого управляется
+       testcontainers-bom). Mockito — 5.23.0 (latest stable), используется только
+       как альтернативная иллюстрация (mock вместо ручного stub) в отдельном
+       тесте, не обязателен для контраста unit/integration. -->
+
+  <properties>
+    <junit-jupiter.version>5.14.4</junit-jupiter.version>
+    <mockito.version>5.23.0</mockito.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+    </dependency>
+
+    <!-- JUnit 5 -->
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit-jupiter.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Mockito — иллюстрация mock-подхода к юнит-тесту (альтернатива ручному stub). -->
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-junit-jupiter</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Testcontainers — версия из parent testcontainers.version (1.21.3), ЯВНО
+         (не полагаясь на dependencyManagement из testcontainers-bom): в parent
+         pom.xml spring-boot-dependencies импортирован ПЕРЕД testcontainers-bom,
+         а Spring Boot 3.5.3 сам управляет org.testcontainers:testcontainers на
+         1.21.2 — при импорте нескольких BOM в один dependencyManagement первое
+         объявление побеждает, так что без явной версии здесь тихо резолвился бы
+         testcontainers 1.21.2, а не заявленный 1.21.3 (проверено через
+         dependency:tree). -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>testcontainers</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${testcontainers.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>testing</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>3.5.6</version>
+        <configuration>
+          <!-- НЮАНС Docker Desktop (Windows) + docker.sock bind-mount: свежие
+               версии Docker Desktop проксируют примонтированный /var/run/docker.sock
+               через внутренний "docker_cli"-прокси (Labels: dockerSocketProxied),
+               который отвечает 400 Bad Request на запросы с Docker Engine API
+               < 1.40 (проверено вручную: curl .../v1.32/info -> 400, .../v1.40/info
+               -> 200). Testcontainers 1.21.x жёстко фолбэчится на
+               RemoteApiVersion.VERSION_1_32 в connectivity-check
+               (DockerClientProviderStrategy), если apiVersion не задан явно —
+               отсюда "Could not find a valid Docker environment" при рабочем
+               докер-сокете. Фикс: системное свойство api.version (читает
+               DefaultDockerClientConfig), пробрасываем его в форкнутую JVM
+               surefire через argLine. -->
+          <argLine>-Dapi.version=1.43</argLine>
+        </configuration>
+      </plugin>
+    </plugins>
+  </build>
+</project>

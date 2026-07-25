@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>tech.khorost</groupId>
+    <artifactId>java-deep-dive</artifactId>
+    <version>0.1.0</version>
+  </parent>
+
+  <artifactId>modern-features</artifactId>
+  <packaging>jar</packaging>
+
+  <!-- Стенд к статье №2 "Современные фичи языка" — компилируемые сниппеты по
+       фичам, проверенные ЖИВЬЁМ на JDK 25 (maven:3.9-eclipse-temurin-25, см.
+       README.md). Каждый .java-файл — один main-класс на фичу, без внешних
+       зависимостей: только javac/JVM 25.
+
+       Статус фич на JDK 25 (проверено компиляцией, не по памяти):
+         - records + record patterns + compact constructors — finalized (JEP 395/440, с JDK 16/21)
+         - sealed interfaces/classes + exhaustive switch — finalized (JEP 409, с JDK 17)
+         - pattern matching (instanceof/switch, type+record patterns, guarded `when`) — finalized (JEP 394/441, с JDK 16/21)
+         - unnamed variables & patterns (`_`) — finalized (JEP 456, с JDK 22)
+         - virtual threads (Executors.newVirtualThreadPerTaskExecutor, Thread.ofVirtual) — finalized (JEP 444, с JDK 21)
+         - string templates (STR."...") — REMOVED. Preview в JDK 21 (JEP 430) и JDK 22
+           (JEP 459, второй preview), затем сняты из фичасета JDK 23 на редизайн и
+           отсутствуют в 23/24/25 — компилятор 25 такой синтаксис не знает
+           (проверено дословно: компиляция `javac` под release 25 на `STR."..."` в отдельном
+           scratch-файле вне сборки даёт «illegal escape character» — вывод и разбор
+           в StringTemplatesStatus.java и README, не комментарием "на слово").
+       Ни одна из показанных фич не требует флага enable preview на 25 — все либо
+       finalized, либо (string templates) removed и не показаны как рабочий код. -->
+
+  <build>
+    <finalName>modern-features</finalName>
+  </build>
+</project>

@@ -1,0 +1,61 @@
+# decision.yml — TimescaleDB для стенда #8 (decision): карта выбора
+# ClickHouse vs TimescaleDB vs DuckDB vs PostgreSQL. Один и тот же
+# аналитический сценарий (см. ../decision/) прогоняется на ClickHouse и
+# PostgreSQL из ../compose/compose.yml (уже поднятого), TimescaleDB —
+# отдельный сервис здесь, DuckDB — embedded (без сервера, внутри самого
+# Go-процесса ../decision через go-duckdb, отдельного контейнера/compose не
+# требует — см. ../ops/decision-demo.sh).
+#
+# Поднимается ПОВЕРХ уже запущенного compose/compose.yml (общая сеть
+# clickhouse-cookbook-net, network external:true — тот же паттерн, что
+# ../compose/kafka.yml и ../compose/minio.yml):
+#   docker compose -f compose/compose.yml -f compose/decision.yml up -d timescaledb
+# Снос (без остановки CH/PG):
+#   docker compose -f compose/compose.yml -f compose/decision.yml rm -sf timescaledb
+#
+# Версия зафиксирована живьём 2026-07-10: `timescale/timescaledb:latest-pg16`
+# разрешился в digest sha256:ba149561ad4ddff5940d6eb0a0df60aefd1355cee1a45092
+# 8f271267038fc888; тот же digest у явного тега 2.28.2-pg16 (сверено
+# `docker inspect --format '{{.Id}}'` на обоих тегах — совпал). Внутри:
+# PostgreSQL 16.14 (`SELECT version()`), extension timescaledb 2.28.2
+# (`pg_available_extensions`, default_version == installed_version).
+#
+# Порты хоста: в репо уже заняты 15432 (PG этой же серии), 5432-5455
+# (другие серии), 18123/19000 (CH), 19010/19011 (MinIO), 28xxx (cluster.yml),
+# 39092 (kafka.yml). Этот стенд использует 15433 (свободен на момент
+# создания, 2026-07-10) — соответствует Global Constraints плана
+# (docs/superpowers/plans/2026-07-09-clickhouse-cookbook.md).
+#
+# Внутри сети (сравнение из ../decision):
+#   TimescaleDB: timescaledb:5432 (БД demo)
+# С хоста:
+#   TimescaleDB: localhost:15433
+
+services:
+  timescaledb:
+    image: timescale/timescaledb:2.28.2-pg16
+    container_name: clickhouse-cookbook-timescaledb
+    hostname: timescaledb
+    environment:
+      POSTGRES_DB: demo
+      POSTGRES_PASSWORD: chdemo
+    ports:
+      - "15433:5432"
+    volumes:
+      - timescaledb-data:/var/lib/postgresql/data
+    networks:
+      - clickhouse-cookbook-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+networks:
+  clickhouse-cookbook-net:
+    name: clickhouse-cookbook-net
+    external: true
+
+volumes:
+  timescaledb-data:

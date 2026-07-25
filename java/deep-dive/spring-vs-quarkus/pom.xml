@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>tech.khorost</groupId>
+    <artifactId>java-deep-dive</artifactId>
+    <version>0.1.0</version>
+  </parent>
+
+  <artifactId>spring-vs-quarkus</artifactId>
+  <packaging>pom</packaging>
+
+  <!-- Стенд для статьи #4 серии про JVM/Java: два эквивалентных REST-сервиса
+       (GET /hello -> "hello", GET /health) — один на Spring Boot 3.5.3
+       (spring-boot-starter-web + actuator), другой на Quarkus 3.22.3
+       (quarkus-rest + smallrye-health). Версии наследуются из
+       dependencyManagement родителя (java-deep-dive/pom.xml). Замер —
+       startup/peak RSS в JVM-режиме, ВНУТРИ контейнера (см. build-packaging/
+       за обоснованием: port-forwarder Docker Desktop на Windows искажает
+       startup при обращении с хоста). Native — опционально, см. README.md. -->
+
+  <modules>
+    <module>spring</module>
+    <module>quarkus</module>
+  </modules>
+</project>

@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>tech.khorost</groupId>
+    <artifactId>java-deep-dive</artifactId>
+    <version>0.1.0</version>
+  </parent>
+
+  <artifactId>messaging</artifactId>
+  <packaging>jar</packaging>
+
+  <!-- Стенд к статье №11 "Kafka: producer/consumer, consumer groups, exactly-once" —
+       живой Kafka (apache/kafka:4.3.0, KRaft single-node, из общего docker/compose.yml):
+         - ProducerConsumerDemo: базовая доставка N сообщений end-to-end.
+         - ConsumerGroupDemo: 2 консьюмера в одной группе, реальный ребаланс партиций
+           (сперва 1 консьюмер получает все 4 партиции, затем при подключении второго —
+           перераспределение, залогировано через ConsumerRebalanceListener).
+         - EosDemo: транзакционный продюсер (transactional.id, initTransactions/
+           beginTransaction/commitTransaction/abortTransaction) + консьюмер
+           isolation.level=read_committed — abort-транзакция (симуляция сбоя при повторе)
+           невидима read_committed-консьюмеру, повторная отправка того же батча с
+           commit — виден один раз, без дублей.
+         - ErrorHandlingDemo: retry с бэкоффом + dead-letter topic — "ядовитое"
+           сообщение после исчерпания ретраев уходит в DLT, оффсет коммитится,
+           партиция не блокируется.
+       kafka-clients версия — из parent BOM (${kafka-clients.version}), совпадает
+       с версией образа брокера. -->
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>messaging</finalName>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>tech.khorost.messaging.Main</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tech.khorost</groupId>
+  <artifactId>java-deep-dive</artifactId>
+  <version>0.1.0</version>
+  <packaging>pom</packaging>
+
+  <!-- Мультимодульный cookbook к серии статей про JVM/Java: hands-on стенды с реальными
+       числами (throughput/startup/RSS). JDK 25 (LTS) — основной тулчейн, проверен живьём
+       (eclipse-temurin:25-jdk и maven:3.9-eclipse-temurin-25 тянутся без прокси).
+       Каждый под-модуль — отдельный стенд/сравнение, добавляется своей задачей в <modules>.
+       Версии фреймворков ниже — latest на Maven Central на момент создания каркаса
+       (2026-07-07); модули-стенды сверяют версию точечно при добавлении зависимости. -->
+  <properties>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
+
+    <!-- Версии фреймворков/библиотек — общие для всех модулей через dependencyManagement.
+         Пины ниже — фактический latest на Maven Central (проверено 2026-07-07). -->
+    <spring-boot.version>3.5.3</spring-boot.version>
+    <!-- Quarkus: 3.23.0.CR1 существует, но это candidate release — пин на latest stable. -->
+    <quarkus.version>3.22.3</quarkus.version>
+    <kotlin.version>2.2.0</kotlin.version>
+    <testcontainers.version>1.21.3</testcontainers.version>
+    <resilience4j.version>2.3.0</resilience4j.version>
+    <kafka-clients.version>4.3.0</kafka-clients.version>
+    <hibernate.version>7.0.2.Final</hibernate.version>
+    <jooq.version>3.20.3</jooq.version>
+    <jmh.version>1.37</jmh.version>
+    <!-- reactor-core: latest stable GA на Maven Central на момент добавления
+         (проверено 2026-07-07 через maven-metadata.xml, ветка 3.8.x). -->
+    <reactor-core.version>3.8.6</reactor-core.version>
+    <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+    <maven-jar-plugin.version>3.4.1</maven-jar-plugin.version>
+
+    <!-- Общие версии плагинов/утилит, используемые несколькими стендами. -->
+    <exec-maven-plugin.version>3.6.3</exec-maven-plugin.version>
+    <postgresql-driver.version>42.7.11</postgresql-driver.version>
+    <!-- HikariCP: latest stable на Maven Central (проверено 2026-07-07 через maven-metadata.xml). -->
+    <hikaricp.version>7.1.0</hikaricp.version>
+    <slf4j.version>2.0.17</slf4j.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-dependencies</artifactId>
+        <version>${spring-boot.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.quarkus.platform</groupId>
+        <artifactId>quarkus-bom</artifactId>
+        <version>${quarkus.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>io.github.resilience4j</groupId>
+        <artifactId>resilience4j-bom</artifactId>
+        <version>${resilience4j.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-clients</artifactId>
+        <version>${kafka-clients.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.hibernate.orm</groupId>
+        <artifactId>hibernate-core</artifactId>
+        <version>${hibernate.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.jooq</groupId>
+        <artifactId>jooq</artifactId>
+        <version>${jooq.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-core</artifactId>
+        <version>${jmh.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.openjdk.jmh</groupId>
+        <artifactId>jmh-generator-annprocess</artifactId>
+        <version>${jmh.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.postgresql</groupId>
+        <artifactId>postgresql</artifactId>
+        <version>${postgresql-driver.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>io.projectreactor</groupId>
+        <artifactId>reactor-core</artifactId>
+        <version>${reactor-core.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.zaxxer</groupId>
+        <artifactId>HikariCP</artifactId>
+        <version>${hikaricp.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>exec-maven-plugin</artifactId>
+          <version>${exec-maven-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${maven-shade-plugin.version}</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-jar-plugin</artifactId>
+          <version>${maven-jar-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <!-- Пополняется задачами-стендами: data-access (jOOQ/Hibernate), messaging (Kafka),
+       resilience (resilience4j), frameworks (Spring Boot/Quarkus startup+RSS), jmh (JIT/GC). -->
+  <modules>
+    <module>concurrency</module>
+    <module>build-packaging</module>
+    <module>spring-vs-quarkus</module>
+    <module>data-access</module>
+    <module>messaging</module>
+    <module>profiling</module>
+    <module>production-patterns</module>
+    <module>testing</module>
+    <module>modern-features</module>
+  </modules>
+</project>

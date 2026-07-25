@@ -1,0 +1,26 @@
+# Maven / Gradle build output
+target/
+build/
+.gradle/
+dependency-reduced-pom.xml
+
+# JVM profiling/diagnostics
+*.jfr
+*.hprof
+*.collapsed
+*.svg
+
+# async-profiler distribution (скачивается run-async-profiler.sh через прокси)
+.ap-cache/
+
+# Compiled classes / native binaries
+*.class
+*.dll
+*.so
+*.dylib
+*.exe
+
+# IDE
+.idea/
+*.iml
+.vscode/

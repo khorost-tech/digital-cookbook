@@ -1,0 +1,45 @@
+<!--
+  remote-servers.xml — топология кластера events_cluster (стенд #5,
+  clickhouse/compose/cluster.yml): 2 шарда x 2 реплики. Один и тот же файл
+  монтируется в /etc/clickhouse-server/config.d/ на ВСЕХ 4 CH-нодах — сама
+  топология одинакова везде, различаются только per-нода macros (shard/
+  replica, см. macros-*.xml), которые ReplicatedMergeTree подставляет в путь
+  '/clickhouse/tables/{shard}/events' при CREATE TABLE ... ON CLUSTER
+  events_cluster (одна и та же DDL-строка выполняется на каждой ноде, макрос
+  {shard}/{replica} резолвится локально).
+
+  internal_replication=true — Distributed-таблица (ENGINE=Distributed) шлёт
+  вставленные данные ОДНОЙ реплике на шард (а не всем реплика сразу) и
+  полагается на встроенную репликацию ReplicatedMergeTree (через Keeper) для
+  распространения на вторую реплику того же шарда — это ровно то поведение,
+  которое демонстрирует Step 3 брифа (вставка в одну реплику -> появление на
+  второй через Keeper).
+-->
+<clickhouse>
+    <remote_servers>
+        <events_cluster>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <replica>
+                    <host>ch-s1-r1</host>
+                    <port>9000</port>
+                </replica>
+                <replica>
+                    <host>ch-s1-r2</host>
+                    <port>9000</port>
+                </replica>
+            </shard>
+            <shard>
+                <internal_replication>true</internal_replication>
+                <replica>
+                    <host>ch-s2-r1</host>
+                    <port>9000</port>
+                </replica>
+                <replica>
+                    <host>ch-s2-r2</host>
+                    <port>9000</port>
+                </replica>
+            </shard>
+        </events_cluster>
+    </remote_servers>
+</clickhouse>

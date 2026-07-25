@@ -1,0 +1,56 @@
+# minio.yml — MinIO для стенда #7 (s3): S3-совместимое хранилище для
+# storage_configuration s3-диска ClickHouse (../config/storage.xml) и для
+# табличной функции/движка s3() (Parquet round-trip).
+#
+# Поднимается ПОВЕРХ уже запущенного compose/compose.yml (общая сеть
+# clickhouse-cookbook-net, network external:true — тот же паттерн, что
+# ../compose/kafka.yml поверх ../compose/compose.yml):
+#   docker compose -f compose/compose.yml -f compose/minio.yml up -d minio
+# Снос (без остановки CH/PG):
+#   docker compose -f compose/compose.yml -f compose/minio.yml rm -sf minio
+#
+# ВАЖНО: ClickHouse (services.clickhouse в compose/compose.yml) монтирует
+# ../config/storage.xml, который ссылается на бакет chdata на minio:9000 —
+# бакет должен существовать ДО старта/рестарта контейнера clickhouse
+# (создаётся отдельным одноразовым `docker run minio/mc`, см.
+# ../ops/s3-demo.sh). Поэтому порядок в s3-demo.sh: minio up -> bucket
+# создан -> clickhouse (пере)запущен с примонтированным storage.xml.
+#
+# Порты хоста: в репо уже заняты 18123/19000 (CH), 15432 (PG), 39092
+# (kafka.yml), 28xxx (cluster.yml). Этот стенд использует 19010 (MinIO API,
+# S3-протокол) и 19011 (MinIO Console) — свободны на момент создания
+# (2026-07-10).
+#
+# Внутри сети (ClickHouse s3-диск + Go-стенд + INSERT/SELECT s3()):
+#   endpoint MinIO API: http://minio:9000
+# С хоста (опционально — MinIO Console для отладки):
+#   http://localhost:19011 (login minioadmin / minioadmin123)
+#
+# Dev-ключи (MINIO_ROOT_USER/MINIO_ROOT_PASSWORD) — НЕ секрет, локальный
+# стенд, тот же паттерн, что ../../opensearch/ism/docker-compose.yml.
+
+services:
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    container_name: clickhouse-cookbook-minio
+    hostname: minio
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: minioadmin
+      MINIO_ROOT_PASSWORD: minioadmin123
+    ports:
+      - "19010:9000"
+      - "19011:9001"
+    networks:
+      - clickhouse-cookbook-net
+    healthcheck:
+      test: ["CMD", "mc", "ready", "local"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+networks:
+  clickhouse-cookbook-net:
+    name: clickhouse-cookbook-net
+    external: true

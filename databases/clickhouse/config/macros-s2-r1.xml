@@ -1,0 +1,12 @@
+<!--
+  macros-s2-r1.xml — подставляется ТОЛЬКО в ch-s2-r1 (compose/cluster.yml).
+  shard=2 (второй шард кластера), replica=r1 — см. пояснение в
+  macros-s1-r1.xml.
+-->
+<clickhouse>
+    <macros>
+        <shard>2</shard>
+        <replica>r1</replica>
+        <cluster>events_cluster</cluster>
+    </macros>
+</clickhouse>

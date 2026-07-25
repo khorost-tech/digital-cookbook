@@ -1,0 +1,8 @@
+# Режим 1: JVM fat-jar. Один исполняемый jar (Main-Class в манифесте),
+# рантайм — обычный eclipse-temurin:25-jre. Базовая точка сравнения.
+FROM eclipse-temurin:25-jre
+WORKDIR /app
+COPY target/app.jar /app/app.jar
+ENV MODE=fat-jar
+EXPOSE 8080
+CMD ["java", "-jar", "/app/app.jar"]

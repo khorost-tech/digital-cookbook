@@ -1,0 +1,40 @@
+<!--
+  keeper.xml — полная конфигурация ClickHouse Keeper (keeper1,
+  compose/cluster.yml), монтируется как /etc/clickhouse-keeper/keeper_config.xml
+  (полная замена дефолтного конфига образа clickhouse/clickhouse-keeper, а не
+  config.d-фрагмент — так проще держать один узел явным и читаемым).
+
+  raft_configuration с ОДНИМ <server> — dev-упрощение (см. use-keeper.xml):
+  прод-топология Keeper — 3 узла (raft-кворум переживает потерю одного,
+  требует 3 <server>-записи с разными id/hostname и port=9234 у каждого).
+-->
+<clickhouse>
+    <logger>
+        <level>information</level>
+        <console>true</console>
+    </logger>
+
+    <listen_host>0.0.0.0</listen_host>
+
+    <keeper_server>
+        <tcp_port>9181</tcp_port>
+        <server_id>1</server_id>
+
+        <log_storage_path>/var/lib/clickhouse-keeper/coordination/log</log_storage_path>
+        <snapshot_storage_path>/var/lib/clickhouse-keeper/coordination/snapshots</snapshot_storage_path>
+
+        <coordination_settings>
+            <operation_timeout_ms>10000</operation_timeout_ms>
+            <session_timeout_ms>30000</session_timeout_ms>
+            <raft_logs_level>information</raft_logs_level>
+        </coordination_settings>
+
+        <raft_configuration>
+            <server>
+                <id>1</id>
+                <hostname>keeper1</hostname>
+                <port>9234</port>
+            </server>
+        </raft_configuration>
+    </keeper_server>
+</clickhouse>

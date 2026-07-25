@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<persistence xmlns="https://jakarta.ee/xml/ns/persistence"
+             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+             xsi:schemaLocation="https://jakarta.ee/xml/ns/persistence
+                                  https://jakarta.ee/xml/ns/persistence/persistence_3_2.xsd"
+             version="3.2">
+  <persistence-unit name="dataaccess" transaction-type="RESOURCE_LOCAL">
+    <provider>org.hibernate.jpa.HibernatePersistenceProvider</provider>
+    <class>tech.khorost.dataaccess.model.Author</class>
+    <class>tech.khorost.dataaccess.model.Book</class>
+    <exclude-unlisted-classes>true</exclude-unlisted-classes>
+    <properties>
+      <!-- Значения по умолчанию — переопределяются программно из env
+           (JDBC_URL/JDBC_USER/JDBC_PASSWORD), см. Db.java. -->
+      <property name="jakarta.persistence.jdbc.url" value="jdbc:postgresql://localhost:5455/jdd"/>
+      <property name="jakarta.persistence.jdbc.user" value="jdd"/>
+      <property name="jakarta.persistence.jdbc.password" value="jdd"/>
+      <property name="jakarta.persistence.jdbc.driver" value="org.postgresql.Driver"/>
+
+      <!-- hibernate.generate_statistics — источник РЕАЛЬНОГО счётчика запросов
+           (Statistics#getPrepareStatementCount()), а не парсинг текстового лога.
+           show_sql/format_sql — качественное подтверждение (видно N+1 в логе). -->
+      <property name="hibernate.show_sql" value="true"/>
+      <property name="hibernate.format_sql" value="false"/>
+      <property name="hibernate.generate_statistics" value="true"/>
+      <property name="hibernate.hbm2ddl.auto" value="none"/>
+    </properties>
+  </persistence-unit>
+</persistence>

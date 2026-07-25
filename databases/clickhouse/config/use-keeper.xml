@@ -1,0 +1,22 @@
+<!--
+  use-keeper.xml — указывает всем 4 CH-нодам на ClickHouse Keeper (keeper1,
+  compose/cluster.yml) как на координатор для ReplicatedMergeTree (DDL-очередь
+  ON CLUSTER, репликация вставок, дедупликация блоков) — тот же протокол,
+  что ZooKeeper (<zookeeper> — исторический тег конфигурации, применим и к
+  ClickHouse Keeper, реализующему ZK wire-протокол).
+
+  Один узел Keeper — DEV-упрощение этого стенда (кворум не нужен для
+  демонстрации механизма). В проде Keeper разворачивают на 3 узлах (нечётное
+  число, raft-кворум переживает потерю одного) — при потере ЕДИНСТВЕННОГО
+  dev-узла Keeper ReplicatedMergeTree теряет координацию (DDL/репликация
+  встанут), это осознанный компромисс дев-стенда, не документируемый как
+  прод-рекомендация.
+-->
+<clickhouse>
+    <zookeeper>
+        <node>
+            <host>keeper1</host>
+            <port>9181</port>
+        </node>
+    </zookeeper>
+</clickhouse>

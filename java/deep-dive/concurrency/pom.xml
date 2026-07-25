@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>tech.khorost</groupId>
+    <artifactId>java-deep-dive</artifactId>
+    <version>0.1.0</version>
+  </parent>
+
+  <artifactId>concurrency</artifactId>
+  <packaging>jar</packaging>
+
+  <!-- Стенд для статьи "Модели конкурентности на JVM": один и тот же I/O-bound
+       сценарий (N=10000 задач, симулированная задержка I/O 100 мс) прогоняется
+       тремя способами — virtual threads (Loom), platform threads (пул), Reactor.
+       Каждый режим запускается ОТДЕЛЬНЫМ процессом JVM (см. run-all.sh), чтобы
+       peak RSS не искажался соседними режимами внутри одного процесса.
+       Kotlin coroutines этим же сценарием измеряет отдельный Gradle/Kotlin-модуль
+       (`kotlin/`) — числа сводятся в статье, здесь корутины не мерим. -->
+
+  <dependencies>
+    <dependency>
+      <groupId>io.projectreactor</groupId>
+      <artifactId>reactor-core</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>concurrency</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>tech.khorost.concurrency.Bench</mainClass>
+                </transformer>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

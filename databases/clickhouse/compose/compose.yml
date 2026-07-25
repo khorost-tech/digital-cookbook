@@ -1,0 +1,98 @@
+# Каркас к серии статей "ClickHouse: глубокое погружение".
+# Single-node ClickHouse + PostgreSQL 16 — базовая пара для сравнений #1/#3/#8
+# (OLAP vs OLTP-baseline, бенчмарк драйверов, карта выбора). Распределённый
+# кластер (шардинг+репликация+Keeper) — отдельный compose следующей задачи
+# серии (clickhouse/compose/cluster.yml), сюда НЕ входит.
+#
+# Версии зафиксированы живьём 2026-07-09:
+#   clickhouse/clickhouse-server:26.6.1.1193 — `docker pull clickhouse/clickhouse-server:latest`
+#     разрешился в этот тег (digest sha256:1d1f6508eba2dccce2cee9913907c5f7766327d...),
+#     подтверждено внутри контейнера `clickhouse-server --version`
+#     → "ClickHouse server version 26.6.1.1193 (official build)".
+#   postgres:16 — фактическая версия внутри образа 16.14 (Debian 16.14-1.pgdg13+1),
+#     `postgres --version` внутри контейнера.
+#
+# Порты в этом репо: postgres 5432/5433/5440/5441/5442/5450/5452/5453/5455,
+# kafka 19092-19094, kafka ecosystem 18080/18083 — уже заняты (см.
+# ../../kafka/compose/compose.yml, ../../db-indexes/postgres/docker-compose.yml
+# и другие *compose*.yml/docker-compose.yml в репо). Этот стенд использует
+# отдельный, проверенный свободным диапазон: CH HTTP 18123, CH native 19000,
+# PG 15432.
+#
+# Сеть compose: clickhouse-cookbook-net.
+# Внутри сети (клиенты-контейнеры на той же сети):
+#   ClickHouse native: clickhouse:9000, HTTP: clickhouse:8123
+#   PostgreSQL:         postgres:5432
+# С хоста:
+#   ClickHouse HTTP:   localhost:18123
+#   ClickHouse native: localhost:19000
+#   PostgreSQL:        localhost:15432
+
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.6.1.1193
+    container_name: clickhouse-cookbook
+    hostname: clickhouse
+    environment:
+      # Создаётся при первом старте контейнера (энтрипоинт официального образа
+      # выполняет CREATE DATABASE IF NOT EXISTS для CLICKHOUSE_DB).
+      CLICKHOUSE_DB: demo
+      # Локальный dev-стенд без пароля (пользователь default, пустой пароль).
+      # Флаг ниже включает SQL-управление пользователями/ролями (GRANT/CREATE USER),
+      # это не про пароль — просто удобно для экспериментов со стенда.
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    ports:
+      - "18123:8123"
+      - "19000:9000"
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - clickhouse-data:/var/lib/clickhouse
+      # Стенд #6 (ops-stand): allowed_path для BACKUP TABLE ... TO File(...),
+      # см. ../config/backups.xml. Путь бэкапа — внутри clickhouse-data выше,
+      # отдельный том не нужен.
+      - ../config/backups.xml:/etc/clickhouse-server/config.d/backups.xml:ro
+      # Стенд #7 (s3): s3-диск + storage policy hot_cold (MinIO), см.
+      # ../config/storage.xml. Смонтирован БЕЗУСЛОВНО (общий compose.yml
+      # для всей серии) — skip_access_check=true внутри storage.xml не даёт
+      # серверу упасть при старте, если MinIO/compose/minio.yml сейчас не
+      # поднят (остальные стенды его не используют).
+      - ../config/storage.xml:/etc/clickhouse-server/config.d/storage.xml:ro
+    networks:
+      - clickhouse-cookbook-net
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8123/ping || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  postgres:
+    image: postgres:16.14
+    container_name: clickhouse-cookbook-postgres
+    hostname: postgres
+    environment:
+      POSTGRES_DB: demo
+      POSTGRES_PASSWORD: chdemo
+    ports:
+      - "15432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - clickhouse-cookbook-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d demo"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 5s
+
+networks:
+  clickhouse-cookbook-net:
+    name: clickhouse-cookbook-net
+
+volumes:
+  clickhouse-data:
+  postgres-data:

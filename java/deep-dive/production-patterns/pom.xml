@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>tech.khorost</groupId>
+    <artifactId>java-deep-dive</artifactId>
+    <version>0.1.0</version>
+  </parent>
+
+  <artifactId>production-patterns</artifactId>
+  <packaging>jar</packaging>
+
+  <!-- Стенд к статье №8 "Production-паттерны: resilience4j, graceful shutdown, health" —
+       plain-Java (без Spring Boot — resilience4j-core API демонстрируется напрямую, без
+       autoconfigure-магии, так нагляднее видно порядок декораторов):
+         - UnstableDownstream: заглушка внешней системы с управляемыми фазами (полный
+           отказ N секунд -> восстановление с остаточным % ошибок и сетевой задержкой).
+         - ResilienceStack: цепочка Retry(CircuitBreaker(RateLimiter(Bulkhead(call)))) —
+           каждая retry-попытка заново проходит через CB/RateLimiter/Bulkhead, как в
+           реальном стеке. CircuitBreaker игнорирует RequestNotPermitted/BulkheadFullException
+           в статистике (не путать перегрузку с деградацией downstream), Retry игнорирует
+           CallNotPermittedException (не долбить открытый breaker).
+         - HealthServer: liveness/readiness на голом com.sun.net.httpserver (JDK, без
+           доп. зависимостей) — readiness=false на время graceful drain.
+         - Main: нагрузка через ScheduledExecutorService -> workExecutor(8), shutdown hook
+           на SIGTERM останавливает приём новых задач и ждёт awaitTermination() до дренажа
+           in-flight вызовов.
+       resilience4j версия — из parent BOM (${resilience4j.version} = 2.3.0). -->
+
+  <dependencies>
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-circuitbreaker</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-retry</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-ratelimiter</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.github.resilience4j</groupId>
+      <artifactId>resilience4j-bulkhead</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>production-patterns</finalName>
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+    </resources>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>tech.khorost.productionpatterns.Main</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

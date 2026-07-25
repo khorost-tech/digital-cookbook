@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tech.khorost</groupId>
+  <artifactId>clickhouse-cookbook</artifactId>
+  <version>0.1.0</version>
+  <packaging>pom</packaging>
+
+  <!-- Каркас Java-стендов к серии статей "ClickHouse: глубокое погружение".
+       Java задействуется предметно в стендах #2 (MergeTree Go+Java) и #3
+       (бенчмарк драйверов: clickhouse-java client-v2 native + clickhouse-jdbc);
+       полного Java-зеркала остальных стендов нет (см. Global Constraints
+       плана серии). Хостового Maven нет — сборка через
+       maven:3.9-eclipse-temurin-25.
+       Версии пинов сверены живьём 2026-07-09 (Maven Central, latest на
+       момент сборки): clickhouse-jdbc 0.9.0, client-v2 0.9.0. -->
+  <properties>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
+
+    <clickhouse-jdbc.version>0.9.0</clickhouse-jdbc.version>
+    <client-v2.version>0.9.0</client-v2.version>
+    <slf4j.version>2.0.17</slf4j.version>
+    <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.clickhouse</groupId>
+        <artifactId>clickhouse-jdbc</artifactId>
+        <version>${clickhouse-jdbc.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>com.clickhouse</groupId>
+        <artifactId>client-v2</artifactId>
+        <version>${client-v2.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${maven-shade-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <!-- Подмодули добавляются по мере продвижения серии. drivers — стенд #3
+       (бенчмарк драйверов), путь ../drivers/java нарочно ВНЕ java/ (единый
+       каркас clickhouse/drivers/{go,java}/, см. Files брифа задачи 4) —
+       Maven разрешает <module> с ../-путями, relativePath модуля указывает
+       обратно сюда. -->
+  <modules>
+    <module>smoke</module>
+    <module>mergetree</module>
+    <module>../drivers/java</module>
+  </modules>
+</project>
