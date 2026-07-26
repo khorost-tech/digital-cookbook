@@ -1,0 +1,103 @@
+# Стенд к серии статей "Kafka: глубокое погружение".
+# 3-брокерный KRaft-кластер (combined broker+controller на каждой ноде, без ZooKeeper).
+# Общий CLUSTER_ID зашит ниже (сгенерирован kafka-storage.sh random-uuid, валиден для
+# всех трёх нод — при первом старте каждая нода форматирует свой storage этим ID).
+#
+# Порты в этом репо: postgres 5432/5433/5440/5441/5442, kafka (single-node, java-deep-dive)
+# 9092/9096 — уже заняты, см. java-deep-dive/docker/compose.yml. Этот стенд использует
+# отдельный диапазон 19092-19094 (host) — свободен на момент создания (2026-07-08).
+#
+# Топология:
+#   kafka1 (node.id=1, rack-a) — internal kafka1:9092, controller :9093, host localhost:19092
+#   kafka2 (node.id=2, rack-b) — internal kafka2:9092, controller :9093, host localhost:19093
+#   kafka3 (node.id=3, rack-c) — internal kafka3:9092, controller :9093, host localhost:19094
+#
+# Внутри compose-сети (для клиентов Go/Java, запускаемых как контейнеры в этой же сети):
+#   bootstrap.servers=kafka1:9092,kafka2:9092,kafka3:9092
+# С хоста (например, локальный `go run`/`mvn exec` вне docker):
+#   bootstrap.servers=localhost:19092,localhost:19093,localhost:19094
+#
+# Дефолты надёжности кластера (RF=3, min.insync.replicas=2) выбраны для демонстрации
+# кворумной репликации в последующих стендах серии (rack-awareness, отказ ноды и т.д.).
+
+x-kafka-common: &kafka-common
+  image: apache/kafka:4.3.1
+  environment: &kafka-common-env
+    CLUSTER_ID: "r0mrt307TrOiv10ImOQjHw"
+    KAFKA_PROCESS_ROLES: broker,controller
+    KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
+    KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,HOST:PLAINTEXT
+    KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka1:9093,2@kafka2:9093,3@kafka3:9093"
+    # Дефолты кластера: 3 брокера, переживаем потерю одного без потери доступности на запись.
+    KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+    KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+    KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+    KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+    KAFKA_MIN_INSYNC_REPLICAS: 2
+    KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    # log.retention.check.interval.ms — статический (НЕ dynamic-alterable через
+    # kafka-configs.sh, проверено живьём: InvalidRequestException "Cannot update
+    # these configs dynamically"), поэтому задаётся здесь, на старте брокера, а
+    # не через ops-скрипт. Дефолт брокера — 300000мс (5 мин): слишком долго для
+    # живой демонстрации retention-стенда (#4). 2000мс — быстрый, но не
+    # вырожденный цикл проверки; не влияет на поведение предыдущих стендов
+    # (#1-#3), которые retention/cleaner не используют.
+    KAFKA_LOG_RETENTION_CHECK_INTERVAL_MS: 2000
+    # leader.imbalance.check.interval.seconds — тот же случай, что и выше:
+    # НЕ dynamic-alterable (проверено живьём: kafka-configs.sh --alter падает с
+    # "Cannot update these configs dynamically"), дефолт брокера 300с (5 мин) —
+    # непригодно для живой демонстрации auto.leader.rebalance.enable (стенд #6).
+    # 5с — быстрый, но не вырожденный цикл проверки контроллером дисбаланса
+    # preferred-лидерства; auto.leader.rebalance.enable сам по себе уже true
+    # по умолчанию, здесь только ускоряем ПЕРИОДИЧНОСТЬ проверки.
+    KAFKA_LEADER_IMBALANCE_CHECK_INTERVAL_SECONDS: 5
+  networks:
+    - kafka-net
+  healthcheck:
+    test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092"]
+    interval: 10s
+    timeout: 10s
+    retries: 15
+    start_period: 20s
+
+services:
+  kafka1:
+    <<: *kafka-common
+    container_name: kafka-cookbook-1
+    environment:
+      <<: *kafka-common-env
+      KAFKA_NODE_ID: 1
+      KAFKA_BROKER_RACK: rack-a
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,HOST://:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka1:9092,HOST://localhost:19092
+    ports:
+      - "19092:9094"
+
+  kafka2:
+    <<: *kafka-common
+    container_name: kafka-cookbook-2
+    environment:
+      <<: *kafka-common-env
+      KAFKA_NODE_ID: 2
+      KAFKA_BROKER_RACK: rack-b
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,HOST://:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka2:9092,HOST://localhost:19093
+    ports:
+      - "19093:9094"
+
+  kafka3:
+    <<: *kafka-common
+    container_name: kafka-cookbook-3
+    environment:
+      <<: *kafka-common-env
+      KAFKA_NODE_ID: 3
+      KAFKA_BROKER_RACK: rack-c
+      KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,HOST://:9094
+      KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka3:9092,HOST://localhost:19094
+    ports:
+      - "19094:9094"
+
+networks:
+  kafka-net:
+    name: kafka-cookbook-net

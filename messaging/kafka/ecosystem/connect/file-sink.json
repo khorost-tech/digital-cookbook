@@ -1,0 +1,9 @@
+{
+  "name": "ecosystem-file-sink",
+  "config": {
+    "connector.class": "org.apache.kafka.connect.file.FileStreamSinkConnector",
+    "tasks.max": "1",
+    "file": "/data/sink/output.txt",
+    "topics": "ecosystem-connect-demo"
+  }
+}

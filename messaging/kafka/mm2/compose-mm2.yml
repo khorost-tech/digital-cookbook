@@ -1,0 +1,35 @@
+# compose-mm2.yml — MirrorMaker 2 в dedicated/standalone-режиме
+# (connect-mirror-maker.sh mm2.properties) — НЕ Kafka Connect distributed
+# worker стенда #7 (тот — отдельный процесс, ecosystem.yml, другая роль).
+# Единственный контейнер, которому нужен доступ к ОБОИМ кластерам сразу —
+# подключён к ДВУМ compose-сетям: kafka-cookbook-net (us-east, уже поднят
+# ../compose/compose.yml) и kafka-cookbook-west-net (us-west,
+# compose-us-west.yml). Обе объявлены `external: true` — этот файл их не
+# создаёт, только использует.
+#
+# Запуск (оба кластера уже up), фаза 1 (active-passive, mm2.properties по умолчанию):
+#   docker compose -f compose-us-west.yml -f compose-mm2.yml up -d mm2
+# Фаза 2 (active-active) — dedicated MM2 не подхватывает новую пару кластеров
+# "на лету" (см. mm2-active-active.properties), требуется пересоздание:
+#   MM2_CONFIG=mm2-active-active.properties docker compose -f compose-us-west.yml -f compose-mm2.yml up -d --force-recreate mm2
+# Снос (кластеры не трогает):
+#   docker compose -f compose-us-west.yml -f compose-mm2.yml rm -sf mm2
+
+services:
+  mm2:
+    image: apache/kafka:4.3.1
+    container_name: kafka-cookbook-mm2
+    entrypoint: ["/opt/kafka/bin/connect-mirror-maker.sh", "/etc/mm2/mm2.properties"]
+    volumes:
+      - ./${MM2_CONFIG:-mm2.properties}:/etc/mm2/mm2.properties:ro
+    networks:
+      - kafka-cookbook-net
+      - kafka-cookbook-west-net
+
+networks:
+  kafka-cookbook-net:
+    name: kafka-cookbook-net
+    external: true
+  kafka-cookbook-west-net:
+    name: kafka-cookbook-west-net
+    external: true

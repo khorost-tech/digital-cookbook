@@ -1,0 +1,15 @@
+{
+  "name": "ecosystem-file-source",
+  "config": {
+    "connector.class": "org.apache.kafka.connect.file.FileStreamSourceConnector",
+    "tasks.max": "1",
+    "file": "/data/source/input.txt",
+    "topic": "ecosystem-connect-demo",
+    "transforms": "hoist,insertOrigin",
+    "transforms.hoist.type": "org.apache.kafka.connect.transforms.HoistField$Value",
+    "transforms.hoist.field": "line",
+    "transforms.insertOrigin.type": "org.apache.kafka.connect.transforms.InsertField$Value",
+    "transforms.insertOrigin.static.field": "ingest_source",
+    "transforms.insertOrigin.static.value": "filestream-source-connector"
+  }
+}

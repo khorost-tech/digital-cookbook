@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "tech.khorost.kafka.ecosystem",
+  "doc": "v3: тип поля id сменён long -> string — НЕ BACKWARD-совместимо (данные, записанные по v1/v2 как 8-байтный long, не читаются как string; реестр обязан отклонить регистрацию под BACKWARD-проверкой).",
+  "fields": [
+    { "name": "id", "type": "string" },
+    { "name": "name", "type": "string" },
+    { "name": "email", "type": "string" },
+    { "name": "age", "type": ["null", "int"], "default": null }
+  ]
+}

@@ -1,0 +1,12 @@
+[package]
+name = "kafka-clients-rust"
+version = "0.1.0"
+edition = "2021"
+
+[[bin]]
+name = "clients-rust"
+path = "src/main.rs"
+
+[dependencies]
+rdkafka = { version = "0.36" }
+tokio = { version = "1", features = ["full"] }

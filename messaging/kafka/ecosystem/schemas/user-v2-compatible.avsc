@@ -1,0 +1,12 @@
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "tech.khorost.kafka.ecosystem",
+  "doc": "v2: добавлено optional-поле age с default=null — BACKWARD-совместимо (читатель на новой схеме может прочитать данные, записанные по v1: отсутствующее в данных поле age просто получает default).",
+  "fields": [
+    { "name": "id", "type": "long" },
+    { "name": "name", "type": "string" },
+    { "name": "email", "type": "string" },
+    { "name": "age", "type": ["null", "int"], "default": null }
+  ]
+}

@@ -1,0 +1,72 @@
+# ecosystem.yml — расширение стенда: Kafka Connect (distributed worker) +
+# Schema Registry, поверх УЖЕ поднятого 3-брокерного KRaft-кластера
+# (compose.yml). Отдельный compose-файл (не сливаем в основной compose.yml),
+# т.к. это дополнительные сервисы конкретного стенда #7, а не часть
+# фундамента серии — поднимаются/сносятся независимо от кластера.
+#
+# Запуск (кластер уже up -d):
+#   docker compose -f compose/compose.yml -f compose/ecosystem.yml up -d schema-registry kafka-connect
+# Снос (кластер НЕ трогаем):
+#   docker compose -f compose/compose.yml -f compose/ecosystem.yml rm -sf schema-registry kafka-connect
+#
+# Schema Registry: apicurio/apicurio-registry (не Confluent cp-schema-registry —
+# см. README, раздел "Проверено живьём (`ecosystem`)" за живое сравнение и
+# обоснование выбора).
+# Хранилище схем — KafkaSQL (apicurio.storage.kind=kafkasql): реестр сам
+# создаёт и использует топики kafkasql-journal/kafkasql-snapshots/
+# registry-events на ЭТОМ ЖЕ apache/kafka-кластере — подтверждено живьём
+# (лог "KafkaSQL storage bootstrapped", "Using Kafka-SQL artifactStore").
+#
+# Kafka Connect: тот же образ apache/kafka:4.3.1, что и брокеры (никакого
+# отдельного Confluent-образа) — connect-distributed.sh из коробки, коннекторы
+# FileStreamSource/FileStreamSink и трансформации (SMT) уже в libs/ образа.
+
+services:
+  schema-registry:
+    image: apicurio/apicurio-registry:latest-release
+    container_name: kafka-cookbook-schema-registry
+    environment:
+      APICURIO_STORAGE_KIND: kafkasql
+      APICURIO_KAFKASQL_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+    networks:
+      - kafka-net
+    ports:
+      - "18080:8080"
+    healthcheck:
+      # ubi10-minimal (базовый образ apicurio/apicurio-registry) — БЕЗ
+      # wget/curl (проверено живьём: "wget: command not found"). bash с
+      # /dev/tcp — единственный доступный способ проверить, что HTTP-порт
+      # уже принимает соединения, без установки лишних пакетов в чужой образ.
+      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8080' || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 15
+      start_period: 20s
+
+  kafka-connect:
+    image: apache/kafka:4.3.1
+    container_name: kafka-cookbook-connect
+    entrypoint: ["/opt/kafka/bin/connect-distributed.sh", "/etc/kafka-ecosystem/connect-distributed.properties"]
+    volumes:
+      - ../ecosystem/connect:/etc/kafka-ecosystem:ro
+      # bind-mount (не named volume) — apache/kafka:4.3.1 в этом сервисе
+      # запускается под appuser (uid 1000), а named volume Docker создаёт с
+      # владельцем root:root без права записи для appuser (проверено живьём:
+      # "mkdir: cannot create directory '/data/source': Permission denied").
+      # Bind-mount хостовой директории этого ограничения не имеет.
+      - ../ecosystem/connect-data:/data
+    networks:
+      - kafka-net
+    ports:
+      - "18083:8083"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8083/connectors || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 20
+      start_period: 30s
+
+networks:
+  kafka-net:
+    name: kafka-cookbook-net
+    external: true

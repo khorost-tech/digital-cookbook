@@ -1,0 +1,36 @@
+# Java / Maven
+target/
+*.jar
+*.class
+dependency-reduced-pom.xml
+
+# Go
+bin/
+kafka-cookbook
+kafka-cookbook.exe
+
+# Rust (стенд #8) — Cargo.lock коммитится (конвенция репо: rust/*, opensearch/ingestion/clients/rust)
+clients/rust/target/
+
+# C#/.NET (стенд #8)
+obj/
+*.dll
+*.pdb
+
+# Scala scala-cli build/bsp caches (стенд #8)
+.bsp/
+.scala-build/
+
+# C++ (стенд #8, компилируется на лету — исходник .cpp коммитится, бинарь нет)
+clients/cpp/clients-cpp
+
+# данные томов Kafka (если когда-либо монтируются локально, не в docker volume)
+compose/data/
+compose/*.log
+
+# рантайм-данные стенда #7 (bind-mount Kafka Connect FileStream source/sink,
+# создаётся ops/ecosystem-demo.sh на лету)
+ecosystem/connect-data/
+
+# окружение
+.env

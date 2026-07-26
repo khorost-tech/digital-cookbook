@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tech.khorost</groupId>
+  <artifactId>kafka-cookbook</artifactId>
+  <version>0.1.0</version>
+  <packaging>pom</packaging>
+
+  <!-- Каркас Java-стендов к серии статей "Kafka: глубокое погружение".
+       kafka-clients пинуется к точной версии брокера (apache/kafka:4.3.1,
+       см. ../README.md) — совпадение версий клиента и брокера важно для
+       корректной работы протокола/фич (KIP), особенно транзакций и EOS.
+       Хостового Maven нет — сборка через maven:3.9-eclipse-temurin-25.
+       Подмодули (producer/consumer/consumer-groups/EOS/...) добавляются
+       следующими задачами серии в <modules> ниже. -->
+  <properties>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
+
+    <!-- kafka-clients: пин = фактическая версия образа брокера (apache/kafka:4.3.1),
+         проверено живьём 2026-07-08 (docker pull, версия сверена внутри контейнера). -->
+    <kafka-clients.version>4.3.1</kafka-clients.version>
+    <slf4j.version>2.0.17</slf4j.version>
+    <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.apache.kafka</groupId>
+        <artifactId>kafka-clients</artifactId>
+        <version>${kafka-clients.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${maven-shade-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <!-- Подмодули добавляются по мере продвижения серии. -->
+  <modules>
+    <module>log-basics</module>
+    <module>consumer-groups</module>
+    <module>replication</module>
+    <module>storage</module>
+    <module>eos</module>
+    <module>ops</module>
+  </modules>
+</project>

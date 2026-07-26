@@ -1,0 +1,11 @@
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "tech.khorost.kafka.ecosystem",
+  "doc": "Стенд #7: базовая схема для демонстрации регистрации + эволюции в Schema Registry.",
+  "fields": [
+    { "name": "id", "type": "long" },
+    { "name": "name", "type": "string" },
+    { "name": "email", "type": "string" }
+  ]
+}
