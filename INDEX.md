@@ -16,7 +16,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`databases/clickhouse`](databases/clickhouse) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | 🔜 скоро |
+| [`databases/clickhouse`](databases/clickhouse) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | [статья](https://khorost.tech/databases/clickhouse-when-olap/) |
 | [`databases/db-indexes`](databases/db-indexes) | Индексы в БД: PostgreSQL, MongoDB, Tarantool | [статья](https://khorost.tech/databases/) |
 | [`databases/opensearch`](databases/opensearch) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
 | [`databases/redis/client-resilience`](databases/redis/client-resilience) | Клиенты Go/Java/Rust к Redis: Cluster/Sentinel, reconnect и failover | [статья](https://khorost.tech/databases/redis-clients-go-java-rust/) |
@@ -42,7 +42,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`java/deep-dive`](java/deep-dive) | Java: глубокое погружение (JDK 25): virtual threads, Spring/Quarkus, GraalVM, JFR, Kafka EOS | 🔜 скоро |
+| [`java/deep-dive`](java/deep-dive) | Java: глубокое погружение (JDK 25): virtual threads, Spring/Quarkus, GraalVM, JFR, Kafka EOS | [статья](https://khorost.tech/java/java-backend-and-containers-introduction/) |
 
 ## Performance
 
