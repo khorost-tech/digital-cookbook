@@ -2,7 +2,7 @@
 # Прогоняет Workload под async-profiler (нативный агент, качается отдельно
 # от JDK) — снимает CPU flame и alloc-профиль в collapsed-формате.
 #
-# async-profiler качается ОДИН РАЗ через HTTP-прокси s10.khorost.tech:3128
+# async-profiler качается ОДИН РАЗ через HTTP-прокси s9.khorost.tech:3128
 # (крупная внешняя загрузка) в .ap-cache/ — эта директория в .gitignore,
 # тарболл/бинарник в репозиторий не коммитятся.
 #
@@ -30,7 +30,7 @@ mkdir -p "$AP_CACHE"
 
 if [ ! -f "$AP_CACHE/$AP_TARBALL" ]; then
   echo "=== скачиваю async-profiler ${AP_VERSION} (${AP_ARCH}) через прокси ==="
-  curl -sL --proxy "http://s10.khorost.tech:3128" -o "$AP_CACHE/$AP_TARBALL" "$AP_URL"
+  curl -sL --proxy "http://s9.khorost.tech:3128" -o "$AP_CACHE/$AP_TARBALL" "$AP_URL"
 fi
 
 if [ ! -d "$AP_CACHE/async-profiler-${AP_VERSION}-${AP_ARCH}" ]; then

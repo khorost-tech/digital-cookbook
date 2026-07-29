@@ -63,7 +63,7 @@ cd profiling && bash run-async-profiler.sh 40
 ```
 
 Скрипт сам качает `async-profiler-4.4-linux-x64.tar.gz` через прокси
-`s10.khorost.tech:3128` в `.ap-cache/` (в `.gitignore`, один раз), затем
+`s9.khorost.tech:3128` в `.ap-cache/` (в `.gitignore`, один раз), затем
 гоняет два прогона той же нагрузки под `-agentpath:libasyncProfiler.so`:
 CPU-профиль (`event=cpu`) и alloc-профиль (`event=alloc`), оба в
 collapsed-формате. Собранный `libasyncProfiler.so` — Linux x64-бинарник,
