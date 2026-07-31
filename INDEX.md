@@ -19,6 +19,7 @@
 | [`databases/clickhouse`](databases/clickhouse) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | [статья](https://khorost.tech/databases/clickhouse-when-olap/) |
 | [`databases/db-indexes`](databases/db-indexes) | Индексы в БД: PostgreSQL, MongoDB, Tarantool | [статья](https://khorost.tech/databases/) |
 | [`databases/opensearch`](databases/opensearch) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
+| [`databases/postgres`](databases/postgres) | Клиенты Go/Java/Rust к PostgreSQL: primary+replica+pgbouncer, failover | 🔜 скоро |
 | [`databases/redis/client-resilience`](databases/redis/client-resilience) | Клиенты Go/Java/Rust к Redis: Cluster/Sentinel, reconnect и failover | [статья](https://khorost.tech/databases/redis-clients-go-java-rust/) |
 | [`databases/redis/deep-dive`](databases/redis/deep-dive) | Redis/Valkey: глубокое погружение (кодировки, event loop, персистентность, Cluster/Sentinel, память, streams/Lua, эксплуатация) | [статья](https://khorost.tech/databases/) |
 | [`databases/transactions`](databases/transactions) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | [статья](https://khorost.tech/databases/transactions-brokers-rabbitmq-kafka/) |

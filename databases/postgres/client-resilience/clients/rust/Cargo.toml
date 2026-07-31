@@ -1,0 +1,18 @@
+[package]
+name = "postgres-client-resilience-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# sqlx 0.9 (проверено против 0.9.0, май 2026): async-first драйвер БЕЗ libpq —
+# чистый Rust протокол Postgres. Отсюда важное следствие для этого стенда:
+# multi-host DSN с target_session_attrs (libpq-style failover) НЕ поддерживается
+# (см. комментарий в src/main.rs и открытый feature-request
+# https://github.com/launchbadge/sqlx/issues/3333 "Multiple Hosts, Failover").
+# Фичи: runtime-tokio — async runtime на tokio; postgres — драйвер Postgres.
+sqlx = { version = "0.9", features = ["runtime-tokio", "postgres"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread", "time"] }
+
+[[bin]]
+name = "postgres-client-resilience-rust"
+path = "src/main.rs"
