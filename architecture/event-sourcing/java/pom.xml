@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tech.khorost</groupId>
+  <artifactId>event-sourcing-cookbook-java</artifactId>
+  <version>0.1.0</version>
+
+  <!-- Java-пример к статье «Event Sourcing на практике» (https://khorost.tech/architecture/event-sourcing-in-practice/)
+       и серии «event-sourcing-deep-dive». Урезанный сценарий на чистом JDBC: append с
+       ожидаемой версией + оптимистичная блокировка через PK(stream_id,version),
+       конфликт версий двумя потоками, async-проектор баланса с чекпоинтом в той же
+       транзакции, ассерт «свёртка событий == проекция». Домен тот же, что в Go-стенде:
+       учёт кислорода в резервуарах лунной базы. -->
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <exec.mainClass>tech.khorost.eventsourcing.Main</exec.mainClass>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.11</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

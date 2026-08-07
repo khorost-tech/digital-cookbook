@@ -1,0 +1,31 @@
+# Стенд «Event Sourcing на практике» — Postgres как event store.
+# Пример к статье https://khorost.tech/architecture/event-sourcing-in-practice/
+# и к серии «event-sourcing-deep-dive».
+#
+# Один Postgres 16. Схему создаёт сам Go-стенд при старте (DROP+CREATE — можно
+# перезапускать сколько угодно), initdb-скриптов нет.
+#
+# Порт хоста 5452 выбран свободным на момент создания стенда (2026-07-08):
+# в репозитории уже заняты 5432/5433/5440/5441/5442/5450 (postgres других стендов).
+# При конфликте на другой машине — поменяйте левую часть проброса и DATABASE_URL.
+#
+# demo-креды (esdemo/esdemo) — только для локального стенда.
+#
+# name: фиксирует имя проекта compose (иначе оно берётся из имени папки `compose`
+# и сталкивается с другими стендами, у которых compose-файл тоже лежит в compose/).
+name: es-cookbook
+services:
+  postgres:
+    image: postgres:16
+    container_name: es-postgres
+    environment:
+      POSTGRES_USER: esdemo
+      POSTGRES_PASSWORD: esdemo
+      POSTGRES_DB: esdemo
+    ports:
+      - "5452:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U esdemo -d esdemo"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
