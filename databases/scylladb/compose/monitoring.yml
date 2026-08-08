@@ -1,0 +1,40 @@
+# Стенд #7 серии "ScyllaDB: глубокое погружение" — Prometheus, скрейпящий
+# ScyllaDB REST-метрики (`:9180/metrics`, Prometheus-формат "из коробки" у
+# каждого узла) со всех трёх узлов основного кластера (scylla1/2/3).
+#
+# ВАЖНО: этот файл добавляет ТОЛЬКО сервис prometheus к СУЩЕСТВУЮЩЕЙ сети
+# scylla-cookbook-net (compose/compose.yml её уже создаёт и именует явно —
+# `networks: scylla-cookbook-net: name: scylla-cookbook-net`, поэтому
+# `external: true` здесь безопасен и НЕ пересоздаёт scylla1/2/3). Запускать
+# СТРОГО таргетированно на один сервис:
+#
+#   docker compose -f compose/compose.yml -f compose/monitoring.yml up -d prometheus
+#
+# `docker compose ... up -d` БЕЗ имени сервиса пересчитал бы конфиг всех
+# сервисов объединённого файла и (по опыту предыдущих задач серии) может
+# затронуть scylla1/2/3, если их command/healthcheck секция хоть немного
+# разойдётся между прогонами — а recreate = потеря 672000 строк readings
+# (compose.yml НЕ имеет именованного volume для данных). Именование
+# `prometheus` в `up -d` — единственная безопасная форма.
+#
+# scylla_exporter НЕ нужен отдельным сервисом — сам ScyllaDB с
+# `--api-address 0.0.0.0` (уже в command узлов) отдаёт `:9180/metrics` в
+# формате Prometheus нативно (Seastar/Scylla REST API), это подтверждено
+# живьём в Стенде #2 (README «Как читаются метрики»).
+
+name: scylla-cookbook
+networks:
+  scylla-cookbook-net:
+    name: scylla-cookbook-net
+    external: true
+services:
+  prometheus:
+    image: prom/prometheus:v3.7.3
+    container_name: scylla-prometheus
+    networks: [scylla-cookbook-net]
+    ports: ["9090:9090"]
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=6h

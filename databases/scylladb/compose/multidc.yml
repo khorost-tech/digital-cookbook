@@ -1,0 +1,67 @@
+# Стенд #5 серии "ScyllaDB: глубокое погружение" — ВТОРОЙ, ОТДЕЛЬНЫЙ кластер:
+# 2 датацентра (DC1, DC2) x 2 узла = 4 узла, GossipingPropertyFileSnitch.
+# НЕ трогает и не заменяет одиночный ДЦ-кластер (compose/compose.yml,
+# scylla1/2/3, сеть scylla-cookbook-net) — тот кластер нужен целым для Task 7/8/9.
+#
+# Топология:
+#   DC1: dc1a (seed), dc1b
+#   DC2: dc2a (seed), dc2b
+# Оба сида (dc1a,dc2a) перечислены у ВСЕХ 4 узлов -- иначе DC2 поднимется как
+# ОТДЕЛЬНЫЙ кластер, не сольётся gossip'ом с DC1 в один логический кластер с
+# NetworkTopologyStrategy на 2 ДЦ.
+#
+# Образ пинован явно: scylladb/scylla:2026.2.0 (тот же, что у одиночного ДЦ).
+# Ресурсы: 4x(--smp 1 --memory 2G) = 8 GB -- хост под это рассчитан (62.8 GB,
+# см. README «Стенд #5»), однохостовой одиночный ДЦ-кластер (Task 1, 6 GB)
+# продолжает работать параллельно.
+#
+# Сеть compose: scylla-multidc-net (ОТДЕЛЬНАЯ от scylla-cookbook-net).
+# Внутри сети: dc1a:9042, dc1b:9042, dc2a:9042, dc2b:9042 (CQL native).
+# С хоста: localhost:9043 -> dc1a (не 9042 -- не конфликтует с одиночным ДЦ).
+
+name: scylla-multidc
+networks:
+  scylla-multidc-net:
+    name: scylla-multidc-net
+services:
+  dc1a:
+    image: scylladb/scylla:2026.2.0
+    container_name: dc1a
+    command: >-
+      --seeds=dc1a,dc2a --smp 1 --memory 2G --overprovisioned 1
+      --api-address 0.0.0.0
+      --endpoint-snitch GossipingPropertyFileSnitch --dc DC1 --rack RACK1
+    ports: ["9043:9042"]
+    networks: [scylla-multidc-net]
+    healthcheck:
+      test: ["CMD-SHELL", "nodetool status | grep -E '^UN' | wc -l | grep -q 4"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+  dc1b:
+    image: scylladb/scylla:2026.2.0
+    container_name: dc1b
+    command: >-
+      --seeds=dc1a,dc2a --smp 1 --memory 2G --overprovisioned 1
+      --api-address 0.0.0.0
+      --endpoint-snitch GossipingPropertyFileSnitch --dc DC1 --rack RACK1
+    networks: [scylla-multidc-net]
+    depends_on: [dc1a]
+  dc2a:
+    image: scylladb/scylla:2026.2.0
+    container_name: dc2a
+    command: >-
+      --seeds=dc1a,dc2a --smp 1 --memory 2G --overprovisioned 1
+      --api-address 0.0.0.0
+      --endpoint-snitch GossipingPropertyFileSnitch --dc DC2 --rack RACK1
+    networks: [scylla-multidc-net]
+    depends_on: [dc1a]
+  dc2b:
+    image: scylladb/scylla:2026.2.0
+    container_name: dc2b
+    command: >-
+      --seeds=dc1a,dc2a --smp 1 --memory 2G --overprovisioned 1
+      --api-address 0.0.0.0
+      --endpoint-snitch GossipingPropertyFileSnitch --dc DC2 --rack RACK1
+    networks: [scylla-multidc-net]
+    depends_on: [dc1a, dc2a]

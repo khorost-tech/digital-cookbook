@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tech.khorost</groupId>
+  <artifactId>scylladb-cookbook</artifactId>
+  <version>0.1.0</version>
+  <packaging>pom</packaging>
+
+  <!-- Каркас Java-стендов к серии статей "ScyllaDB: глубокое погружение".
+       ПЕРВЫЙ Java-реактор серии (Task 1-6 — только Go, см. scylladb/dataset,
+       architecture, compaction, consistency-lwt, topology). Единственный
+       Java-модуль на сейчас — стенд #6 (../drivers/java, DriversBench) —
+       сравнивает shard-awareness ВКЛ/ВЫКЛ ОДНОГО драйвера
+       com.scylladb:java-driver-core (форк DataStax OSS driver 4.x; см.
+       комментарий в DriversBench.java за находкой "апстрим и форк
+       используют один и тот же пакет com.datastax.oss.driver.* — не могут
+       сосуществовать на одном classpath", подтверждено живьём:
+       `unzip -l java-driver-core-4.19.2.0.jar` содержит ТОЛЬКО com/datastax/...,
+       ни одного класса под com/scylladb/...). Хостового Maven нет — сборка
+       через maven:3.9-eclipse-temurin-25 (JDK 25).
+       Версия пина сверена живьём 2026-07-11 (Maven Central maven-metadata.xml,
+       latest на момент сборки): java-driver-core 4.19.2.0. -->
+  <properties>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
+
+    <scylla-java-driver.version>4.19.2.0</scylla-java-driver.version>
+    <slf4j.version>2.0.17</slf4j.version>
+    <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>com.scylladb</groupId>
+        <artifactId>java-driver-core</artifactId>
+        <version>${scylla-java-driver.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-assembly-plugin</artifactId>
+          <version>${maven-assembly-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <!-- Подмодули добавляются по мере продвижения серии. drivers — стенд #6
+       (shard-aware ВКЛ/ВЫКЛ), путь ../drivers/java нарочно ВНЕ java/ (единый
+       каркас scylladb/drivers/{go,java}/, как в clickhouse/kafka) — Maven
+       разрешает <module> с ../-путями, relativePath модуля указывает
+       обратно сюда. -->
+  <modules>
+    <module>../drivers/java</module>
+  </modules>
+</project>

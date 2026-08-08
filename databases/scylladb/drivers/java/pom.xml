@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>tech.khorost</groupId>
+    <artifactId>scylladb-cookbook</artifactId>
+    <version>0.1.0</version>
+    <relativePath>../../java/pom.xml</relativePath>
+  </parent>
+
+  <artifactId>drivers</artifactId>
+  <packaging>jar</packaging>
+
+  <!-- Стенд #6 серии "ScyllaDB: глубокое погружение" — Java-зеркало Go-бенча
+       (../go): ОДИН драйвер com.scylladb:java-driver-core (shard-aware форк),
+       два прогона в одном процессе — shard-awareness ВКЛ (дефолт форка) vs
+       ВЫКЛ через реальный конфиг-тумблер
+       advanced.connection.advanced-shard-awareness.enabled (см. DriversBench.java
+       за деталями и живой находкой про несовместимость classpath с
+       апстримным DataStax-драйвером). -->
+
+  <dependencies>
+    <dependency>
+      <groupId>com.scylladb</groupId>
+      <artifactId>java-driver-core</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>drivers</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <configuration>
+          <descriptorRefs>
+            <descriptorRef>jar-with-dependencies</descriptorRef>
+          </descriptorRefs>
+          <archive>
+            <manifest>
+              <mainClass>tech.khorost.scylla.DriversBench</mainClass>
+            </manifest>
+          </archive>
+        </configuration>
+        <executions>
+          <execution>
+            <id>make-assembly</id>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

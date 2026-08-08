@@ -1,0 +1,13 @@
+# Конфиг Prometheus для compose/monitoring.yml (Стенд #7). Скрейпит
+# ScyllaDB REST-метрики (`:9180/metrics`) всех трёх узлов основного
+# кластера по внутренним DNS-именам compose-сети scylla-cookbook-net.
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: scylladb
+    static_configs:
+      - targets:
+          - scylla1:9180
+          - scylla2:9180
+          - scylla3:9180

@@ -1,0 +1,46 @@
+# Каркас к серии статей "ScyllaDB: глубокое погружение".
+# 3-узловой кластер одного датацентра (datacenter1) — база для всех стендов
+# серии (модель данных, компакция, LWT/consensus, materialized views/SI,
+# гео-репликация, эксплуатация, драйверы). Второй ДЦ (мульти-DC гео-
+# репликация) — отдельный compose следующей задачи серии, сюда НЕ входит.
+#
+# Образ пинован явно: scylladb/scylla:2026.2.0 (не latest).
+#
+# Ресурсы: 3×(--smp 2 --memory 2G) ≈ 6 GB. Если узлы не сходятся в 3×UN на
+# менее мощной машине — уменьшить равномерно до --smp 1 --memory 1500M на
+# всех трёх узлах (см. README, "Честные ограничения").
+#
+# Сеть compose: scylla-cookbook-net.
+# Внутри сети (клиенты-контейнеры на той же сети): scylla1:9042, scylla2:9042,
+# scylla3:9042 (CQL native).
+# С хоста: localhost:9042 (только scylla1 — этого достаточно, драйвер сам
+# обнаруживает остальные узлы кластера через control connection).
+
+name: scylla-cookbook
+networks:
+  scylla-cookbook-net:
+    name: scylla-cookbook-net
+services:
+  scylla1:
+    image: scylladb/scylla:2026.2.0
+    container_name: scylla1
+    command: --seeds=scylla1 --smp 2 --memory 2G --overprovisioned 1 --api-address 0.0.0.0
+    ports: ["9042:9042"]
+    networks: [scylla-cookbook-net]
+    healthcheck:
+      test: ["CMD-SHELL", "nodetool status | grep -E '^UN' | wc -l | grep -q 3"]
+      interval: 15s
+      timeout: 10s
+      retries: 40
+  scylla2:
+    image: scylladb/scylla:2026.2.0
+    container_name: scylla2
+    command: --seeds=scylla1 --smp 2 --memory 2G --overprovisioned 1 --api-address 0.0.0.0
+    networks: [scylla-cookbook-net]
+    depends_on: [scylla1]
+  scylla3:
+    image: scylladb/scylla:2026.2.0
+    container_name: scylla3
+    command: --seeds=scylla1 --smp 2 --memory 2G --overprovisioned 1 --api-address 0.0.0.0
+    networks: [scylla-cookbook-net]
+    depends_on: [scylla1]

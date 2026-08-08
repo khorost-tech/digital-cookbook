@@ -1,0 +1,40 @@
+# Java / Maven
+target/
+*.jar
+*.class
+dependency-reduced-pom.xml
+
+# Go — скомпилированные бинарники стендов (go build без -o кладёт исполняемый
+# файл с именем каталога main-пакета; в git должен быть только исходник).
+bin/
+/dataset/dataset
+/dataset/gen
+/compaction/compaction
+/consistency-lwt/consistency-lwt
+
+# сгенерированный датасет (детерминированный — воспроизводится dataset/main.go,
+# не коммитится: сотни тысяч+ строк CSV)
+*.csv
+*.tsv
+dataset/out/
+
+# данные томов ScyllaDB (если когда-либо монтируются локально, не в
+# именованный docker volume)
+compose/data/
+compose/*.log
+
+# build-кэши docker-контейнеров (golang:1.26 /go/pkg/mod, maven:...-eclipse-
+# temurin /root/.m2, монтируются как volume в ops/*-demo.sh — не коммитятся)
+.gocache/
+.m2cache/
+
+# промежуточный вывод live-прогонов (логи стендов) — не коммитится
+scratchout/
+
+# временный .cql-файл ops/repair-demo.sh (генерируется и удаляется самим
+# скриптом в scylladb/, где скрипт делает cd; на всякий случай, если прогон
+# прервался)
+/repair-demo-divergence.cql
+
+# окружение
+.env
