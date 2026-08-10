@@ -1,0 +1,5 @@
+# Стенд собирается и меряется в Unix/WSL. Все текстовые файлы — строго LF,
+# независимо от core.autocrlf клонирующего: иначе на Windows-клонах рабочее
+# дерево уезжает в CRLF, а `git diff --check` видит CR как trailing whitespace
+# по каждой строке (в корневом .gitattributes проекта .rs/.toml/.md не покрыты).
+* text=auto eol=lf

@@ -9,7 +9,7 @@
 | [`architecture/distributed-config`](architecture/distributed-config) | etcd, ZooKeeper, Consul, Vault: watch, discovery, dynamic credentials | [статья](https://khorost.tech/architecture/distributed-configuration/) |
 | [`architecture/event-coordination`](architecture/event-coordination) | Хореография vs оркестрация | [статья](https://khorost.tech/architecture/choreography-vs-orchestration/) |
 | [`architecture/event-payload`](architecture/event-payload) | Notification vs event-carried state transfer | [статья](https://khorost.tech/architecture/event-notification-vs-state-transfer/) |
-| [`architecture/event-sourcing`](architecture/event-sourcing) | Event Sourcing на практике: store, агрегаты, проекции | 🔜 скоро |
+| [`architecture/event-sourcing`](architecture/event-sourcing) | Event Sourcing на практике: store, агрегаты, проекции | [статья](https://khorost.tech/architecture/event-sourcing-in-practice/) |
 | [`architecture/idempotency`](architecture/idempotency) | Гарантии доставки и идемпотентность (effectively-once) | [статья](https://khorost.tech/architecture/delivery-guarantees-idempotency/) |
 | [`architecture/temporal`](architecture/temporal) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
 
@@ -70,6 +70,7 @@
 |---|---|---|
 | [`rust/docker-minimal`](rust/docker-minimal) | Rust: минимальные Docker-образы | [статья](https://khorost.tech/rust/rust-docker-minimal-images/) |
 | [`rust/production`](rust/production) | Rust в production: каркас надёжного сервиса | [статья](https://khorost.tech/rust/rust-production-patterns/) |
+| [`rust/testing`](rust/testing) | Тестирование в Rust: шесть приёмов на том же домене, что и стенд across-languages — сравнение с Go, Java и Python напрямую | 🔜 скоро |
 | [`rust/tokio`](rust/tokio) | Rust async: Tokio на практике | [статья](https://khorost.tech/rust/rust-async-tokio/) |
 | [`rust/web-frameworks`](rust/web-frameworks) | Rust web-фреймворки: Axum vs Actix | [статья](https://khorost.tech/rust/rust-web-frameworks/) |
 
@@ -78,4 +79,10 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`docker/rootless`](docker/rootless) | Rootful vs rootless Docker на живом стенде | [статья](https://khorost.tech/docker/rootless-docker/) |
+
+## Zig
+
+| Пример | Описание | Статья |
+|---|---|---|
+| [`zig/hello-comptime`](zig/hello-comptime) | Zig: comptime и позиционирование среди C/Rust/C++ | 🔜 скоро |
 
