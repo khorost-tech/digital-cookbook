@@ -1,0 +1,221 @@
+# tech.khorost/go-asm-cookbook/dotprod
+tech.khorost/go-asm-cookbook/dotprod.Dot STEXT size=243 args=0x30 locals=0x28 funcid=0x0 align=0x0
+	0x0000 00000 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	TEXT	tech.khorost/go-asm-cookbook/dotprod.Dot(SB), ABIInternal, $40-48
+	0x0000 00000 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	CMPQ	SP, 16(R14)
+	0x0004 00004 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	PCDATA	$0, $-2
+	0x0004 00004 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	JLS	173
+	0x000a 00010 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	PCDATA	$0, $-1
+	0x000a 00010 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	PUSHQ	BP
+	0x000b 00011 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	SP, BP
+	0x000e 00014 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	SUBQ	$32, SP
+	0x0012 00018 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	AX, tech.khorost/go-asm-cookbook/dotprod.a+48(FP)
+	0x0017 00023 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	DI, tech.khorost/go-asm-cookbook/dotprod.b+72(FP)
+	0x001c 00028 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	FUNCDATA	$0, gclocals·cC5rNmVCHyCv6uELS7ccGw==(SB)
+	0x001c 00028 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	FUNCDATA	$1, gclocals·J26BEvPExEQhJvjp9E8Whg==(SB)
+	0x001c 00028 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	FUNCDATA	$5, tech.khorost/go-asm-cookbook/dotprod.Dot.arginfo1(SB)
+	0x001c 00028 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	FUNCDATA	$6, tech.khorost/go-asm-cookbook/dotprod.Dot.argliveinfo(SB)
+	0x001c 00028 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	PCDATA	$3, $1
+	0x001c 00028 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	NOP
+	0x0020 00032 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:12)	CMPQ	SI, BX
+	0x0023 00035 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:12)	JNE	153
+	0x0025 00037 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:15)	TESTQ	BX, BX
+	0x0028 00040 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:15)	JEQ	116
+	0x002a 00042 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:18)	CMPB	golang.org/x/sys/cpu.X86+67(SB), $0
+	0x0031 00049 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:18)	JEQ	109
+	0x0033 00051 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:18)	CMPB	golang.org/x/sys/cpu.X86+95(SB), $0
+	0x003a 00058 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:18)	JEQ	109
+	0x003c 00060 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	MOVQ	AX, (SP)
+	0x0040 00064 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	MOVQ	DI, 8(SP)
+	0x0045 00069 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	MOVQ	BX, 16(SP)
+	0x004a 00074 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	PCDATA	$1, $1
+	0x004a 00074 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	CALL	tech.khorost/go-asm-cookbook/dotprod.dotAVX2(SB)
+	0x004f 00079 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	XORPS	X15, X15
+	0x0053 00083 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	MOVQ	runtime.tls_g(SB), R14
+	0x005a 00090 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	MOVQ	(R14)(GS*1), R14
+	0x005e 00094 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	PCDATA	$0, $-2
+	0x005e 00094 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	MOVQ	(R14)(TLS*2), R14
+	0x0061 00097 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	PCDATA	$0, $-1
+	0x0061 00097 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	MOVSD	24(SP), X0
+	0x0067 00103 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	ADDQ	$32, SP
+	0x006b 00107 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	POPQ	BP
+	0x006c 00108 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:19)	RET
+	0x006d 00109 (<unknown line number>)	NOP
+	0x006d 00109 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:21)	XORL	CX, CX
+	0x006f 00111 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:21)	XORPS	X0, X0
+	0x0072 00114 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:7)	JMP	142
+	0x0074 00116 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:16)	XORPS	X0, X0
+	0x0077 00119 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:16)	ADDQ	$32, SP
+	0x007b 00123 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:16)	POPQ	BP
+	0x007c 00124 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:16)	RET
+	0x007d 00125 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	MOVSD	(AX)(CX*8), X1
+	0x0082 00130 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	MULSD	(DI)(CX*8), X1
+	0x0087 00135 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	ADDSD	X1, X0
+	0x008b 00139 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:7)	INCQ	CX
+	0x008e 00142 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:7)	CMPQ	BX, CX
+	0x0091 00145 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:7)	JGT	125
+	0x0093 00147 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:21)	ADDQ	$32, SP
+	0x0097 00151 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:21)	POPQ	BP
+	0x0098 00152 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:21)	RET
+	0x0099 00153 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:13)	LEAQ	type:string(SB), AX
+	0x00a0 00160 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:13)	LEAQ	tech.khorost/go-asm-cookbook/dotprod..stmp_0(SB), BX
+	0x00a7 00167 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:13)	CALL	runtime.gopanic(SB)
+	0x00ac 00172 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:13)	XCHGL	AX, AX
+	0x00ad 00173 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:13)	NOP
+	0x00ad 00173 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	PCDATA	$1, $-1
+	0x00ad 00173 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	PCDATA	$0, $-2
+	0x00ad 00173 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	AX, 8(SP)
+	0x00b2 00178 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	BX, 16(SP)
+	0x00b7 00183 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	CX, 24(SP)
+	0x00bc 00188 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	DI, 32(SP)
+	0x00c1 00193 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	SI, 40(SP)
+	0x00c6 00198 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	R8, 48(SP)
+	0x00cb 00203 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	CALL	runtime.morestack_noctxt(SB)
+	0x00d0 00208 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	PCDATA	$0, $-1
+	0x00d0 00208 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	8(SP), AX
+	0x00d5 00213 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	16(SP), BX
+	0x00da 00218 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	24(SP), CX
+	0x00df 00223 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	32(SP), DI
+	0x00e4 00228 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	40(SP), SI
+	0x00e9 00233 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	MOVQ	48(SP), R8
+	0x00ee 00238 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.go:11)	JMP	0
+	0x0000 49 3b 66 10 0f 86 a3 00 00 00 55 48 89 e5 48 83  I;f.......UH..H.
+	0x0010 ec 20 48 89 44 24 30 48 89 7c 24 48 0f 1f 40 00  . H.D$0H.|$H..@.
+	0x0020 48 39 de 75 74 48 85 db 74 4a 80 3d 00 00 00 00  H9.utH..tJ.=....
+	0x0030 00 74 3a 80 3d 00 00 00 00 00 74 31 48 89 04 24  .t:.=.....t1H..$
+	0x0040 48 89 7c 24 08 48 89 5c 24 10 e8 00 00 00 00 45  H.|$.H.\$......E
+	0x0050 0f 57 ff 4c 8b 35 00 00 00 00 65 4d 8b 36 4d 8b  .W.L.5....eM.6M.
+	0x0060 36 f2 0f 10 44 24 18 48 83 c4 20 5d c3 31 c9 0f  6...D$.H.. ].1..
+	0x0070 57 c0 eb 1a 0f 57 c0 48 83 c4 20 5d c3 f2 0f 10  W....W.H.. ]....
+	0x0080 0c c8 f2 0f 59 0c cf f2 0f 58 c1 48 ff c1 48 39  ....Y....X.H..H9
+	0x0090 cb 7f ea 48 83 c4 20 5d c3 48 8d 05 00 00 00 00  ...H.. ].H......
+	0x00a0 48 8d 1d 00 00 00 00 e8 00 00 00 00 90 48 89 44  H............H.D
+	0x00b0 24 08 48 89 5c 24 10 48 89 4c 24 18 48 89 7c 24  $.H.\$.H.L$.H.|$
+	0x00c0 20 48 89 74 24 28 4c 89 44 24 30 e8 00 00 00 00   H.t$(L.D$0.....
+	0x00d0 48 8b 44 24 08 48 8b 5c 24 10 48 8b 4c 24 18 48  H.D$.H.\$.H.L$.H
+	0x00e0 8b 7c 24 20 48 8b 74 24 28 4c 8b 44 24 30 e9 0d  .|$ H.t$(L.D$0..
+	0x00f0 ff ff ff                                         ...
+	rel 3+0 t=R_USEIFACE type:string+0
+	rel 44+4 t=R_PCREL golang.org/x/sys/cpu.X86+66
+	rel 53+4 t=R_PCREL golang.org/x/sys/cpu.X86+94
+	rel 75+4 t=R_CALL tech.khorost/go-asm-cookbook/dotprod.dotAVX2+0
+	rel 86+4 t=R_PCREL runtime.tls_g+0
+	rel 156+4 t=R_PCREL type:string+0
+	rel 163+4 t=R_PCREL tech.khorost/go-asm-cookbook/dotprod..stmp_0+0
+	rel 168+4 t=R_CALL runtime.gopanic+0
+	rel 204+4 t=R_CALL runtime.morestack_noctxt+0
+tech.khorost/go-asm-cookbook/dotprod.dotGeneric STEXT nosplit size=58 args=0x30 locals=0x8 funcid=0x0 align=0x0
+	0x0000 00000 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:5)	TEXT	tech.khorost/go-asm-cookbook/dotprod.dotGeneric(SB), NOSPLIT|ABIInternal, $8-48
+	0x0000 00000 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:5)	PUSHQ	BP
+	0x0001 00001 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:5)	MOVQ	SP, BP
+	0x0004 00004 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:5)	MOVQ	AX, tech.khorost/go-asm-cookbook/dotprod.a+16(FP)
+	0x0009 00009 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:5)	MOVQ	DI, tech.khorost/go-asm-cookbook/dotprod.b+40(FP)
+	0x000e 00014 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:5)	FUNCDATA	$0, gclocals·cC5rNmVCHyCv6uELS7ccGw==(SB)
+	0x000e 00014 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:5)	FUNCDATA	$1, gclocals·J26BEvPExEQhJvjp9E8Whg==(SB)
+	0x000e 00014 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:5)	FUNCDATA	$5, tech.khorost/go-asm-cookbook/dotprod.dotGeneric.arginfo1(SB)
+	0x000e 00014 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:5)	FUNCDATA	$6, tech.khorost/go-asm-cookbook/dotprod.dotGeneric.argliveinfo(SB)
+	0x000e 00014 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:5)	PCDATA	$3, $1
+	0x000e 00014 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:7)	XORL	CX, CX
+	0x0010 00016 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:7)	XORPS	X0, X0
+	0x0013 00019 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:7)	JMP	33
+	0x0015 00021 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	MULSD	(DI)(CX*8), X1
+	0x001a 00026 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	ADDSD	X1, X0
+	0x001e 00030 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:7)	INCQ	CX
+	0x0021 00033 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:7)	CMPQ	BX, CX
+	0x0024 00036 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:7)	JLE	50
+	0x0026 00038 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	MOVSD	(AX)(CX*8), X1
+	0x002b 00043 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	CMPQ	SI, CX
+	0x002e 00046 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	JHI	21
+	0x0030 00048 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	JMP	52
+	0x0032 00050 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:10)	POPQ	BP
+	0x0033 00051 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:10)	RET
+	0x0034 00052 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	PCDATA	$1, $1
+	0x0034 00052 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	PCDATA	$4, $7047
+	0x0034 00052 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	CALL	runtime.panicBounds(SB)
+	0x0039 00057 (G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_generic_impl.go:8)	XCHGL	AX, AX
+	0x0000 55 48 89 e5 48 89 44 24 10 48 89 7c 24 28 31 c9  UH..H.D$.H.|$(1.
+	0x0010 0f 57 c0 eb 0c f2 0f 59 0c cf f2 0f 58 c1 48 ff  .W.....Y....X.H.
+	0x0020 c1 48 39 cb 7e 0c f2 0f 10 0c c8 48 39 ce 77 e5  .H9.~......H9.w.
+	0x0030 eb 02 5d c3 e8 00 00 00 00 90                    ..].......
+	rel 53+4 t=R_CALL runtime.panicBounds+0
+tech.khorost/go-asm-cookbook/dotprod.dotAVX2 STEXT dupok nosplit size=57 args=0x18 locals=0x28 funcid=0x17 align=0x0
+	0x0000 00000 (<autogenerated>:1)	TEXT	tech.khorost/go-asm-cookbook/dotprod.dotAVX2(SB), DUPOK|NOSPLIT|ABIWRAPPER|ABIInternal, $40-24
+	0x0000 00000 (<autogenerated>:1)	PUSHQ	BP
+	0x0001 00001 (<autogenerated>:1)	MOVQ	SP, BP
+	0x0004 00004 (<autogenerated>:1)	SUBQ	$32, SP
+	0x0008 00008 (<autogenerated>:1)	FUNCDATA	$0, gclocals·TswRR9Pia9Wsluv5u1sUnA==(SB)
+	0x0008 00008 (<autogenerated>:1)	FUNCDATA	$1, gclocals·J26BEvPExEQhJvjp9E8Whg==(SB)
+	0x0008 00008 (<autogenerated>:1)	FUNCDATA	$5, tech.khorost/go-asm-cookbook/dotprod.dotAVX2.arginfo1(SB)
+	0x0008 00008 (<autogenerated>:1)	FUNCDATA	$6, tech.khorost/go-asm-cookbook/dotprod.dotAVX2.argliveinfo(SB)
+	0x0008 00008 (<autogenerated>:1)	PCDATA	$3, $1
+	0x0008 00008 (<autogenerated>:1)	PCDATA	$0, $-2
+	0x0008 00008 (<autogenerated>:1)	MOVQ	AX, (SP)
+	0x000c 00012 (<autogenerated>:1)	MOVQ	BX, 8(SP)
+	0x0011 00017 (<autogenerated>:1)	MOVQ	CX, 16(SP)
+	0x0016 00022 (<autogenerated>:1)	PCDATA	$1, $1
+	0x0016 00022 (<autogenerated>:1)	CALL	tech.khorost/go-asm-cookbook/dotprod.dotAVX2(SB)
+	0x001b 00027 (<autogenerated>:1)	XORPS	X15, X15
+	0x001f 00031 (<autogenerated>:1)	MOVQ	runtime.tls_g(SB), R14
+	0x0026 00038 (<autogenerated>:1)	MOVQ	(R14)(GS*1), R14
+	0x002a 00042 (<autogenerated>:1)	MOVQ	(R14)(TLS*2), R14
+	0x002d 00045 (<autogenerated>:1)	MOVSD	24(SP), X0
+	0x0033 00051 (<autogenerated>:1)	ADDQ	$32, SP
+	0x0037 00055 (<autogenerated>:1)	POPQ	BP
+	0x0038 00056 (<autogenerated>:1)	RET
+	0x0000 55 48 89 e5 48 83 ec 20 48 89 04 24 48 89 5c 24  UH..H.. H..$H.\$
+	0x0010 08 48 89 4c 24 10 e8 00 00 00 00 45 0f 57 ff 4c  .H.L$......E.W.L
+	0x0020 8b 35 00 00 00 00 65 4d 8b 36 4d 8b 36 f2 0f 10  .5....eM.6M.6...
+	0x0030 44 24 18 48 83 c4 20 5d c3                       D$.H.. ].
+	rel 23+4 t=R_CALL tech.khorost/go-asm-cookbook/dotprod.dotAVX2+0
+	rel 34+4 t=R_PCREL runtime.tls_g+0
+go:cuinfo.producer.tech.khorost/go-asm-cookbook/dotprod SDWARFCUINFO dupok size=0
+	0x0000 72 65 67 61 62 69                                regabi
+go:cuinfo.packagename.tech.khorost/go-asm-cookbook/dotprod SDWARFCUINFO dupok size=0
+	0x0000 64 6f 74 70 72 6f 64                             dotprod
+go:info.tech.khorost/go-asm-cookbook/dotprod.dotGeneric$abstract SDWARFABSFCN dupok size=85
+	0x0000 05 74 65 63 68 2e 6b 68 6f 72 6f 73 74 2f 67 6f  .tech.khorost/go
+	0x0010 2d 61 73 6d 2d 63 6f 6f 6b 62 6f 6f 6b 2f 64 6f  -asm-cookbook/do
+	0x0020 74 70 72 6f 64 2e 64 6f 74 47 65 6e 65 72 69 63  tprod.dotGeneric
+	0x0030 00 01 05 01 22 61 00 00 00 00 00 00 22 62 00 00  ...."a......"b..
+	0x0040 00 00 00 00 21 73 00 06 00 00 00 00 21 69 00 07  ....!s......!i..
+	0x0050 00 00 00 00 00                                   .....
+	rel 56+4 t=R_DWARFSECREF go:info.[]float64+0
+	rel 64+4 t=R_DWARFSECREF go:info.[]float64+0
+	rel 72+4 t=R_DWARFSECREF go:info.float64+0
+	rel 80+4 t=R_DWARFSECREF go:info.int+0
+tech.khorost/go-asm-cookbook/dotprod..inittask SNOPTRDATA size=8
+	0x0000 00 00 00 00 00 00 00 00                          ........
+	rel 0+0 t=R_INITORDER golang.org/x/sys/cpu..inittask+0
+tech.khorost/go-asm-cookbook/dotprod.dotAVX2.args_stackmap SRODATA size=10
+	0x0000 02 00 00 00 04 00 00 00 03 03                    ..........
+tech.khorost/go-asm-cookbook/dotprod.dotAVX2.arginfo0 SRODATA size=7
+	0x0000 00 08 08 08 10 08 ff                             .......
+go:string."dotprod: length mismatch" SRODATA dupok size=24
+	0x0000 64 6f 74 70 72 6f 64 3a 20 6c 65 6e 67 74 68 20  dotprod: length 
+	0x0010 6d 69 73 6d 61 74 63 68                          mismatch
+tech.khorost/go-asm-cookbook/dotprod..stmp_0 SRODATA static size=16
+	0x0000 00 00 00 00 00 00 00 00 18 00 00 00 00 00 00 00  ................
+	rel 0+8 t=R_ADDR go:string."dotprod: length mismatch"+0
+gclocals·cC5rNmVCHyCv6uELS7ccGw== SRODATA dupok size=10
+	0x0000 02 00 00 00 04 00 00 00 09 00                    ..........
+gclocals·J26BEvPExEQhJvjp9E8Whg== SRODATA dupok size=8
+	0x0000 02 00 00 00 00 00 00 00                          ........
+tech.khorost/go-asm-cookbook/dotprod.Dot.arginfo1 SRODATA static dupok size=17
+	0x0000 fe 00 08 08 08 10 08 fd fe 18 08 20 08 28 08 fd  ........... .(..
+	0x0010 ff                                               .
+tech.khorost/go-asm-cookbook/dotprod.Dot.argliveinfo SRODATA static dupok size=2
+	0x0000 00 00                                            ..
+tech.khorost/go-asm-cookbook/dotprod.dotGeneric.arginfo1 SRODATA static dupok size=17
+	0x0000 fe 00 08 08 08 10 08 fd fe 18 08 20 08 28 08 fd  ........... .(..
+	0x0010 ff                                               .
+tech.khorost/go-asm-cookbook/dotprod.dotGeneric.argliveinfo SRODATA static dupok size=2
+	0x0000 00 00                                            ..
+gclocals·TswRR9Pia9Wsluv5u1sUnA== SRODATA dupok size=10
+	0x0000 02 00 00 00 02 00 00 00 03 00                    ..........
+tech.khorost/go-asm-cookbook/dotprod.dotAVX2.arginfo1 SRODATA static dupok size=7
+	0x0000 00 08 08 08 10 08 ff                             .......
+tech.khorost/go-asm-cookbook/dotprod.dotAVX2.argliveinfo SRODATA static dupok size=2
+	0x0000 00 00                                            ..
+go:sehuw.12.AQ4CBQ4DC1AAAAAA SSEHUNWINDINFO dupok size=12
+	0x0000 01 0e 02 05 0e 03 0b 50 00 00 00 00              .......P....
+go:sehuw.12.AQQCBQQDAVAAAAAA SSEHUNWINDINFO dupok size=12
+	0x0000 01 04 02 05 04 03 01 50 00 00 00 00              .......P....

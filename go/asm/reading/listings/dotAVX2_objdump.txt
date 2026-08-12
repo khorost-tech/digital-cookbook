@@ -1,0 +1,54 @@
+TEXT tech.khorost/go-asm-cookbook/dotprod.dotAVX2.abi0(SB) G:/7/Projects/Khorost/digital-cookbook/go-asm/dotprod/dot_amd64.s
+
+# NOTE: go tool objdump (golang.org/x/arch/x86/x86asm) не декодирует VEX FMA3
+# (VFMADD231PD/SD) на этом хосте/версии Go — байты верны, мнемоники после
+# первого VFMADD "плывут" (см. dotAVX2_objdump_raw.txt). Здесь те же байты
+# передекодированы Capstone 5 (корректная поддержка VEX/AVX2/FMA3).
+
+  dot_amd64.s:6	0x140136ee0	488b442408	mov rax, qword ptr [rsp + 8]
+  dot_amd64.s:7	0x140136ee5	488b5c2410	mov rbx, qword ptr [rsp + 0x10]
+  dot_amd64.s:8	0x140136eea	488b4c2418	mov rcx, qword ptr [rsp + 0x18]
+  dot_amd64.s:9	0x140136eef	c5fd57c0	vxorpd ymm0, ymm0, ymm0
+  	0x140136ef3	4889ca	mov rdx, rcx
+  dot_amd64.s:12	0x140136ef6	48c1ea02	shr rdx, 2
+  dot_amd64.s:13	0x140136efa	7428	je 0x140136f24
+  dot_amd64.s:16	0x140136efc	c5fd1008	vmovupd ymm1, ymmword ptr [rax]
+  dot_amd64.s:17	0x140136f00	c5fd1013	vmovupd ymm2, ymmword ptr [rbx]
+  dot_amd64.s:18	0x140136f04	c4e2f5b8c2	vfmadd231pd ymm0, ymm1, ymm2
+  	0x140136f09	4883c020	add rax, 0x20
+  	0x140136f0d	4883c320	add rbx, 0x20
+  	0x140136f11	48ffca	dec rdx
+  	0x140136f14	75e6	jne 0x140136efc
+  dot_amd64.s:25	0x140136f16	c4e37d19c101	vextractf128 xmm1, ymm0, 1
+  	0x140136f1c	c5f958c1	vaddpd xmm0, xmm0, xmm1
+  	0x140136f20	c5f97cc0	vhaddpd xmm0, xmm0, xmm0
+  dot_amd64.s:30	0x140136f24	4883e103	and rcx, 3
+  dot_amd64.s:31	0x140136f28	741a	je 0x140136f44
+  dot_amd64.s:33	0x140136f2a	c5fb1008	vmovsd xmm1, qword ptr [rax]
+  dot_amd64.s:34	0x140136f2e	c5fb1013	vmovsd xmm2, qword ptr [rbx]
+  dot_amd64.s:35	0x140136f32	c4e2f1b9c2	vfmadd231sd xmm0, xmm1, xmm2
+  	0x140136f37	4883c008	add rax, 8
+  	0x140136f3b	4883c308	add rbx, 8
+  	0x140136f3f	48ffc9	dec rcx
+  dot_amd64.s:39	0x140136f42	75e6	jne 0x140136f2a
+  dot_amd64.s:42	0x140136f44	c5fb11442420	vmovsd qword ptr [rsp + 0x20], xmm0
+  dot_amd64.s:43	0x140136f4a	c5f877	vzeroupper
+  dot_amd64.s:44	0x140136f4d	c3	ret
+  :-1	0x140136f4e	cc	int3
+  :-1	0x140136f4f	cc	int3
+  :-1	0x140136f50	cc	int3
+  :-1	0x140136f51	cc	int3
+  :-1	0x140136f52	cc	int3
+  :-1	0x140136f53	cc	int3
+  :-1	0x140136f54	cc	int3
+  :-1	0x140136f55	cc	int3
+  :-1	0x140136f56	cc	int3
+  :-1	0x140136f57	cc	int3
+  :-1	0x140136f58	cc	int3
+  :-1	0x140136f59	cc	int3
+  :-1	0x140136f5a	cc	int3
+  :-1	0x140136f5b	cc	int3
+  :-1	0x140136f5c	cc	int3
+  :-1	0x140136f5d	cc	int3
+  :-1	0x140136f5e	cc	int3
+  :-1	0x140136f5f	cc	int3

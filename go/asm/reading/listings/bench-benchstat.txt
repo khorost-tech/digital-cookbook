@@ -1,0 +1,53 @@
+goos: windows
+goarch: amd64
+pkg: tech.khorost/go-asm-cookbook/dotprod
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+                      │ reading/listings/bench.txt │
+                      │           sec/op           │
+DotGeneric/n=8-16                     7.200n ± 29%
+DotGeneric/n=256-16                   252.6n ±  6%
+DotGeneric/n=1024-16                  979.2n ±  5%
+DotGeneric/n=65536-16                 64.03µ ±  6%
+DotAVX2/n=8-16                        4.655n ±  4%
+DotAVX2/n=256-16                      62.92n ±  3%
+DotAVX2/n=1024-16                     253.2n ±  6%
+DotAVX2/n=65536-16                    16.51µ ±  1%
+geomean                               329.7n
+
+                      │ reading/listings/bench.txt │
+                      │            B/s             │
+DotGeneric/n=8-16                    16.65Gi ± 39%
+DotGeneric/n=256-16                  15.11Gi ±  6%
+DotGeneric/n=1024-16                 15.58Gi ±  4%
+DotGeneric/n=65536-16                15.25Gi ±  6%
+DotAVX2/n=8-16                       25.60Gi ±  4%
+DotAVX2/n=256-16                     60.63Gi ±  3%
+DotAVX2/n=1024-16                    60.25Gi ±  5%
+DotAVX2/n=65536-16                   59.15Gi ±  1%
+geomean                              27.54Gi
+
+                      │ reading/listings/bench.txt │
+                      │            B/op            │
+DotGeneric/n=8-16                     0.000 ± 0%
+DotGeneric/n=256-16                   0.000 ± 0%
+DotGeneric/n=1024-16                  0.000 ± 0%
+DotGeneric/n=65536-16                 0.000 ± 0%
+DotAVX2/n=8-16                        0.000 ± 0%
+DotAVX2/n=256-16                      0.000 ± 0%
+DotAVX2/n=1024-16                     0.000 ± 0%
+DotAVX2/n=65536-16                    0.000 ± 0%
+geomean                                          ¹
+¹ summaries must be >0 to compute geomean
+
+                      │ reading/listings/bench.txt │
+                      │         allocs/op          │
+DotGeneric/n=8-16                     0.000 ± 0%
+DotGeneric/n=256-16                   0.000 ± 0%
+DotGeneric/n=1024-16                  0.000 ± 0%
+DotGeneric/n=65536-16                 0.000 ± 0%
+DotAVX2/n=8-16                        0.000 ± 0%
+DotAVX2/n=256-16                      0.000 ± 0%
+DotAVX2/n=1024-16                     0.000 ± 0%
+DotAVX2/n=65536-16                    0.000 ± 0%
+geomean                                          ¹
+¹ summaries must be >0 to compute geomean

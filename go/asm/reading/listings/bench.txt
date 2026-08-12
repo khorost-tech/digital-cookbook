@@ -1,0 +1,54 @@
+goos: windows
+goarch: amd64
+pkg: tech.khorost/go-asm-cookbook/dotprod
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkDotGeneric/n=8-16         	230293408	         5.140 ns/op	24904.04 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=8-16         	239389890	         5.169 ns/op	24763.18 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=8-16         	237097171	         6.645 ns/op	19261.20 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=8-16         	142036072	         8.524 ns/op	15017.16 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=8-16         	148978472	         7.756 ns/op	16503.07 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=8-16         	153817539	         7.807 ns/op	16396.48 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=256-16       	 4937598	       240.1 ns/op	17058.68 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=256-16       	 4705350	       254.9 ns/op	16071.48 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=256-16       	 4455327	       268.0 ns/op	15282.47 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=256-16       	 4733962	       267.8 ns/op	15296.61 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=256-16       	 4710262	       250.2 ns/op	16373.97 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=256-16       	 4888692	       243.0 ns/op	16856.05 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=1024-16      	 1233129	       973.3 ns/op	16832.99 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=1024-16      	 1210748	       991.0 ns/op	16533.20 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=1024-16      	 1217319	       979.9 ns/op	16719.28 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=1024-16      	 1234960	       960.2 ns/op	17063.78 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=1024-16      	 1000000	      1024 ns/op	16006.36 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=1024-16      	 1223048	       978.4 ns/op	16746.06 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=65536-16     	   19156	     64497 ns/op	16257.64 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=65536-16     	   17740	     68003 ns/op	15419.52 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=65536-16     	   18663	     64053 ns/op	16370.52 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=65536-16     	   18747	     62624 ns/op	16743.93 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=65536-16     	   19021	     64005 ns/op	16382.83 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotGeneric/n=65536-16     	   19236	     62734 ns/op	16714.64 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=8-16            	259898167	         4.732 ns/op	27049.68 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=8-16            	248915918	         4.814 ns/op	26586.68 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=8-16            	245292679	         4.633 ns/op	27625.08 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=8-16            	262483150	         4.489 ns/op	28516.99 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=8-16            	273714198	         4.678 ns/op	27359.62 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=8-16            	271656451	         4.573 ns/op	27989.31 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=256-16          	19275312	        63.45 ns/op	64550.41 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=256-16          	17627202	        63.42 ns/op	64584.34 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=256-16          	20509735	        60.87 ns/op	67285.52 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=256-16          	17433092	        62.43 ns/op	65612.44 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=256-16          	17565970	        63.50 ns/op	64503.51 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=256-16          	22289130	        61.96 ns/op	66109.87 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=1024-16         	 4625422	       254.1 ns/op	64473.44 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=1024-16         	 4673515	       258.0 ns/op	63507.03 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=1024-16         	 4694688	       251.4 ns/op	65167.73 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=1024-16         	 4804863	       250.5 ns/op	65408.44 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=1024-16         	 4755757	       252.4 ns/op	64911.26 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=1024-16         	 4681840	       267.6 ns/op	61216.74 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=65536-16        	   70536	     16703 ns/op	62777.25 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=65536-16        	   72723	     16434 ns/op	63806.03 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=65536-16        	   73396	     16485 ns/op	63606.94 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=65536-16        	   70794	     16683 ns/op	62854.58 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=65536-16        	   72709	     16535 ns/op	63416.64 MB/s	       0 B/op	       0 allocs/op
+BenchmarkDotAVX2/n=65536-16        	   72484	     16423 ns/op	63846.27 MB/s	       0 B/op	       0 allocs/op
+PASS
+ok  	tech.khorost/go-asm-cookbook/dotprod	57.887s
