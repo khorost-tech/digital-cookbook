@@ -71,7 +71,7 @@
 |---|---|---|
 | [`rust/docker-minimal`](rust/docker-minimal) | Rust: минимальные Docker-образы | [статья](https://khorost.tech/rust/rust-docker-minimal-images/) |
 | [`rust/production`](rust/production) | Rust в production: каркас надёжного сервиса | [статья](https://khorost.tech/rust/rust-production-patterns/) |
-| [`rust/testing`](rust/testing) | Тестирование в Rust: шесть приёмов на том же домене, что и стенд across-languages — сравнение с Go, Java и Python напрямую | 🔜 скоро |
+| [`rust/testing`](rust/testing) | Тестирование в Rust: шесть приёмов на том же домене, что и стенд across-languages — сравнение с Go, Java и Python напрямую | [статья](https://khorost.tech/rust/rust-testing/) |
 | [`rust/tokio`](rust/tokio) | Rust async: Tokio на практике | [статья](https://khorost.tech/rust/rust-async-tokio/) |
 | [`rust/web-frameworks`](rust/web-frameworks) | Rust web-фреймворки: Axum vs Actix | [статья](https://khorost.tech/rust/rust-web-frameworks/) |
 
@@ -85,5 +85,5 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`zig/hello-comptime`](zig/hello-comptime) | Zig: comptime и позиционирование среди C/Rust/C++ | 🔜 скоро |
+| [`zig/hello-comptime`](zig/hello-comptime) | Zig: comptime и позиционирование среди C/Rust/C++ | [статья](https://khorost.tech/zig/zig-positioning-among-c-rust-cpp/) |
 
