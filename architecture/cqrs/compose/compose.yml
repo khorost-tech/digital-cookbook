@@ -1,0 +1,28 @@
+# Стенд к статье «CQRS на практике» — https://khorost.tech/architecture/cqrs-in-practice/
+#
+# Одна нода PostgreSQL 16 — держит и write-модель (append-only лог событий заказов),
+# и read-модель (денормализованные проекции orders_read / orders_read_v2 + чекпоинт
+# позиции проектора). Стенд намеренно не поднимает брокер/шину: асинхронность проекции
+# эмулируется тем, что проектор запускается ОТДЕЛЬНО от команд записи и может отставать
+# (лаг = хвост лога − чекпоинт). Именно это отставание нужно, чтобы показать поломку
+# read-your-writes и приём её обхода.
+#
+# Порт на хосте: 5453. В репозитории уже заняты 5432/5433/5440/5441/5442/5450/5452
+# (см. другие стенды digital-cookbook) — 5453 свободен на момент создания (2026-07-08).
+# demo-креды заданы прямо здесь: стенд только локальный, секретов нет.
+
+services:
+  postgres:
+    image: postgres:16
+    container_name: cqrs-postgres
+    environment:
+      POSTGRES_USER: cqrs
+      POSTGRES_PASSWORD: cqrs
+      POSTGRES_DB: cqrs
+    ports:
+      - "5453:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cqrs -d cqrs"]
+      interval: 3s
+      timeout: 5s
+      retries: 20

@@ -6,6 +6,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
+| [`architecture/cqrs`](architecture/cqrs) | CQRS на практике: разделение чтения и записи | 🔜 скоро |
 | [`architecture/distributed-config`](architecture/distributed-config) | etcd, ZooKeeper, Consul, Vault: watch, discovery, dynamic credentials | [статья](https://khorost.tech/architecture/distributed-configuration/) |
 | [`architecture/event-coordination`](architecture/event-coordination) | Хореография vs оркестрация | [статья](https://khorost.tech/architecture/choreography-vs-orchestration/) |
 | [`architecture/event-payload`](architecture/event-payload) | Notification vs event-carried state transfer | [статья](https://khorost.tech/architecture/event-notification-vs-state-transfer/) |

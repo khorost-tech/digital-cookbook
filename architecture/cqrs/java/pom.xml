@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tech.khorost</groupId>
+  <artifactId>cqrs-cookbook-java</artifactId>
+  <version>0.1.0</version>
+
+  <!-- Java-порт стенда «CQRS на практике» (https://khorost.tech/architecture/cqrs-in-practice/).
+       Чистый JDBC, тот же сценарий и те же ассерты, что и в Go-версии (cqrs/go): write-модель
+       как append-only лог событий заказов, async-проекция orders_read с чекпоинтом в одной
+       транзакции, поломка и два приёма обхода read-your-writes, лаг проекции как метрика,
+       blue-green rebuild orders_read_v2 с атомарным switch. Тот же Postgres из cqrs/compose. -->
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <exec.mainClass>tech.khorost.cqrs.Main</exec.mainClass>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.11</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>exec-maven-plugin</artifactId>
+        <version>3.5.0</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>
