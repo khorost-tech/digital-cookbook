@@ -12,6 +12,7 @@
 | [`architecture/event-payload`](architecture/event-payload) | Notification vs event-carried state transfer | [статья](https://khorost.tech/architecture/event-notification-vs-state-transfer/) |
 | [`architecture/event-sourcing`](architecture/event-sourcing) | Event Sourcing на практике: store, агрегаты, проекции | [статья](https://khorost.tech/architecture/event-sourcing-in-practice/) |
 | [`architecture/idempotency`](architecture/idempotency) | Гарантии доставки и идемпотентность (effectively-once) | [статья](https://khorost.tech/architecture/delivery-guarantees-idempotency/) |
+| [`architecture/saga`](architecture/saga) | Saga на практике: локальные транзакции + компенсации, оркестрация | 🔜 скоро |
 | [`architecture/temporal`](architecture/temporal) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
 
 ## Databases
@@ -39,7 +40,8 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`go/asm`](go/asm) | Go assembly: dot product на AVX2/NEON, avo, ускорение ×3.88 | 🔜 скоро |
+| [`go/asm`](go/asm) | Go assembly: dot product на AVX2/NEON, avo, ускорение ×3.88 | [статья](https://khorost.tech/go/) |
+| [`go/concurrency`](go/concurrency) | Конкурентность в Go: горутины/каналы, sync, модель памяти, паттерны, отладка гонок | 🔜 скоро |
 | [`go/orm-gorm-vs-jet`](go/orm-gorm-vs-jet) | ORM в Go: GORM vs go-jet | [статья](https://khorost.tech/go/go-orm-gorm-vs-go-jet/) |
 | [`go/slog`](go/slog) | Структурированное логирование log/slog: хендлеры, группы, ContextHandler, бенчи | [статья](https://khorost.tech/go/go-slog/) |
 

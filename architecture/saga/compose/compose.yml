@@ -1,0 +1,43 @@
+# Стенд к статье «Saga на практике» — https://khorost.tech/architecture/saga-in-practice/
+#
+# Одна нода Temporal в dev-режиме (`server start-dev`): встроенные БД (SQLite in-memory),
+# frontend gRPC и Web UI в одном контейнере. Этого достаточно для демонстрации
+# оркестрация-based саги с компенсациями — отдельный кластер (Cassandra/Postgres +
+# history/matching/worker сервисы) для стенда не нужен.
+#
+# Host-порты выбраны так, чтобы НЕ конфликтовать с соседним стендом event-coordination
+# (7233/8233): здесь gRPC на 7243, Web UI на 8243. Внутри контейнера Temporal слушает
+# штатные 7233/8233 — маппинг 7243:7233 и 8243:8233. Go-клиент/воркер из стенда
+# подключаются к localhost:7243.
+#
+# Секретов нет — стенд только локальный.
+#
+# name задан явно (project name = saga), иначе docker compose берёт имя проекта
+# по имени папки (`compose`) и путает контейнеры с соседними стендами,
+# которые тоже лежат в <стенд>/compose/ (kafka и др.) — отсюда orphan-warning
+# и риск снести чужой контейнер на `down`.
+
+name: saga
+
+services:
+  temporal:
+    image: temporalio/temporal:1.7.2   # CLI 1.7.2 = Server 1.31.1, UI 2.49.1 (= latest на 2026-07-08, пин по digest в README)
+    container_name: saga-temporal
+    command:
+      - server
+      - start-dev
+      - --ip
+      - 0.0.0.0
+      - --port
+      - "7233"
+      - --ui-port
+      - "8233"
+    ports:
+      - "7243:7233"   # gRPC frontend (SDK-клиент → localhost:7243)
+      - "8243:8233"   # Web UI (http://localhost:8243)
+    healthcheck:
+      # temporal CLI внутри образа умеет ходить в свой же frontend
+      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
