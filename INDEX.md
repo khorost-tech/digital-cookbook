@@ -27,6 +27,7 @@
 | [`databases/redis/deep-dive`](databases/redis/deep-dive) | Redis/Valkey: глубокое погружение (кодировки, event loop, персистентность, Cluster/Sentinel, память, streams/Lua, эксплуатация) | [статья](https://khorost.tech/databases/) |
 | [`databases/scylladb`](databases/scylladb) | ScyllaDB: глубокое погружение (топология, компакция, LWT, драйверы) | [статья](https://khorost.tech/databases/) |
 | [`databases/transactions`](databases/transactions) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | [статья](https://khorost.tech/databases/transactions-brokers-rabbitmq-kafka/) |
+| [`databases/identifiers`](databases/identifiers) | Идентификаторы: локальность и bloat UUIDv4/UUIDv7/bigint в PostgreSQL, распределение в Mongo/Scylla, генерация в Go/Java/Rust | 🔜 скоро |
 
 ## Messaging
 

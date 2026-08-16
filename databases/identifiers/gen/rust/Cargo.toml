@@ -1,0 +1,15 @@
+[package]
+name = "identifiers-gen"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+uuid = { version = "1.24.0", features = ["v4", "v7"] }
+ulid = "3.0.0"
+
+[[bin]]
+name = "identifiers-gen"
+path = "src/main.rs"
+
+[profile.release]
+opt-level = 3

@@ -1,0 +1,56 @@
+# Пины проверены 2026-07-22 через Docker Hub API (см. up.sh Step 1 / brief Step 1):
+#   library/postgres  tags?name=18   -> последний патч 18.4
+#   library/mongo     tags?name=8    -> последний linux-тег 8.3.4 (glibc, без -windowsservercore/-nanoserver)
+#   scylladb/scylla   tags            -> последний стабильный релиз 2026.2.1
+#                                       (2026.1.9 новее по дате публикации, но патчит СТАРУЮ ветку 2026.1;
+#                                        2026.3.0-rc0 — release candidate, не берём)
+#   library/mysql     tags?name=8    -> последний LTS-тег 8.4.10 (push 2026-07-16; добавлено 2026-07-22
+#                                       для Task 4b: cross-engine контраст вторичного индекса PG vs InnoDB)
+services:
+  pg:
+    image: postgres:18.4
+    environment:
+      POSTGRES_USER: ids
+      POSTGRES_PASSWORD: ids
+      POSTGRES_DB: ids
+    command: ["postgres", "-c", "shared_preload_libraries=", "-c", "wal_compression=off", "-c", "checkpoint_timeout=1h", "-c", "max_wal_size=8GB"]
+    ports: ["15436:5432"]
+    volumes:
+      - ../sql:/docker-entrypoint-initdb.d:ro
+  mongo:
+    image: mongo:8.3.4
+    ports: ["27018:27017"]
+  # Артефакт 4b: шардированный Mongo (тот же тег 8.3.4, что и основной mongo
+  # выше — плейсхолдер 8.0 из брифа не используется). Минимальная топология:
+  # одноузловые replica set'ы (не честный PSS) — учебный стенд, не прод.
+  # Порты не пересекаются с 27018/9043/3307/15436.
+  mcfg:
+    image: mongo:8.3.4
+    command: ["mongod", "--configsvr", "--replSet", "cfg", "--port", "27019", "--bind_ip_all"]
+    ports: ["27019:27019"]
+  msh1:
+    image: mongo:8.3.4
+    command: ["mongod", "--shardsvr", "--replSet", "s1", "--port", "27021", "--bind_ip_all"]
+    ports: ["27021:27021"]
+  msh2:
+    image: mongo:8.3.4
+    command: ["mongod", "--shardsvr", "--replSet", "s2", "--port", "27022", "--bind_ip_all"]
+    ports: ["27022:27022"]
+  mongos:
+    image: mongo:8.3.4
+    command: ["mongos", "--configdb", "cfg/mcfg:27019", "--port", "27020", "--bind_ip_all"]
+    ports: ["27020:27020"]
+    depends_on: [mcfg, msh1, msh2]
+  scylla:
+    image: scylladb/scylla:2026.2.1
+    command: ["--smp", "1", "--memory", "1G", "--overprovisioned", "1"]
+    ports: ["9043:9042"]
+  mysql:
+    image: mysql:8.4.10
+    environment:
+      MYSQL_ROOT_PASSWORD: ids
+      MYSQL_DATABASE: ids
+    command: ["--innodb-stats-persistent=ON"]
+    ports: ["3307:3306"]
+    volumes:
+      - ../sql/mysql:/docker-entrypoint-initdb.d:ro
