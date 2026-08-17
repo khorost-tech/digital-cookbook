@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tech.khorost</groupId>
+  <artifactId>mongodb-cookbook</artifactId>
+  <version>0.1.0</version>
+  <packaging>pom</packaging>
+
+  <!-- Каркас Java-стендов к серии статей "MongoDB: глубокое погружение".
+       Устанавливается Task 6 (стенд #4 aggregation) — первый Java-модуль
+       реактора, дальше используется и Task 7 (см. FIXTURES.md §4/§5).
+       Java задействуется предметно там, где бриф требует "зеркало" клиента
+       — подтвердить, что цифры/поведение не артефакт конкретного драйвера,
+       а свойство сервера. Полного Java-зеркала ВСЕХ Go-стендов нет.
+       Официальный синхронный драйвер org.mongodb:mongodb-driver-sync,
+       версия сверена живьём на Maven Central 2026-07-11 (latest на момент
+       сборки): 5.5.1. Хостового Maven нет — сборка через
+       maven:3.9-eclipse-temurin-25 (см. ../ops/verify-static.sh и
+       ../ops/aggregation-demo.sh). -->
+  <properties>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>25</maven.compiler.source>
+    <maven.compiler.target>25</maven.compiler.target>
+
+    <mongodb-driver-sync.version>5.5.1</mongodb-driver-sync.version>
+    <slf4j.version>2.0.17</slf4j.version>
+    <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.mongodb</groupId>
+        <artifactId>mongodb-driver-sync</artifactId>
+        <version>${mongodb-driver-sync.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-api</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+      <dependency>
+        <groupId>org.slf4j</groupId>
+        <artifactId>slf4j-simple</artifactId>
+        <version>${slf4j.version}</version>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-shade-plugin</artifactId>
+          <version>${maven-shade-plugin.version}</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
+  </build>
+
+  <!-- Подмодули добавляются по мере продвижения серии (Task 6: aggregation;
+       Task 9: ops — change streams-зеркало стенда #7). -->
+  <modules>
+    <module>aggregation</module>
+    <module>ops</module>
+  </modules>
+</project>

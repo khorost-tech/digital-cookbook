@@ -1,0 +1,37 @@
+# mongodb/compose/sharded.yml — шардированный кластер для стенда #6 (sharding:
+# shard key, chunk splitting, balancer, роутинг, resharding, хотспоты).
+#
+# Топология (Task 1 — только валидная структура для `docker compose config -q`;
+# фактическая инициация — rs.initiate()/sh.addShard(), Task 8):
+#   csrs1   — config server replica set (1 узел, --configsvr --replSet csrs)
+#   shard1a — replica set первого шарда (1 узел, --shardsvr --replSet shard1)
+#   shard2a — replica set второго шарда (1 узел, --shardsvr --replSet shard2)
+#   mongos1 — роутер (--configdb csrs/csrs1:27017)
+#
+# Каждый узел (кроме mongos) — 1-узловой RS: для стенда достаточно, реальная
+# продакшн-топология шардов сама по себе была бы 3-узловым RS на шард — здесь
+# упрощено намеренно (см. README «Честные оговорки топологии»).
+#
+# Порты — отдельный диапазон 27020+ (не пересекается с replica-set.yml
+# 27017-27019), чтобы оба стенда можно было поднимать одновременно.
+services:
+  csrs1:
+    image: mongo:8.2.11
+    command: ["--configsvr","--replSet","csrs","--bind_ip_all","--port","27017"]
+    ports: ["27020:27017"]
+  shard1a:
+    image: mongo:8.2.11
+    command: ["--shardsvr","--replSet","shard1","--bind_ip_all","--port","27017"]
+    ports: ["27021:27017"]
+  shard2a:
+    image: mongo:8.2.11
+    command: ["--shardsvr","--replSet","shard2","--bind_ip_all","--port","27017"]
+    ports: ["27022:27017"]
+  mongos1:
+    image: mongo:8.2.11
+    command: ["mongos","--configdb","csrs/csrs1:27017","--bind_ip_all","--port","27017"]
+    ports: ["27023:27017"]
+    depends_on:
+      - csrs1
+      - shard1a
+      - shard2a

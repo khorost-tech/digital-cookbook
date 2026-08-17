@@ -4,7 +4,7 @@
 
 | Стенд | Описание | Статья |
 |---|---|---|
-| [`cqrs/`](cqrs/) | CQRS на практике: разделение чтения и записи | 🔜 скоро |
+| [`cqrs/`](cqrs/) | CQRS на практике: разделение чтения и записи | [статья](https://khorost.tech/architecture/cqrs-in-practice/) |
 | [`distributed-config/`](distributed-config/) | etcd, ZooKeeper, Consul, Vault: watch, discovery, dynamic credentials | [статья](https://khorost.tech/architecture/distributed-configuration/) |
 | [`event-coordination/`](event-coordination/) | Хореография vs оркестрация | [статья](https://khorost.tech/architecture/choreography-vs-orchestration/) |
 | [`event-payload/`](event-payload/) | Notification vs event-carried state transfer | [статья](https://khorost.tech/architecture/event-notification-vs-state-transfer/) |

@@ -1,0 +1,32 @@
+# Каркас к серии статей "MongoDB: глубокое погружение".
+
+# Go — скомпилированные бинарники стендов (появятся с Task 2+).
+bin/
+
+# сгенерированный датасет (детерминированный — воспроизводится dataset/main.go,
+# не коммитится).
+*.csv
+*.tsv
+dataset/out/
+
+# Java / Maven (появятся с Task 2+, стенды #4/#7).
+target/
+*.jar
+*.class
+dependency-reduced-pom.xml
+
+# данные томов MongoDB/PostgreSQL (если когда-либо монтируются локально,
+# не в именованный docker volume).
+compose/data/
+compose/*.log
+
+# build-кэши docker-контейнеров (golang:1.25|1.26 /go/pkg/mod, maven /root/.m2,
+# монтируются как volume в ops/verify-static.sh и ops/*-demo.sh — не коммитятся).
+.gocache/
+.m2cache/
+
+# промежуточный вывод live-прогонов (логи стендов) — не коммитится.
+scratchout/
+
+# окружение
+.env

@@ -1,0 +1,10 @@
+# mongodb/compose/postgres.yml — контраст-контейнер PostgreSQL (JSONB-нить,
+# логическая/стриминговая репликация против oplog). Используется вместе с
+# `replica-set.yml` в стендах #1 (modeling), #5 (replication).
+services:
+  pg:
+    image: postgres:18
+    environment:
+      POSTGRES_PASSWORD: cookbook
+      POSTGRES_DB: cookbook
+    ports: ["5433:5432"]

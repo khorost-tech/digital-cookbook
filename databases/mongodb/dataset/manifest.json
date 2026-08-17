@@ -1,0 +1,6 @@
+{
+  "seed": 42,
+  "users": 50000,
+  "products": 5000,
+  "orders": 200000
+}

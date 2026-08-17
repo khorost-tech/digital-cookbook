@@ -6,6 +6,7 @@
 |---|---|---|
 | [`clickhouse/`](clickhouse/) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | [статья](https://khorost.tech/databases/clickhouse-when-olap/) |
 | [`db-indexes/`](db-indexes/) | Индексы в БД: PostgreSQL, MongoDB, Tarantool | [статья](https://khorost.tech/databases/) |
+| [`mongodb/`](mongodb/) | MongoDB: глубокое погружение (модель, индексы, репликация, шардирование) | 🔜 скоро |
 | [`opensearch/`](opensearch/) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
 | [`postgres/`](postgres/) | Клиенты Go/Java/Rust к PostgreSQL: primary+replica+pgbouncer, failover | [статья](https://khorost.tech/databases/postgres-clients-reliability-go-java-rust/) |
 | [`redis/client-resilience/`](redis/client-resilience/) | Клиенты Go/Java/Rust к Redis: Cluster/Sentinel, reconnect и failover | [статья](https://khorost.tech/databases/redis-clients-go-java-rust/) |

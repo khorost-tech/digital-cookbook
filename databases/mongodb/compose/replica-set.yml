@@ -1,0 +1,21 @@
+# mongodb/compose/replica-set.yml — 3-узловой replica set (rs0).
+# Стенды #1 (modeling), #2 (wiredtiger), #3 (indexes), #4 (aggregation),
+# #5 (replication/oplog/failover), #7 (ops) серии «MongoDB: глубокое
+# погружение» поднимаются поверх этой топологии.
+#
+# Инициация (`rs.initiate(...)`, init/rs-init.js) — вручную/скриптом ПОСЛЕ
+# `docker compose up`, отдельным шагом (см. Task 8: инициация кластеров).
+# В Task 1 этот файл проверяется только `docker compose config -q`.
+services:
+  mongo1:
+    image: mongo:8.2.11
+    command: ["--replSet","rs0","--bind_ip_all","--port","27017"]
+    ports: ["27017:27017"]
+  mongo2:
+    image: mongo:8.2.11
+    command: ["--replSet","rs0","--bind_ip_all","--port","27017"]
+    ports: ["27018:27017"]
+  mongo3:
+    image: mongo:8.2.11
+    command: ["--replSet","rs0","--bind_ip_all","--port","27017"]
+    ports: ["27019:27017"]
