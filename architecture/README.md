@@ -10,7 +10,7 @@
 | [`event-payload/`](event-payload/) | Notification vs event-carried state transfer | [статья](https://khorost.tech/architecture/event-notification-vs-state-transfer/) |
 | [`event-sourcing/`](event-sourcing/) | Event Sourcing на практике: store, агрегаты, проекции | [статья](https://khorost.tech/architecture/event-sourcing-in-practice/) |
 | [`idempotency/`](idempotency/) | Гарантии доставки и идемпотентность (effectively-once) | [статья](https://khorost.tech/architecture/delivery-guarantees-idempotency/) |
-| [`saga/`](saga/) | Saga на практике: локальные транзакции + компенсации, оркестрация | 🔜 скоро |
+| [`saga/`](saga/) | Saga на практике: локальные транзакции + компенсации, оркестрация | [статья](https://khorost.tech/architecture/saga-in-practice/) |
 | [`temporal/`](temporal/) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
 
 ---
