@@ -15,6 +15,7 @@
 - [**rust/**](rust/) — Rust для backend: async/Tokio, web-фреймворки, production-практики, минимальные образы.
 - [**docker/**](docker/) — Контейнеризация: rootful vs rootless.
 - [**zig/**](zig/) — Zig: comptime и позиционирование среди C/Rust/C++.
+- [**security/**](security/) — Авторизация и готовый IdP, недоверенный ввод, аудит уязвимостей и изоляция декодеров.
 
 Полный список примеров со ссылками на статьи — [INDEX.md](INDEX.md).
 
