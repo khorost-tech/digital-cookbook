@@ -1,0 +1,53 @@
+=================================================================
+==36520==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x503000000060 at pc 0x55866202d297 bp 0x7ffed1e73450 sp 0x7ffed1e73448
+WRITE of size 1 at 0x503000000060 thread T0
+    #0 0x55866202d296 in do_overflow /mnt/g/7/Projects/Khorost/digital-cookbook-staging/security/untrusted-input/detect/oobtest.c:86:16
+    #1 0x55866202d296 in main /mnt/g/7/Projects/Khorost/digital-cookbook-staging/security/untrusted-input/detect/oobtest.c:167:14
+    #2 0x7fa91ef491c9 in __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+    #3 0x7fa91ef4928a in __libc_start_main csu/../csu/libc-start.c:360:3
+    #4 0x558661f53344 in _start (/mnt/g/7/Projects/Khorost/digital-cookbook-staging/security/untrusted-input/detect/bin/oobtest-asan+0x2c344) (BuildId: 6cccc9a2df50d051e6b4bf42cc3e8bfe3e857438)
+
+0x503000000060 is located 0 bytes after 32-byte region [0x503000000040,0x503000000060)
+allocated by thread T0 here:
+    #0 0x558661fee193 in malloc (/mnt/g/7/Projects/Khorost/digital-cookbook-staging/security/untrusted-input/detect/bin/oobtest-asan+0xc7193) (BuildId: 6cccc9a2df50d051e6b4bf42cc3e8bfe3e857438)
+    #1 0x55866202c866 in do_overflow /mnt/g/7/Projects/Khorost/digital-cookbook-staging/security/untrusted-input/detect/oobtest.c:75:43
+    #2 0x55866202c866 in main /mnt/g/7/Projects/Khorost/digital-cookbook-staging/security/untrusted-input/detect/oobtest.c:167:14
+    #3 0x7fa91ef491c9 in __libc_start_call_main csu/../sysdeps/nptl/libc_start_call_main.h:58:16
+    #4 0x7fa91ef4928a in __libc_start_main csu/../csu/libc-start.c:360:3
+    #5 0x558661f53344 in _start (/mnt/g/7/Projects/Khorost/digital-cookbook-staging/security/untrusted-input/detect/bin/oobtest-asan+0x2c344) (BuildId: 6cccc9a2df50d051e6b4bf42cc3e8bfe3e857438)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow /mnt/g/7/Projects/Khorost/digital-cookbook-staging/security/untrusted-input/detect/oobtest.c:86:16 in do_overflow
+Shadow bytes around the buggy address:
+  0x502ffffffd80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502ffffffe00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502ffffffe80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502fffffff00: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+  0x502fffffff80: 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00 00
+=>0x503000000000: fa fa 00 00 00 fa fa fa 00 00 00 00[fa]fa fa fa
+  0x503000000080: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000000100: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000000180: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000000200: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x503000000280: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07 
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==36520==ABORTING
+exit_code=1
+# run_id=20260731T162201Z

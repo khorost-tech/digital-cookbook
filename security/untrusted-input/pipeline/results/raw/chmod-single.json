@@ -1,0 +1,2 @@
+{"probe":"chmod","allowed":false,"detail":"chmod /tmp/probe-chmod-test: operation not permitted"}
+# run_id=20260731T194803Z

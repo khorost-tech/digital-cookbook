@@ -1,0 +1,2 @@
+{"probe":"process_spawn","allowed":false,"detail":"остановлено на 59 одновременных процессах: fork/exec /bin/sleep: resource temporarily unavailable"}
+# run_id=20260731T194803Z

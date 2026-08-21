@@ -1,0 +1,40 @@
+
+# Что сказали механизмы, которые поймали
+1	malloc_check	free(): invalid pointer
+1	tunables	free(): invalid pointer
+1	asan	==36484==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x50
+4	malloc_check	free(): invalid pointer
+4	tunables	free(): invalid pointer
+4	asan	==36520==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x50
+8	malloc_check	free(): invalid pointer
+8	tunables	free(): invalid pointer
+8	asan	==36556==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x50
+9	malloc_check	free(): invalid pointer
+9	tunables	free(): invalid pointer
+9	hardened	fatal allocator error: canary corrupted
+9	asan	==36592==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x50
+10	baseline	malloc(): corrupted top size
+10	malloc_check	free(): invalid pointer
+10	tunables	free(): invalid pointer
+10	perturb	malloc(): corrupted top size
+10	hardened	fatal allocator error: canary corrupted
+10	asan	==36628==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x50
+16	baseline	malloc(): corrupted top size
+16	malloc_check	free(): invalid pointer
+16	tunables	free(): invalid pointer
+16	perturb	malloc(): corrupted top size
+16	hardened	fatal allocator error: canary corrupted
+16	asan	==36664==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x50
+64	baseline	malloc(): corrupted top size
+64	malloc_check	free(): invalid pointer
+64	tunables	free(): invalid pointer
+64	perturb	malloc(): corrupted top size
+64	hardened	fatal allocator error: canary corrupted
+64	asan	==36700==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x50
+512	baseline	malloc(): corrupted top size
+512	malloc_check	free(): invalid pointer
+512	tunables	free(): invalid pointer
+512	perturb	malloc(): corrupted top size
+512	hardened	fatal allocator error: canary corrupted
+512	asan	==36736==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x50
+# run_id=20260731T162201Z

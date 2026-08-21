@@ -1,0 +1,2 @@
+{"probe":"write_outside","allowed":false,"detail":"open /probe-write-test: read-only file system"}
+# run_id=20260731T194803Z

@@ -1,0 +1,69 @@
+# Окружение прогона
+
+Дата снимка: 2026-07-31 13:13 UTC
+Docker: Docker version 29.6.1, build 8900f1d
+
+## Версии сканеров (из самих контейнеров)
+  syft:        anchore/syft:v1.50.0
+    Application:   syft
+    Version:       1.50.0
+    BuildDate:     2026-07-28T17:38:13Z
+    GitCommit:     16223e6dd7893fe578787658ceb876257483d404
+    GitDescription: v1.50.0
+    Platform:      linux/amd64
+    GoVersion:     go1.26.3
+    Compiler:      gc
+    SchemaVersion: 16.1.10
+  grype:       anchore/grype:v0.116.1
+    Application:         grype
+    Version:             0.116.1
+    BuildDate:           2026-07-28T21:39:06Z
+    GitCommit:           30394f177175da63ae36b35cdd809c248eb4de7f
+    GitDescription:      v0.116.1
+    Platform:            linux/amd64
+    GoVersion:           go1.26.3
+    Compiler:            gc
+    Syft Version:        v1.50.0
+    Supported DB Schema: 6
+  trivy:       aquasec/trivy:0.72.0
+    Version: 0.72.0
+  osv-scanner: бинарник v2.4.0
+    источник: https://github.com/google/osv-scanner/releases/download/v2.4.0/osv-scanner_linux_amd64
+    ожидаемый sha256: 15314940c10d26af9c6649f150b8a47c1262e8fc7e17b1d1029b0e479e8ed8a0
+    фактический sha256: 15314940c10d26af9c6649f150b8a47c1262e8fc7e17b1d1029b0e479e8ed8a0
+    osv-scanner version: 2.4.0
+    osv-scalibr version: 0.4.5
+    commit: b56b5191101d5f27d4787d5583d8d01e9518a7af
+    built at: 2026-06-18T12:55:27Z
+
+## Состояние баз уязвимостей на момент прогона
+  (версии сканеров пиновые, но их БАЗЫ обновляются — числа привязаны к этому состоянию)
+    grype: Path:      /cache/6/vulnerability.db
+    grype: Schema:    v6.1.9
+    grype: Built:     2026-07-31T07:09:24Z
+    grype: From:      https://grype.anchore.io/databases/v6/vulnerability-db_v6.1.9_2026-07-31T00:38:39Z_1785481764.tar.zst?checksum=sha256%3A20a9c092cb3ef2b67b061b953ebddf2f95bc290631da4f6e760a4e12792040c7
+    grype: Status:    valid
+    trivy: {"Version":"0.72.0","VulnerabilityDB":{"Version":2,"NextUpdate":"2026-08-01T07:47:03.887822824Z","UpdatedAt":"2026-07-31T07:47:03.887823094Z","DownloadedAt":"2026-07-31T12:32:12.578082925Z"}}
+    osv-scanner: обращается к live-данным OSV.dev, локальной базы нет
+
+## Целевые образы
+  [distro] ui-inv-distro-package:local
+    способ поставки FFmpeg: пакет дистрибутива (apt)
+    digest: ui-inv-distro-package@sha256:7245b0a69a688383703b1c4622cfb669905833e539e00b51b1b3c8ba03a1e083
+    размер: 202793360 байт
+  [vendored] ui-inv-vendored-binary:local
+    способ поставки FFmpeg: бинарник мимо пакетного менеджера
+    digest: ui-inv-vendored-binary@sha256:3533a02f31e9d908bc9b92a8e7e4e3dcc00db8d4c3f322f220a73c4ae6d14091
+    размер: 37930108 байт
+  [jellyfin] jellyfin/jellyfin:10.11.9
+    способ поставки FFmpeg: вендорская сборка jellyfin-ffmpeg
+    digest: jellyfin/jellyfin@sha256:bc9fa8e1462fffe3d8d4255fc62af478602641f4c0e5f4875fea8563d1189837
+    размер: 689672253 байт
+  [deb-canonical] ui-inv-deb-canonical:local
+    способ поставки FFmpeg: КОНТРОЛЬ: тот же бинарник, deb с именем ffmpeg
+    digest: ui-inv-deb-canonical@sha256:93f60bfd71280e969186decdc3e83befb2c31cb4066b824cea7d2788fc0c5e63
+    размер: 119330817 байт
+  [deb-renamed] ui-inv-deb-renamed:local
+    способ поставки FFmpeg: КОНТРОЛЬ: тот же бинарник, deb с именем acmecorp-ffmpeg7
+    digest: ui-inv-deb-renamed@sha256:f7f4a65a74e92ba76d6ca16f06cf9eeab47b206e9b81bb6ce489c0e958224666
+    размер: 119331129 байт

@@ -1,0 +1,125 @@
+# Конвейер приёма недоверенных файлов.
+#
+# Три роли, разделённые по одному признаку — кто что видит:
+#
+#   api        принимает байты, НЕ открывает их. Есть сеть наружу и очередь.
+#   supervisor разговаривает с очередью, НЕ открывает файлы. Передаёт задания
+#              парсеру через файловую систему и подтверждает обработку.
+#   parser     открывает файл (ffprobe). Сети НЕТ ВООБЩЕ — network_mode: none.
+#
+# Почему супервизор отделён от парсера. Первая версия стенда обходилась одним
+# воркером, подключённым к internal-сети ради очереди, и утверждение «парсер
+# лишён сети» было неточным: internal убирает выход наружу, но участники такой
+# сети продолжают видеть друг друга — скомпрометированный парсер мог бы читать
+# и править очередь. Теперь у парсера нет сетевого стека, а связь с миром идёт
+# через файлы под присмотром супервизора.
+
+services:
+  redis:
+    image: redis:7.4.1-alpine
+    container_name: ui-pipe-redis
+    # Персистентность включена намеренно: без неё перезапуск Redis терял бы всю
+    # очередь целиком, и разговор о «непотерянных задачах» был бы бессмысленным.
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
+    volumes:
+      - redisdata:/data
+    networks: [pipeline]
+    restart: unless-stopped
+
+  api:
+    build:
+      context: ./api
+    container_name: ui-pipe-api
+    depends_on: [redis]
+    environment:
+      REDIS_ADDR: "redis:6379"
+      INPUT_DIR: "/data/input"
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - input:/data/input
+    networks: [pipeline, edge]
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+
+  # Супервизор: очередь и координация. Файлы не открывает.
+  supervisor:
+    build:
+      context: ./supervisor
+    container_name: ui-pipe-supervisor
+    depends_on: [redis]
+    environment:
+      REDIS_ADDR: "redis:6379"
+      JOBS_DIR: "/data/jobs"
+      DONE_DIR: "/data/done"
+      # Тайминги укорочены ДЛЯ СТЕНДА: сценарий падения должен проверяться за
+      # секунды. В рабочем сервисе значения по умолчанию — 45s/2m/15s, иначе
+      # затянувшийся разбор большого файла будет принят за зависший.
+      PARSE_DEADLINE: "12s"
+      STALE_AFTER: "10s"
+      SWEEP_INTERVAL: "3s"
+    networks: [pipeline]
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+    user: "65534:65534"
+    pids_limit: 64
+    mem_limit: 128m
+    volumes:
+      - jobs:/data/jobs
+      - done:/data/done
+    restart: unless-stopped
+
+  # ПАРСЕР — недоверенная зона. Здесь исполняется ffprobe над содержимым файла.
+  parser:
+    build:
+      context: ./parser
+    container_name: ui-pipe-parser
+
+    # Сети нет вообще: ни интернета, ни очереди, ни соседних контейнеров.
+    # Задания приходят файлами через общий том.
+    network_mode: none
+
+    read_only: true
+    cap_drop: [ALL]
+    security_opt:
+      - no-new-privileges:true
+      - seccomp=./seccomp-parser.json
+    user: "65534:65534"
+    pids_limit: 64
+    mem_limit: 256m
+    cpus: 1.0
+
+    environment:
+      INPUT_DIR: "/data/input"
+      JOBS_DIR: "/data/jobs"
+      DONE_DIR: "/data/done"
+
+    volumes:
+      # Вход только на чтение: парсер разбирает файл, но не может его подменить.
+      - input:/data/input:ro
+      - jobs:/data/jobs
+      - done:/data/done
+
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+
+    restart: unless-stopped
+
+networks:
+  # Внутренняя сеть: выхода наружу нет. Здесь живут api, supervisor и redis.
+  # Парсера здесь НЕТ — у него network_mode: none.
+  pipeline:
+    driver: bridge
+    internal: true
+  # Внешняя сеть только для API: он принимает запросы снаружи.
+  edge:
+    driver: bridge
+
+volumes:
+  input:
+  jobs:
+  done:
+  redisdata:

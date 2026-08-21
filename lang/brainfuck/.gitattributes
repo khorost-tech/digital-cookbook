@@ -1,0 +1,5 @@
+# Стенд собирается в Unix/WSL и на Windows-хосте. Все текстовые файлы — строго
+# LF, независимо от core.autocrlf клонирующего: .go/.mod/.md не покрыты корневым
+# .gitattributes и иначе на Windows-клонах уезжают в CRLF (git diff --check
+# видит CR как trailing whitespace).
+* text=auto eol=lf

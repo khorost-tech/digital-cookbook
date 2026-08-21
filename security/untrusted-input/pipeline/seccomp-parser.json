@@ -1,0 +1,54 @@
+{
+  "_комментарий": [
+    "Профиль seccomp для парсера — процесса, который разбирает недоверенные файлы.",
+    "",
+    "Здесь можно быть строже, чем в первой версии стенда: у парсера нет сети",
+    "вообще (network_mode: none), и очередь ему недоступна. Поэтому сетевые",
+    "вызовы запрещаются без риска сломать работу — в отличие от прошлой схемы,",
+    "где запрет socket оборвал связь воркера с Redis и остановил конвейер.",
+    "",
+    "Проверять профиль обязательно. Стенд убеждается, что запрещённое",
+    "действительно блокируется, а штатный разбор файла при этом проходит.",
+    "Профиль, который ничего не запрещает, и профиль, который ломает работу,",
+    "одинаково бесполезны, и различить их можно только экспериментом."
+  ],
+  "defaultAction": "SCMP_ACT_ALLOW",
+  "archMap": [
+    {
+      "architecture": "SCMP_ARCH_X86_64",
+      "subArchitectures": ["SCMP_ARCH_X86", "SCMP_ARCH_X32"]
+    }
+  ],
+  "syscalls": [
+    {
+      "_": "Сеть целиком: парсеру она не нужна ни в каком виде. Дублирует network_mode=none — вторая линия на случай, если сеть вернут в compose по недосмотру.",
+      "names": ["socket", "socketpair", "connect", "bind", "listen", "accept", "accept4", "sendto", "recvfrom", "sendmsg", "recvmsg"],
+      "action": "SCMP_ACT_ERRNO",
+      "errnoRet": 1
+    },
+    {
+      "_": "Права и владение: разбору медиафайла менять их незачем.",
+      "names": ["chmod", "fchmod", "fchmodat", "chown", "fchown", "lchown", "fchownat"],
+      "action": "SCMP_ACT_ERRNO",
+      "errnoRet": 1
+    },
+    {
+      "_": "Монтирование и смена корня — типичные шаги при попытке выйти из контейнера.",
+      "names": ["mount", "umount2", "pivot_root", "chroot", "unshare", "setns"],
+      "action": "SCMP_ACT_ERRNO",
+      "errnoRet": 1
+    },
+    {
+      "_": "Отладка чужих процессов и загрузка кода в ядро.",
+      "names": ["ptrace", "process_vm_readv", "process_vm_writev", "kexec_load", "kexec_file_load", "init_module", "finit_module", "delete_module"],
+      "action": "SCMP_ACT_ERRNO",
+      "errnoRet": 1
+    },
+    {
+      "_": "Ключи ядра, BPF и профилировщик.",
+      "names": ["add_key", "request_key", "keyctl", "bpf", "perf_event_open"],
+      "action": "SCMP_ACT_ERRNO",
+      "errnoRet": 1
+    }
+  ]
+}

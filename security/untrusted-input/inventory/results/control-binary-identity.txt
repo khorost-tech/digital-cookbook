@@ -1,0 +1,4 @@
+# Контроль: идентичность бинарника в паре deb-canonical / deb-renamed
+deb-canonical /usr/bin/ffmpeg sha256: f4d1edbf755563b5423326210866bd3220bcafa0143b5ae1581d7ab47e69f6b0
+deb-renamed   /usr/bin/ffmpeg sha256: f4d1edbf755563b5423326210866bd3220bcafa0143b5ae1581d7ab47e69f6b0
+ВЕРДИКТ: бинарник идентичен — сравнение корректно

@@ -1,0 +1,2 @@
+{"probe":"capabilities_chown","allowed":false,"detail":"chown /tmp/probe-chown-test: operation not permitted"}
+# run_id=20260731T194803Z

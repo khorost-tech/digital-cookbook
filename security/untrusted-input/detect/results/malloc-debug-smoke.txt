@@ -1,0 +1,5 @@
+libc_malloc_debug: /lib/x86_64-linux-gnu/libc_malloc_debug.so.0
+smoke test (OOB 1 байт, MALLOC_CHECK_=3): exit_code=134
+вывод: free(): invalid pointer
+ВЕРДИКТ: проверки включены и работают
+# run_id=20260731T162201Z

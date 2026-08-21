@@ -1,0 +1,26 @@
+# Окружение прогона
+дата: 2026-07-31 19:48 UTC
+docker: Docker version 29.6.1, build 8900f1d
+
+# Образы
+  ui-pipe-api          pipeline-api          latest              linux/amd64         cee131b04595        8.66MB              About an hour ago
+  ui-pipe-parser       pipeline-parser       latest              linux/amd64         f50c32c25ff9        53.6MB              About an hour ago
+  ui-pipe-redis        redis                 7.4.1-alpine        linux/amd64         c1e88455c852        19.5MB              22 months ago
+  ui-pipe-supervisor   pipeline-supervisor   latest              linux/amd64         5bb34b9d11c8        8.07MB              7 minutes ago
+
+# Роли и границы (из docker-compose.yml)
+  api        принимает байты, не открывает их; сети pipeline + edge
+  supervisor держит очередь, не открывает файлы; сеть pipeline,
+             read_only, cap_drop ALL, no-new-privileges, user 65534,
+             pids_limit 64, mem_limit 128m
+  parser     разбирает содержимое (ffprobe); network_mode: none,
+             read_only, cap_drop ALL, no-new-privileges, user 65534,
+             pids_limit 64, mem_limit 256m, cpus 1.0,
+             seccomp=seccomp-parser.json, вход смонтирован только на чтение
+
+# Версия ffmpeg в парсере (тот самый разбирающий код)
+  ffprobe version 6.1.1 Copyright (c) 2007-2023 the FFmpeg developers
+  Версия взята из базового образа и НЕ является рекомендацией.
+  Стенд показывает, что даёт изоляция, а не что даёт обновление.
+  В рабочем сервисе нужны оба: и свежая версия, и границы вокруг неё.
+# run_id=20260731T194803Z
