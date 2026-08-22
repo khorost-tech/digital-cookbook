@@ -1,0 +1,62 @@
+name: flink-02-sql-ops
+
+x-flink-props: &flink-props |
+  jobmanager.rpc.address: jobmanager
+  state.backend.type: rocksdb
+  execution.checkpointing.interval: 10s
+  state.checkpoints.dir: file:///tmp/flink-checkpoints
+  state.savepoints.dir: file:///tmp/flink-savepoints
+  # 8, а не 4: фидер-джоба держит 1 слот, а джойн после rescale просит 4 — на четырёх слотах
+  # перезапуск из savepoint навсегда завис бы в CREATED, без ошибки в интерфейсе.
+  taskmanager.numberOfTaskSlots: 8
+
+services:
+  kafka:
+    image: apache/kafka:3.9.0
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      # Сток enriched работает в exactly-once, то есть через транзакции Kafka. Координатор
+      # транзакций создаёт служебный топик __transaction_state с фактором репликации 3 по
+      # умолчанию — на одном брокере он не создаётся, InitProducerId не отвечает, и сток
+      # навсегда остаётся в INITIALIZING (джоба при этом числится RUNNING, топик пуст).
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      # Flink-сток просит таймаут транзакции в час, брокер по умолчанию разрешает 15 минут.
+      KAFKA_TRANSACTION_MAX_TIMEOUT_MS: 3600000
+
+  jobmanager:
+    build: .
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    depends_on:
+      - kafka
+    environment:
+      FLINK_PROPERTIES: *flink-props
+    volumes:
+      - checkpoints:/tmp/flink-checkpoints
+      - savepoints:/tmp/flink-savepoints
+
+  taskmanager:
+    build: .
+    command: taskmanager
+    depends_on:
+      - jobmanager
+    environment:
+      FLINK_PROPERTIES: *flink-props
+    volumes:
+      - checkpoints:/tmp/flink-checkpoints
+      - savepoints:/tmp/flink-savepoints
+
+volumes:
+  checkpoints:
+  savepoints:

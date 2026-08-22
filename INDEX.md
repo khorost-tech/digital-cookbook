@@ -34,6 +34,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
+| [`messaging/flink`](messaging/flink) | Apache Flink 1.20 через Flink SQL: event-time, state, exactly-once | 🔜 скоро |
 | [`messaging/kafka`](messaging/kafka) | Kafka: глубокое погружение (клиенты, ecosystem, MM2, ops, EOS) | [статья](https://khorost.tech/messaging/) |
 | [`messaging/nats`](messaging/nats) | NATS 2.12: Core, JetStream, кластер, гео, безопасность, клиенты | [статья](https://khorost.tech/messaging/nats-core-subjects-request-reply/) |
 | [`messaging/rabbitmq`](messaging/rabbitmq) | RabbitMQ 4.x: HA-кластер (quorum, DLQ, federation) и Streams | [статья](https://khorost.tech/messaging/rabbitmq-ha-cluster-quorum-failover/) |
@@ -98,7 +99,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`security/pixelsmash`](security/pixelsmash) | CVE-2026-8461 в декодерах FFmpeg: оборонительный стенд — аудит-скрипты и песочница для декодирования недоверенного видео | 🔜 скоро |
+| [`security/pixelsmash`](security/pixelsmash) | CVE-2026-8461 в декодерах FFmpeg: оборонительный стенд — аудит-скрипты и песочница для декодирования недоверенного видео | [статья](https://khorost.tech/security/pixelsmash-ffmpeg/) |
 | [`security/untrusted-input`](security/untrusted-input) | Недоверенный ввод: инвентаризация источников, обнаружение тихого повреждения данных и трёхролевой конвейер обработки файлов с изоляцией | 🔜 скоро |
 
 ## Languages

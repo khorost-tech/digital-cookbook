@@ -1,0 +1,40 @@
+name: flink-03-datastream
+
+services:
+  jobmanager:
+    image: flink:1.20.1-java17
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: jobmanager
+        rest.flamegraph.enabled: true
+
+  taskmanager:
+    image: flink:1.20.1-java17
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 1
+    environment:
+      FLINK_PROPERTIES: |
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 4
+
+  # Собирает jar (multi-stage) и сабмитит обе джобы в кластер, затем завершается.
+  submit:
+    build: .
+    depends_on:
+      - jobmanager
+      - taskmanager
+    entrypoint: ["/bin/bash", "-c"]
+    command:
+      - |
+        echo "ждём JobManager…";
+        until curl -sf http://jobmanager:8081/overview >/dev/null 2>&1; do sleep 2; done;
+        echo "=== джоба 1: SilenceDetector ===";
+        flink run -m jobmanager:8081 -c tech.khorost.cookbook.flink.SilenceDetector /opt/job.jar;
+        echo "=== джоба 2: EnrichAndCorrelate ===";
+        flink run -m jobmanager:8081 -c tech.khorost.cookbook.flink.EnrichAndCorrelate /opt/job.jar;
+        echo "=== обе джобы отправлены ===";
