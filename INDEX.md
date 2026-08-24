@@ -46,7 +46,9 @@
 | [`go/asm`](go/asm) | Go assembly: dot product на AVX2/NEON, avo, ускорение ×3.88 | [статья](https://khorost.tech/go/) |
 | [`go/concurrency`](go/concurrency) | Конкурентность в Go: горутины/каналы, sync, модель памяти, паттерны, отладка гонок | [статья](https://khorost.tech/go/go-concurrency-goroutines-channels/) |
 | [`go/context`](go/context) | Контекст в Go: отмена, дедлайны, WithCancelCause, request-scoped values | [статья](https://khorost.tech/go/go-context/) |
+| [`go/net-http`](go/net-http) | Сервисы на стандартном net/http: роутинг 1.22, middleware, таймауты, graceful shutdown | 🔜 скоро |
 | [`go/orm-gorm-vs-jet`](go/orm-gorm-vs-jet) | ORM в Go: GORM vs go-jet | [статья](https://khorost.tech/go/go-orm-gorm-vs-go-jet/) |
+| [`go/reflect`](go/reflect) | Цена рефлексии: три «закона», чтение/запись полей, теги, бенчи | 🔜 скоро |
 | [`go/slog`](go/slog) | Структурированное логирование log/slog: хендлеры, группы, ContextHandler, бенчи | [статья](https://khorost.tech/go/go-slog/) |
 | [`go/testing`](go/testing) | Тестирование в Go: ручные фейки, httptest, интеграционные тесты через testcontainers-go (Postgres + Redis), детектор гонок | [статья](https://khorost.tech/go/go-testing/) |
 
@@ -100,11 +102,11 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`security/pixelsmash`](security/pixelsmash) | CVE-2026-8461 в декодерах FFmpeg: оборонительный стенд — аудит-скрипты и песочница для декодирования недоверенного видео | [статья](https://khorost.tech/security/pixelsmash-ffmpeg/) |
-| [`security/untrusted-input`](security/untrusted-input) | Недоверенный ввод: инвентаризация источников, обнаружение тихого повреждения данных и трёхролевой конвейер обработки файлов с изоляцией | 🔜 скоро |
+| [`security/untrusted-input`](security/untrusted-input) | Недоверенный ввод: инвентаризация источников, обнаружение тихого повреждения данных и трёхролевой конвейер обработки файлов с изоляцией | [статья](https://khorost.tech/security/vendored-dependencies-blind-spot/) |
 
 ## Languages
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`lang/brainfuck`](lang/brainfuck) | Интерпретатор brainfuck на Go (~110 строк) как универсальная машина размером с экран — и замер разрыва выразительности | 🔜 скоро |
+| [`lang/brainfuck`](lang/brainfuck) | Интерпретатор brainfuck на Go (~110 строк) как универсальная машина размером с экран — и замер разрыва выразительности | [статья](https://khorost.tech/lang/turing-completeness-and-expressiveness/) |
 

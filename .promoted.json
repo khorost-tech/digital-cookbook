@@ -1,0 +1,216 @@
+{
+  "stands": {
+    "architecture/cqrs": [
+      "architecture/cqrs-in-practice.md"
+    ],
+    "architecture/distributed-config": [
+      "architecture/distributed-configuration.md"
+    ],
+    "architecture/event-coordination": [
+      "architecture/choreography-vs-orchestration.md"
+    ],
+    "architecture/event-payload": [
+      "architecture/event-notification-vs-state-transfer.md"
+    ],
+    "architecture/event-sourcing": [
+      "architecture/event-sourcing-in-practice.md"
+    ],
+    "architecture/idempotency": [
+      "architecture/delivery-guarantees-idempotency.md"
+    ],
+    "architecture/saga": [
+      "architecture/saga-in-practice.md"
+    ],
+    "architecture/temporal": [
+      "architecture/temporal-durable-workflows.md"
+    ],
+    "databases/clickhouse": [
+      "databases/clickhouse-distributed-sharding-replication.md",
+      "databases/clickhouse-drivers-comparison.md",
+      "databases/clickhouse-go-java-mergetree.md",
+      "databases/clickhouse-materialized-views-realtime.md",
+      "databases/clickhouse-operations-tuning.md",
+      "databases/clickhouse-s3-storage.md",
+      "databases/clickhouse-vs-timeseries-decision.md",
+      "databases/clickhouse-when-olap.md"
+    ],
+    "databases/db-indexes": [
+      "databases/db-indexes-across-databases.md",
+      "databases/db-indexes-and-languages-orm.md",
+      "databases/db-indexes-choosing-and-using.md",
+      "databases/db-indexes-patterns-antipatterns.md",
+      "databases/db-indexes-types-and-internals.md"
+    ],
+    "databases/identifiers": [
+      "architecture/identifiers-across-languages.md",
+      "databases/identifiers-index-locality-bloat.md"
+    ],
+    "databases/mongodb": [
+      "databases/mongodb-aggregation-pipeline-deep.md",
+      "databases/mongodb-document-model-and-schema-design.md",
+      "databases/mongodb-indexes-deep.md",
+      "databases/mongodb-wiredtiger-storage-engine.md"
+    ],
+    "databases/opensearch": [
+      "databases/opensearch-data-ingestion.md",
+      "databases/opensearch-fulltext-search.md",
+      "databases/opensearch-indices-mappings.md",
+      "databases/opensearch-ism-retention.md",
+      "databases/opensearch-semantic-search.md",
+      "infrastructure/opensearch-cluster-ansible.md",
+      "observability/opensearch-dashboards.md"
+    ],
+    "databases/postgres": [
+      "databases/postgres-clients-reliability-go-java-rust.md"
+    ],
+    "databases/redis": [
+      "databases/redis-clients-go-java-rust.md"
+    ],
+    "databases/scylladb": [
+      "databases/scylladb-architecture-shard-per-core.md",
+      "databases/scylladb-compaction-tombstones-repair.md",
+      "databases/scylladb-consistency-and-lwt.md",
+      "databases/scylladb-drivers-shard-aware.md",
+      "databases/scylladb-operations-and-decision.md",
+      "databases/scylladb-token-ring-tablets-multidc.md",
+      "databases/scylladb-when-and-data-modeling.md"
+    ],
+    "databases/transactions": [
+      "databases/transactions-brokers-rabbitmq-kafka.md",
+      "databases/transactions-isolation-levels-anomalies.md",
+      "databases/transactions-kv-document-redis-mongo-scylla.md",
+      "databases/transactions-multistore-benchmark-decision-map.md",
+      "databases/transactions-relational-postgres-practice.md"
+    ],
+    "docker/rootless": [
+      "docker/rootless-docker.md"
+    ],
+    "go/asm": [
+      "go/go-asm-avo-and-honest-benchmark.md",
+      "go/go-asm-reading-disassembly.md",
+      "go/go-asm-why-and-where.md",
+      "go/go-asm-writing-and-abi.md"
+    ],
+    "go/concurrency": [
+      "go/go-concurrency-debugging-race-leaks.md",
+      "go/go-concurrency-goroutines-channels.md",
+      "go/go-concurrency-patterns.md",
+      "go/go-memory-model-happens-before.md",
+      "go/go-sync-primitives-atomics.md"
+    ],
+    "go/context": [
+      "go/go-context.md"
+    ],
+    "go/net-http": [
+      "go/go-net-http.md"
+    ],
+    "go/orm-gorm-vs-jet": [
+      "go/go-orm-gorm-vs-go-jet.md",
+      "security/dependency-scanning-sca-dependabot-osv.md"
+    ],
+    "go/reflect": [
+      "go/go-reflect.md"
+    ],
+    "go/slog": [
+      "go/go-slog.md"
+    ],
+    "go/testing": [
+      "go/go-testing.md"
+    ],
+    "infrastructure/ansible": [
+      "infrastructure/ansible-docker-compose-deploy.md"
+    ],
+    "infrastructure/proxmox": [
+      "infrastructure/proxmox-terraform-vm-automation.md"
+    ],
+    "infrastructure/terraform": [
+      "infrastructure/terraform-docker-hosts-and-networks.md"
+    ],
+    "java/deep-dive": [
+      "java/jvm-build-and-packaging.md",
+      "java/jvm-concurrency-virtual-threads-coroutines.md",
+      "java/jvm-data-access.md",
+      "java/jvm-messaging-kafka.md",
+      "java/jvm-reactive-vs-virtual-threads.md",
+      "java/kotlin-for-backend.md",
+      "java/spring-boot-deep-dive.md"
+    ],
+    "lang/brainfuck": [
+      "lang/turing-completeness-and-expressiveness.md"
+    ],
+    "messaging/flink": [
+      "messaging/flink-model-event-time-watermarks.md",
+      "messaging/flink-state-exactly-once.md"
+    ],
+    "messaging/kafka": [
+      "messaging/kafka-clients-across-languages.md",
+      "messaging/kafka-consumer-groups-rebalancing.md",
+      "messaging/kafka-ecosystem-connect-schema-registry.md",
+      "messaging/kafka-exactly-once-transactions.md",
+      "messaging/kafka-log-topics-partitions.md",
+      "messaging/kafka-mirrormaker-geo-replication.md",
+      "messaging/kafka-operations-kraft-tuning.md",
+      "messaging/kafka-replication-reliability.md",
+      "messaging/kafka-storage-retention-compaction.md"
+    ],
+    "messaging/nats": [
+      "messaging/nats-administration-observability.md",
+      "messaging/nats-cluster-raft-failover.md",
+      "messaging/nats-core-subjects-request-reply.md",
+      "messaging/nats-geo-superclusters-leafnodes.md",
+      "messaging/nats-go-client-patterns.md",
+      "messaging/nats-java-client-patterns.md",
+      "messaging/nats-jetstream-persistence-consumers.md",
+      "messaging/nats-reliability-performance.md",
+      "messaging/nats-security-accounts-jwt.md"
+    ],
+    "messaging/rabbitmq": [
+      "messaging/rabbitmq-delivery-guarantees-durability-dlq.md",
+      "messaging/rabbitmq-federation-and-shovel.md",
+      "messaging/rabbitmq-ha-cluster-quorum-failover.md",
+      "messaging/rabbitmq-monitoring-and-production-checklist.md",
+      "messaging/rabbitmq-streams-vs-kafka.md"
+    ],
+    "performance/crypto-rsa-regression": [
+      "performance/go-crypto-rsa-regression.md"
+    ],
+    "performance/highload-lowlatency": [
+      "performance/go-highload-client-pooling.md",
+      "performance/haproxy-l4-l7-http2.md",
+      "performance/jvm-highload-client.md",
+      "performance/jvm-highload-service.md",
+      "performance/latency-budget-and-transport.md"
+    ],
+    "performance/probabilistic": [
+      "performance/bloom-filters-probabilistic-structures.md"
+    ],
+    "performance/testcontainers-template-db": [
+      "performance/testcontainers-template-db.md"
+    ],
+    "rust/docker-minimal": [
+      "rust/rust-docker-minimal-images.md"
+    ],
+    "rust/production": [
+      "rust/rust-production-patterns.md"
+    ],
+    "rust/testing": [
+      "rust/rust-testing.md"
+    ],
+    "rust/tokio": [
+      "rust/rust-async-tokio.md"
+    ],
+    "rust/web-frameworks": [
+      "rust/rust-web-frameworks.md"
+    ],
+    "security/pixelsmash": [
+      "security/pixelsmash-ffmpeg.md"
+    ],
+    "security/untrusted-input": [
+      "security/silent-memory-corruption-detection.md",
+      "security/vendored-dependencies-blind-spot.md"
+    ],
+    "zig/hello-comptime": [
+      "zig/zig-positioning-among-c-rust-cpp.md"
+    ]
+  }
+}
