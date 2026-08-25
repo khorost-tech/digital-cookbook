@@ -34,7 +34,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`messaging/flink`](messaging/flink) | Apache Flink 1.20 через Flink SQL: event-time, state, exactly-once | 🔜 скоро |
+| [`messaging/flink`](messaging/flink) | Apache Flink 1.20 через Flink SQL: event-time, state, exactly-once | [статья](https://khorost.tech/messaging/flink-model-event-time-watermarks/) |
 | [`messaging/kafka`](messaging/kafka) | Kafka: глубокое погружение (клиенты, ecosystem, MM2, ops, EOS) | [статья](https://khorost.tech/messaging/) |
 | [`messaging/nats`](messaging/nats) | NATS 2.12: Core, JetStream, кластер, гео, безопасность, клиенты | [статья](https://khorost.tech/messaging/nats-core-subjects-request-reply/) |
 | [`messaging/rabbitmq`](messaging/rabbitmq) | RabbitMQ 4.x: HA-кластер (quorum, DLQ, federation) и Streams | [статья](https://khorost.tech/messaging/rabbitmq-ha-cluster-quorum-failover/) |
@@ -46,6 +46,7 @@
 | [`go/asm`](go/asm) | Go assembly: dot product на AVX2/NEON, avo, ускорение ×3.88 | [статья](https://khorost.tech/go/) |
 | [`go/concurrency`](go/concurrency) | Конкурентность в Go: горутины/каналы, sync, модель памяти, паттерны, отладка гонок | [статья](https://khorost.tech/go/go-concurrency-goroutines-channels/) |
 | [`go/context`](go/context) | Контекст в Go: отмена, дедлайны, WithCancelCause, request-scoped values | [статья](https://khorost.tech/go/go-context/) |
+| [`go/memory`](go/memory) | Память Go: escape-анализ (go build -gcflags=-m), стек vs куча | 🔜 скоро |
 | [`go/net-http`](go/net-http) | Сервисы на стандартном net/http: роутинг 1.22, middleware, таймауты, graceful shutdown | 🔜 скоро |
 | [`go/orm-gorm-vs-jet`](go/orm-gorm-vs-jet) | ORM в Go: GORM vs go-jet | [статья](https://khorost.tech/go/go-orm-gorm-vs-go-jet/) |
 | [`go/reflect`](go/reflect) | Цена рефлексии: три «закона», чтение/запись полей, теги, бенчи | 🔜 скоро |

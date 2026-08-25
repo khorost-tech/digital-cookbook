@@ -101,6 +101,9 @@
     "go/context": [
       "go/go-context.md"
     ],
+    "go/memory": [
+      "go/go-memory-stack-heap-escape.md"
+    ],
     "go/net-http": [
       "go/go-net-http.md"
     ],
@@ -140,6 +143,7 @@
     ],
     "messaging/flink": [
       "messaging/flink-model-event-time-watermarks.md",
+      "messaging/flink-sql-connectors-operations.md",
       "messaging/flink-state-exactly-once.md"
     ],
     "messaging/kafka": [
@@ -207,6 +211,7 @@
     ],
     "security/untrusted-input": [
       "security/silent-memory-corruption-detection.md",
+      "security/untrusted-file-pipeline-architecture.md",
       "security/vendored-dependencies-blind-spot.md"
     ],
     "zig/hello-comptime": [
