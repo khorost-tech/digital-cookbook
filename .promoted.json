@@ -49,6 +49,7 @@
       "databases/mongodb-aggregation-pipeline-deep.md",
       "databases/mongodb-document-model-and-schema-design.md",
       "databases/mongodb-indexes-deep.md",
+      "databases/mongodb-replica-sets-oplog-concerns.md",
       "databases/mongodb-wiredtiger-storage-engine.md"
     ],
     "databases/opensearch": [
