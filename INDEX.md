@@ -14,6 +14,7 @@
 | [`architecture/idempotency`](architecture/idempotency) | Гарантии доставки и идемпотентность (effectively-once) | [статья](https://khorost.tech/architecture/delivery-guarantees-idempotency/) |
 | [`architecture/saga`](architecture/saga) | Saga на практике: локальные транзакции + компенсации, оркестрация | [статья](https://khorost.tech/architecture/saga-in-practice/) |
 | [`architecture/temporal`](architecture/temporal) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
+| [`architecture/testing`](architecture/testing) | Тестирование: распределённые системы (Testcontainers), TDD/BDD, flaky-тесты | 🔜 скоро |
 
 ## Databases
 
@@ -47,9 +48,9 @@
 | [`go/concurrency`](go/concurrency) | Конкурентность в Go: горутины/каналы, sync, модель памяти, паттерны, отладка гонок | [статья](https://khorost.tech/go/go-concurrency-goroutines-channels/) |
 | [`go/context`](go/context) | Контекст в Go: отмена, дедлайны, WithCancelCause, request-scoped values | [статья](https://khorost.tech/go/go-context/) |
 | [`go/memory`](go/memory) | Память Go: escape-анализ (go build -gcflags=-m), стек vs куча | 🔜 скоро |
-| [`go/net-http`](go/net-http) | Сервисы на стандартном net/http: роутинг 1.22, middleware, таймауты, graceful shutdown | 🔜 скоро |
+| [`go/net-http`](go/net-http) | Сервисы на стандартном net/http: роутинг 1.22, middleware, таймауты, graceful shutdown | [статья](https://khorost.tech/go/go-net-http/) |
 | [`go/orm-gorm-vs-jet`](go/orm-gorm-vs-jet) | ORM в Go: GORM vs go-jet | [статья](https://khorost.tech/go/go-orm-gorm-vs-go-jet/) |
-| [`go/reflect`](go/reflect) | Цена рефлексии: три «закона», чтение/запись полей, теги, бенчи | 🔜 скоро |
+| [`go/reflect`](go/reflect) | Цена рефлексии: три «закона», чтение/запись полей, теги, бенчи | [статья](https://khorost.tech/go/go-reflect/) |
 | [`go/slog`](go/slog) | Структурированное логирование log/slog: хендлеры, группы, ContextHandler, бенчи | [статья](https://khorost.tech/go/go-slog/) |
 | [`go/testing`](go/testing) | Тестирование в Go: ручные фейки, httptest, интеграционные тесты через testcontainers-go (Postgres + Redis), детектор гонок | [статья](https://khorost.tech/go/go-testing/) |
 

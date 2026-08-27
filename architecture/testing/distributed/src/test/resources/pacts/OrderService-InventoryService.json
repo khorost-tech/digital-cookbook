@@ -1,0 +1,49 @@
+{
+  "consumer": {
+    "name": "OrderService"
+  },
+  "provider": {
+    "name": "InventoryService"
+  },
+  "interactions": [
+    {
+      "description": "a request for inventory of WIDGET-1",
+      "providerStates": [
+        {
+          "name": "inventory exists for WIDGET-1"
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "path": "/inventory/WIDGET-1"
+      },
+      "response": {
+        "status": 200,
+        "headers": {
+          "Content-Type": "application/json"
+        },
+        "body": {
+          "sku": "WIDGET-1",
+          "available": 42
+        },
+        "matchingRules": {
+          "body": {
+            "$.available": {
+              "matchers": [
+                {
+                  "match": "type"
+                }
+              ],
+              "combine": "AND"
+            }
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "pactSpecification": {
+      "version": "3.0.0"
+    }
+  }
+}

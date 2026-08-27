@@ -1,0 +1,10 @@
+# Java
+target/
+.jqwik-database
+# Python
+.venv/
+__pycache__/
+.hypothesis/
+.pytest_cache/
+# Go: rapid складывает сюда упавшие примеры для реплея
+go/pricing/testdata/

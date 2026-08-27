@@ -24,6 +24,9 @@
     "architecture/temporal": [
       "architecture/temporal-durable-workflows.md"
     ],
+    "architecture/testing": [
+      "architecture/flaky-tests-diagnose-and-fix.md"
+    ],
     "databases/clickhouse": [
       "databases/clickhouse-distributed-sharding-replication.md",
       "databases/clickhouse-drivers-comparison.md",

@@ -1,0 +1,169 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>tech.khorost</groupId>
+  <artifactId>testing-distributed</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+
+  <!-- Стенд к статье "Тестирование распределённых систем". Сами тестовые практики
+       показаны как запускаемые примеры на живых зависимостях (Testcontainers):
+         integration/ — реальный Postgres + Flyway: SQL-constraint (UNIQUE/upsert),
+                        который мок пропустил бы.
+         contract/    — consumer-driven contract на Pact JVM: consumer генерирует
+                        пакт, provider верифицирует; несовместимость ловится.
+         async/       — eventual-эффект БЕЗ sleep: Kafka + Awaitility.
+         failures/    — идемпотентность: повторная доставка события даёт эффект
+                        ровно один раз (ключ идемпотентности + таблица processed_events).
+       Версии пинятся явно (см. properties) и сверены живьём — таблица в README. -->
+
+  <properties>
+    <maven.compiler.release>21</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Пины версий. Все — существующие релизы на Maven Central. -->
+    <junit.version>5.11.4</junit.version>
+    <testcontainers.version>1.21.4</testcontainers.version>
+    <pact.version>4.6.14</pact.version>
+    <awaitility.version>4.2.2</awaitility.version>
+    <flyway.version>10.20.1</flyway.version>
+    <postgresql.version>42.7.11</postgresql.version>
+    <!-- kafka-clients 3.8.x forward-совместим с брокером Kafka 4.x (apache/kafka:4.3.1). -->
+    <kafka-clients.version>3.9.2</kafka-clients.version>
+    <slf4j.version>2.0.16</slf4j.version>
+
+    <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+    <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+  </properties>
+
+  <dependencyManagement>
+    <dependencies>
+      <dependency>
+        <groupId>org.junit</groupId>
+        <artifactId>junit-bom</artifactId>
+        <version>${junit.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.testcontainers</groupId>
+        <artifactId>testcontainers-bom</artifactId>
+        <version>${testcontainers.version}</version>
+        <type>pom</type>
+        <scope>import</scope>
+      </dependency>
+    </dependencies>
+  </dependencyManagement>
+
+  <dependencies>
+    <!-- Логирование: kafka-clients/testcontainers ждут slf4j на classpath. -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
+    <!-- kafka-clients: используется production-консюмером/продюсером в async-демо. -->
+    <dependency>
+      <groupId>org.apache.kafka</groupId>
+      <artifactId>kafka-clients</artifactId>
+      <version>${kafka-clients.version}</version>
+    </dependency>
+
+    <!-- Драйвер Postgres: нужен интеграционному и failures-тесту в runtime. -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>${postgresql.version}</version>
+    </dependency>
+
+    <!-- Flyway 10: миграции схемы. С v10 поддержка Postgres вынесена в отдельный модуль. -->
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-core</artifactId>
+      <version>${flyway.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.flywaydb</groupId>
+      <artifactId>flyway-database-postgresql</artifactId>
+      <version>${flyway.version}</version>
+    </dependency>
+
+    <!-- ==== test-only ==== -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>${slf4j.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.junit.platform</groupId>
+      <artifactId>junit-platform-launcher</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Testcontainers: JUnit5-интеграция + модули postgresql и kafka. -->
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.testcontainers</groupId>
+      <artifactId>kafka</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Awaitility: ожидание eventual-эффекта без sleep. -->
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+      <version>${awaitility.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <!-- Pact JVM: consumer-driven contracts (consumer генерирует, provider верифицирует). -->
+    <dependency>
+      <groupId>au.com.dius.pact.consumer</groupId>
+      <artifactId>junit5</artifactId>
+      <version>${pact.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>au.com.dius.pact.provider</groupId>
+      <artifactId>junit5</artifactId>
+      <version>${pact.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>testing-distributed</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>${maven-compiler-plugin.version}</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+      </plugin>
+    </plugins>
+  </build>
+</project>

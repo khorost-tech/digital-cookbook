@@ -12,6 +12,7 @@
 | [`idempotency/`](idempotency/) | Гарантии доставки и идемпотентность (effectively-once) | [статья](https://khorost.tech/architecture/delivery-guarantees-idempotency/) |
 | [`saga/`](saga/) | Saga на практике: локальные транзакции + компенсации, оркестрация | [статья](https://khorost.tech/architecture/saga-in-practice/) |
 | [`temporal/`](temporal/) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
+| [`testing/`](testing/) | Тестирование: распределённые системы (Testcontainers), TDD/BDD, flaky-тесты | 🔜 скоро |
 
 ---
 
