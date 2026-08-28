@@ -47,7 +47,8 @@
 | [`go/asm`](go/asm) | Go assembly: dot product на AVX2/NEON, avo, ускорение ×3.88 | [статья](https://khorost.tech/go/) |
 | [`go/concurrency`](go/concurrency) | Конкурентность в Go: горутины/каналы, sync, модель памяти, паттерны, отладка гонок | [статья](https://khorost.tech/go/go-concurrency-goroutines-channels/) |
 | [`go/context`](go/context) | Контекст в Go: отмена, дедлайны, WithCancelCause, request-scoped values | [статья](https://khorost.tech/go/go-context/) |
-| [`go/memory`](go/memory) | Память Go: escape-анализ (go build -gcflags=-m), стек vs куча | 🔜 скоро |
+| [`go/fundamentals`](go/fundamentals) | Основы Go вглубь: ошибки, интерфейсы, слайсы/карты, методы/ресиверы | 🔜 скоро |
+| [`go/memory`](go/memory) | Память Go: escape-анализ (go build -gcflags=-m), стек vs куча | [статья](https://khorost.tech/go/go-memory-stack-heap-escape/) |
 | [`go/net-http`](go/net-http) | Сервисы на стандартном net/http: роутинг 1.22, middleware, таймауты, graceful shutdown | [статья](https://khorost.tech/go/go-net-http/) |
 | [`go/orm-gorm-vs-jet`](go/orm-gorm-vs-jet) | ORM в Go: GORM vs go-jet | [статья](https://khorost.tech/go/go-orm-gorm-vs-go-jet/) |
 | [`go/reflect`](go/reflect) | Цена рефлексии: три «закона», чтение/запись полей, теги, бенчи | [статья](https://khorost.tech/go/go-reflect/) |

@@ -53,6 +53,7 @@
       "databases/mongodb-document-model-and-schema-design.md",
       "databases/mongodb-indexes-deep.md",
       "databases/mongodb-replica-sets-oplog-concerns.md",
+      "databases/mongodb-sharding-in-production.md",
       "databases/mongodb-wiredtiger-storage-engine.md"
     ],
     "databases/opensearch": [
@@ -105,6 +106,9 @@
     "go/context": [
       "go/go-context.md"
     ],
+    "go/fundamentals": [
+      "go/go-interfaces.md"
+    ],
     "go/memory": [
       "go/go-memory-stack-heap-escape.md"
     ],
@@ -146,6 +150,7 @@
       "lang/turing-completeness-and-expressiveness.md"
     ],
     "messaging/flink": [
+      "messaging/flink-datastream-api.md",
       "messaging/flink-model-event-time-watermarks.md",
       "messaging/flink-sql-connectors-operations.md",
       "messaging/flink-state-exactly-once.md"
