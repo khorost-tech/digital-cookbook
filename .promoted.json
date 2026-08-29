@@ -52,6 +52,7 @@
       "databases/mongodb-aggregation-pipeline-deep.md",
       "databases/mongodb-document-model-and-schema-design.md",
       "databases/mongodb-indexes-deep.md",
+      "databases/mongodb-operations-and-decision.md",
       "databases/mongodb-replica-sets-oplog-concerns.md",
       "databases/mongodb-sharding-in-production.md",
       "databases/mongodb-wiredtiger-storage-engine.md"
@@ -69,7 +70,8 @@
       "databases/postgres-clients-reliability-go-java-rust.md"
     ],
     "databases/redis": [
-      "databases/redis-clients-go-java-rust.md"
+      "databases/redis-clients-go-java-rust.md",
+      "databases/redis-data-model-structures-deep.md"
     ],
     "databases/scylladb": [
       "databases/scylladb-architecture-shard-per-core.md",
@@ -107,6 +109,7 @@
       "go/go-context.md"
     ],
     "go/fundamentals": [
+      "go/go-error-handling.md",
       "go/go-interfaces.md"
     ],
     "go/memory": [
