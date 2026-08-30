@@ -1,0 +1,8 @@
+services:
+  mysql:
+    image: mysql:8.4
+    environment:
+      MYSQL_ROOT_PASSWORD: waldemo
+      MYSQL_DATABASE: waldemo
+    ports: ["3308:3306"]
+    command: ["--log-bin=binlog", "--binlog-format=ROW", "--server-id=1"]

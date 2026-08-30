@@ -1,0 +1,5 @@
+services:
+  mongo:
+    image: mongo:8.2
+    ports: ["27019:27017"]
+    command: ["mongod", "--replSet", "rs0", "--bind_ip_all"]

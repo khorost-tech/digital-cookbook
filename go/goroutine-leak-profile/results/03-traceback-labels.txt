@@ -1,0 +1,19 @@
+=== с метками (умолчание Go 1.27) ===
+panic: демонстрация трейсбека с метками
+
+goroutine 7 [running] {shard: 7, worker: "payment-processor"}:
+main.main.func1.1()
+	G:/7/Projects/Khorost/digital-cookbook-staging/go/goroutine-leak-profile/cmd/traceback-labels/main.go:20 +0x2b
+created by main.main.func1 in goroutine 1
+	G:/7/Projects/Khorost/digital-cookbook-staging/go/goroutine-leak-profile/cmd/traceback-labels/main.go:18 +0x1a
+exit status 2
+
+=== с GODEBUG=tracebacklabels=0 ===
+panic: демонстрация трейсбека с метками
+
+goroutine 36 [running]:
+main.main.func1.1()
+	G:/7/Projects/Khorost/digital-cookbook-staging/go/goroutine-leak-profile/cmd/traceback-labels/main.go:20 +0x2b
+created by main.main.func1 in goroutine 1
+	G:/7/Projects/Khorost/digital-cookbook-staging/go/goroutine-leak-profile/cmd/traceback-labels/main.go:18 +0x1a
+exit status 2

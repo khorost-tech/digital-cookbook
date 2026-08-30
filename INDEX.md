@@ -14,7 +14,7 @@
 | [`architecture/idempotency`](architecture/idempotency) | Гарантии доставки и идемпотентность (effectively-once) | [статья](https://khorost.tech/architecture/delivery-guarantees-idempotency/) |
 | [`architecture/saga`](architecture/saga) | Saga на практике: локальные транзакции + компенсации, оркестрация | [статья](https://khorost.tech/architecture/saga-in-practice/) |
 | [`architecture/temporal`](architecture/temporal) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
-| [`architecture/testing`](architecture/testing) | Тестирование: распределённые системы (Testcontainers), TDD/BDD, flaky-тесты | 🔜 скоро |
+| [`architecture/testing`](architecture/testing) | Тестирование: распределённые системы (Testcontainers), TDD/BDD, flaky-тесты | [статья](https://khorost.tech/architecture/flaky-tests-diagnose-and-fix/) |
 
 ## Databases
 
@@ -30,6 +30,7 @@
 | [`databases/redis/deep-dive`](databases/redis/deep-dive) | Redis/Valkey: глубокое погружение (кодировки, event loop, персистентность, Cluster/Sentinel, память, streams/Lua, эксплуатация) | [статья](https://khorost.tech/databases/) |
 | [`databases/scylladb`](databases/scylladb) | ScyllaDB: глубокое погружение (топология, компакция, LWT, драйверы) | [статья](https://khorost.tech/databases/) |
 | [`databases/transactions`](databases/transactions) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | [статья](https://khorost.tech/databases/transactions-brokers-rabbitmq-kafka/) |
+| [`databases/wal`](databases/wal) | WAL и его аналоги: PostgreSQL, MySQL, MongoDB, SQLite, Redis, CDC/Debezium | 🔜 скоро |
 
 ## Messaging
 
@@ -48,6 +49,8 @@
 | [`go/concurrency`](go/concurrency) | Конкурентность в Go: горутины/каналы, sync, модель памяти, паттерны, отладка гонок | [статья](https://khorost.tech/go/go-concurrency-goroutines-channels/) |
 | [`go/context`](go/context) | Контекст в Go: отмена, дедлайны, WithCancelCause, request-scoped values | [статья](https://khorost.tech/go/go-context/) |
 | [`go/fundamentals`](go/fundamentals) | Основы Go вглубь: ошибки, интерфейсы, слайсы/карты, методы/ресиверы | 🔜 скоро |
+| [`go/goroutine-leak-profile`](go/goroutine-leak-profile) | Пять классов утечек горутин и инструменты диагностики: pprof/goroutine, профиль goroutineleak из Go 1.27 и goleak; трейсбеки с pprof-метками | 🔜 скоро |
+| [`go/iterators`](go/iterators) | Итераторы Go 1.23: iter.Seq/Seq2, iter.Pull, cleanup при break, бенчи | 🔜 скоро |
 | [`go/memory`](go/memory) | Память Go: escape-анализ (go build -gcflags=-m), стек vs куча | [статья](https://khorost.tech/go/go-memory-stack-heap-escape/) |
 | [`go/net-http`](go/net-http) | Сервисы на стандартном net/http: роутинг 1.22, middleware, таймауты, graceful shutdown | [статья](https://khorost.tech/go/go-net-http/) |
 | [`go/orm-gorm-vs-jet`](go/orm-gorm-vs-jet) | ORM в Go: GORM vs go-jet | [статья](https://khorost.tech/go/go-orm-gorm-vs-go-jet/) |

@@ -14,6 +14,7 @@
 | [`redis/deep-dive/`](redis/deep-dive/) | Redis/Valkey: глубокое погружение (кодировки, event loop, персистентность, Cluster/Sentinel, память, streams/Lua, эксплуатация) | [статья](https://khorost.tech/databases/) |
 | [`scylladb/`](scylladb/) | ScyllaDB: глубокое погружение (топология, компакция, LWT, драйверы) | [статья](https://khorost.tech/databases/) |
 | [`transactions/`](transactions/) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | [статья](https://khorost.tech/databases/transactions-brokers-rabbitmq-kafka/) |
+| [`wal/`](wal/) | WAL и его аналоги: PostgreSQL, MySQL, MongoDB, SQLite, Redis, CDC/Debezium | 🔜 скоро |
 
 ---
 

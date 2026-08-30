@@ -1,0 +1,2 @@
+# runtime WAL archive (bind mount) — не коммитить бинарные сегменты
+/archive/

@@ -1,0 +1,36 @@
+класс send-no-receiver             поднято утечек: 2
+класс receive-never-closed         поднято утечек: 2
+класс waitgroup-missing-done       поднято утечек: 2
+класс mutex-holder-gone            поднято утечек: 2
+класс cond-never-signaled          поднято утечек: 2
+класс mutex-held-by-live-goroutine поднято горутин: 2 (контрольный, НЕ утечка)
+
+ожидалось утечек: 10
+профиль нашёл:    10
+
+--- профиль ---
+goroutineleak profile: total 10
+2 @ 0x47daea 0x41425c 0x413e57 0x4e061e 0x483c41
+#	0x4e061d	tech.khorost/goroutine-leak-cookbook/leaks.sendNoReceiver.func1+0x1d	/mnt/g/7/projects/khorost/digital-cookbook-staging/go/goroutine-leak-profile/leaks/leaks.go:53
+
+2 @ 0x47daea 0x41516e 0x414cb2 0x4e0659 0x483c41
+#	0x4e0658	tech.khorost/goroutine-leak-cookbook/leaks.receiveNeverClosed.func1+0x18	/mnt/g/7/projects/khorost/digital-cookbook-staging/go/goroutine-leak-profile/leaks/leaks.go:62
+
+2 @ 0x47daea 0x45bff2 0x45bfc9 0x47eac5 0x48731a 0x4e06ec 0x4e06d3 0x4e06cf 0x483c41
+#	0x47eac4	internal/sync.runtime_SemacquireMutex+0x24				/home/khap/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.0.linux-amd64/src/runtime/sema.go:95
+#	0x487319	internal/sync.(*Mutex).lockSlow+0x159					/home/khap/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.0.linux-amd64/src/internal/sync/mutex.go:149
+#	0x4e06eb	internal/sync.(*Mutex).Lock+0x2b					/home/khap/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.0.linux-amd64/src/internal/sync/mutex.go:70
+#	0x4e06d2	sync.(*Mutex).Lock+0x12							/home/khap/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.0.linux-amd64/src/sync/mutex.go:46
+#	0x4e06ce	tech.khorost/goroutine-leak-cookbook/leaks.mutexHolderGone.func2+0xe	/mnt/g/7/projects/khorost/digital-cookbook-staging/go/goroutine-leak-profile/leaks/leaks.go:112
+
+2 @ 0x47daea 0x45bff2 0x45bfc9 0x47eb8e 0x4888a5 0x4e0697 0x483c41
+#	0x47eb8d	sync.runtime_SemacquireWaitGroup+0x2d						/home/khap/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.0.linux-amd64/src/runtime/sema.go:114
+#	0x4888a4	sync.(*WaitGroup).Wait+0x84							/home/khap/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.0.linux-amd64/src/sync/waitgroup.go:206
+#	0x4e0696	tech.khorost/goroutine-leak-cookbook/leaks.waitGroupMissingDone.func1+0x16	/mnt/g/7/projects/khorost/digital-cookbook-staging/go/goroutine-leak-profile/leaks/leaks.go:72
+
+2 @ 0x47daea 0x47ee13 0x47edf3 0x4875f3 0x4e0868 0x483c41
+#	0x47edf2	sync.runtime_notifyListWait+0x192					/home/khap/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.0.linux-amd64/src/runtime/sema.go:617
+#	0x4875f2	sync.(*Cond).Wait+0x72							/home/khap/go/pkg/mod/golang.org/toolchain@v0.0.1-go1.27.0.linux-amd64/src/sync/cond.go:71
+#	0x4e0867	tech.khorost/goroutine-leak-cookbook/leaks.condNeverSignaled.func1+0x47	/mnt/g/7/projects/khorost/digital-cookbook-staging/go/goroutine-leak-profile/leaks/leaks.go:148
+
+

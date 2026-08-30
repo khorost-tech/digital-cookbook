@@ -89,6 +89,9 @@
       "databases/transactions-multistore-benchmark-decision-map.md",
       "databases/transactions-relational-postgres-practice.md"
     ],
+    "databases/wal": [
+      "databases/wal-what-and-reliability.md"
+    ],
     "docker/rootless": [
       "docker/rootless-docker.md"
     ],
@@ -111,6 +114,12 @@
     "go/fundamentals": [
       "go/go-error-handling.md",
       "go/go-interfaces.md"
+    ],
+    "go/goroutine-leak-profile": [
+      "go/go-goroutine-leak-profile.md"
+    ],
+    "go/iterators": [
+      "go/go-iterators.md"
     ],
     "go/memory": [
       "go/go-memory-stack-heap-escape.md"

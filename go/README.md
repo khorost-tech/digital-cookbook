@@ -8,6 +8,8 @@
 | [`concurrency/`](concurrency/) | Конкурентность в Go: горутины/каналы, sync, модель памяти, паттерны, отладка гонок | [статья](https://khorost.tech/go/go-concurrency-goroutines-channels/) |
 | [`context/`](context/) | Контекст в Go: отмена, дедлайны, WithCancelCause, request-scoped values | [статья](https://khorost.tech/go/go-context/) |
 | [`fundamentals/`](fundamentals/) | Основы Go вглубь: ошибки, интерфейсы, слайсы/карты, методы/ресиверы | 🔜 скоро |
+| [`goroutine-leak-profile/`](goroutine-leak-profile/) | Пять классов утечек горутин и инструменты диагностики: pprof/goroutine, профиль goroutineleak из Go 1.27 и goleak; трейсбеки с pprof-метками | 🔜 скоро |
+| [`iterators/`](iterators/) | Итераторы Go 1.23: iter.Seq/Seq2, iter.Pull, cleanup при break, бенчи | 🔜 скоро |
 | [`memory/`](memory/) | Память Go: escape-анализ (go build -gcflags=-m), стек vs куча | [статья](https://khorost.tech/go/go-memory-stack-heap-escape/) |
 | [`net-http/`](net-http/) | Сервисы на стандартном net/http: роутинг 1.22, middleware, таймауты, graceful shutdown | [статья](https://khorost.tech/go/go-net-http/) |
 | [`orm-gorm-vs-jet/`](orm-gorm-vs-jet/) | ORM в Go: GORM vs go-jet | [статья](https://khorost.tech/go/go-orm-gorm-vs-go-jet/) |

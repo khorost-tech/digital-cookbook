@@ -1,0 +1,52 @@
+services:
+  primary:
+    image: postgres:18.4
+    environment:
+      POSTGRES_PASSWORD: waldemo
+      POSTGRES_DB: waldemo
+    ports: ["5441:5432"]
+    # Официальный entrypoint дописывает в pg_hba.conf только "host all all all <method>" —
+    # поле database=all НЕ покрывает псевдо-базу replication (нужна отдельная строка).
+    # Поэтому первым шагом entrypoint'а кладём скрипт в docker-entrypoint-initdb.d,
+    # который допишет разрешение для replication (демо-стенд в изолированной сети — trust ок),
+    # а дальше выполняется штатный docker-entrypoint.sh с нужными параметрами postgres.
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        mkdir -p /docker-entrypoint-initdb.d
+        cat > /docker-entrypoint-initdb.d/init-hba.sh <<'EOF'
+        #!/usr/bin/env bash
+        set -euo pipefail
+        echo "host replication all all trust" >> "$$PGDATA/pg_hba.conf"
+        EOF
+        chmod +x /docker-entrypoint-initdb.d/init-hba.sh
+        exec docker-entrypoint.sh postgres \
+          -c wal_level=replica \
+          -c max_wal_senders=10 \
+          -c max_replication_slots=10 \
+          -c listen_addresses=*
+
+  standby:
+    image: postgres:18.4
+    environment:
+      PGPASSWORD: waldemo
+    depends_on:
+      - primary
+    ports: ["5442:5432"]
+    entrypoint:
+      - bash
+      - -c
+      - |
+        set -e
+        until pg_isready -h primary -U postgres -d waldemo -q; do
+          echo "waiting for primary..."
+          sleep 2
+        done
+        rm -rf "$$PGDATA"
+        mkdir -p "$$PGDATA"
+        pg_basebackup -h primary -U postgres -D "$$PGDATA" -R -X stream -v
+        chown -R postgres:postgres "$$PGDATA"
+        chmod 0700 "$$PGDATA"
+        exec gosu postgres postgres

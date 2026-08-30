@@ -1,0 +1,5 @@
+services:
+  redis:
+    image: redis:8
+    ports: ["6380:6379"]
+    command: ["redis-server", "--appendonly", "yes", "--appendfsync", "everysec"]
