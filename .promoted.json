@@ -71,7 +71,8 @@
     ],
     "databases/redis": [
       "databases/redis-clients-go-java-rust.md",
-      "databases/redis-data-model-structures-deep.md"
+      "databases/redis-data-model-structures-deep.md",
+      "databases/redis-single-threaded-event-loop.md"
     ],
     "databases/scylladb": [
       "databases/scylladb-architecture-shard-per-core.md",
@@ -90,6 +91,7 @@
       "databases/transactions-relational-postgres-practice.md"
     ],
     "databases/wal": [
+      "databases/wal-across-databases.md",
       "databases/wal-what-and-reliability.md"
     ],
     "docker/rootless": [
@@ -113,7 +115,8 @@
     ],
     "go/fundamentals": [
       "go/go-error-handling.md",
-      "go/go-interfaces.md"
+      "go/go-interfaces.md",
+      "go/go-slices-maps-internals.md"
     ],
     "go/goroutine-leak-profile": [
       "go/go-goroutine-leak-profile.md"
