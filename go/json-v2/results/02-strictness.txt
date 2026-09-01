@@ -1,0 +1,33 @@
+Строгость: v1-old / v1-on-v2 / v2 API на одном наборе случаев
+================================================================
+
+--- v1-old (GOEXPERIMENT=nojsonv2): <случай> <encoding/json> <v2 API> ---
+# режим: v1-old (GOEXPERIMENT="nojsonv2")
+# v2 API доступен в этой сборке: false
+duplicate-keys           accepted   n/a       
+unknown-field            accepted   n/a       
+case-insensitive-match   accepted   n/a       
+invalid-utf8             accepted   n/a       
+trailing-data            rejected   n/a       
+null-into-int            accepted   n/a       
+
+--- v1-on-v2 (умолчание Go 1.27): <случай> <encoding/json> <v2 API> ---
+# режим: v1-on-v2 (GOEXPERIMENT="")
+# v2 API доступен в этой сборке: true
+duplicate-keys           accepted   rejected  
+unknown-field            accepted   accepted  
+case-insensitive-match   accepted   accepted  
+invalid-utf8             accepted   rejected  
+trailing-data            rejected   rejected  
+null-into-int            accepted   accepted  
+
+--- совместимость: encoding/json, v1-old против v1-on-v2 ---
+(нет различий: совпадают (совместимость сохранена))
+
+--- строгость: v1-on-v2 (encoding/json) против v2 API в той же сборке ---
+duplicate-keys           encoding/json=accepted   v2=rejected
+invalid-utf8             encoding/json=accepted   v2=rejected
+
+--- вердикт ---
+Совместимость encoding/json (v1-old vs v1-on-v2): совпадают (совместимость сохранена).
+Строгость v2 API против encoding/json: v2 API строже (см. блок выше).

@@ -4,6 +4,7 @@
 
 | Стенд | Описание | Статья |
 |---|---|---|
+| [`citus/`](citus/) | Шардирование PostgreSQL через Citus: scatter-gather, колокация против репартиции, референсные таблицы, пагинация, ребаланс | 🔜 скоро |
 | [`clickhouse/`](clickhouse/) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | [статья](https://khorost.tech/databases/clickhouse-when-olap/) |
 | [`db-indexes/`](db-indexes/) | Индексы в БД: PostgreSQL, MongoDB, Tarantool | [статья](https://khorost.tech/databases/) |
 | [`identifiers/`](identifiers/) | Идентификаторы: локальность и bloat UUIDv4/UUIDv7/bigint в PostgreSQL, распределение в Mongo/Scylla, генерация в Go/Java/Rust | [статья](https://khorost.tech/databases/identifiers-index-locality-bloat/) |

@@ -27,6 +27,9 @@
     "architecture/testing": [
       "architecture/flaky-tests-diagnose-and-fix.md"
     ],
+    "databases/citus": [
+      "databases/sharding-in-production.md"
+    ],
     "databases/clickhouse": [
       "databases/clickhouse-distributed-sharding-replication.md",
       "databases/clickhouse-drivers-comparison.md",
@@ -72,6 +75,7 @@
     "databases/redis": [
       "databases/redis-clients-go-java-rust.md",
       "databases/redis-data-model-structures-deep.md",
+      "databases/redis-persistence-rdb-aof.md",
       "databases/redis-single-threaded-event-loop.md"
     ],
     "databases/scylladb": [
@@ -123,6 +127,9 @@
     ],
     "go/iterators": [
       "go/go-iterators.md"
+    ],
+    "go/json-v2": [
+      "go/go-json-v2.md"
     ],
     "go/memory": [
       "go/go-memory-stack-heap-escape.md"

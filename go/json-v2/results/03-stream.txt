@@ -1,0 +1,21 @@
+=== масштабирование памяти: TestStreamMemoryScaling ===
+Ключевой вывод стенда по стримингу: как растёт аллоцированная память v1 Decoder
+и jsontext при увеличении входа. Числа печатаются тестом ниже.
+
+    stream_test.go:99: v1 Decoder: 496552 -> 4823744 байт (x9.71)
+    stream_test.go:100: jsontext:   8752 -> 8752 байт (x1.00)
+--- PASS: TestStreamMemoryScaling (0.04s)
+PASS
+ok  	tech.khorost/json-v2-cookbook	0.085s
+
+=== бенчи потокового чтения ===
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkStreamV1Decoder-16    	      60	  19604135 ns/op	 4814327 B/op	  150018 allocs/op
+BenchmarkStreamV1Decoder-16    	      63	  19426808 ns/op	 4814264 B/op	  150018 allocs/op
+BenchmarkStreamJSONText-16     	     757	   1729725 ns/op	    8744 B/op	      18 allocs/op
+BenchmarkStreamJSONText-16     	     638	   1876900 ns/op	    8744 B/op	      18 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	4.982s

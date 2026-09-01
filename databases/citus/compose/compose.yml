@@ -1,0 +1,91 @@
+# Стенд к статье «Шардирование на практике» (databases/sharding-in-production).
+# Координатор + два воркера. Третий воркер (citus-w3) поднимается артефактом 5
+# отдельным compose-профилем — до него кластер работает на двух.
+#
+# Порт хоста 15435: 15432-15434 заняты соседними стендами, 5433 и 5456 тоже.
+# Воркеры НАРУЖУ НЕ ПУБЛИКУЮТСЯ намеренно: к шардированному кластеру ходят
+# через координатор, и стенд не должен предлагать обходной путь.
+services:
+  coordinator:
+    image: citusdata/citus:14.1.0-pg17
+    container_name: citus-coord
+    # wal_level=logical: артефакт 5 (ребаланс) полагается на shard_transfer_mode
+    # ПО УМОЛЧАНИЮ ('auto'), а он выбирает логическую репликацию, если это
+    # возможно — она и даёт перенос шардов/референсных таблиц БЕЗ блокировки
+    # чтения на время переноса. ЖИВАЯ НАХОДКА (Task 6): образ PostgreSQL по
+    # умолчанию поднимается с wal_level=replica, и тогда ребаланс не падает
+    # сразу, а зависает — задача 'SELECT replicate_reference_tables(auto)'
+    # уходит в ЗАТЯЖНОЙ ПОВТОР с ошибкой «logical decoding requires
+    # "wal_level" >= "logical"» и блокирует собой все запланированные
+    # перемещения шардов (воспроизведено живьём: job держался в состоянии
+    # running с 8 повторами и 20 заблокированными задачами дольше 5 минут без
+    # прогресса; наблюдение прервано вручную, поэтому это доказанный затяжной
+    # повтор без прогресса, а НЕ доказанный бесконечный цикл).
+    #
+    # ГРАНИЦА ИЗМЕРЕНИЯ: PostgreSQL требует wal_level=logical на стороне
+    # ПУБЛИКАЦИИ; к подписчику такого требования нет. Какой узел публикует
+    # в конкретной операции переноса Citus — здесь не проверялось.
+    # Одинаковая команда на всех четырёх сервисах — КОНСЕРВАТИВНЫЙ выбор
+    # конфигурации стенда; минимально необходимый набор ролей экспериментом
+    # НЕ УСТАНОВЛЕН. Проверено: с replica ВЕЗДЕ перенос не идёт,
+    # с logical ВЕЗДЕ идёт. НЕ проверено: ни роль координатора, ни роль
+    # отправителя/получателя по отдельности — контрольных опытов не
+    # ставилось.
+    command: ["postgres", "-c", "wal_level=logical"]
+    environment:
+      POSTGRES_USER: shard
+      POSTGRES_PASSWORD: shard
+      POSTGRES_DB: shard
+    ports: ["15435:5432"]
+    volumes:
+      - ../sql/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shard -d shard"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  worker1:
+    image: citusdata/citus:14.1.0-pg17
+    container_name: citus-w1
+    command: ["postgres", "-c", "wal_level=logical"]
+    environment:
+      POSTGRES_USER: shard
+      POSTGRES_PASSWORD: shard
+      POSTGRES_DB: shard
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shard -d shard"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  worker2:
+    image: citusdata/citus:14.1.0-pg17
+    container_name: citus-w2
+    command: ["postgres", "-c", "wal_level=logical"]
+    environment:
+      POSTGRES_USER: shard
+      POSTGRES_PASSWORD: shard
+      POSTGRES_DB: shard
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shard -d shard"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # Третий воркер поднимается только артефактом 5 (ребаланс):
+  #   docker compose --profile grow up -d worker3
+  worker3:
+    image: citusdata/citus:14.1.0-pg17
+    container_name: citus-w3
+    profiles: ["grow"]
+    command: ["postgres", "-c", "wal_level=logical"]
+    environment:
+      POSTGRES_USER: shard
+      POSTGRES_PASSWORD: shard
+      POSTGRES_DB: shard
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shard -d shard"]
+      interval: 2s
+      timeout: 3s
+      retries: 30

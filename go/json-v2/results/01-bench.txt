@@ -1,0 +1,234 @@
+Три конфигурации JSON на одном payload
+Тулчейн: go version go1.27.0 windows/amd64
+
+=== v1-old: encoding/json на прежнем движке (прогонов: 5) ===
+--- прогон 1 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV1Encode/small-16         	 4290859	       278.5 ns/op	      96 B/op	       1 allocs/op
+BenchmarkV1Encode/large-array-16   	    5372	    218181 ns/op	  106633 B/op	       1 allocs/op
+BenchmarkV1Encode/deep-nested-16   	  169592	      7574 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV1Encode/map-heavy-16     	    1159	   1038233 ns/op	  422986 B/op	    4002 allocs/op
+BenchmarkV1Decode/small-16         	 1000000	      1210 ns/op	     632 B/op	      17 allocs/op
+BenchmarkV1Decode/large-array-16   	    1021	   1195613 ns/op	  514681 B/op	   15005 allocs/op
+BenchmarkV1Decode/deep-nested-16   	   26154	     52307 ns/op	   26192 B/op	     575 allocs/op
+BenchmarkV1Decode/map-heavy-16     	     352	   3220330 ns/op	 1204400 B/op	   28024 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	9.840s
+--- прогон 2 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV1Encode/small-16         	 4308061	       277.0 ns/op	      96 B/op	       1 allocs/op
+BenchmarkV1Encode/large-array-16   	    5349	    219345 ns/op	  106683 B/op	       1 allocs/op
+BenchmarkV1Encode/deep-nested-16   	  176859	      7460 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV1Encode/map-heavy-16     	    1147	   1048176 ns/op	  422999 B/op	    4002 allocs/op
+BenchmarkV1Decode/small-16         	  825189	      1245 ns/op	     632 B/op	      17 allocs/op
+BenchmarkV1Decode/large-array-16   	    1108	   1210034 ns/op	  514680 B/op	   15005 allocs/op
+BenchmarkV1Decode/deep-nested-16   	   30608	     37045 ns/op	   26192 B/op	     575 allocs/op
+BenchmarkV1Decode/map-heavy-16     	     454	   3211465 ns/op	 1204402 B/op	   28024 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	9.902s
+--- прогон 3 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV1Encode/small-16         	 4278546	       278.9 ns/op	      96 B/op	       1 allocs/op
+BenchmarkV1Encode/large-array-16   	    5107	    227105 ns/op	  106636 B/op	       1 allocs/op
+BenchmarkV1Encode/deep-nested-16   	  177469	      6871 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV1Encode/map-heavy-16     	    1314	    902089 ns/op	  422924 B/op	    4002 allocs/op
+BenchmarkV1Decode/small-16         	 1000000	      1036 ns/op	     632 B/op	      17 allocs/op
+BenchmarkV1Decode/large-array-16   	    1213	   1004608 ns/op	  514680 B/op	   15005 allocs/op
+BenchmarkV1Decode/deep-nested-16   	   31375	     51272 ns/op	   26192 B/op	     575 allocs/op
+BenchmarkV1Decode/map-heavy-16     	     439	   2817270 ns/op	 1204401 B/op	   28024 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	9.910s
+--- прогон 4 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV1Encode/small-16         	 4240732	       277.4 ns/op	      96 B/op	       1 allocs/op
+BenchmarkV1Encode/large-array-16   	    5472	    223332 ns/op	  106633 B/op	       1 allocs/op
+BenchmarkV1Encode/deep-nested-16   	  173433	      6944 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV1Encode/map-heavy-16     	    1293	    920508 ns/op	  422943 B/op	    4002 allocs/op
+BenchmarkV1Decode/small-16         	 1000000	      1046 ns/op	     632 B/op	      17 allocs/op
+BenchmarkV1Decode/large-array-16   	    1186	   1015398 ns/op	  514681 B/op	   15005 allocs/op
+BenchmarkV1Decode/deep-nested-16   	   37696	     47987 ns/op	   26192 B/op	     575 allocs/op
+BenchmarkV1Decode/map-heavy-16     	     400	   3200386 ns/op	 1204403 B/op	   28024 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	10.185s
+--- прогон 5 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV1Encode/small-16         	 4146924	       282.1 ns/op	      96 B/op	       1 allocs/op
+BenchmarkV1Encode/large-array-16   	    5464	    220779 ns/op	  106633 B/op	       1 allocs/op
+BenchmarkV1Encode/deep-nested-16   	  177615	      6916 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV1Encode/map-heavy-16     	    1347	    912064 ns/op	  422926 B/op	    4002 allocs/op
+BenchmarkV1Decode/small-16         	 1000000	      1064 ns/op	     632 B/op	      17 allocs/op
+BenchmarkV1Decode/large-array-16   	    1167	   1011585 ns/op	  514680 B/op	   15005 allocs/op
+BenchmarkV1Decode/deep-nested-16   	   37167	     49489 ns/op	   26192 B/op	     575 allocs/op
+BenchmarkV1Decode/map-heavy-16     	     422	   3199135 ns/op	 1204404 B/op	   28024 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	10.318s
+
+=== v1-on-v2: encoding/json в 1.27 без правок кода (прогонов: 5) ===
+--- прогон 1 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV1Encode/small-16         	 2603430	       463.5 ns/op	     160 B/op	       2 allocs/op
+BenchmarkV1Encode/large-array-16   	    3872	    312181 ns/op	  106743 B/op	       2 allocs/op
+BenchmarkV1Encode/deep-nested-16   	  119349	      9571 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV1Encode/map-heavy-16     	    1158	   1036102 ns/op	  342467 B/op	    2005 allocs/op
+BenchmarkV1Decode/small-16         	  642772	      2042 ns/op	     496 B/op	      16 allocs/op
+BenchmarkV1Decode/large-array-16   	     571	   1919935 ns/op	  515727 B/op	   15014 allocs/op
+BenchmarkV1Decode/deep-nested-16   	   16431	     74325 ns/op	   27690 B/op	     641 allocs/op
+BenchmarkV1Decode/map-heavy-16     	     295	   4158938 ns/op	 1317682 B/op	   32086 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	9.680s
+--- прогон 2 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV1Encode/small-16         	 2605519	       459.0 ns/op	     160 B/op	       2 allocs/op
+BenchmarkV1Encode/large-array-16   	    3841	    314768 ns/op	  106745 B/op	       2 allocs/op
+BenchmarkV1Encode/deep-nested-16   	  127257	      9724 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV1Encode/map-heavy-16     	    1132	   1052035 ns/op	  342496 B/op	    2005 allocs/op
+BenchmarkV1Decode/small-16         	  674709	      1843 ns/op	     496 B/op	      16 allocs/op
+BenchmarkV1Decode/large-array-16   	     682	   1766849 ns/op	  515735 B/op	   15014 allocs/op
+BenchmarkV1Decode/deep-nested-16   	   17434	     73771 ns/op	   27689 B/op	     641 allocs/op
+BenchmarkV1Decode/map-heavy-16     	     252	   4508281 ns/op	 1317766 B/op	   32086 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	9.786s
+--- прогон 3 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV1Encode/small-16         	 2471979	       533.3 ns/op	     160 B/op	       2 allocs/op
+BenchmarkV1Encode/large-array-16   	    3772	    335017 ns/op	  106747 B/op	       2 allocs/op
+BenchmarkV1Encode/deep-nested-16   	  126207	     10898 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV1Encode/map-heavy-16     	     974	   1250558 ns/op	  342620 B/op	    2005 allocs/op
+BenchmarkV1Decode/small-16         	  527121	      2249 ns/op	     496 B/op	      16 allocs/op
+BenchmarkV1Decode/large-array-16   	     586	   2120354 ns/op	  515728 B/op	   15014 allocs/op
+BenchmarkV1Decode/deep-nested-16   	   15402	     79966 ns/op	   27689 B/op	     641 allocs/op
+BenchmarkV1Decode/map-heavy-16     	     254	   4891576 ns/op	 1317725 B/op	   32086 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	10.146s
+--- прогон 4 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV1Encode/small-16         	 2574260	       466.5 ns/op	     160 B/op	       2 allocs/op
+BenchmarkV1Encode/large-array-16   	    3859	    312693 ns/op	  106742 B/op	       2 allocs/op
+BenchmarkV1Encode/deep-nested-16   	  127910	     10580 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV1Encode/map-heavy-16     	     963	   1308047 ns/op	  343587 B/op	    2005 allocs/op
+BenchmarkV1Decode/small-16         	  515550	      2270 ns/op	     496 B/op	      16 allocs/op
+BenchmarkV1Decode/large-array-16   	     612	   2162968 ns/op	  515726 B/op	   15014 allocs/op
+BenchmarkV1Decode/deep-nested-16   	   14346	     80129 ns/op	   27689 B/op	     641 allocs/op
+BenchmarkV1Decode/map-heavy-16     	     246	   5040243 ns/op	 1317745 B/op	   32086 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	9.960s
+--- прогон 5 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV1Encode/small-16         	 2341408	       504.9 ns/op	     160 B/op	       2 allocs/op
+BenchmarkV1Encode/large-array-16   	    3708	    319003 ns/op	  106888 B/op	       2 allocs/op
+BenchmarkV1Encode/deep-nested-16   	  124297	     10377 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV1Encode/map-heavy-16     	    1003	   1214498 ns/op	  343494 B/op	    2005 allocs/op
+BenchmarkV1Decode/small-16         	  572221	      2114 ns/op	     496 B/op	      16 allocs/op
+BenchmarkV1Decode/large-array-16   	     578	   1988132 ns/op	  515730 B/op	   15014 allocs/op
+BenchmarkV1Decode/deep-nested-16   	   14640	     82871 ns/op	   27689 B/op	     641 allocs/op
+BenchmarkV1Decode/map-heavy-16     	     252	   5333072 ns/op	 1317755 B/op	   32086 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	9.848s
+
+=== v2-api: явный encoding/json/v2 (прогонов: 5) ===
+--- прогон 1 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV2Encode/small-16         	 2443383	       492.4 ns/op	     160 B/op	       2 allocs/op
+BenchmarkV2Encode/large-array-16   	    3583	    336192 ns/op	  106753 B/op	       2 allocs/op
+BenchmarkV2Encode/deep-nested-16   	  119458	     11148 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV2Encode/map-heavy-16     	    1197	    987044 ns/op	  182752 B/op	       4 allocs/op
+BenchmarkV2Decode/small-16         	 1261579	       946.5 ns/op	     432 B/op	      12 allocs/op
+BenchmarkV2Decode/large-array-16   	    1436	    839343 ns/op	  451678 B/op	   11012 allocs/op
+BenchmarkV2Decode/deep-nested-16   	   32630	     46481 ns/op	   24615 B/op	     512 allocs/op
+BenchmarkV2Decode/map-heavy-16     	     411	   3019552 ns/op	 1157511 B/op	   22032 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	10.133s
+--- прогон 2 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV2Encode/small-16         	 2437296	       491.8 ns/op	     160 B/op	       2 allocs/op
+BenchmarkV2Encode/large-array-16   	    3447	    336684 ns/op	  106758 B/op	       2 allocs/op
+BenchmarkV2Encode/deep-nested-16   	  118708	     11122 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV2Encode/map-heavy-16     	    1306	    932521 ns/op	  181165 B/op	       4 allocs/op
+BenchmarkV2Decode/small-16         	 1290936	       949.3 ns/op	     432 B/op	      12 allocs/op
+BenchmarkV2Decode/large-array-16   	    1377	    880824 ns/op	  451684 B/op	   11012 allocs/op
+BenchmarkV2Decode/deep-nested-16   	   23998	     51346 ns/op	   24615 B/op	     512 allocs/op
+BenchmarkV2Decode/map-heavy-16     	     372	   3043747 ns/op	 1157508 B/op	   22032 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	9.776s
+--- прогон 3 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV2Encode/small-16         	 2428164	       496.5 ns/op	     160 B/op	       2 allocs/op
+BenchmarkV2Encode/large-array-16   	    3562	    331026 ns/op	  106754 B/op	       2 allocs/op
+BenchmarkV2Encode/deep-nested-16   	  120572	     11381 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV2Encode/map-heavy-16     	    1320	    914218 ns/op	  181159 B/op	       4 allocs/op
+BenchmarkV2Decode/small-16         	 1348392	       895.8 ns/op	     432 B/op	      12 allocs/op
+BenchmarkV2Decode/large-array-16   	    1443	    836304 ns/op	  451676 B/op	   11012 allocs/op
+BenchmarkV2Decode/deep-nested-16   	   32296	     44215 ns/op	   24616 B/op	     512 allocs/op
+BenchmarkV2Decode/map-heavy-16     	     483	   2735719 ns/op	 1157507 B/op	   22032 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	10.187s
+--- прогон 4 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV2Encode/small-16         	 2391951	       495.6 ns/op	     160 B/op	       2 allocs/op
+BenchmarkV2Encode/large-array-16   	    3612	    327331 ns/op	  106752 B/op	       2 allocs/op
+BenchmarkV2Encode/deep-nested-16   	  119278	     10807 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV2Encode/map-heavy-16     	    1255	    974606 ns/op	  181918 B/op	       4 allocs/op
+BenchmarkV2Decode/small-16         	 1000000	      1078 ns/op	     432 B/op	      12 allocs/op
+BenchmarkV2Decode/large-array-16   	    1212	    915675 ns/op	  451679 B/op	   11012 allocs/op
+BenchmarkV2Decode/deep-nested-16   	   27739	     46305 ns/op	   24616 B/op	     512 allocs/op
+BenchmarkV2Decode/map-heavy-16     	     372	   2960816 ns/op	 1157488 B/op	   22032 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	9.511s
+--- прогон 5 ---
+goos: windows
+goarch: amd64
+pkg: tech.khorost/json-v2-cookbook
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkV2Encode/small-16         	 2438655	       547.1 ns/op	     160 B/op	       2 allocs/op
+BenchmarkV2Encode/large-array-16   	    3576	    334038 ns/op	  106754 B/op	       2 allocs/op
+BenchmarkV2Encode/deep-nested-16   	  117252	     11539 ns/op	    2690 B/op	       1 allocs/op
+BenchmarkV2Encode/map-heavy-16     	    1161	    963748 ns/op	  181252 B/op	       4 allocs/op
+BenchmarkV2Decode/small-16         	 1285255	       934.6 ns/op	     432 B/op	      12 allocs/op
+BenchmarkV2Decode/large-array-16   	    1387	    861622 ns/op	  451689 B/op	   11012 allocs/op
+BenchmarkV2Decode/deep-nested-16   	   35306	     47986 ns/op	   24615 B/op	     512 allocs/op
+BenchmarkV2Decode/map-heavy-16     	     398	   2790092 ns/op	 1157513 B/op	   22032 allocs/op
+PASS
+ok  	tech.khorost/json-v2-cookbook	10.258s
+
