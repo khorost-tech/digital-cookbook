@@ -8,8 +8,8 @@
 | [`concurrency/`](concurrency/) | Конкурентность в Go: горутины/каналы, sync, модель памяти, паттерны, отладка гонок | [статья](https://khorost.tech/go/go-concurrency-goroutines-channels/) |
 | [`context/`](context/) | Контекст в Go: отмена, дедлайны, WithCancelCause, request-scoped values | [статья](https://khorost.tech/go/go-context/) |
 | [`fundamentals/`](fundamentals/) | Основы Go вглубь: ошибки, интерфейсы, слайсы/карты, методы/ресиверы | [статья](https://khorost.tech/go/go-interfaces/) |
-| [`goroutine-leak-profile/`](goroutine-leak-profile/) | Пять классов утечек горутин и инструменты диагностики: pprof/goroutine, профиль goroutineleak из Go 1.27 и goleak; трейсбеки с pprof-метками | 🔜 скоро |
-| [`iterators/`](iterators/) | Итераторы Go 1.23: iter.Seq/Seq2, iter.Pull, cleanup при break, бенчи | 🔜 скоро |
+| [`goroutine-leak-profile/`](goroutine-leak-profile/) | Пять классов утечек горутин и инструменты диагностики: pprof/goroutine, профиль goroutineleak из Go 1.27 и goleak; трейсбеки с pprof-метками | [статья](https://khorost.tech/go/go-goroutine-leak-profile/) |
+| [`iterators/`](iterators/) | Итераторы Go 1.23: iter.Seq/Seq2, iter.Pull, cleanup при break, бенчи | [статья](https://khorost.tech/go/go-iterators/) |
 | [`json-v2/`](json-v2/) | Три конфигурации JSON-движка Go 1.27 на одном payload: прежний движок (nojsonv2), encoding/json поверх v2 без правок кода и явный encoding/json/v2; строгость и стриминг через jsontext | 🔜 скоро |
 | [`memory/`](memory/) | Память Go: escape-анализ (go build -gcflags=-m), стек vs куча | [статья](https://khorost.tech/go/go-memory-stack-heap-escape/) |
 | [`net-http/`](net-http/) | Сервисы на стандартном net/http: роутинг 1.22, middleware, таймауты, graceful shutdown | [статья](https://khorost.tech/go/go-net-http/) |

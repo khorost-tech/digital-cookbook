@@ -1,0 +1,14 @@
+# Сводный маркер завершения (serialization-formats, Задача 9).
+# RUN_ID=20260826T121438Z-3498-1814011241
+# Прогон завершён: 2026-08-26T12:19:34Z
+# Появление этого файла означает: все четыре оси (fixtures/size.txt,
+# evolution.txt, need.txt, cross.txt) сняты ЭТИМ RUN_ID -- сверить
+# командой:
+#   grep -h '# RUN_ID:' fixtures/size.txt fixtures/evolution.txt \
+#     fixtures/need.txt fixtures/cross.txt
+# -- и ВЕСЬ набор тестов (python -m unittest discover scripts,
+# go test ./..., mvn test) прошёл зелёным ДО того, как этот файл
+# появился. Отсутствие файла или несовпадающие RUN_ID в фикстурах
+# означают, что прогон либо не завершался, либо смешан из разных
+# запусков (ось пересобрана вручную в обход run-all.sh).
+COMPLETE

@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>tech.khorost</groupId>
+  <artifactId>serialization-probe</artifactId>
+  <version>0.1.0</version>
+  <packaging>jar</packaging>
+
+  <!-- Вторая реализация пробы стенда «форматы при изменении схемы».
+       Написана по schemas/spec.md и только по нему: смысл стенда в том,
+       чтобы две независимые реализации сошлись по ОПИСАНИЮ, а не по
+       списыванию друг у друга.
+
+       Хостового Maven нет — сборка контейнером maven:3.9-eclipse-temurin-25,
+       каталог java монтируется в /w, цель — mvn -B package. -->
+  <properties>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+
+    <!-- Пины проверены живой сборкой. -->
+    <avro.version>1.12.2</avro.version>
+    <protobuf.version>4.36.0</protobuf.version>
+    <json-schema-validator.version>3.0.7</json-schema-validator.version>
+    <zstd-jni.version>1.5.7-15</zstd-jni.version>
+    <slf4j.version>2.0.18</slf4j.version>
+    <junit.version>5.11.4</junit.version>
+    <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
+    <maven-surefire-plugin.version>3.5.2</maven-surefire-plugin.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.avro</groupId>
+      <artifactId>avro</artifactId>
+      <version>${avro.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>${protobuf.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.networknt</groupId>
+      <artifactId>json-schema-validator</artifactId>
+      <version>${json-schema-validator.version}</version>
+    </dependency>
+    <!-- zstd-jni: используется пробой напрямую в виде пробы «size» (ось
+         размера, Задача 5) — сжимает те же байты, что попали в bytes.
+         Уровень сжатия зафиксирован в Probe.ZSTD_LEVEL и назван в
+         spec.md — без фиксации число не воспроизводится. -->
+    <dependency>
+      <groupId>com.github.luben</groupId>
+      <artifactId>zstd-jni</artifactId>
+      <version>${zstd-jni.version}</version>
+    </dependency>
+
+    <!-- Avro тянет slf4j-api и без провайдера пишет в поток ошибок три
+         строки предупреждения. Поток ошибок у пробы занят диагностикой
+         отказов, и посторонний шум в нём мешает читать её глазами. -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-nop</artifactId>
+      <version>${slf4j.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.junit.jupiter</groupId>
+      <artifactId>junit-jupiter</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-surefire-plugin</artifactId>
+        <version>${maven-surefire-plugin.version}</version>
+        <configuration>
+          <!-- zstd-jni ходит в нативный код, и JDK 25 предупреждает, что
+               однажды это запретят без явного разрешения. Предупреждение
+               ничего не ломает, но шумит в каждом прогоне и прячет
+               настоящие сообщения. Разрешаем явно. -->
+          <argLine>--enable-native-access=ALL-UNNAMED</argLine>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>${maven-shade-plugin.version}</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals><goal>shade</goal></goals>
+            <configuration>
+              <!-- Имя фиксировано: контракт задачи — java/target/probe.jar. -->
+              <finalName>probe</finalName>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>tech.khorost.serialization.Probe</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                    <exclude>module-info.class</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,16 @@
+{
+  "type": "record",
+  "name": "User",
+  "namespace": "tech.khorost.serialization",
+  "fields": [
+    {"name": "id", "type": "long"},
+    {"name": "name", "type": "string"},
+    {"name": "email", "type": {
+      "type": "record",
+      "name": "Contact",
+      "fields": [
+        {"name": "value", "type": "string"}
+      ]
+    }}
+  ]
+}

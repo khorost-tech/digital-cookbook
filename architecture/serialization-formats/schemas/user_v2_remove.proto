@@ -1,0 +1,11 @@
+syntax = "proto3";
+package tech.khorost.serialization;
+
+// Поле email удалено. Номер 3 зарезервирован, а не переиспользован —
+// правильный способ убрать поле в Protobuf.
+message User {
+  int64 id = 1;
+  string name = 2;
+  reserved 3;
+  reserved "email";
+}

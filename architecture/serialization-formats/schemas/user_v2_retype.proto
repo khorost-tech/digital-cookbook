@@ -1,0 +1,11 @@
+syntax = "proto3";
+package tech.khorost.serialization;
+
+// Тип id сменён с int64 на string при сохранении номера 1. Wire-типы
+// varint и length-delimited несовместимы — декодирование не откажет,
+// но даст мусор.
+message User {
+  string id = 1;
+  string name = 2;
+  string email = 3;
+}

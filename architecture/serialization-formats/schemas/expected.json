@@ -1,0 +1,39 @@
+{
+  "add_default":  {"avro": {"newer_reader": "ok", "newer_writer": "ok"},
+                   "protobuf": {"newer_reader": "ok", "newer_writer": "ok"},
+                   "json-schema": {"newer_reader": "ok", "newer_writer": "refused"}},
+  "add_nodefault":{"avro": {"newer_reader": "refused", "newer_writer": "ok"},
+                   "protobuf": {"newer_reader": "ok", "newer_writer": "ok"},
+                   "json-schema": {"newer_reader": "refused", "newer_writer": "refused"}},
+  "remove":       {"avro": {"newer_reader": "ok", "newer_writer": "refused"},
+                   "protobuf": {"newer_reader": "ok", "newer_writer": "ok"},
+                   "json-schema": {"newer_reader": "refused", "newer_writer": "refused"}},
+  "rename":       {"avro": {"newer_reader": "ok", "newer_writer": "refused"},
+                   "protobuf": {"newer_reader": "ok", "newer_writer": "ok"},
+                   "json-schema": {"newer_reader": "refused", "newer_writer": "refused"}},
+  "retype":       {"avro": {"newer_reader": "refused", "newer_writer": "refused"},
+                   "protobuf": {"newer_reader": "wrong", "newer_writer": "wrong"},
+                   "json-schema": {"newer_reader": "refused", "newer_writer": "refused"}},
+  "reuse_tag":    {"avro": {"newer_reader": "n/a", "newer_writer": "n/a"},
+                   "protobuf": {"newer_reader": "wrong", "newer_writer": "wrong"},
+                   "json-schema": {"newer_reader": "n/a", "newer_writer": "n/a"}},
+  "unknown_field":{"avro": {"newer_reader": "refused", "newer_writer": "ok"},
+                   "protobuf": {"newer_reader": "ok", "newer_writer": "ok"},
+                   "json-schema": {"newer_reader": "ok", "newer_writer": "refused"}},
+  "alias_conflict":{"avro": {
+                     "newer_reader": {
+                       "by_lang": {"go": "wrong", "java": "refused"},
+                       "reason": "Схема читателя объявляет поле name с псевдонимом email; писатель (user_v1) несёт оба поля, name и email, раздельно. hamba/avro (Go) молча разрешает конфликт псевдонима в пользу писательского email — читатель получает почту вместо имени без единой ошибки (wrong). org.apache.avro (Java) обнаруживает тот же конфликт как структурную ошибку схемы (AvroRuntimeException: Duplicate field name in record ... name type:STRING pos:2 and name type:STRING pos:1) и отказывается читать вовсе (refused). Обе реализации вызывают стандартный, идиоматичный путь своей библиотеки (Resolve+Unmarshal в Go, конструктор GenericDatumReader(writer, reader) в Java) — расхождение принадлежит экосистеме Avro (двум независимым эталонным реализациям), а не стенду. Поведение формата в этой точке не определено ни спецификацией, ни консенсусом реализаций."
+                     },
+                     "newer_writer": "refused"},
+                   "protobuf": {"newer_reader": "n/a", "newer_writer": "n/a"},
+                   "json-schema": {"newer_reader": "n/a", "newer_writer": "n/a"}},
+  "retype_message":{"avro": {"newer_reader": "refused", "newer_writer": "refused"},
+                   "protobuf": {
+                     "newer_reader": {
+                       "by_record": {"0": "wrong", "1": "refused", "2": "refused", "3": "refused", "4": "refused"},
+                       "reason": "email меняет тип со строки на вложенное сообщение Contact{string value=1} — оба типа кодируются одним wire-типом (LEN), поэтому несовпадение типа провода не уводит поле в неизвестные молча (spec.md §14): разбор реально пытается прочитать байты писателя как байты вложенного сообщения читателя. Запись 0 (id=1, email=\"anna@example.com\") — единственная, чьи байты случайно образуют синтаксически валидную (хоть и бессмысленную) последовательность тегов Protobuf: Contact успешно разбирается с пустым value, и результат отличается от записанного — wrong. Остальные четыре записи не образуют валидную структуру — разбор отказывает до попытки интерпретировать содержимое — refused. Совпадает побайтово у Go и Java: тот же индекс записи (0) даёт тот же got={\"value\":\"\"} у обеих реализаций."
+                     },
+                     "newer_writer": "wrong"},
+                   "json-schema": {"newer_reader": "refused", "newer_writer": "refused"}}
+}

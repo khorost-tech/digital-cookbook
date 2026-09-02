@@ -1,0 +1,11 @@
+syntax = "proto3";
+package tech.khorost.serialization;
+
+// Добавлено новое поле age. В proto3 все поля по сути опциональны,
+// explicit-presence через optional не меняет совместимости.
+message User {
+  int64 id = 1;
+  string name = 2;
+  string email = 3;
+  optional int32 age = 4;
+}

@@ -1,0 +1,320 @@
+{
+  "algorithm": "sha256",
+  "files": {
+    "build-descriptors.sh": {
+      "digest": "50d114584814521df388eec58df7a0dbed9c1e0ea47ee8406a81a5f8299b64d7",
+      "role": "source",
+      "content": "text"
+    },
+    "expected-corrections.json": {
+      "digest": "f55ab9f85cf463951f647be8230d6bf136cd15d65da4ea6bb3e53e82e9460565",
+      "role": "corrections",
+      "content": "text"
+    },
+    "expected.json": {
+      "digest": "aeb01ebb6c8ea2a2ab090021ae86c9e8f9221bbd0c769db18914b9743870bf5a",
+      "role": "table",
+      "content": "text"
+    },
+    "records.json": {
+      "digest": "c88dffd12d394be2ef3ef6bd95c7b79829141e4663a8cd180899a208a0418b35",
+      "role": "records",
+      "content": "text"
+    },
+    "spec.md": {
+      "digest": "6cc63e95d08b49c3ec9cfca7d095468daf88164ff644642f4ba917b16e1b3745",
+      "role": "spec",
+      "content": "text"
+    },
+    "user_v1.avsc": {
+      "digest": "9f73cb0a64d214586037e33fbfc77f87e09cb2654de905be6e873cb1a76054cf",
+      "role": "schema",
+      "content": "text",
+      "notation": "avro",
+      "version": 1,
+      "change": ""
+    },
+    "user_v1.desc": {
+      "digest": "46c5f24ce03181a56f895c59fba2a483bca5e83e5927f2bfeeb22540090a2d46",
+      "role": "schema",
+      "content": "binary",
+      "notation": "protobuf",
+      "version": 1,
+      "change": ""
+    },
+    "user_v1.json": {
+      "digest": "5cba94331c910e20d2e7dee54bcd03d4db9b55f31e69da1f7d77ce37e02047f3",
+      "role": "schema",
+      "content": "text",
+      "notation": "json-schema",
+      "version": 1,
+      "change": ""
+    },
+    "user_v1.proto": {
+      "digest": "72179f2d566a581fff066bcd29d17d87553a432bf7985589f980dc155232091f",
+      "role": "source",
+      "content": "text"
+    },
+    "user_v2_add_default.avsc": {
+      "digest": "dda6d140a7792b57f2cd0e88f72fe83bebfed3aa11bad51068da06dfe9c36a78",
+      "role": "schema",
+      "content": "text",
+      "notation": "avro",
+      "version": 2,
+      "change": "add_default"
+    },
+    "user_v2_add_default.desc": {
+      "digest": "ada2de5b2e9fab445209e2edb46435588487b887771aa2d655a163900295918d",
+      "role": "schema",
+      "content": "binary",
+      "notation": "protobuf",
+      "version": 2,
+      "change": "add_default"
+    },
+    "user_v2_add_default.json": {
+      "digest": "3cd3215b6baa9f1fd96b7527afe0acb747a95a8bce95ceb4d53a3f56ba34143b",
+      "role": "schema",
+      "content": "text",
+      "notation": "json-schema",
+      "version": 2,
+      "change": "add_default"
+    },
+    "user_v2_add_default.proto": {
+      "digest": "c6a13052f7cb23a12126d17ece1b96546ec163b8446591174df9c9973f0333f7",
+      "role": "source",
+      "content": "text"
+    },
+    "user_v2_add_nodefault.avsc": {
+      "digest": "54a5c593ba4c71613839c4311b620d51ba2b1c6bf4ff58a0b3997077d3f11526",
+      "role": "schema",
+      "content": "text",
+      "notation": "avro",
+      "version": 2,
+      "change": "add_nodefault"
+    },
+    "user_v2_add_nodefault.desc": {
+      "digest": "dbede7b673d1b646385e47cf7647ad48b2b37a4c243096f425be3f79e5b6e272",
+      "role": "schema",
+      "content": "binary",
+      "notation": "protobuf",
+      "version": 2,
+      "change": "add_nodefault"
+    },
+    "user_v2_add_nodefault.json": {
+      "digest": "29a76e2a851e59141efc50ddeafc9270723542e98ecf6e3d65f3f089500adc9a",
+      "role": "schema",
+      "content": "text",
+      "notation": "json-schema",
+      "version": 2,
+      "change": "add_nodefault"
+    },
+    "user_v2_add_nodefault.proto": {
+      "digest": "e8de09f4ea4c18c02372a92dc84f1ba3f95a81953eb5d7382f252c1d17336d67",
+      "role": "source",
+      "content": "text"
+    },
+    "user_v2_alias_conflict.avsc": {
+      "digest": "328371197cc93681dc14a0dd81c44d426ff5492316e8af7712a22d061654e656",
+      "role": "schema",
+      "content": "text",
+      "notation": "avro",
+      "version": 2,
+      "change": "alias_conflict"
+    },
+    "user_v2_alias_conflict.desc": {
+      "digest": "592e710e7561f6ca78246e5f015f35ea70854fd292fe6678049f3cb2a44eee91",
+      "role": "schema",
+      "content": "binary",
+      "notation": "protobuf",
+      "version": 2,
+      "change": "alias_conflict"
+    },
+    "user_v2_alias_conflict.json": {
+      "digest": "5cba94331c910e20d2e7dee54bcd03d4db9b55f31e69da1f7d77ce37e02047f3",
+      "role": "schema",
+      "content": "text",
+      "notation": "json-schema",
+      "version": 2,
+      "change": "alias_conflict"
+    },
+    "user_v2_alias_conflict.proto": {
+      "digest": "69a66448a93ab8860cd345ff3ee78495b077652312d811a2bb8951816eccea37",
+      "role": "source",
+      "content": "text"
+    },
+    "user_v2_remove.avsc": {
+      "digest": "f16c2abc39b2397cfba363f05203f14f6300d37c5ed8a83395de7d5021438261",
+      "role": "schema",
+      "content": "text",
+      "notation": "avro",
+      "version": 2,
+      "change": "remove"
+    },
+    "user_v2_remove.desc": {
+      "digest": "6f6fa47640282446977b95e35768f876f8a5d533f04b4d0f292b29a055cacca0",
+      "role": "schema",
+      "content": "binary",
+      "notation": "protobuf",
+      "version": 2,
+      "change": "remove"
+    },
+    "user_v2_remove.json": {
+      "digest": "ff6fe19b30c576dcf44ea9e2b2431963a08ed3c03e4cb9b7a95e6a2bf79ccfab",
+      "role": "schema",
+      "content": "text",
+      "notation": "json-schema",
+      "version": 2,
+      "change": "remove"
+    },
+    "user_v2_remove.proto": {
+      "digest": "4201e036415acd1fbf9bcc16dcd65e1f6cf58ab79e0e3a652ae9e1cd44770e21",
+      "role": "source",
+      "content": "text"
+    },
+    "user_v2_rename.avsc": {
+      "digest": "554140d7e383d69906b2489e661eca1d5a30ab45a8c93cd4f77acb1d98d5d109",
+      "role": "schema",
+      "content": "text",
+      "notation": "avro",
+      "version": 2,
+      "change": "rename"
+    },
+    "user_v2_rename.desc": {
+      "digest": "9459897ba0146a10db69a91db2e3cc237b1e12f14b597e2734d62a4356028641",
+      "role": "schema",
+      "content": "binary",
+      "notation": "protobuf",
+      "version": 2,
+      "change": "rename"
+    },
+    "user_v2_rename.json": {
+      "digest": "47c1cdd480c16888bc5d4dbeff9f0460280530665c4f0d8fb00528669ae31205",
+      "role": "schema",
+      "content": "text",
+      "notation": "json-schema",
+      "version": 2,
+      "change": "rename"
+    },
+    "user_v2_rename.proto": {
+      "digest": "046f5676d4e8dcba1bac5c9171a96126efe8c57cd44f3c9477757d0285df8f84",
+      "role": "source",
+      "content": "text"
+    },
+    "user_v2_retype.avsc": {
+      "digest": "cc5953fd3fa461ec9988dadc7583c7bf3165b1a71f42477d770779989c469e05",
+      "role": "schema",
+      "content": "text",
+      "notation": "avro",
+      "version": 2,
+      "change": "retype"
+    },
+    "user_v2_retype.desc": {
+      "digest": "60db9eaf859e04ae520cbf646e9499ad81c55bf17d773ec0582e11681bc84e02",
+      "role": "schema",
+      "content": "binary",
+      "notation": "protobuf",
+      "version": 2,
+      "change": "retype"
+    },
+    "user_v2_retype.json": {
+      "digest": "3ed6616bbce7e0959911530263eeda5b604ce6b8ade1e7d028b5136c36dea958",
+      "role": "schema",
+      "content": "text",
+      "notation": "json-schema",
+      "version": 2,
+      "change": "retype"
+    },
+    "user_v2_retype.proto": {
+      "digest": "7513487342c7b9bb008278aaf15b6ab16aed110885b07ee6123c47c47073065f",
+      "role": "source",
+      "content": "text"
+    },
+    "user_v2_retype_message.avsc": {
+      "digest": "a053642f4b35f9d8e3cef9dbc39ce0c27f18e273ff7b7df36951ff9859424899",
+      "role": "schema",
+      "content": "text",
+      "notation": "avro",
+      "version": 2,
+      "change": "retype_message"
+    },
+    "user_v2_retype_message.desc": {
+      "digest": "6081ea16a7374d45028bae09098a04f58f798256197a26de810dabde84675552",
+      "role": "schema",
+      "content": "binary",
+      "notation": "protobuf",
+      "version": 2,
+      "change": "retype_message"
+    },
+    "user_v2_retype_message.json": {
+      "digest": "821eca0b24081b6f5e20c1a9fc8a0e65153e097dcfb38236dbe77e93efa7daca",
+      "role": "schema",
+      "content": "text",
+      "notation": "json-schema",
+      "version": 2,
+      "change": "retype_message"
+    },
+    "user_v2_retype_message.proto": {
+      "digest": "4e2f1c044917f9f8934cd5450938fb10f1a99b5b6a5eb576e38b6dab7afeb130",
+      "role": "source",
+      "content": "text"
+    },
+    "user_v2_reuse_tag.avsc": {
+      "digest": "9f73cb0a64d214586037e33fbfc77f87e09cb2654de905be6e873cb1a76054cf",
+      "role": "schema",
+      "content": "text",
+      "notation": "avro",
+      "version": 2,
+      "change": "reuse_tag"
+    },
+    "user_v2_reuse_tag.desc": {
+      "digest": "58cd277bb16cf0e08c1b64b6fca1f5c9e9d6c7d30c21b6c4b1c21c2afbd8a1df",
+      "role": "schema",
+      "content": "binary",
+      "notation": "protobuf",
+      "version": 2,
+      "change": "reuse_tag"
+    },
+    "user_v2_reuse_tag.json": {
+      "digest": "5cba94331c910e20d2e7dee54bcd03d4db9b55f31e69da1f7d77ce37e02047f3",
+      "role": "schema",
+      "content": "text",
+      "notation": "json-schema",
+      "version": 2,
+      "change": "reuse_tag"
+    },
+    "user_v2_reuse_tag.proto": {
+      "digest": "13b3db0ae1f3fc1ea103652daeb7ae947654b06ff4ebd0c87cac95b433e1669d",
+      "role": "source",
+      "content": "text"
+    },
+    "user_v2_unknown_field.avsc": {
+      "digest": "be299a72db352e6396b0d72e913f1018828a26751794c3ec2dd26895a3d00ce8",
+      "role": "schema",
+      "content": "text",
+      "notation": "avro",
+      "version": 2,
+      "change": "unknown_field"
+    },
+    "user_v2_unknown_field.desc": {
+      "digest": "302ea283322e5c90cf2be21e8df8d3142600f9e369634e6a9353187deee71b02",
+      "role": "schema",
+      "content": "binary",
+      "notation": "protobuf",
+      "version": 2,
+      "change": "unknown_field"
+    },
+    "user_v2_unknown_field.json": {
+      "digest": "522389cbc9f0101f106d9ec23e34e8e87aa36e1550271811cb62153f62f39645",
+      "role": "schema",
+      "content": "text",
+      "notation": "json-schema",
+      "version": 2,
+      "change": "unknown_field"
+    },
+    "user_v2_unknown_field.proto": {
+      "digest": "6e083efcc4d11185512cd7857ffb0d494ce4bd0aa014d725179935ab22d15043",
+      "role": "source",
+      "content": "text"
+    }
+  }
+}

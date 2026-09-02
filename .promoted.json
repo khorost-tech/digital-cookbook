@@ -21,6 +21,9 @@
     "architecture/saga": [
       "architecture/saga-in-practice.md"
     ],
+    "architecture/serialization-formats": [
+      "architecture/serialization-formats-json-avro-protobuf.md"
+    ],
     "architecture/temporal": [
       "architecture/temporal-durable-workflows.md"
     ],
@@ -96,6 +99,7 @@
     ],
     "databases/wal": [
       "databases/wal-across-databases.md",
+      "databases/wal-replication-and-cdc.md",
       "databases/wal-what-and-reliability.md"
     ],
     "docker/rootless": [

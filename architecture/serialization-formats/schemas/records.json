@@ -1,0 +1,100 @@
+{
+  "v1": {
+    "note": "У записи 3 (Глеб) поле email намеренно равно строке \"0\". Это единственное значение, на котором видно В ИСХОДЕ решение стенда «совпадение номера поля — не то же самое, что тождество поля»: у protobuf/reuse_tag/newer_reader писатель кладёт email в номер 3, а читатель ждёт там login_count. Реализация, которая приводит тип на переиспользованном номере, получит из \"0\" целое 0 — ровно то, что возвращает чтение, — и клетка покажет ok вместо wrong. При любом другом значении обе реализации дают wrong, и различие видно только в печатном ожидании, то есть таблицей не проверяется. Менять это значение нельзя, не заменив проверку чем-то равносильным.",
+    "records": [
+      {"id": 1, "name": "Анна",   "email": "anna@example.com"},
+      {"id": 2, "name": "Борис",  "email": "boris@example.com"},
+      {"id": 3, "name": "Вера",   "email": "vera@example.com"},
+      {"id": 4, "name": "Глеб",   "email": "0"},
+      {"id": 5, "name": "Дарья",  "email": "darya@example.com"}
+    ]
+  },
+  "v2": {
+    "alias_conflict": {
+      "records": [
+        {"id": 1, "name": "Анна"},
+        {"id": 2, "name": "Борис"},
+        {"id": 3, "name": "Вера"},
+        {"id": 4, "name": "Глеб"},
+        {"id": 5, "name": "Дарья"}
+      ],
+      "only_formats": ["avro"],
+      "note": "Круг правок (задача 6bis). alias_conflict — Avro-специфичная находка: у читателя объявлено поле name с псевдонимом email, а у ПИСАТЕЛЯ для направления newer_reader — это существующий user_v1 (id, name, email оба присутствуют, записи те же, что в ветке v1 выше). Записи ЭТОЙ ветки (только id и name) нужны исключительно как запись ПИСАТЕЛЯ user_v2_alias_conflict для направления newer_writer — у этой схемы, в отличие от читателя newer_reader, поля email нет вовсе (оно ушло под алиасом в name). Protobuf и JSON Schema псевдонимов не имеют: user_v2_alias_conflict структурно совпадает с user_v1 в этих нотациях (вырожденная пара, spec.md §6.4), и записи этой ветки для них не используются — эти клетки n/a до того, как записи вообще понадобятся."
+    },
+    "retype_message": {
+      "records": [
+        {"id": 1, "name": "Анна",   "email": {"value": "anna@example.com"}},
+        {"id": 2, "name": "Борис",  "email": {"value": "boris@example.com"}},
+        {"id": 3, "name": "Вера",   "email": {"value": "vera@example.com"}},
+        {"id": 4, "name": "Глеб",   "email": {"value": "gleb@example.com"}},
+        {"id": 5, "name": "Дарья",  "email": {"value": "darya@example.com"}}
+      ],
+      "note": "Круг правок (задача 6bis). Единственное изменение стенда, где каноническая запись несёт вложенный объект: у user_v2_retype_message поле email — вложенное сообщение/запись Contact{value: строка}, а не скаляр. Эта ветка — записи ПИСАТЕЛЯ для направления newer_writer. Для newer_reader писатель — user_v1 (существующие записи ветки v1 выше, email там строка): именно эта пара воспроизводит контрпример ревью — строка и вложенное сообщение делят один и тот же wire-тип Protobuf (LEN), поэтому попытка прочитать байты строки как Contact иногда завершается отказом разбора, а иногда — совпадением по случайности."
+    },
+    "add_default": {
+      "records": [
+        {"id": 1, "name": "Анна",   "email": "anna@example.com",  "age": 30},
+        {"id": 2, "name": "Борис",  "email": "boris@example.com", "age": 25},
+        {"id": 3, "name": "Вера",   "email": "vera@example.com",  "age": 41},
+        {"id": 4, "name": "Глеб",   "email": "gleb@example.com",  "age": 19},
+        {"id": 5, "name": "Дарья",  "email": "darya@example.com", "age": 34}
+      ]
+    },
+    "add_nodefault": {
+      "records": [
+        {"id": 1, "name": "Анна",   "email": "anna@example.com",  "age": 30},
+        {"id": 2, "name": "Борис",  "email": "boris@example.com", "age": 25},
+        {"id": 3, "name": "Вера",   "email": "vera@example.com",  "age": 41},
+        {"id": 4, "name": "Глеб",   "email": "gleb@example.com",  "age": 19},
+        {"id": 5, "name": "Дарья",  "email": "darya@example.com", "age": 34}
+      ]
+    },
+    "remove": {
+      "records": [
+        {"id": 1, "name": "Анна"},
+        {"id": 2, "name": "Борис"},
+        {"id": 3, "name": "Вера"},
+        {"id": 4, "name": "Глеб"},
+        {"id": 5, "name": "Дарья"}
+      ]
+    },
+    "rename": {
+      "records": [
+        {"id": 1, "name": "Анна",   "contact": "anna@example.com"},
+        {"id": 2, "name": "Борис",  "contact": "boris@example.com"},
+        {"id": 3, "name": "Вера",   "contact": "vera@example.com"},
+        {"id": 4, "name": "Глеб",   "contact": "gleb@example.com"},
+        {"id": 5, "name": "Дарья",  "contact": "darya@example.com"}
+      ]
+    },
+    "retype": {
+      "records": [
+        {"id": "1", "name": "Анна",   "email": "anna@example.com"},
+        {"id": "2", "name": "Борис",  "email": "boris@example.com"},
+        {"id": "3", "name": "Вера",   "email": "vera@example.com"},
+        {"id": "4", "name": "Глеб",   "email": "gleb@example.com"},
+        {"id": "5", "name": "Дарья",  "email": "darya@example.com"}
+      ]
+    },
+    "reuse_tag": {
+      "records": [
+        {"id": 1, "name": "Анна",   "login_count": 7},
+        {"id": 2, "name": "Борис",  "login_count": 3},
+        {"id": 3, "name": "Вера",   "login_count": 12},
+        {"id": 4, "name": "Глеб",   "login_count": 0},
+        {"id": 5, "name": "Дарья",  "login_count": 5}
+      ],
+      "only_formats": ["protobuf"],
+      "note": "Переиспользование НОМЕРА поля — понятие, которого нет ни у Avro, ни у JSON Schema: user_v2_reuse_tag.avsc и .json структурно совпадают с user_v1 по набору полей, то есть заявленное изменение в этих нотациях не выражается никак (спека, раздел про вырожденную пару схем). Записи этой формы (login_count вместо email) имеют смысл только как запись писателя для Protobuf; прогонять их через avro/json-schema незачем — там та же самая эволюция не выражается."
+    },
+    "unknown_field": {
+      "records": [
+        {"id": 1, "name": "Анна",   "email": "anna@example.com",  "nickname": "anya"},
+        {"id": 2, "name": "Борис",  "email": "boris@example.com", "nickname": "boria"},
+        {"id": 3, "name": "Вера",   "email": "vera@example.com",  "nickname": "verka"},
+        {"id": 4, "name": "Глеб",   "email": "gleb@example.com",  "nickname": "glebus"},
+        {"id": 5, "name": "Дарья",  "email": "darya@example.com", "nickname": "dashka"}
+      ]
+    }
+  }
+}

@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "User",
+  "type": "object",
+  "properties": {
+    "id": {"type": "integer"},
+    "name": {"type": "string"},
+    "email": {"type": "string"},
+    "nickname": {"type": "string"}
+  },
+  "required": ["id", "name", "email"],
+  "additionalProperties": false
+}

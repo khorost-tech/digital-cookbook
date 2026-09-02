@@ -1,0 +1,11 @@
+syntax = "proto3";
+package tech.khorost.serialization;
+
+// Поле email переименовано в contact, номер 3 сохранён — это то, на
+// чём держится совместимость Protobuf: имена не участвуют в проводном
+// формате, только номера.
+message User {
+  int64 id = 1;
+  string name = 2;
+  string contact = 3;
+}
