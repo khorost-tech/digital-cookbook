@@ -1,0 +1,110 @@
+[
+  {
+    "case": "valid",
+    "breaks": "",
+    "control": "",
+    "note": "Контроль. Цепочка целая: лист, промежуточный, корень. Если контроль не проходит, отказ на сломанном случае ничего не доказывает.",
+    "server_cert": "valid.pem",
+    "server_key": "valid.key",
+    "chain": [
+      "intermediate.pem"
+    ]
+  },
+  {
+    "case": "no_intermediate",
+    "breaks": "сервер не отдаёт промежуточный сертификат",
+    "control": "valid",
+    "note": "Сертификат тот же, что в контроле. Ломается не он, а то, что сервер присылает: цепочка обрывается, и клиенту нечем связать лист с корнем.",
+    "server_cert": "valid.pem",
+    "server_key": "valid.key",
+    "chain": []
+  },
+  {
+    "case": "expired",
+    "breaks": "окно действия целиком в прошлом",
+    "control": "valid",
+    "note": "Обе границы сдвинуты назад. Сдвинуть только одну нельзя: окно всегда двигается целиком, иначе конец окажется раньше начала.",
+    "server_cert": "expired.pem",
+    "server_key": "expired.key",
+    "chain": [
+      "intermediate.pem"
+    ]
+  },
+  {
+    "case": "not_yet_valid",
+    "breaks": "окно действия целиком в будущем",
+    "control": "valid",
+    "note": "Зеркало предыдущего случая. Встречается реже, но именно так выглядит расхождение часов между узлами.",
+    "server_cert": "not-yet-valid.pem",
+    "server_key": "not-yet-valid.key",
+    "chain": [
+      "intermediate.pem"
+    ]
+  },
+  {
+    "case": "wrong_san",
+    "breaks": "имя в SAN не совпадает с запрошенным",
+    "control": "valid",
+    "note": "Субъект оставлен таким же, как у контроля. Иначе случай отличался бы двумя признаками сразу, а клиенты смотрят именно на SAN.",
+    "server_cert": "wrong-san.pem",
+    "server_key": "wrong-san.key",
+    "chain": [
+      "intermediate.pem"
+    ]
+  },
+  {
+    "case": "self_signed",
+    "breaks": "сам себе издатель, цепочки нет вовсе",
+    "control": "valid",
+    "note": "Самый частый случай во внутренних средах и первый, из-за которого выключают проверку целиком.",
+    "server_cert": "self-signed.pem",
+    "server_key": "self-signed.key",
+    "chain": []
+  },
+  {
+    "case": "other_ca",
+    "breaks": "подписан удостоверяющим центром, которого клиент не знает",
+    "control": "valid",
+    "note": "Цепочка сама по себе целая и непротиворечивая. Она просто ведёт не туда.",
+    "server_cert": "other-ca.pem",
+    "server_key": "other-ca.key",
+    "chain": [
+      "other-root.pem"
+    ]
+  },
+  {
+    "case": "revoked",
+    "breaks": "сертификат отозван удостоверяющим центром",
+    "control": "valid",
+    "note": "Единственный случай, где сам сертификат неотличим от контроля: отзыв живёт не в нём, а в состоянии, которое ведёт центр. Поэтому и проверяется он отдельным обращением, а не разбором цепочки.",
+    "server_cert": "revoked.pem",
+    "server_key": "revoked.key",
+    "chain": [
+      "intermediate.pem"
+    ]
+  },
+  {
+    "case": "deep_valid",
+    "breaks": "",
+    "control": "",
+    "note": "Второй контроль — для пары о порядке. Цепочка глубже: корень, два промежуточных, лист. Отдельный контроль нужен потому, что у этой ветки другая длина пути, и сравнивать её с основным контролем значило бы сравнивать сразу по двум признакам.",
+    "server_cert": "deep.pem",
+    "server_key": "deep.key",
+    "chain": [
+      "deep-ca2.pem",
+      "deep-ca1.pem"
+    ]
+  },
+  {
+    "case": "deep_wrong_order",
+    "breaks": "промежуточные отданы в обратном порядке",
+    "control": "deep_valid",
+    "note": "Отличается от deep_valid ровно одним: два промежуточных переставлены местами. Лист по-прежнему первый, ключ ему соответствует. Спецификация требует, чтобы каждый следующий сертификат заверял предыдущий.",
+    "server_cert": "deep.pem",
+    "server_key": "deep.key",
+    "chain": [
+      "deep-ca1.pem",
+      "deep-ca2.pem"
+    ]
+  }
+]

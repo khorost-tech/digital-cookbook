@@ -1,0 +1,181 @@
+{
+  "environment": {
+    "platform": "linux",
+    "platform_full": "Linux-5.15.167.4-microsoft-standard-WSL2-x86_64-with-glibc2.39",
+    "python": "3.12.3",
+    "go_version": "go version go1.27.0 linux/amd64"
+  },
+  "not_compared": [
+    "go_version"
+  ],
+  "values": {
+    "chain_cells": 40,
+    "chain_cases": 10,
+    "chain_clients": 4,
+    "chain_outcomes": {
+      "valid": "connected",
+      "no_intermediate": "rejected",
+      "expired": "rejected",
+      "not_yet_valid": "rejected",
+      "wrong_san": "rejected",
+      "self_signed": "rejected",
+      "other_ca": "rejected",
+      "revoked": "connected",
+      "deep_valid": "connected",
+      "deep_wrong_order": "connected"
+    },
+    "distinct_reasons": {
+      "curl": 6,
+      "go": 4,
+      "java": 4,
+      "openssl": 6
+    },
+    "mutual_rows": 16,
+    "mutual_outcomes": {
+      "mutual_valid/openssl": "connected",
+      "mutual_valid/curl": "connected",
+      "mutual_valid/go": "connected",
+      "mutual_valid/java": "connected",
+      "mutual_none/openssl": "rejected",
+      "mutual_none/curl": "rejected",
+      "mutual_none/go": "rejected",
+      "mutual_none/java": "rejected",
+      "mutual_expired/openssl": "rejected",
+      "mutual_expired/curl": "rejected",
+      "mutual_expired/go": "rejected",
+      "mutual_expired/java": "rejected",
+      "mutual_other_ca/openssl": "rejected",
+      "mutual_other_ca/curl": "rejected",
+      "mutual_other_ca/go": "rejected",
+      "mutual_other_ca/java": "rejected"
+    },
+    "wire_bytes": {
+      "openssl": 1552,
+      "curl": 1567,
+      "go": 1514,
+      "java": 447
+    },
+    "wire_name_offset": {
+      "openssl": 156,
+      "curl": 156,
+      "go": 117,
+      "java": 153
+    },
+    "wire_alpn": {
+      "openssl": [],
+      "curl": [
+        "h2",
+        "http/1.1"
+      ],
+      "go": [],
+      "java": []
+    },
+    "wire_versions": {
+      "openssl": [
+        "TLS 1.0",
+        "TLS 1.2",
+        [
+          "TLS 1.3",
+          "TLS 1.2"
+        ]
+      ],
+      "curl": [
+        "TLS 1.0",
+        "TLS 1.2",
+        [
+          "TLS 1.3",
+          "TLS 1.2"
+        ]
+      ],
+      "go": [
+        "TLS 1.0",
+        "TLS 1.2",
+        [
+          "TLS 1.3",
+          "TLS 1.2"
+        ]
+      ],
+      "java": [
+        "TLS 1.2",
+        "TLS 1.2",
+        [
+          "TLS 1.3",
+          "TLS 1.2"
+        ]
+      ]
+    },
+    "ech_supported": 1,
+    "ech_by_client": {
+      "openssl": false,
+      "curl": false,
+      "go": true,
+      "java": false
+    },
+    "tls_stacks": {
+      "openssl": "OpenSSL",
+      "curl": "OpenSSL",
+      "go": "Go crypto/tls",
+      "java": "Java JSSE"
+    },
+    "tls_stack_versions": {
+      "openssl": "OpenSSL 3.5.8",
+      "curl": "OpenSSL 3.5.4",
+      "go": "Go 1.27.0",
+      "java": "Java 25.0.3"
+    },
+    "distinct_stacks": 3,
+    "downgrade_mark": "444f574e47524401",
+    "downgrade_control_has_mark": false,
+    "plaintext_certificate": {
+      "negotiated_13": 0,
+      "negotiated_12": 1693
+    },
+    "hidden_record_max": 1719,
+    "handshake": {
+      "full_13": {
+        "messages": 7,
+        "flights": 3,
+        "composition": [
+          "клиент: ClientHello",
+          "сервер: ServerHello",
+          "сервер: EncryptedExtensions",
+          "сервер: Certificate",
+          "сервер: CertificateVerify",
+          "сервер: Finished",
+          "клиент: Finished"
+        ]
+      },
+      "full_12": {
+        "messages": 8,
+        "flights": 4,
+        "composition": [
+          "клиент: ClientHello",
+          "сервер: ServerHello",
+          "сервер: Certificate",
+          "сервер: ServerKeyExchange",
+          "сервер: ServerHelloDone",
+          "клиент: ClientKeyExchange",
+          "клиент: Finished",
+          "сервер: Finished"
+        ]
+      },
+      "resumed_13": {
+        "messages": 5,
+        "flights": 3,
+        "composition": [
+          "клиент: ClientHello",
+          "сервер: ServerHello",
+          "сервер: EncryptedExtensions",
+          "сервер: Finished",
+          "клиент: Finished"
+        ]
+      }
+    },
+    "revocation": {
+      "revoked": "connected",
+      "revoked_with_crl": "rejected",
+      "valid": "connected",
+      "valid_with_crl": "connected"
+    }
+  }
+}

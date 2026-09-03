@@ -1,0 +1,64 @@
+# Стенд к серии «Стриминг и обработка данных» (messaging/data-streaming).
+# Сквозная цепочка: PG → Kafka Connect(Debezium) → Kafka → Kafka Streams → Go-консьюмер → ClickHouse.
+# Порты смещены, чтобы не конфликтовать с соседними стендами.
+services:
+  postgres:
+    image: postgres:18.4
+    container_name: ds-postgres
+    environment:
+      POSTGRES_USER: shop
+      POSTGRES_PASSWORD: shop
+      POSTGRES_DB: shop
+    # wal_level=logical — обязательное условие логической репликации (её механика — в
+    # серии «WAL и его аналоги», здесь только включаем).
+    command: ["postgres", "-c", "wal_level=logical", "-c", "max_replication_slots=4", "-c", "max_wal_senders=4"]
+    ports: ["5455:5432"]
+    volumes:
+      - ../sql/01-postgres.sql:/docker-entrypoint-initdb.d/01-postgres.sql:ro
+
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: ds-kafka
+    ports: ["9096:9094"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,HOST://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092,HOST://localhost:9096
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,HOST:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      # single-node: все репликации = 1, иначе транзакции/оффсеты/changelog не поднимутся
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+
+  connect:
+    image: quay.io/debezium/connect:3.6.0.Final
+    container_name: ds-connect
+    depends_on: [kafka, postgres]
+    ports: ["8084:8083"]
+    environment:
+      BOOTSTRAP_SERVERS: kafka:9092
+      GROUP_ID: ds-connect
+      CONFIG_STORAGE_TOPIC: connect_configs
+      OFFSET_STORAGE_TOPIC: connect_offsets
+      STATUS_STORAGE_TOPIC: connect_statuses
+      # single-node: иначе служебные топики Connect не создадутся
+      CONFIG_STORAGE_REPLICATION_FACTOR: 1
+      OFFSET_STORAGE_REPLICATION_FACTOR: 1
+      STATUS_STORAGE_REPLICATION_FACTOR: 1
+
+  clickhouse:
+    image: clickhouse/clickhouse-server:26.6.1.1193
+    container_name: ds-clickhouse
+    ports: ["8125:8123", "9001:9000"]
+    environment:
+      CLICKHOUSE_USER: ds
+      CLICKHOUSE_PASSWORD: ds
+      CLICKHOUSE_DB: ds
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    volumes:
+      - ../sql/02-clickhouse.sql:/docker-entrypoint-initdb.d/02-clickhouse.sql:ro

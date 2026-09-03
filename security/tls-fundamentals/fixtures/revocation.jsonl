@@ -1,0 +1,5 @@
+{"kind":"revocation","case":"revoked","client":"openssl","outcome":"connected","detail":"","handshake_ok":true}
+{"kind":"revocation","case":"revoked_with_crl","client":"openssl","outcome":"rejected","detail":"verify error:num=23:certificate revoked","handshake_ok":true}
+{"kind":"revocation","case":"valid","client":"openssl","outcome":"connected","detail":"","handshake_ok":true}
+{"kind":"revocation","case":"valid_with_crl","client":"openssl","outcome":"connected","detail":"","handshake_ok":true}
+COMPLETE

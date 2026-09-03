@@ -1,0 +1,23 @@
+# Порождаемое: сертификаты и ключи выпускаются pki/make-certs.sh.
+# Закрытые ключи не коммитятся даже учебные — в публичном репозитории
+# им не место, а воспроизвести их можно одной командой.
+pki/*.pem
+pki/*.key
+pki/*.crt
+pki/*.csr
+pki/*.srl
+pki/db/
+server/server
+server/server.exe
+clients/go/probe
+clients/go/probe.exe
+pki/.trust-with-crl.pem
+fixtures/.java-probe.err
+fixtures/.request.txt
+wire/recorder
+wire/recorder.exe
+fixtures/.hello-*.hex
+fixtures/.server-*.hex
+fixtures/.echcheck/
+fixtures/.echcheck-java/
+fixtures/.session.pem

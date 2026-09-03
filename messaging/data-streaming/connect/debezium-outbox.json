@@ -1,0 +1,27 @@
+{
+  "name": "ds-outbox-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "shop",
+    "database.password": "shop",
+    "database.dbname": "shop",
+    "topic.prefix": "ds",
+    "plugin.name": "pgoutput",
+    "publication.name": "dbz_pub",
+    "slot.name": "ds_slot",
+    "table.include.list": "public.outbox",
+    "snapshot.mode": "initial",
+    "transforms": "outbox",
+    "transforms.outbox.type": "io.debezium.transforms.outbox.EventRouter",
+    "transforms.outbox.route.by.field": "aggregatetype",
+    "transforms.outbox.route.topic.replacement": "${routedByValue}.events",
+    "transforms.outbox.table.field.event.key": "aggregateid",
+    "transforms.outbox.table.field.event.payload": "payload",
+    "transforms.outbox.table.expand.json.payload": "true",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter"
+  }
+}

@@ -175,6 +175,9 @@
     "lang/brainfuck": [
       "lang/turing-completeness-and-expressiveness.md"
     ],
+    "messaging/data-streaming": [
+      "messaging/cdc-debezium-postgres-kafka.md"
+    ],
     "messaging/flink": [
       "messaging/flink-datastream-api.md",
       "messaging/flink-model-event-time-watermarks.md",
@@ -243,6 +246,9 @@
     ],
     "security/pixelsmash": [
       "security/pixelsmash-ffmpeg.md"
+    ],
+    "security/tls-fundamentals": [
+      "security/tls-fundamentals.md"
     ],
     "security/untrusted-input": [
       "security/silent-memory-corruption-detection.md",

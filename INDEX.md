@@ -38,6 +38,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
+| [`messaging/data-streaming`](messaging/data-streaming) | Сквозной пайплайн: PostgreSQL → Debezium/Kafka Connect → Kafka → Kafka Streams → ClickHouse | 🔜 скоро |
 | [`messaging/flink`](messaging/flink) | Apache Flink 1.20 через Flink SQL: event-time, state, exactly-once | [статья](https://khorost.tech/messaging/flink-model-event-time-watermarks/) |
 | [`messaging/kafka`](messaging/kafka) | Kafka: глубокое погружение (клиенты, ecosystem, MM2, ops, EOS) | [статья](https://khorost.tech/messaging/) |
 | [`messaging/nats`](messaging/nats) | NATS 2.12: Core, JetStream, кластер, гео, безопасность, клиенты | [статья](https://khorost.tech/messaging/nats-core-subjects-request-reply/) |
@@ -111,6 +112,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`security/pixelsmash`](security/pixelsmash) | CVE-2026-8461 в декодерах FFmpeg: оборонительный стенд — аудит-скрипты и песочница для декодирования недоверенного видео | [статья](https://khorost.tech/security/pixelsmash-ffmpeg/) |
+| [`security/tls-fundamentals`](security/tls-fundamentals) | Фундамент TLS: матрица сломов цепочки доверия на четырёх клиентах, взаимное рукопожатие, имя сервера открытым текстом до шифрования, метка о понижении версии, число сообщений в 1.2 против 1.3 | 🔜 скоро |
 | [`security/untrusted-input`](security/untrusted-input) | Недоверенный ввод: инвентаризация источников, обнаружение тихого повреждения данных и трёхролевой конвейер обработки файлов с изоляцией | [статья](https://khorost.tech/security/vendored-dependencies-blind-spot/) |
 
 ## Languages
