@@ -22,6 +22,7 @@
       "architecture/saga-in-practice.md"
     ],
     "architecture/serialization-formats": [
+      "architecture/schema-evolution-avro-protobuf-traps.md",
       "architecture/serialization-formats-json-avro-protobuf.md"
     ],
     "architecture/temporal": [
@@ -79,6 +80,7 @@
       "databases/redis-clients-go-java-rust.md",
       "databases/redis-data-model-structures-deep.md",
       "databases/redis-persistence-rdb-aof.md",
+      "databases/redis-replication-cluster-sentinel.md",
       "databases/redis-single-threaded-event-loop.md"
     ],
     "databases/scylladb": [
@@ -176,7 +178,8 @@
       "lang/turing-completeness-and-expressiveness.md"
     ],
     "messaging/data-streaming": [
-      "messaging/cdc-debezium-postgres-kafka.md"
+      "messaging/cdc-debezium-postgres-kafka.md",
+      "messaging/stream-processing-kafka-streams-flink.md"
     ],
     "messaging/flink": [
       "messaging/flink-datastream-api.md",
