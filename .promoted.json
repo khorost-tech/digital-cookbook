@@ -79,6 +79,7 @@
     "databases/redis": [
       "databases/redis-clients-go-java-rust.md",
       "databases/redis-data-model-structures-deep.md",
+      "databases/redis-memory-eviction.md",
       "databases/redis-persistence-rdb-aof.md",
       "databases/redis-replication-cluster-sentinel.md",
       "databases/redis-single-threaded-event-loop.md"
@@ -179,6 +180,7 @@
     ],
     "messaging/data-streaming": [
       "messaging/cdc-debezium-postgres-kafka.md",
+      "messaging/event-pipelines-design.md",
       "messaging/stream-processing-kafka-streams-flink.md"
     ],
     "messaging/flink": [
