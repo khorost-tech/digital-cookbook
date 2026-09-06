@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 470 108" role="img" aria-label="khorost.tech">
+  <!-- Ретрофутуристская орбитальная марка в духе журнала «Полдень. XXI век»:
+       тонкие линии, приглушённая офсетная палитра (чернильно-серый + терракота). -->
+  <g fill="none" stroke="#2b2b2b" stroke-width="1.6">
+    <circle cx="54" cy="54" r="30"/>
+    <ellipse cx="54" cy="54" rx="46" ry="15" transform="rotate(-22 54 54)" stroke="#b4552d" stroke-width="1.4"/>
+  </g>
+  <circle cx="54" cy="54" r="11" fill="#b4552d"/>
+  <circle cx="54" cy="54" r="4.5" fill="#f3ecdc"/>
+  <!-- спутник на орбите -->
+  <circle cx="94" cy="30" r="3.2" fill="#2b2b2b"/>
+  <!-- тонкая осевая линия -->
+  <line x1="120" y1="20" x2="120" y2="88" stroke="#2b2b2b" stroke-width="1"/>
+  <text x="138" y="52" font-family="'Work Sans','Helvetica Neue',Arial,sans-serif" font-size="34" font-weight="700" letter-spacing="1.5" fill="#2b2b2b">khorost<tspan fill="#b4552d">.tech</tspan></text>
+  <text x="139" y="80" font-family="'Instrument Sans','Helvetica Neue',Arial,sans-serif" font-size="13" letter-spacing="7.5" fill="#6a6058">I D P · K E Y C L O A K</text>
+</svg>

@@ -4,7 +4,7 @@
 
 | Стенд | Описание | Статья |
 |---|---|---|
-| [`data-streaming/`](data-streaming/) | Сквозной пайплайн: PostgreSQL → Debezium/Kafka Connect → Kafka → Kafka Streams → ClickHouse | 🔜 скоро |
+| [`data-streaming/`](data-streaming/) | Сквозной пайплайн: PostgreSQL → Debezium/Kafka Connect → Kafka → Kafka Streams → ClickHouse | [статья](https://khorost.tech/messaging/streaming-pipeline-cdc-to-clickhouse/) |
 | [`flink/`](flink/) | Apache Flink 1.20 через Flink SQL: event-time, state, exactly-once | [статья](https://khorost.tech/messaging/flink-model-event-time-watermarks/) |
 | [`kafka/`](kafka/) | Kafka: глубокое погружение (клиенты, ecosystem, MM2, ops, EOS) | [статья](https://khorost.tech/messaging/) |
 | [`nats/`](nats/) | NATS 2.12: Core, JetStream, кластер, гео, безопасность, клиенты | [статья](https://khorost.tech/messaging/nats-core-subjects-request-reply/) |

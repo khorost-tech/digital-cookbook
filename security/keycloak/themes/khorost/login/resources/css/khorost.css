@@ -1,0 +1,161 @@
+/* khorost.tech login theme — брендинг поверх штатной темы keycloak.
+   Стилистика сайта: советский sci-fi журнал «Полдень. XXI век» —
+   кремово-бежевый фон, тонкие линии, геометрическая чистота,
+   приглушённая офсетная палитра (чернильно-серый + терракота). */
+
+:root {
+    --kh-bg:        #ece3d0;   /* кремово-бежевый фон страницы */
+    --kh-card:      #f7f2e7;   /* тёплая бумага карточки */
+    --kh-ink:       #2b2b2b;   /* чернильный текст */
+    --kh-muted:     #6a6058;   /* приглушённый вторичный */
+    --kh-line:      #d3c7ae;   /* тонкие линии/бордюры */
+    --kh-accent:    #b4552d;   /* терракота — акцент */
+    --kh-accent-2:  #9a4522;   /* терракота hover */
+
+    /* Шрифты — ЧЕСТНО системный стек. Брендовые шрифты сайта (Work Sans / Instrument
+       Sans) требуют бинарных .woff2, которые мы НЕ тащим в репо стенда; @font-face здесь
+       нет, поэтому указываем только реально доступные системные семейства. Стиль
+       «Полдень» держится на палитре, тонких линиях и геометрии, а не на гарнитуре.
+       --kh-font-display чуть плотнее (гротеск) для заголовков/кнопок — но тоже системный. */
+    --kh-font-sans:    system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --kh-font-display: "Segoe UI", system-ui, -apple-system, Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* --- Фон страницы: заменяем дефолтную картинку Keycloak на кремовый офсет --- */
+.login-pf {
+    background: none;
+}
+.login-pf body {
+    background: var(--kh-bg);
+    /* еле заметная «сетка чертежа» — тонкие линии, чистая геометрия */
+    background-image:
+        repeating-linear-gradient(0deg,  rgba(43,43,43,0.035) 0 1px, transparent 1px 40px),
+        repeating-linear-gradient(90deg, rgba(43,43,43,0.035) 0 1px, transparent 1px 40px);
+    color: var(--kh-ink);
+    font-family: var(--kh-font-sans);
+}
+
+/* --- Шапка: логотип khorost.tech (SVG) вместо пустого заголовка realm --- */
+#kc-header {
+    color: var(--kh-ink);
+}
+#kc-header-wrapper {
+    background-image: url("../img/khorost-logo.svg");
+    background-repeat: no-repeat;
+    background-position: center bottom;
+    background-size: contain;
+    height: 96px;
+    padding: 30px 10px 6px;
+    font-size: 0;              /* прячем возможный текст realm.displayName */
+    letter-spacing: 0;
+}
+
+/* --- Карточка формы: тёплая бумага, тонкая рамка, терракотовая линия сверху --- */
+.card-pf {
+    background: var(--kh-card);
+    border: 1px solid var(--kh-line);
+    border-top: 3px solid var(--kh-accent);
+    border-radius: 0;                       /* геометрическая чистота — без скруглений */
+    box-shadow: 0 18px 40px -24px rgba(43,43,43,0.45);
+    max-width: 480px;
+}
+
+/* Заголовок формы («Sign in — khorost.tech») */
+h1#kc-page-title {
+    font-family: var(--kh-font-display);
+    font-weight: 700;
+    font-size: 22px;
+    letter-spacing: 0.5px;
+    color: var(--kh-ink);
+    text-transform: none;
+}
+
+/* --- Поля ввода: бумажный фон, тонкая линия, острые углы, терракотовый фокус --- */
+.pf-c-form-control,
+input.pf-c-form-control {
+    background-color: #fffdf8;
+    border: 1px solid var(--kh-line);
+    border-radius: 0;
+    color: var(--kh-ink);
+}
+.pf-c-form-control:focus,
+input.pf-c-form-control:focus {
+    border-color: var(--kh-accent);
+    box-shadow: 0 0 0 1px var(--kh-accent);
+    outline: none;
+}
+.pf-c-form__label,
+label {
+    color: var(--kh-muted);
+    letter-spacing: 0.3px;
+}
+
+/* --- Кнопка входа: сплошная терракота, капитель, острые углы --- */
+.pf-c-button.pf-m-primary,
+input.pf-c-button.pf-m-primary {
+    background-color: var(--kh-accent);
+    border: 1px solid var(--kh-accent);
+    border-radius: 0;
+    color: #fbf7ee;
+    font-family: var(--kh-font-display);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    transition: background-color 0.15s ease;
+}
+.pf-c-button.pf-m-primary:hover,
+.pf-c-button.pf-m-primary:focus {
+    background-color: var(--kh-accent-2);
+    border-color: var(--kh-accent-2);
+    color: #fff;
+}
+
+/* Вторичные кнопки / control (напр. переключатель видимости пароля, соц-провайдеры) */
+.pf-c-button.pf-m-control {
+    border-radius: 0;
+    border-color: var(--kh-line);
+    background-color: #fffdf8;
+    color: var(--kh-ink);
+}
+
+/* --- Ссылки --- */
+a {
+    color: var(--kh-accent);
+}
+a:hover,
+.login-pf a:hover {
+    color: var(--kh-accent-2);
+}
+
+/* --- Блок внешних провайдеров (identity brokering — Mock OIDC/Яндекс/VK) --- */
+.kc-social-links {
+    border-top: 1px solid var(--kh-line);
+    padding-top: 14px;
+}
+.pf-c-login__main-footer-links {
+    margin-top: 16px;
+}
+
+/* Нижний информационный блок (регистрация / сброс пароля) */
+#kc-info-wrapper {
+    background-color: #efe7d5;
+    border-top: 1px solid var(--kh-line);
+    color: var(--kh-muted);
+}
+
+/* Чекбокс «запомнить меня» и мелкие подписи */
+#kc-form-options .checkbox,
+.login-pf-page .login-pf-signup {
+    color: var(--kh-muted);
+}
+
+/* На узких экранах шапка-логотип чуть меньше */
+@media (max-width: 767px) {
+    .login-pf body {
+        background: var(--kh-bg);
+    }
+    #kc-header-wrapper {
+        height: 64px;
+        padding: 16px 10px 4px;
+    }
+}

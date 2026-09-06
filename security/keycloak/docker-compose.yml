@@ -1,0 +1,171 @@
+# Keycloak + PostgreSQL — базовый dev-стенд (Фаза 1, Task 1).
+# Keycloak в dev-режиме (start-dev), но с внешним PostgreSQL и импортом realm
+# на старте. Все креды здесь — demo-only, не для production (см. docker-compose.prod.yml).
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak   # demo-only
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  keycloak:
+    # Пиновка точного тега (мажор 26.x, Quarkus-based). Определён в Task 1 через
+    # `docker pull quay.io/keycloak/keycloak:latest` → org.opencontainers.image.version=26.7.0.
+    image: quay.io/keycloak/keycloak:26.7.0
+    command: ["start-dev", "--import-realm", "--health-enabled=true", "--metrics-enabled=true"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin      # demo-only
+      # Фиксируем issuer, чтобы он совпадал и снаружи (curl с хоста через
+      # проброшенный порт), и внутри docker-сети. Без этого start-dev строит iss
+      # по Host заголовку запроса: токен, взятый с хоста (localhost:8080), получал
+      # бы iss=http://localhost:8080/... и не проходил проверку в backend, который
+      # делает discovery по http://keycloak:8080/... . hostname-strict в start-dev
+      # выключен, поэтому токен-эндпоинт остаётся доступным и по localhost.
+      KC_HOSTNAME: http://keycloak:8080
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_HEALTH_ENABLED: "true"
+      KC_METRICS_ENABLED: "true"
+      KC_HTTP_MANAGEMENT_PORT: "9000"
+    ports:
+      - "8080:8080"   # auth (OIDC/OAuth2 endpoints, admin UI)
+      - "9000:9000"   # management (health, metrics)
+    volumes:
+      - ./realm:/opt/keycloak/data/import:ro
+      # Кастомная login-тема khorost.tech (Task 6). В start-dev темы не кешируются
+      # (spi-theme-default-cache-themes=false), поэтому правки CSS/шаблонов видны
+      # после обычного F5 без пересборки образа. Realm demo ссылается на неё
+      # полем loginTheme=khorost (см. realm/demo-realm.json).
+      - ./themes:/opt/keycloak/themes:ro
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      # В minimal-образе Keycloak нет curl/wget, но есть bash (5.1.8) и grep.
+      # Проверяем /health/ready на management-порту 9000 через bash /dev/tcp.
+      # Connection: close → сервер закрывает сокет, grep читает до EOF.
+      test:
+        - "CMD"
+        - "bash"
+        - "-c"
+        - "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q '\"status\": \"UP\"' <&3"
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # Go OIDC resource server (Task 3). Валидирует access-токены Keycloak по JWKS
+  # (по умолчанию) или через introspection и разграничивает доступ по realm-ролям.
+  backend-go:
+    build: ./backend/go
+    environment:
+      KC_ISSUER: http://keycloak:8080/realms/demo
+      KC_AUDIENCE: backend
+      AUTH_MODE: jwks            # jwks | introspect
+      # Для AUTH_MODE=introspect раскомментируйте секрет confidential-клиента backend:
+      # KC_BACKEND_SECRET: JnlAr36EvUG2oyYX81vZx9x6pSaHymUJ323RsSbdaVjTaz4zVOZRgYgGxiZaDJ1CTCqyYYrrX5ZN5B6jCQxONm
+    ports:
+      - "8081:8081"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - "CMD"
+        - "wget"
+        - "-qO-"
+        - "http://127.0.0.1:8081/healthz"
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+  # Spring Boot OIDC resource server (Task 4) — зеркало Go-сервиса на :8082.
+  # Тот же контракт: /public (без токена), /me (валидный токен), /admin (роль admin).
+  # Валидация JWKS локально + aud=backend; realm_access.roles → ROLE_<role>.
+  backend-java:
+    build: ./backend/java
+    environment:
+      KC_ISSUER: http://keycloak:8080/realms/demo
+      KC_AUDIENCE: backend
+    ports:
+      - "8082:8082"
+    depends_on:
+      keycloak:
+        condition: service_healthy
+    healthcheck:
+      # Actuator health на 8082. В eclipse-temurin:21-jre (Ubuntu) нет curl/wget,
+      # но есть bash — проверяем /actuator/health через bash /dev/tcp, как у keycloak.
+      test:
+        - "CMD"
+        - "bash"
+        - "-c"
+        - "exec 3<>/dev/tcp/127.0.0.1/8082; printf 'GET /actuator/health HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3; grep -q '\"status\":\"UP\"' <&3"
+      interval: 10s
+      timeout: 5s
+      retries: 20
+      start_period: 40s
+
+  # Внешний OIDC-провайдер (Task 5) — стенд-заглушка ghcr.io/navikt/mock-oauth2-server.
+  # Играет роль стороннего IdP (Яндекс/VK/корпоративный OIDC), к которому Keycloak
+  # подключается как identity broker. Отдаёт полноценный OIDC discovery + JWKS.
+  #
+  # Ключевой нюанс issuer/hostname (тот же класс проблемы, что с KC_HOSTNAME в Task 3):
+  # mock-oauth2-server выводит issuer/endpoints из Host-заголовка запроса. Keycloak ходит
+  # к token/jwks СЕРВЕРНО по docker-hostname (mock-oidc:8083) → iss=http://mock-oidc:8083/default;
+  # браузер же ходит к authorization endpoint с ХОСТА по localhost:8083. Поэтому в realm
+  # identity provider настроен НЕ через discovery, а явными URL с разными хостами:
+  #   authorizationUrl = http://localhost:8083/default/authorize   (браузер, хост)
+  #   tokenUrl/jwksUrl/userInfoUrl = http://mock-oidc:8083/default/*  (Keycloak, docker-сеть)
+  #   issuer           = http://mock-oidc:8083/default              (совпадает с iss серверного токена)
+  # SERVER_PORT=8083 фиксирует порт и внутри контейнера, чтобы localhost:8083 и mock-oidc:8083
+  # указывали на один и тот же порт (иначе iss содержал бы 8080).
+  #
+  # config.json (JSON_CONFIG_PATH): interactiveLogin=false → /authorize сразу редиректит с кодом
+  # (неинтерактивный brokered-логин для broker-demo.sh); tokenCallbacks задаёт фиксированные
+  # claim'ы внешнего пользователя (sub/email/preferred_username/given_name/family_name),
+  # которые Keycloak маппит в brokered-пользователя. Все данные — demo-only.
+  mock-oidc:
+    image: ghcr.io/navikt/mock-oauth2-server:2.1.10
+    environment:
+      SERVER_PORT: "8083"
+      JSON_CONFIG_PATH: /config/config.json
+    volumes:
+      - ./mock-oidc:/config:ro
+    ports:
+      - "8083:8083"
+    # Без container-healthcheck: образ mock-oauth2-server — distroless (нет bash/sh/curl/wget),
+    # поэтому CMD-SHELL/bash-проверка невозможна. Готовность проверяется снаружи — из
+    # broker-demo.sh поллингом discovery (http://localhost:8083/default/.well-known/openid-configuration).
+    # Сервер стартует за ~1–2 с; ни один сервис на его health не завязан (Keycloak обращается
+    # к IdP лениво, только при brokered-логине).
+
+  # Нагрузчик (Task 7) — сравнение AUTH_MODE=jwks vs introspect по latency и по
+  # числу обращений к Keycloak. Под профилем `bench`: обычный `docker compose up`
+  # его НЕ поднимает; запускается точечно из scripts/bench.sh через
+  # `docker compose --profile bench run --rm bench <флаги>`. Работает ВНУТРИ сети
+  # стенда (backend-go:8081, keycloak:8080) — так latency/стабильность не искажает
+  # NAT Docker Desktop на Windows (с хоста первые коннекты к :8081 дают 000).
+  bench:
+    build: ./bench
+    profiles: ["bench"]
+    depends_on:
+      backend-go:
+        condition: service_healthy
+    # Флаги передаются из bench.sh (docker compose run bench <флаги>); токен — через
+    # env BENCH_TOKEN (-token читает его), url по умолчанию http://backend-go:8081/me.
+    entrypoint: ["/bench", "-url", "http://backend-go:8081/me"]
+
+volumes:
+  pgdata:

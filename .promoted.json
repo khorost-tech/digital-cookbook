@@ -29,7 +29,8 @@
       "architecture/temporal-durable-workflows.md"
     ],
     "architecture/testing": [
-      "architecture/flaky-tests-diagnose-and-fix.md"
+      "architecture/flaky-tests-diagnose-and-fix.md",
+      "architecture/testing-across-languages.md"
     ],
     "databases/citus": [
       "databases/sharding-in-production.md"
@@ -248,6 +249,9 @@
     ],
     "rust/web-frameworks": [
       "rust/rust-web-frameworks.md"
+    ],
+    "security/keycloak": [
+      "security/keycloak-when-to-use-idp.md"
     ],
     "security/pixelsmash": [
       "security/pixelsmash-ffmpeg.md"

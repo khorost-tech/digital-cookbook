@@ -1,0 +1,31 @@
+# Spring Boot resource server — зеркало Go-сервиса (backend/go).
+# Конфигурация только через env-vars (KC_ISSUER, KC_AUDIENCE), как в Go.
+server:
+  port: 8082
+
+spring:
+  application:
+    name: keycloak-demo
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          # issuer зафиксирован: iss токена = http://keycloak:8080/realms/demo
+          # и снаружи (проброшенный порт), и внутри docker-сети (KC_HOSTNAME).
+          # JWKS подтягивается лениво из discovery по issuer (см. SecurityConfig).
+          issuer-uri: ${KC_ISSUER:http://keycloak:8080/realms/demo}
+
+# aud должен содержать backend (валидируется AudienceValidator — зеркало Go: aud=backend).
+kc:
+  audience: ${KC_AUDIENCE:backend}
+
+# Actuator: только health, для healthcheck compose (/actuator/health).
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      probes:
+        enabled: true

@@ -1,0 +1,24 @@
+{
+  "interactiveLogin": false,
+  "httpServer": "NettyWrapper",
+  "tokenCallbacks": [
+    {
+      "issuerId": "default",
+      "requestMappings": [
+        {
+          "requestParam": "grant_type",
+          "match": "authorization_code",
+          "claims": {
+            "sub": "ext-user-01",
+            "preferred_username": "ext-yandex-demo",
+            "email": "ext.user@yandex.mock",
+            "email_verified": true,
+            "given_name": "Внешний",
+            "family_name": "Пользователь",
+            "name": "Внешний Пользователь"
+          }
+        }
+      ]
+    }
+  ]
+}

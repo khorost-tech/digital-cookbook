@@ -1,0 +1,13 @@
+# Оверлей для Task 7: переводит backend-go в режим introspection (RFC 7662).
+# Применяется поверх базового docker-compose.yml только на время introspect-прогона:
+#   docker compose -f docker-compose.yml -f bench/compose.introspect.yml up -d \
+#       --force-recreate --no-deps backend-go
+# После замера backend-go возвращается в jwks-режим обычным `docker compose up -d
+# --force-recreate --no-deps backend-go` (без этого оверлея). scripts/bench.sh делает
+# оба переключения сам. Секрет confidential-клиента backend передаётся через env
+# KC_BACKEND_SECRET (bench.sh извлекает его из realm/demo-realm.json) — demo-only.
+services:
+  backend-go:
+    environment:
+      AUTH_MODE: introspect
+      KC_BACKEND_SECRET: ${KC_BACKEND_SECRET:?export KC_BACKEND_SECRET (см. bench.sh)}

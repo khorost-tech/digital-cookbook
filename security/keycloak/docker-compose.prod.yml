@@ -1,0 +1,154 @@
+# Production-топология Keycloak (статья 5, HA/кластер). НЕ dev: реплики стартуют в
+# режиме `start --optimized` (аугментация Quarkus запечена в образ на build-стадии,
+# см. prod/Dockerfile), за nginx-LB, по HTTPS, с включёнными health/metrics.
+#
+# Ключевые отличия от docker-compose.yml (dev):
+#   - `start --optimized` вместо `start-dev`;
+#   - HTTPS на самих репликах (KC_HTTPS_CERTIFICATE_FILE) + KC_PROXY_HEADERS=xforwarded;
+#   - 2 реплики Keycloak, образующие Infinispan-кластер;
+#   - discovery узлов JGroups — JDBC_PING (дефолт Keycloak 26.2+): обе ноды находят
+#     друг друга через таблицу в общей БД, без JGroups-портов и multicast;
+#   - distributed-кэш сессий (cache=ispn) → SSO-сессия видна на обеих репликах;
+#   - nginx как L7-LB с TLS-offload: терминирует TLS на :8443 и проксирует на реплики
+#     по HTTP keycloak-N:8080 (НЕ re-encrypt; см. nginx/keycloak-lb.conf, там же почему).
+#
+# Все креды/секреты здесь — demo-only. Серты генерируются certs/gen.sh (в .gitignore).
+#
+# ─────────────────────────────────────────────────────────────────────────────────
+# ЧЕСТНАЯ РАМКА ОТКАЗОУСТОЙЧИВОСТИ. Этот стенд демонстрирует кластеризацию Keycloak и
+# отказоустойчивость ВЫЧИСЛИТЕЛЬНОГО слоя: 2 реплики Keycloak в Infinispan-кластере
+# (JDBC_PING), с распределёнными сессиями — падение одной реплики не роняет вход.
+# Это НЕ полная HA всей системы:
+#   * postgres — ОДИН инстанс = SPOF (единая точка отказа): и данные realm, и таблица
+#     JDBC_PING живут в нём; его падение останавливает кластер. Для настоящей HA нужна
+#     реплицированная/HA-БД (Patroni + PgBouncer, Stolon или управляемый облачный
+#     PostgreSQL с автоfailover).
+#   * nginx — ОДИН инстанс LB = SPOF. Для настоящей HA балансировщик тоже должен быть
+#     отказоустойчивым: пара nginx/HAProxy с keepalived (VRRP/VIP), либо внешний
+#     облачный/аппаратный L4/L7-балансировщик.
+# Это осознанное упрощение: цель стенда — показать именно кластер Keycloak, а не
+# развернуть production-grade HA БД и сети (они вне рамок и тянут отдельную обвязку).
+# ─────────────────────────────────────────────────────────────────────────────────
+#
+# Запуск:  bash certs/gen.sh && docker compose -f docker-compose.prod.yml up -d --build
+# Стоп:    docker compose -f docker-compose.prod.yml down -v
+
+x-keycloak-common: &keycloak-common
+  build:
+    context: ./prod
+    dockerfile: Dockerfile
+    args:
+      KC_VERSION: "26.7.0"
+  # start (не start-dev) + --optimized (использовать запечённую сборку) + импорт realm.
+  command: ["start", "--optimized", "--import-realm"]
+  environment: &keycloak-env
+    KC_BOOTSTRAP_ADMIN_USERNAME: admin
+    KC_BOOTSTRAP_ADMIN_PASSWORD: admin            # demo-only
+    # Внешний адрес за LB. iss токенов и redirect_uri строятся по нему.
+    KC_HOSTNAME: https://localhost:8443
+    # За reverse-proxy (nginx): доверяем X-Forwarded-* (схема/хост/клиент).
+    KC_PROXY_HEADERS: xforwarded
+    # HTTPS-listener самой реплики (:8443) остаётся включён, но nginx на него НЕ ходит:
+    # LB делает TLS-offload и проксирует на HTTP :8080 (см. nginx/keycloak-lb.conf).
+    # Этот серт нужен для прямой проверки HTTPS реплики в обход LB (см. README/отчёт).
+    KC_HTTPS_CERTIFICATE_FILE: /opt/keycloak/certs/keycloak.crt.pem
+    KC_HTTPS_CERTIFICATE_KEY_FILE: /opt/keycloak/certs/keycloak.key.pem
+    # HTTP (8080) оставлен включённым: (1) management-интерфейс :9000 остаётся по HTTP,
+    # что упрощает healthcheck через bash /dev/tcp; (2) прямой доступ к token-эндпоинту
+    # реплики для проверки распределённой сессии (см. отчёт). В «жёстком» проде HTTP
+    # обычно выключают и оставляют только HTTPS+management.
+    KC_HTTP_ENABLED: "true"
+    KC_HTTP_MANAGEMENT_PORT: "9000"
+    # Management-интерфейс (health/metrics на :9000) — принудительно по HTTP, а не
+    # inherited: иначе при включённом KC_HTTPS_* он поднимается по HTTPS, и простой
+    # healthcheck через bash /dev/tcp (без TLS) не срабатывает. В проде порт 9000
+    # наружу не публикуется (только внутренние probe'ы/скрейп метрик).
+    KC_HTTP_MANAGEMENT_SCHEME: http
+    # Внешняя БД — единственный стейт (и данные realm, и таблица JDBC_PING для кластера).
+    KC_DB: postgres
+    KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+    KC_DB_USERNAME: keycloak
+    KC_DB_PASSWORD: keycloak                       # demo-only
+    KC_HEALTH_ENABLED: "true"
+    KC_METRICS_ENABLED: "true"
+    # cache=ispn запечён на build-стадии; discovery — JDBC_PING по умолчанию.
+    KC_CACHE: ispn
+  volumes:
+    - ./realm-prod:/opt/keycloak/data/import:ro
+    - ./themes:/opt/keycloak/themes:ro
+    - ./certs:/opt/keycloak/certs:ro
+  healthcheck:
+    # /health/ready на management-порту 9000 (HTTP) через bash /dev/tcp — как в dev.
+    test:
+      - "CMD"
+      - "bash"
+      - "-c"
+      - "exec 3<>/dev/tcp/127.0.0.1/9000; printf 'GET /health/ready HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n' >&3; grep -q '\"status\": \"UP\"' <&3"
+    interval: 10s
+    timeout: 5s
+    retries: 40
+    start_period: 30s
+
+services:
+  # SPOF (осознанно): единственный инстанс PostgreSQL — и стейт realm, и JDBC_PING
+  # кластера. Для настоящей HA заменить на реплицированную/HA-БД (Patroni, облачный
+  # PostgreSQL с автоfailover). Стенд демонстрирует HA compute-слоя Keycloak, не БД.
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: keycloak                  # demo-only
+    volumes:
+      - pgdata-prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  keycloak-1:
+    <<: *keycloak-common
+    container_name: kc-prod-1
+    depends_on:
+      postgres:
+        condition: service_healthy
+    # Прямой доступ к реплике 1 (в обход LB) — для проверки распределённой сессии
+    # и собственного HTTPS реплики (KC_HTTPS_*, порт 8443).
+    ports:
+      - "127.0.0.1:8491:8443"   # https token-эндпоинт реплики 1 (KC_HTTPS_*)
+      - "127.0.0.1:9001:9000"   # management (health/metrics) реплики 1
+
+  keycloak-2:
+    <<: *keycloak-common
+    container_name: kc-prod-2
+    # Стартует после healthy реплики 1: сериализует первичный --import-realm
+    # (второй увидит существующий realm и пропустит) и даёт реплике 1 первой
+    # поднять Infinispan-канал, к которому реплика 2 затем присоединяется.
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak-1:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8492:8443"   # https token-эндпоинт реплики 2 (KC_HTTPS_*)
+      - "127.0.0.1:9002:9000"   # management (health/metrics) реплики 2
+
+  # SPOF (осознанно): единственный инстанс LB. Он балансирует на 2 реплики Keycloak
+  # (compute-HA), но сам отказоустойчивым не является. Для настоящей HA — пара
+  # nginx/HAProxy с keepalived (VIP/VRRP) или внешний облачный/аппаратный балансировщик.
+  nginx:
+    image: nginx:1.27-alpine
+    depends_on:
+      keycloak-1:
+        condition: service_healthy
+      keycloak-2:
+        condition: service_healthy
+    volumes:
+      - ./nginx/keycloak-lb.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    ports:
+      - "8443:8443"             # внешний HTTPS-вход в кластер через LB
+
+volumes:
+  pgdata-prod:
