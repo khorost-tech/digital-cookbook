@@ -740,6 +740,113 @@ func evalVsFunction(ctx context.Context, rdb *redis.Client, swapOrder bool) {
 		evalStats.biasFactor(), fcallStats.biasFactor())
 }
 
+// evalVsFunctionPaired — ПАРНЫЙ замер с чередованием, альтернатива блочному
+// evalVsFunction.
+//
+// Зачем понадобился. Блочная схема (серия EVAL целиком, затем серия FCALL)
+// меряет разницу команд вместе с дрейфом среды: между двумя сериями проходят
+// секунды, а абсолют на этой платформе гуляет между сессиями в диапазоне
+// 334–396мкс. Заявленный эффект ~10мкс — это 2–3% от абсолюта, то есть втрое
+// меньше собственного дрейфа платформы. -swap-order отделяет позиционный
+// эффект, но НЕ дрейф: он усредняет по двум ориентациям, а не вычитает.
+// Итог предсказуем — знак дельты менялся от сессии к сессии.
+//
+// Что делает этот режим:
+//   - вместо двух длинных серий — k коротких ПАР батчей, идущих встык:
+//     батч EVAL, сразу батч FCALL (порядок внутри пары чередуется, чтобы
+//     позиция не осела в результате систематически);
+//   - разность считается ВНУТРИ пары, где среда одна и та же; итог — медиана
+//     разностей (а не разность средних, см. общий разбор в FIXTURES);
+//   - время меряется на батче целиком, а не на каждом вызове: батч из
+//     batchSize вызовов идёт десятки миллисекунд, поэтому артефакт часов
+//     (ровно нулевые замеры на микросекундных интервалах, 35–46% на этой
+//     платформе) на него не действует.
+//
+// Это устраняет обе причины невоспроизводимости сразу — дрейф и артефакт
+// часов, — оставляя ровно то, что и надо было измерить.
+func evalVsFunctionPaired(ctx context.Context, rdb *redis.Client, pairs, batchSize int) {
+	fmt.Println("=== eval-vs-function (парный режим: чередующиеся батчи) ===")
+	const warmup = 200
+	limit := int64(10_000_000)
+
+	fmt.Printf("методика: %d пар батчей по %d вызовов, порядок внутри пары чередуется, разность считается ВНУТРИ пары, итог — медиана разностей\n",
+		pairs, batchSize)
+
+	if _, err := rdb.FunctionLoadReplace(ctx, functionLibraryCode).Result(); err != nil {
+		fatalf("FUNCTION LOAD REPLACE: ошибка записи: %v", err)
+	}
+	must("SCRIPT FLUSH", rdb.ScriptFlush(ctx))
+
+	evalKey, fcallKey := "evalfn:eval", "evalfn:fcall"
+	must("DEL eval key", rdb.Del(ctx, evalKey))
+	must("DEL fcall key", rdb.Del(ctx, fcallKey))
+	must("SET eval key", rdb.Set(ctx, evalKey, 0, 0))
+	must("SET fcall key", rdb.Set(ctx, fcallKey, 0, 0))
+
+	evalBatch := func() time.Duration {
+		t0 := time.Now()
+		for i := 0; i < batchSize; i++ {
+			if err := rdb.Eval(ctx, conditionalIncrScript, []string{evalKey}, limit).Err(); err != nil {
+				fatalf("EVAL batch: ошибка записи: %v", err)
+			}
+		}
+		return time.Since(t0)
+	}
+	fcallBatch := func() time.Duration {
+		t0 := time.Now()
+		for i := 0; i < batchSize; i++ {
+			if err := rdb.FCall(ctx, functionName, []string{fcallKey}, limit).Err(); err != nil {
+				fatalf("FCALL batch: ошибка записи: %v", err)
+			}
+		}
+		return time.Since(t0)
+	}
+
+	// warmup: скрипт кешируется по SHA, соединение и пул выходят на режим
+	for i := 0; i < warmup; i++ {
+		if err := rdb.Eval(ctx, conditionalIncrScript, []string{evalKey}, limit).Err(); err != nil {
+			fatalf("warmup EVAL: %v", err)
+		}
+		if err := rdb.FCall(ctx, functionName, []string{fcallKey}, limit).Err(); err != nil {
+			fatalf("warmup FCALL: %v", err)
+		}
+	}
+
+	diffs := make([]time.Duration, 0, pairs)
+	for i := 0; i < pairs; i++ {
+		var evalDur, fcallDur time.Duration
+		if i%2 == 0 {
+			evalDur = evalBatch()
+			fcallDur = fcallBatch()
+		} else {
+			fcallDur = fcallBatch()
+			evalDur = evalBatch()
+		}
+		// на один вызов, чтобы число было сопоставимо с блочным режимом
+		d := (evalDur - fcallDur) / time.Duration(batchSize)
+		diffs = append(diffs, d)
+		fmt.Printf("пара %2d (%s первым): EVAL/вызов=%s FCALL/вызов=%s дельта=%s\n",
+			i+1, map[bool]string{true: "EVAL", false: "FCALL"}[i%2 == 0],
+			evalDur/time.Duration(batchSize), fcallDur/time.Duration(batchSize), d)
+	}
+
+	sorted := append([]time.Duration(nil), diffs...)
+	sort.Slice(sorted, func(a, b int) bool { return sorted[a] < sorted[b] })
+	median := sorted[len(sorted)/2]
+	if len(sorted)%2 == 0 {
+		median = (sorted[len(sorted)/2-1] + sorted[len(sorted)/2]) / 2
+	}
+	positive := 0
+	for _, d := range diffs {
+		if d > 0 {
+			positive++
+		}
+	}
+	fmt.Printf("ИТОГ (парный): медиана разностей (EVAL-FCALL) = %s; положительных пар %d/%d; диапазон [%s, %s]\n",
+		median, positive, len(diffs), sorted[0], sorted[len(sorted)-1])
+	fmt.Println("читать так: знак и величина медианы — это эффект команды, очищенный от дрейфа среды (он вычитается внутри пары); доля положительных пар показывает, устойчив ли знак")
+}
+
 // ---------------------------------------------------------------------------
 
 func main() {
@@ -749,6 +856,9 @@ func main() {
 	workers := flag.Int("workers", 20, "число горутин (race-without-lua / atomic-with-lua)")
 	iterations := flag.Int("iterations", 500, "итераций на горутину (race-without-lua / atomic-with-lua)")
 	swapOrder := flag.Bool("swap-order", false, "eval-vs-function: гонять серию FCALL до серии EVAL (обратная ориентация — отделяет эффект руки от эффекта порядка)")
+	paired := flag.Bool("paired", false, "eval-vs-function: парный режим — чередующиеся батчи, разность внутри пары, медиана разностей (снимает дрейф среды, которого не снимает -swap-order)")
+	pairs := flag.Int("pairs", 20, "eval-vs-function -paired: число пар батчей")
+	batchSize := flag.Int("batch-size", 500, "eval-vs-function -paired: вызовов в одном батче")
 	flag.Parse()
 
 	ctx := context.Background()
@@ -769,7 +879,11 @@ func main() {
 	case "atomic-with-lua":
 		runRace(ctx, rdb, "atomic-with-lua", "race:counter:lua", *workers, *iterations, true)
 	case "eval-vs-function":
-		evalVsFunction(ctx, rdb, *swapOrder)
+		if *paired {
+			evalVsFunctionPaired(ctx, rdb, *pairs, *batchSize)
+		} else {
+			evalVsFunction(ctx, rdb, *swapOrder)
+		}
 	default:
 		fmt.Fprintln(os.Stderr, "unknown -scenario, expected: consumer-groups | race-without-lua | atomic-with-lua | eval-vs-function")
 		os.Exit(1)
