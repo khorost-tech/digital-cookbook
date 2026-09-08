@@ -18,6 +18,9 @@
     "architecture/idempotency": [
       "architecture/delivery-guarantees-idempotency.md"
     ],
+    "architecture/resilience": [
+      "architecture/rate-limiting-throttling.md"
+    ],
     "architecture/saga": [
       "architecture/saga-in-practice.md"
     ],
@@ -82,6 +85,7 @@
       "databases/redis-clients-go-java-rust.md",
       "databases/redis-data-model-structures-deep.md",
       "databases/redis-memory-eviction.md",
+      "databases/redis-operations-and-decision.md",
       "databases/redis-persistence-rdb-aof.md",
       "databases/redis-replication-cluster-sentinel.md",
       "databases/redis-single-threaded-event-loop.md",

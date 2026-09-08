@@ -1,0 +1,4 @@
+# Стенд собирается в Unix/WSL и на Windows-хосте. Текстовые файлы — строго LF,
+# независимо от core.autocrlf клонирующего (иначе на Windows-клонах рабочее
+# дерево уезжает в CRLF, а git diff --check видит CR как trailing whitespace).
+* text=auto eol=lf

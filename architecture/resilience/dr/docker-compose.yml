@@ -1,0 +1,35 @@
+# Primary Postgres с непрерывным архивированием WAL — основа для PITR.
+#
+# ГОТЧА (ловил ревьюер): архив НЕ монтируется с хоста. Postgres в контейнере
+# работает под своим uid и выставляет на каталоге архива владельца и режим 0700 —
+# после этого хостовый пользователь не может туда даже зайти, и повторный запуск
+# скрипта падает на «Permission denied». Named volume снимает вопрос целиком:
+# владелец живёт внутри Docker, а `docker compose down -v` возвращает чистое
+# состояние. Посмотреть сегменты при желании:
+#   docker run --rm -v dr-archive:/a alpine ls -la /a
+services:
+  postgres:
+    image: postgres:18.4
+    environment:
+      POSTGRES_PASSWORD: drdemo
+      POSTGRES_DB: drdemo
+    ports: ["5444:5432"]
+    command:
+      - postgres
+      - -c
+      - wal_level=replica
+      - -c
+      - archive_mode=on
+      # Архивируем строго по одному разу: если сегмент уже есть — не перезаписываем.
+      - -c
+      - archive_command=test ! -f /var/lib/postgresql/archive/%f && cp %p /var/lib/postgresql/archive/%f
+      - -c
+      - max_wal_senders=10
+      - -c
+      - checkpoint_timeout=30min
+    volumes:
+      - dr-archive:/var/lib/postgresql/archive
+
+volumes:
+  dr-archive:
+    name: dr-archive # явное имя, чтобы restore-контейнер смонтировал его без префикса проекта
