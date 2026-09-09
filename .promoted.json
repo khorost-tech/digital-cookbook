@@ -33,6 +33,7 @@
     ],
     "architecture/testing": [
       "architecture/flaky-tests-diagnose-and-fix.md",
+      "architecture/tdd-bdd-in-practice.md",
       "architecture/testing-across-languages.md",
       "architecture/testing-distributed-systems.md"
     ],
