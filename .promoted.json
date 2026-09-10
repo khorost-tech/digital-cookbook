@@ -135,6 +135,7 @@
     "go/fundamentals": [
       "go/go-error-handling.md",
       "go/go-interfaces.md",
+      "go/go-methods-receivers.md",
       "go/go-slices-maps-internals.md"
     ],
     "go/goroutine-leak-profile": [
