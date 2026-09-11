@@ -19,7 +19,8 @@
       "architecture/delivery-guarantees-idempotency.md"
     ],
     "architecture/resilience": [
-      "architecture/rate-limiting-throttling.md"
+      "architecture/rate-limiting-throttling.md",
+      "architecture/resilience-patterns.md"
     ],
     "architecture/saga": [
       "architecture/saga-in-practice.md"
@@ -260,6 +261,7 @@
     ],
     "security/keycloak": [
       "security/keycloak-realms-clients-deploy.md",
+      "security/keycloak-token-validation-load.md",
       "security/keycloak-when-to-use-idp.md"
     ],
     "security/pixelsmash": [
