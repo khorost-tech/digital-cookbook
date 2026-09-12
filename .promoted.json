@@ -19,6 +19,7 @@
       "architecture/delivery-guarantees-idempotency.md"
     ],
     "architecture/resilience": [
+      "architecture/distributed-locking-coordination.md",
       "architecture/rate-limiting-throttling.md",
       "architecture/resilience-patterns.md"
     ],
@@ -138,6 +139,9 @@
       "go/go-interfaces.md",
       "go/go-methods-receivers.md",
       "go/go-slices-maps-internals.md"
+    ],
+    "go/generics": [
+      "architecture/generics-across-languages.md"
     ],
     "go/goroutine-leak-profile": [
       "go/go-goroutine-leak-profile.md"
@@ -260,6 +264,7 @@
       "rust/rust-web-frameworks.md"
     ],
     "security/keycloak": [
+      "security/keycloak-login-themes-federation.md",
       "security/keycloak-realms-clients-deploy.md",
       "security/keycloak-token-validation-load.md",
       "security/keycloak-when-to-use-idp.md"
