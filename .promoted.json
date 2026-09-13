@@ -19,6 +19,7 @@
       "architecture/delivery-guarantees-idempotency.md"
     ],
     "architecture/resilience": [
+      "architecture/backpressure-load-shedding.md",
       "architecture/distributed-locking-coordination.md",
       "architecture/rate-limiting-throttling.md",
       "architecture/resilience-patterns.md"
@@ -265,6 +266,7 @@
     ],
     "security/keycloak": [
       "security/keycloak-login-themes-federation.md",
+      "security/keycloak-production-ha-backups.md",
       "security/keycloak-realms-clients-deploy.md",
       "security/keycloak-token-validation-load.md",
       "security/keycloak-when-to-use-idp.md"
