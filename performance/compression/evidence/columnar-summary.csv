@@ -1,0 +1,5 @@
+profile,codec,level,input_bytes,output_bytes,ratio,compress_mbs_median,compress_mbs_min,compress_mbs_max,compress_spread_pct,decompress_mbs_median,decompress_mbs_min,decompress_mbs_max,decompress_spread_pct,env,runs_published,reps_per_run,warmup_excluded
+table-row,zstd/klauspost,3,11203432,2829450,3.9596,182.41,105.91,195.14,48.9,618.72,527.11,638.77,18.0,docker:golang:1.26.3 (Linux),4,7,нет
+table-row,gzip/klauspost,6,11203432,2650355,4.2271,85.46,67.00,114.03,55.0,236.19,199.83,250.08,21.3,docker:golang:1.26.3 (Linux),4,7,нет
+table-col,zstd/klauspost,3,11203432,2291340,4.8895,142.17,116.94,202.19,60.0,613.84,468.40,643.34,28.5,docker:golang:1.26.3 (Linux),4,7,нет
+table-col,gzip/klauspost,6,11203432,2585984,4.3324,112.66,109.17,119.53,9.2,283.73,253.08,295.23,14.9,docker:golang:1.26.3 (Linux),4,7,нет

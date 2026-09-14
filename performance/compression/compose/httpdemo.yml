@@ -1,0 +1,28 @@
+services:
+  http:
+    image: golang:1.26.3
+    container_name: compression-http
+    working_dir: /w
+    command: ["go", "run", ".", "-mode", "server", "-addr", ":8080", "-profile", "/profiles/products.ndjson"]
+    environment:
+      GOPROXY: https://go.khorost.tech,direct
+    volumes:
+      - ../httpdemo:/w
+      - ../profiles:/profiles:ro
+    networks: [compnet]
+
+  client:
+    image: golang:1.26.3
+    container_name: compression-client
+    working_dir: /w
+    command: ["sleep", "infinity"]
+    environment:
+      GOPROXY: https://go.khorost.tech,direct
+    volumes:
+      - ../httpdemo:/w
+    networks: [compnet]
+    depends_on: [http]
+
+networks:
+  compnet:
+    driver: bridge

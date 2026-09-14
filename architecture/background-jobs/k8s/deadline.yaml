@@ -1,0 +1,69 @@
+# Артефакт 5: startingDeadlineSeconds и пропущенные срабатывания.
+#
+# Два CronJob отличаются РОВНО одним полем — startingDeadlineSeconds
+# (у dl-deadline30 задано 30, у dl-nodeadline не задано вовсе). Расписание,
+# работа, шаблон джобы — идентичны у обоих. Работа sleep 5с при расписании
+# раз в минуту (* * * * *) заведомо короче интервала — в штатном режиме
+# (без паузы) джобы не перекрываются, все срабатывания успевают завершиться
+# до следующего тика. Единственный источник пропущенных срабатываний в этой
+# демонстрации — пауза расписания (suspend: true), которую ставит скрипт
+# deadline-demo.sh, а НЕ остановка kube-controller-manager (честная граница
+# демонстрации — см. комментарий в начале deadline-demo.sh).
+#
+# Namespace bj-cron создаётся и удаляется скриптом deadline-demo.sh,
+# здесь не объявляется.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dl-nodeadline
+  namespace: bj-cron
+  labels:
+    demo: starting-deadline
+spec:
+  schedule: "* * * * *"
+  # startingDeadlineSeconds намеренно НЕ задано — единственное отличие от
+  # dl-deadline30 ниже.
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: work
+            image: busybox:1.37
+            # Работа 5с при расписании раз в минуту — короче интервала,
+            # перекрытия в штатном режиме не бывает.
+            command: ["sh","-c","date -u +%H:%M:%S; sleep 5"]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: dl-deadline30
+  namespace: bj-cron
+  labels:
+    demo: starting-deadline
+spec:
+  schedule: "* * * * *"
+  # Единственное отличие от dl-nodeadline выше: явный дедлайн на запуск
+  # догоняющей джобы. Если последнее пропущенное срабатывание старше этого
+  # порога (в секундах от планового времени), контроллер догон не запускает.
+  startingDeadlineSeconds: 30
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: work
+            image: busybox:1.37
+            # Работа 5с при расписании раз в минуту — короче интервала,
+            # перекрытия в штатном режиме не бывает.
+            command: ["sh","-c","date -u +%H:%M:%S; sleep 5"]

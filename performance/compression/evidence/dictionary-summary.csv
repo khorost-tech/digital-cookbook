@@ -1,0 +1,3 @@
+profile,codec,level,input_bytes,output_bytes,ratio,compress_mbs,decompress_mbs,reps,compress_ms_median,decompress_ms_median,compress_passes,decompress_passes,compress_attempts,decompress_attempts
+events-small (по сообщениям),zstd/klauspost,3,18398951,17882057,1.0289,0.00,0.00,1,0.000,0.000,0,0,0,0
+events-small (по сообщениям),zstd/klauspost+dict,3,18398951,8352948,2.2027,0.00,0.00,1,0.000,0.000,0,0,0,0

@@ -1,0 +1,82 @@
+# Артефакт 4: concurrencyPolicy при перекрытии запусков.
+#
+# Три CronJob отличаются РОВНО одним полем — concurrencyPolicy
+# (Allow / Forbid / Replace). Расписание, работа, шаблон джобы —
+# идентичны у всех трёх. Работа sleep 100с при расписании раз в минуту
+# (* * * * *) гарантирует перекрытие: следующий тик наступает раньше,
+# чем завершается предыдущий запуск, — не по случайному стечению
+# обстоятельств, а по построению.
+#
+# Namespace bj-cron создаётся и удаляется скриптом concurrency-demo.sh,
+# здесь не объявляется.
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cc-allow
+  namespace: bj-cron
+  labels:
+    demo: concurrency-policy
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Allow
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: work
+            image: busybox:1.37
+            # Работа 100с при расписании раз в минуту — перекрытие гарантировано.
+            command: ["sh","-c","date -u +%H:%M:%S; sleep 100"]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cc-forbid
+  namespace: bj-cron
+  labels:
+    demo: concurrency-policy
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: work
+            image: busybox:1.37
+            # Работа 100с при расписании раз в минуту — перекрытие гарантировано.
+            command: ["sh","-c","date -u +%H:%M:%S; sleep 100"]
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: cc-replace
+  namespace: bj-cron
+  labels:
+    demo: concurrency-policy
+spec:
+  schedule: "* * * * *"
+  concurrencyPolicy: Replace
+  successfulJobsHistoryLimit: 5
+  failedJobsHistoryLimit: 5
+  jobTemplate:
+    spec:
+      backoffLimit: 0
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: work
+            image: busybox:1.37
+            # Работа 100с при расписании раз в минуту — перекрытие гарантировано.
+            command: ["sh","-c","date -u +%H:%M:%S; sleep 100"]

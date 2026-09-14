@@ -1,0 +1,4 @@
+codec,level,input_bytes,output_bytes,delta_bytes,ratio,compress_mbs_median,compress_mbs_min,compress_mbs_max,compress_spread_pct,decompress_mbs_median,decompress_mbs_min,decompress_mbs_max,decompress_spread_pct,env,runs_published,reps_per_run
+lz4/pierrec,0,67108864,67108943,79,0.999999,2186.58,2055.04,2219.14,7.5,1539.00,1483.40,1719.37,15.3,docker:golang:1.26.3 (Linux),3,5
+zstd/klauspost,3,67108864,67110413,1549,0.999977,1357.54,1238.15,1395.78,11.6,1008.95,954.17,1037.08,8.2,docker:golang:1.26.3 (Linux),3,5
+gzip/klauspost,6,67108864,67114009,5145,0.999923,1829.22,1687.44,1853.71,9.1,2245.25,2071.13,2411.61,15.2,docker:golang:1.26.3 (Linux),3,5

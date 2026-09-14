@@ -4,6 +4,7 @@
 
 | Стенд | Описание | Статья |
 |---|---|---|
+| [`background-jobs/`](background-jobs/) | Фоновые задачи: очередь на PostgreSQL (аренда, SKIP LOCKED, LISTEN/NOTIFY, bloat, потолок), River, планировщик на advisory-локе, k8s CronJob | 🔜 скоро |
 | [`cqrs/`](cqrs/) | CQRS на практике: разделение чтения и записи | [статья](https://khorost.tech/architecture/cqrs-in-practice/) |
 | [`distributed-config/`](distributed-config/) | etcd, ZooKeeper, Consul, Vault: watch, discovery, dynamic credentials | [статья](https://khorost.tech/architecture/distributed-configuration/) |
 | [`event-coordination/`](event-coordination/) | Хореография vs оркестрация | [статья](https://khorost.tech/architecture/choreography-vs-orchestration/) |

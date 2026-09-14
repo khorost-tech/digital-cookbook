@@ -1,0 +1,21 @@
+# Стенд к серии «Фоновые задачи и планировщики» (architecture/background-jobs).
+# Порт смещён на 5456 — 5455 и ниже заняты соседними стендами.
+services:
+  postgres:
+    image: postgres:18.4
+    container_name: bj-postgres
+    environment:
+      POSTGRES_USER: jobs
+      POSTGRES_PASSWORD: jobs
+      POSTGRES_DB: jobs
+    # log_lock_waits + deadlock_timeout нужны артефакту 6: без них ожидание
+    # блокировки у варианта БЕЗ SKIP LOCKED не видно в логе.
+    command: ["postgres", "-c", "log_lock_waits=on", "-c", "deadlock_timeout=200ms"]
+    ports: ["5456:5432"]
+    volumes:
+      - ../sql/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U jobs -d jobs"]
+      interval: 2s
+      timeout: 3s
+      retries: 20

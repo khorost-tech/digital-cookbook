@@ -1,0 +1,10 @@
+codec,level,output_bytes,ratio,compress_mbs_median,compress_mbs_min,compress_mbs_max,compress_spread_pct,decompress_mbs_median,decompress_mbs_min,decompress_mbs_max,decompress_spread_pct,env,runs_published,reps_per_run
+zstd/klauspost,1,5253347,6.9467,251.16,196.18,274.18,31.1,465.75,423.22,505.73,17.7,docker:golang:1.26.3 (Linux),3,7
+zstd/valyala-cgo,1,4816823,7.5763,394.82,366.39,412.48,11.7,1199.31,1128.63,1321.85,16.1,docker:golang:1.26.3 (Linux),3,7
+zstd/datadog-cgo,1,4816823,7.5763,390.56,363.14,411.02,12.3,1190.66,1148.51,1222.78,6.2,docker:golang:1.26.3 (Linux),3,7
+zstd/klauspost,3,5079316,7.1848,271.16,240.61,295.17,20.1,524.36,480.41,544.90,12.3,docker:golang:1.26.3 (Linux),3,7
+zstd/valyala-cgo,3,5009696,7.2846,292.62,290.02,312.29,7.6,1159.28,1124.28,1248.27,10.7,docker:golang:1.26.3 (Linux),3,7
+zstd/datadog-cgo,3,5009696,7.2846,297.64,193.13,318.48,42.1,1135.61,923.13,1264.63,30.1,docker:golang:1.26.3 (Linux),3,7
+zstd/klauspost,7,4708989,7.7498,124.18,120.77,139.57,15.1,541.19,538.89,618.84,14.8,docker:golang:1.26.3 (Linux),3,7
+zstd/valyala-cgo,7,4060889,8.9866,74.47,71.19,77.34,8.3,1550.80,1376.01,1602.10,14.6,docker:golang:1.26.3 (Linux),3,7
+zstd/datadog-cgo,7,4060889,8.9866,73.03,69.59,75.18,7.7,1400.29,573.89,1588.18,72.4,docker:golang:1.26.3 (Linux),3,7

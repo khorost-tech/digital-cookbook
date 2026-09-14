@@ -1,5 +1,8 @@
 {
   "stands": {
+    "architecture/background-jobs": [
+      "architecture/task-queues-background-jobs.md"
+    ],
     "architecture/cqrs": [
       "architecture/cqrs-in-practice.md"
     ],
@@ -142,7 +145,8 @@
       "go/go-slices-maps-internals.md"
     ],
     "go/generics": [
-      "architecture/generics-across-languages.md"
+      "architecture/generics-across-languages.md",
+      "go/go-generics.md"
     ],
     "go/goroutine-leak-profile": [
       "go/go-goroutine-leak-profile.md"
@@ -232,6 +236,9 @@
       "messaging/rabbitmq-ha-cluster-quorum-failover.md",
       "messaging/rabbitmq-monitoring-and-production-checklist.md",
       "messaging/rabbitmq-streams-vs-kafka.md"
+    ],
+    "performance/compression": [
+      "performance/compression-tradeoffs.md"
     ],
     "performance/crypto-rsa-regression": [
       "performance/go-crypto-rsa-regression.md"
