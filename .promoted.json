@@ -1,6 +1,7 @@
 {
   "stands": {
     "architecture/background-jobs": [
+      "architecture/schedulers-distributed-cron.md",
       "architecture/task-queues-background-jobs.md"
     ],
     "architecture/cqrs": [
