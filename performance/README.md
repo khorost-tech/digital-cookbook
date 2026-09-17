@@ -4,7 +4,7 @@
 
 | Стенд | Описание | Статья |
 |---|---|---|
-| [`compression/`](compression/) | Кодеки сжатия на общем корпусе и нескольких профилях раскладки данных (NDJSON, поток мелких сообщений): размер против скорости | 🔜 скоро |
+| [`compression/`](compression/) | Кодеки сжатия на общем корпусе и нескольких профилях раскладки данных (NDJSON, поток мелких сообщений): размер против скорости | [статья](https://khorost.tech/performance/compression-tradeoffs/) |
 | [`crypto-rsa-regression/`](crypto-rsa-regression/) | Регрессия crypto/rsa в Go 1.20: одинаковые бенчмарки на шести версиях Go, просадка публичных verify/encrypt в 5–7 раз, benchstat и CI-гейт | [статья](https://khorost.tech/performance/go-crypto-rsa-regression/) |
 | [`highload-lowlatency/`](highload-lowlatency/) | Highload под SLA < 300 мс: HAProxy L7 (h2c) + пул Go/Java-бэкендов, L4 vs L7 | [статья](https://khorost.tech/performance/latency-budget-and-transport/) |
 | [`probabilistic/`](probabilistic/) | Вероятностные структуры: Bloom и родственники | [статья](https://khorost.tech/performance/bloom-filters-probabilistic-structures/) |

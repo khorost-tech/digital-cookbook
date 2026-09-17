@@ -26,6 +26,7 @@
       "architecture/backpressure-load-shedding.md",
       "architecture/disaster-recovery-rto-rpo.md",
       "architecture/distributed-locking-coordination.md",
+      "architecture/incident-response-postmortems.md",
       "architecture/rate-limiting-throttling.md",
       "architecture/resilience-patterns.md"
     ],
