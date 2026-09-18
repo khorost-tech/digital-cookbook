@@ -1,0 +1,68 @@
+name: inmemory-cookbook
+networks:
+  inmemory-net:
+    name: inmemory-net
+    external: true
+services:
+  picodata-1:
+    image: docker.binary.picodata.io/picodata:26.1.6
+    container_name: picodata-1
+    # Отклонение от брифа: entrypoint образа УЖЕ "/usr/bin/picodata" (docker
+    # inspect .Config.Entrypoint), поэтому command начинается с "run", а не с
+    # "picodata run". Флаги --data-dir/--listen/--advertise/--peer(повторный)
+    # из брифа в `picodata run --help` фактического образа не существуют —
+    # реальные имена: --instance-dir, --iproto-listen, --iproto-advertise,
+    # --peer (один флаг, comma-separated список). Подробности — README/отчёт.
+    command: >
+      run --instance-dir /var/lib/picodata
+      --iproto-listen 0.0.0.0:3301 --iproto-advertise picodata-1:3301
+      --peer picodata-1:3301
+      --pg-listen 0.0.0.0:5432 --pg-advertise picodata-1:5432
+      --init-replication-factor 2
+    ports: ["3401:3301", "5441:5432"]
+    networks: [inmemory-net]
+  picodata-2:
+    image: docker.binary.picodata.io/picodata:26.1.6
+    container_name: picodata-2
+    command: >
+      run --instance-dir /var/lib/picodata
+      --iproto-listen 0.0.0.0:3301 --iproto-advertise picodata-2:3301
+      --peer picodata-1:3301
+      --pg-listen 0.0.0.0:5432 --pg-advertise picodata-2:5432
+    networks: [inmemory-net]
+    depends_on: [picodata-1]
+  picodata-3:
+    image: docker.binary.picodata.io/picodata:26.1.6
+    container_name: picodata-3
+    command: >
+      run --instance-dir /var/lib/picodata
+      --iproto-listen 0.0.0.0:3301 --iproto-advertise picodata-3:3301
+      --peer picodata-1:3301
+      --pg-listen 0.0.0.0:5432 --pg-advertise picodata-3:5432
+    networks: [inmemory-net]
+    depends_on: [picodata-1]
+  # picodata-4: ОТКЛОНЕНИЕ ОТ БРИФА (не написано в исходном плане, добавлено
+  # по факту живого прогона). Бриф просил 3 инстанса с
+  # --init-replication-factor 2 — это СТРУКТУРНО не может дать реальное
+  # шардирование: 3 инстанса при факторе репликации 2 дают ОДИН полный
+  # репликасет (2 члена, weight=1, ready) и ОДИН "хвостовой" репликасет из 1
+  # члена (weight=0, state=not-ready), который vshard НАВСЕГДА исключает из
+  # распределения бакетов — не временная задержка ребалансировки: живой лог
+  # (тег vshard.rebalancer/vshard.storage — НЕ governor_loop; печатает узел,
+  # держащий роль vshard-мастера, а не конкретный контейнер) сообщает
+  # "The cluster is balanced ok" сразу после того, как
+  # ВСЕ 3000 бакетов оказались на единственном полном репликасете, и
+  # "_pico_replicaset" показывает default_2 weight=0/not-ready неизменно
+  # (перепроверено спустя минуты, не секунды). Четвёртый инстанс достраивает
+  # default_2 до фактора репликации 2 — тогда оба репликасета становятся
+  # ready и реально делят бакеты. Подробности — README/task-4-report.md.
+  picodata-4:
+    image: docker.binary.picodata.io/picodata:26.1.6
+    container_name: picodata-4
+    command: >
+      run --instance-dir /var/lib/picodata
+      --iproto-listen 0.0.0.0:3301 --iproto-advertise picodata-4:3301
+      --peer picodata-1:3301
+      --pg-listen 0.0.0.0:5432 --pg-advertise picodata-4:5432
+    networks: [inmemory-net]
+    depends_on: [picodata-1]

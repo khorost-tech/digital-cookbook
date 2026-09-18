@@ -1,0 +1,44 @@
+# Go-бинарники: `go build` без -o кладёт файл С ИМЕНЕМ КАТАЛОГА и БЕЗ расширения —
+# обобщённым паттерном не ловится. Список поимённый и потому хрупкий: при добавлении
+# нового модуля дописать сюда либо собирать через `go build -o bin/`.
+# Настоящий гейт — .githooks/pre-commit в корне репо (проверяет содержимое).
+bin/
+/dataset/dataset
+/dataset/main
+/redis-cache/redis-cache
+/redis-cache/main
+/tarantool/tarantool
+/tarantool/main
+/picodata/picodata
+/picodata/main
+/aerospike/aerospike
+/aerospike/main
+/etcd-coord/etcd-coord
+/etcd-coord/main
+/benchmark/benchmark
+/benchmark/main
+*.exe
+
+# Maven (Ignite)
+target/
+# work-директория толстой клиент-ноды Ignite (Ignition.start без явного
+# work directory кладёт её относительно CWD запуска — при запуске из
+# ignite/ получается ignite/ignite/work/...)
+/ignite/ignite/
+
+# сгенерированный датасет
+*.ndjson
+
+# данные томов, если монтируются локально
+compose/data/
+compose/*.log
+
+# build-кэши контейнеров
+.gocache/
+.m2cache/
+
+# промежуточный вывод live-прогонов
+scratchout/
+
+# окружение
+.env

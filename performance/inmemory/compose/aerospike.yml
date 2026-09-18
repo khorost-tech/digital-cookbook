@@ -1,0 +1,25 @@
+name: inmemory-cookbook
+networks:
+  inmemory-net:
+    name: inmemory-net
+    external: true
+services:
+  inmemory-aerospike:
+    image: aerospike/aerospike-server:8.1.2.3
+    container_name: inmemory-aerospike
+    # ОТКЛОНЕНИЕ ОТ БРИФА: брифовый путь монтирования (/etc/aerospike/aerospike.conf:ro)
+    # не работает на этом образе — entrypoint.sh рендерит
+    # /etc/aerospike/aerospike.template.conf поверх /etc/aerospike/aerospike.conf
+    # при каждом старте (envsubst-подобный шаблон), и падает с "Read-only file
+    # system", если целевой файл смонтирован :ro. Монтируем наш готовый конфиг
+    # НА МЕСТО ШАБЛОНА — рендер копирует его как есть (без плейсхолдеров) в
+    # штатный путь. См. task-5-report.md.
+    volumes:
+      - ../aerospike/aerospike.conf:/etc/aerospike/aerospike.template.conf:ro
+    ports: ["3000:3000"]
+    networks: [inmemory-net]
+    healthcheck:
+      test: ["CMD", "asinfo", "-v", "status"]
+      interval: 5s
+      timeout: 3s
+      retries: 20

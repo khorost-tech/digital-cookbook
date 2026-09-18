@@ -78,6 +78,7 @@
 | [`performance/compression`](performance/compression) | Кодеки сжатия на общем корпусе и нескольких профилях раскладки данных (NDJSON, поток мелких сообщений): размер против скорости | [статья](https://khorost.tech/performance/compression-tradeoffs/) |
 | [`performance/crypto-rsa-regression`](performance/crypto-rsa-regression) | Регрессия crypto/rsa в Go 1.20: одинаковые бенчмарки на шести версиях Go, просадка публичных verify/encrypt в 5–7 раз, benchstat и CI-гейт | [статья](https://khorost.tech/performance/go-crypto-rsa-regression/) |
 | [`performance/highload-lowlatency`](performance/highload-lowlatency) | Highload под SLA < 300 мс: HAProxy L7 (h2c) + пул Go/Java-бэкендов, L4 vs L7 | [статья](https://khorost.tech/performance/latency-budget-and-transport/) |
+| [`performance/inmemory`](performance/inmemory) | Вычисления в оперативной памяти: Redis, Tarantool, Picodata, Aerospike, Ignite и etcd на общем наборе сценариев | 🔜 скоро |
 | [`performance/probabilistic`](performance/probabilistic) | Вероятностные структуры: Bloom и родственники | [статья](https://khorost.tech/performance/bloom-filters-probabilistic-structures/) |
 | [`performance/testcontainers-template-db`](performance/testcontainers-template-db) | Шаблонная база вместо контейнера на каждый тест: CREATE DATABASE ... TEMPLATE, замеры ×10 и ×36, границы приёма (права, FORCE, размер шаблона) | [статья](https://khorost.tech/performance/testcontainers-template-db/) |
 

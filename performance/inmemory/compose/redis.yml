@@ -1,0 +1,17 @@
+name: inmemory-cookbook
+networks:
+  inmemory-net:
+    name: inmemory-net
+    external: true
+services:
+  inmemory-redis:
+    image: redis:8.8
+    container_name: inmemory-redis
+    command: redis-server --save "" --appendonly no
+    ports: ["6381:6379"]
+    networks: [inmemory-net]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20

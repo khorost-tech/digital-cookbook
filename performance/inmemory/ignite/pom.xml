@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <groupId>tech.khorost</groupId>
+  <artifactId>inmemory-ignite</artifactId>
+  <version>1.0</version>
+  <packaging>jar</packaging>
+
+  <!-- Стенд #6 серии "Вычисления в оперативной памяти" — Apache Ignite,
+       data grid + compute grid. Единственный Java-стенд серии: остальные —
+       на Go. Ветка 2.x — намеренно (Ignite 3.x переписан, API несовместим,
+       см. README). Тонкий клиент (Ignition.startClient) подключается к
+       готовому двухузловому кластеру, поднятому отдельно
+       (../compose/ignite.yml) — сам модуль сервер не поднимает. -->
+
+  <!-- ОТКЛОНЕНИЕ ОТ ПЕРВОНАЧАЛЬНОГО ПЛАНА (живой прогон уронил ОБА сервера,
+       не выдумано): compiler.release=21 казался естественным (проект пинует
+       JDK 21 для сборки/запуска клиента, см. README). Но образ
+       apacheignite/ignite:2.18.0 бандлит JDK 11 (docker run + java version
+       печатает Temurin-11.0.31+11), а TopByCategoryTask/CategoryFilter
+       деплоятся НА СЕРВЕР через classpath ($IGNITE_HOME/libs/, см.
+       compose/ignite.yml). Class file version 65 (Java 21) на JVM 11 —
+       сервер поймал UnsupportedClassVersionError в FailureProcessor и
+       СРАЗУ сделал Runtime.halt() (CRITICAL_ERROR failure handler,
+       дефолтный StopNodeOrHaltFailureHandler) — оба контейнера
+       ignite-1/ignite-2 упали одновременно, см. task-6-report.md. Фикс —
+       compiler.release=11: бинарная совместимость с JDK сервера. JDK 21
+       (сборка/клиент, оба пина проекта не нарушены) без проблем выполняет
+       class file version 55 — только читать вниз можно, не вверх. -->
+  <properties>
+    <maven.compiler.release>11</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <ignite.version>2.18.0</ignite.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.apache.ignite</groupId>
+      <artifactId>ignite-core</artifactId>
+      <version>${ignite.version}</version>
+    </dependency>
+    <!-- для сверки залитого в кэш с источником истины (origin PostgreSQL) -->
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <version>42.7.7</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-api</artifactId>
+      <version>2.0.17</version>
+    </dependency>
+    <!-- без биндинга SLF4J по умолчанию NOP-логгер молчит; ignite-core сам
+         на JUL, но клиентский код этого модуля пишет через SLF4J. -->
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>2.0.17</version>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <finalName>ignite-stand</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.6.0</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>tech.khorost.inmemory.IgniteStand</mainClass>
+                </transformer>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

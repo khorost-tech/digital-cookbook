@@ -1,0 +1,32 @@
+name: inmemory-cookbook
+# Отдельный от etcd.yml (Стенд 7) контейнер: там квота по умолчанию (2 ГиБ,
+# используется watch/lease/lock/revisions), здесь квота ИСКУССТВЕННО
+# занижена до 64 МиБ (--quota-backend-bytes=67108864), чтобы упереться в
+# database space exceeded за разумное время (Task 10, бриф Step 2). Сеть
+# создаётся ЭТИМ файлом (без external: true, как origin.yml) — сценарий
+# etcd-misuse не поднимает origin/dataset (не нужны), поэтому не может
+# полагаться на origin.yml как на создателя inmemory-net.
+networks:
+  inmemory-net:
+    name: inmemory-net
+services:
+  inmemory-etcd-misuse:
+    image: quay.io/coreos/etcd:v3.7.0
+    container_name: inmemory-etcd-misuse
+    command: >
+      etcd --name node1
+      --data-dir /etcd-data
+      --listen-client-urls http://0.0.0.0:2379
+      --advertise-client-urls http://inmemory-etcd-misuse:2379
+      --listen-peer-urls http://0.0.0.0:2380
+      --initial-advertise-peer-urls http://inmemory-etcd-misuse:2380
+      --initial-cluster node1=http://inmemory-etcd-misuse:2380
+      --initial-cluster-state new
+      --quota-backend-bytes=67108864
+    ports: ["2382:2379"]
+    networks: [inmemory-net]
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20

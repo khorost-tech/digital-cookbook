@@ -1,0 +1,45 @@
+name: inmemory-cookbook
+networks:
+  inmemory-net:
+    name: inmemory-net
+    external: true
+services:
+  ignite-1:
+    image: apacheignite/ignite:2.18.0
+    container_name: ignite-1
+    environment:
+      IGNITE_QUIET: "false"
+      JVM_OPTS: "-Xms512m -Xmx1g"
+    # Дефолтный discovery образа — мультикаст (см. default-config.xml внутри
+    # образа: пустой bean IgniteConfiguration, TcpDiscoverySpi берёт
+    # TcpDiscoveryMulticastIpFinder по умолчанию). В docker-сети (bridge)
+    # мультикаст между контейнерами не проходит — живой прогон подтвердил
+    # servers=1 без этого монтирования (см. README/task-6-report.md).
+    # Фикс — статический TcpDiscoveryVmIpFinder со списком имён обоих
+    # сервисов, смонтированный поверх штатного default-config.xml.
+    # ../ignite/target/original-ignite-stand.jar — ТОНКИЙ jar (только классы
+    # этого стенда, без ignite-core: maven-shade-plugin кладёт его рядом с
+    # шейдед-jar под именем original-<finalName>.jar). Нужен сценарию
+    # compute — TopByCategoryTask (IgniteCallable) и CategoryFilter
+    # (предикат ScanQuery) должны быть на classpath серверных нод: peer
+    # class loading пробовали первым (см. ignite/config/default-config.xml),
+    # но живой прогон показал, что ScanQuery-предикат по P2P не деплоится
+    # (BinaryInvalidTypeException), см. task-6-report.md. $IGNITE_HOME/libs/
+    # сканируется автоматически при старте JVM — файл должен существовать
+    # ДО `docker compose up` (`cd ignite && mvn package` первым шагом).
+    volumes:
+      - ../ignite/config/default-config.xml:/opt/ignite/apache-ignite/config/default-config.xml:ro
+      - ../ignite/target/original-ignite-stand.jar:/opt/ignite/apache-ignite/libs/inmemory-ignite-stand.jar:ro
+    ports: ["10800:10800", "47500:47500"]
+    networks: [inmemory-net]
+  ignite-2:
+    image: apacheignite/ignite:2.18.0
+    container_name: ignite-2
+    environment:
+      IGNITE_QUIET: "false"
+      JVM_OPTS: "-Xms512m -Xmx1g"
+    volumes:
+      - ../ignite/config/default-config.xml:/opt/ignite/apache-ignite/config/default-config.xml:ro
+      - ../ignite/target/original-ignite-stand.jar:/opt/ignite/apache-ignite/libs/inmemory-ignite-stand.jar:ro
+    networks: [inmemory-net]
+    depends_on: [ignite-1]

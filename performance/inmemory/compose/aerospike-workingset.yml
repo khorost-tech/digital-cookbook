@@ -1,0 +1,27 @@
+name: inmemory-cookbook
+networks:
+  inmemory-net:
+    name: inmemory-net
+    external: true
+services:
+  # Отдельный контейнер от inmemory-aerospike (Task 5, compose/aerospike.yml):
+  # Task 8 требует маленькие лимиты памяти (см. aerospike-workingset.conf), а
+  # Task 5 требует больших (1G/4G) — один и тот же конфиг не годится сразу для
+  # обеих целей. Отдельные container_name/порт исключают конфликт, если оба
+  # стенда почему-то подняты одновременно.
+  inmemory-aerospike-ws:
+    image: aerospike/aerospike-server:8.1.2.3
+    container_name: inmemory-aerospike-ws
+    # То же отклонение от брифа, что и в compose/aerospike.yml (Task 5):
+    # entrypoint.sh рендерит aerospike.template.conf ПОВЕРХ aerospike.conf
+    # при каждом старте и падает "Read-only file system", если целевой файл
+    # смонтирован :ro. Монтируем на место шаблона.
+    volumes:
+      - ../aerospike/aerospike-workingset.conf:/etc/aerospike/aerospike.template.conf:ro
+    ports: ["3010:3000"]
+    networks: [inmemory-net]
+    healthcheck:
+      test: ["CMD", "asinfo", "-v", "status"]
+      interval: 5s
+      timeout: 3s
+      retries: 20

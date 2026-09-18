@@ -1,0 +1,19 @@
+name: inmemory-cookbook
+networks:
+  inmemory-net:
+    name: inmemory-net
+    external: true
+services:
+  inmemory-tarantool:
+    image: tarantool/tarantool:3.8.0
+    container_name: inmemory-tarantool
+    command: tarantool /opt/tarantool/init.lua
+    volumes:
+      - ../tarantool/init.lua:/opt/tarantool/init.lua:ro
+    ports: ["3301:3301"]
+    networks: [inmemory-net]
+    healthcheck:
+      test: ["CMD-SHELL", "tarantool -e \"local ok = require('net.box').connect('127.0.0.1:3301'):ping(); os.exit(ok and 0 or 1)\""]
+      interval: 5s
+      timeout: 3s
+      retries: 20

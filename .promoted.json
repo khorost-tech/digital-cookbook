@@ -2,7 +2,8 @@
   "stands": {
     "architecture/background-jobs": [
       "architecture/schedulers-distributed-cron.md",
-      "architecture/task-queues-background-jobs.md"
+      "architecture/task-queues-background-jobs.md",
+      "databases/postgres-as-queue-skip-locked.md"
     ],
     "architecture/cqrs": [
       "architecture/cqrs-in-practice.md"
@@ -252,6 +253,9 @@
       "performance/jvm-highload-client.md",
       "performance/jvm-highload-service.md",
       "performance/latency-budget-and-transport.md"
+    ],
+    "performance/inmemory": [
+      "performance/inmemory-computing-landscape-tradeoffs.md"
     ],
     "performance/probabilistic": [
       "performance/bloom-filters-probabilistic-structures.md"

@@ -1,0 +1,19 @@
+name: inmemory-cookbook
+networks:
+  inmemory-net:
+    name: inmemory-net
+services:
+  inmemory-origin:
+    image: postgres:18.4
+    container_name: inmemory-origin
+    environment:
+      POSTGRES_USER: inmemory
+      POSTGRES_PASSWORD: inmemory
+      POSTGRES_DB: catalog
+    ports: ["5433:5432"]
+    networks: [inmemory-net]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U inmemory -d catalog"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
