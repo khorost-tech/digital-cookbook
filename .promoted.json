@@ -45,7 +45,8 @@
       "architecture/flaky-tests-diagnose-and-fix.md",
       "architecture/tdd-bdd-in-practice.md",
       "architecture/testing-across-languages.md",
-      "architecture/testing-distributed-systems.md"
+      "architecture/testing-distributed-systems.md",
+      "architecture/writing-testable-code.md"
     ],
     "databases/citus": [
       "databases/sharding-in-production.md"
@@ -255,7 +256,8 @@
       "performance/latency-budget-and-transport.md"
     ],
     "performance/inmemory": [
-      "performance/inmemory-computing-landscape-tradeoffs.md"
+      "performance/inmemory-computing-landscape-tradeoffs.md",
+      "performance/inmemory-redis-cache-structures.md"
     ],
     "performance/probabilistic": [
       "performance/bloom-filters-probabilistic-structures.md"
