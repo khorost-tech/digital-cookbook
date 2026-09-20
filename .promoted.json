@@ -90,6 +90,9 @@
       "infrastructure/opensearch-cluster-ansible.md",
       "observability/opensearch-dashboards.md"
     ],
+    "databases/picodata": [
+      "performance/inmemory-tarantool-picodata-compute-near-data.md"
+    ],
     "databases/postgres": [
       "databases/postgres-clients-reliability-go-java-rust.md"
     ],
@@ -222,7 +225,8 @@
       "messaging/kafka-mirrormaker-geo-replication.md",
       "messaging/kafka-operations-kraft-tuning.md",
       "messaging/kafka-replication-reliability.md",
-      "messaging/kafka-storage-retention-compaction.md"
+      "messaging/kafka-storage-retention-compaction.md",
+      "observability/vector-data-pipeline.md"
     ],
     "messaging/nats": [
       "messaging/nats-administration-observability.md",
@@ -233,7 +237,8 @@
       "messaging/nats-java-client-patterns.md",
       "messaging/nats-jetstream-persistence-consumers.md",
       "messaging/nats-reliability-performance.md",
-      "messaging/nats-security-accounts-jwt.md"
+      "messaging/nats-security-accounts-jwt.md",
+      "observability/vector-data-pipeline.md"
     ],
     "messaging/rabbitmq": [
       "messaging/rabbitmq-delivery-guarantees-durability-dlq.md",
@@ -241,6 +246,9 @@
       "messaging/rabbitmq-ha-cluster-quorum-failover.md",
       "messaging/rabbitmq-monitoring-and-production-checklist.md",
       "messaging/rabbitmq-streams-vs-kafka.md"
+    ],
+    "observability/vector-pipeline": [
+      "observability/vector-data-pipeline.md"
     ],
     "performance/compression": [
       "performance/compression-tradeoffs.md"
@@ -257,7 +265,8 @@
     ],
     "performance/inmemory": [
       "performance/inmemory-computing-landscape-tradeoffs.md",
-      "performance/inmemory-redis-cache-structures.md"
+      "performance/inmemory-redis-cache-structures.md",
+      "performance/inmemory-tarantool-picodata-compute-near-data.md"
     ],
     "performance/probabilistic": [
       "performance/bloom-filters-probabilistic-structures.md"

@@ -1,0 +1,79 @@
+# Вариант агента с парсингом, но БЕЗ фильтрации — база для замера 4 (Task 11,
+# scripts/bench.sh): parse_nginx/parse_app остаются, drop_health и dedupe_app сняты.
+# Источники, внутренние метрики и транспортный синк — те же, что в agent.yaml, синк
+# принимает выходы парсеров напрямую. Используется через
+# AGENT_CONFIG=/etc/vector/variants/nofilter.yaml, подставляемую scripts/bench.sh
+# ДО вызова up.sh.
+#
+# Разница в числе доехавших событий и в нагрузке на OpenSearch между этим вариантом
+# и agent.yaml на одинаковом rate — то, что сняли фильтр /health и дедуп app-ветки.
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  nginx_file:
+    type: file
+    include:
+      - /logs/nginx-access.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  app_file:
+    type: file
+    include:
+      - /logs/app.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  internal:
+    type: internal_metrics
+
+transforms:
+  parse_nginx:
+    type: remap
+    inputs: [nginx_file]
+    source: |
+      parsed, err = parse_nginx_log(.message, "combined")
+      if err != null {
+        .service = "unparsed"
+        .parse_error = err
+      } else {
+        . = merge(., parsed)
+        .service = "nginx"
+        del(.message)
+      }
+      .host_role = "agent"
+
+  parse_app:
+    type: remap
+    inputs: [app_file]
+    source: |
+      parsed, err = parse_json(.message)
+      if err != null {
+        .service = "unparsed"
+        .parse_error = err
+      } else {
+        . = merge(., object!(parsed))
+        del(.message)
+      }
+      .host_role = "agent"
+
+sinks:
+  to_nats:
+    type: nats
+    inputs: [parse_nginx, parse_app]
+    url: nats://nats:4222
+    subject: logs.pipeline
+    connection_name: vp-agent
+    encoding:
+      codec: json
+
+  metrics_out:
+    type: prometheus_exporter
+    inputs: [internal]
+    address: 0.0.0.0:9599

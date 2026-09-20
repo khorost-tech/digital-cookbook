@@ -1,0 +1,156 @@
+Task 9: наблюдаемость самого Vector — результаты
+Снято живьём: 2026-07-28, транспорт nats, docker-compose стенд observability/vector-pipeline.
+
+===============================================================================
+Шаг 4: метрики агрегатора (localhost:9598/metrics)
+===============================================================================
+$ curl -s localhost:9598/metrics | grep -E "^vector_component_(sent|received)_events_total"
+
+vector_component_received_events_total{component_id="mark_aggregator",component_kind="transform",component_type="remap",host="945feb8e9326"} 10545 1785202409548
+vector_component_received_events_total{component_id="opensearch",component_kind="sink",component_type="elasticsearch",host="945feb8e9326"} 10545 1785202409548
+vector_component_received_events_total{component_id="metrics_out",component_kind="sink",component_type="prometheus_exporter",host="945feb8e9326"} 51739 1785202409548
+vector_component_received_events_total{component_id="from_nats",component_kind="source",component_type="nats",host="945feb8e9326"} 10545 1785202409548
+vector_component_received_events_total{component_id="internal",component_kind="source",component_type="internal_metrics",host="945feb8e9326"} 51739 1785202409548
+
+Строки содержат лейблы component_id и component_kind, как ожидалось по брифу.
+Аналогично отдаёт и агент (localhost:9599/metrics) — см. раздел "метрики под нагрузкой" ниже.
+
+===============================================================================
+Шаг 5: Prometheus видит обе цели
+===============================================================================
+$ curl -s "localhost:9097/api/v1/targets?state=active" | grep -o '"health":"[a-z]*"' | sort | uniq -c
+      2 "health":"up"
+
+Полный ответ /api/v1/targets (обе цели up):
+{"status":"success","data":{"activeTargets":[
+  {"discoveredLabels":{"__address__":"agent:9599", ...},
+   "labels":{"instance":"agent:9599","job":"vector-agent"},
+   "scrapeUrl":"http://agent:9599/metrics","lastError":"","health":"up", ...},
+  {"discoveredLabels":{"__address__":"aggregator:9598", ...},
+   "labels":{"instance":"aggregator:9598","job":"vector-aggregator"},
+   "scrapeUrl":"http://aggregator:9598/metrics","lastError":"","health":"up", ...}
+]}}
+
+===============================================================================
+Шаг 6: vector top / доступность GraphQL API агента
+===============================================================================
+
+Попытка 1 — как в брифе, без TTY:
+
+$ timeout 8 docker compose exec -T agent vector top --url http://127.0.0.1:8686/graphql
+2026-07-28T01:27:11.313322Z  INFO vector::app: Log level is enabled. level="info"
+Terminal must be a teletype (TTY) to display a Vector dashboard.
+(exit 0 — TUI отказывается рисоваться без реального терминала; проверено также на
+заведомо нерабочем URL — сообщение об TTY выводится ДО попытки подключения, то есть
+само по себе оно ничего не доказывает про доступность API)
+
+Попытка 2 — TTY подделан через `script` внутри контейнера (у образа
+timberio/vector:0.57.0-debian есть /usr/bin/script), терминалу явно задан размер
+40x150 через `stty`, чтобы ratatui было куда рисовать (без stty `stty size` внутри
+script давал "0 0" и TUI не мог рендериться содержательно):
+
+$ docker compose exec -T agent script -qec \
+    "stty rows 40 cols 150; vector top --url http://127.0.0.1:8686/graphql" /dev/null
+
+TUI запустился, подключился по GraphQL и вживую рисовал таблицу компонентов
+(поток ANSI-эскейпов захвачен и заново собран построчно с учётом cursor-addressing
+через отдельный скрипт-интерпретатор, чтобы получить читаемый снимок экрана):
+
+┌Vector──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│http://127.0.0.1:8686/graphql | Sampling @ 1,000ms | Connected (since 2026-07-28 01:31:31 AM +00:00) | Uptime: 5m 48s                               │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+┌Components──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ID            Output        Kind     Type           Events In        Bytes In         Events Out       Bytes Out        Memory Used       Errors    │
+│                                                                                                                                                    │
+│app_file      --            source   file           10.00 k (--/s)   983.27 KiB (--/  10.00 k (--/s)   N/A              disabled          --        │
+│dedupe_app    --            transfo  dedupe         10.00 k (--/s)   N/A              2.28 k (--/s)    N/A              disabled          --        │
+│drop_health   --            transfo  filter         10.00 k (--/s)   N/A              8.27 k (--/s)    N/A              disabled          --        │
+│internal      --            source   internal_metr  53.60 k (156/s)  40.10 MiB (120.  53.60 k (156/s)  N/A              disabled          --        │
+│metrics_out   --            sink     prometheus_ex  53.60 k (156/s)  N/A              11.06 k (--/s)   15.27 MiB (--/s  disabled          --        │
+│nginx_file    --            source   file           10.00 k (--/s)   968.56 KiB (--/  10.00 k (--/s)   N/A              disabled          --        │
+│parse_app     --            transfo  remap          10.00 k (--/s)   N/A              10.00 k (--/s)   N/A              disabled          --        │
+│parse_nginx   --            transfo  remap          10.00 k (--/s)   N/A              10.00 k (--/s)   N/A              disabled          --        │
+│to_nats       --            sink     nats           10.54 k (--/s)   N/A              10.54 k (--/s)   2.71 MiB (--/s)  disabled          --        │
+└────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+│To quit, press ESC or 'q'; Press F1 or '?' for help                                                                                                 │
+
+Это ЖИВОЙ снимок экрана TUI (статус "Connected", ненулевые счётчики после прогона
+генератора) — TUI отработал корректно, строка "Terminal must be a TTY" из
+Попытки 1 была именно про отсутствие терминала в неинтерактивном docker compose
+exec -T, а не про недоступность API.
+
+Дополнительное прямое подтверждение доступности GraphQL/REST API (на случай если
+TUI-снимок сочтут непригодным как единственное доказательство — сделано изнутри
+docker-сети стенда через ephemeral curlimages/curl, в обход хостового HTTP-прокси,
+который на этом Windows-чекауте перехватывает POST на /graphql и подменяет ответ на
+grpc-status:12/content-type:application/grpc — это артефакт корпоративного прокси
+на хосте, не поведение Vector):
+
+$ docker run --rm --network vector-pipeline_default curlimages/curl:latest \
+    -s -w '\nHTTP:%{http_code}\n' --max-time 5 http://agent:8686/health
+{"ok":true}
+HTTP:200
+
+$ docker run --rm --network vector-pipeline_default curlimages/curl:latest \
+    -s -o /dev/null -w 'HTTP:%{http_code}\n' --max-time 5 http://agent:8686/playground
+HTTP:200
+
+Вывод: GraphQL API агента (api.enabled: true, 0.0.0.0:8686) доступен и рабочий —
+подтверждено и вживую заснятым TUI, и прямыми запросами к /health и /playground.
+
+===============================================================================
+Метрики под нагрузкой (доп. пункт задачи: живьём сняты sent_events_total и
+buffer_events по компонентам агента и агрегатора после прогона генератора
+`docker compose run --rm loadgen -rate 2000 -duration 10s`, сгенерировано
+nginx=10000 app=10000 total=20000)
+===============================================================================
+
+--- agent :9599 vector_component_sent_events_total ---
+vector_component_sent_events_total{component_id="nginx_file",component_kind="source",component_type="file",host="a0f0a4eed2c9",output="_default"} 10000
+vector_component_sent_events_total{component_id="app_file",component_kind="source",component_type="file",host="a0f0a4eed2c9",output="_default"} 10000
+vector_component_sent_events_total{component_id="drop_health",component_kind="transform",component_type="filter",host="a0f0a4eed2c9",output="_default"} 8267
+vector_component_sent_events_total{component_id="parse_app",component_kind="transform",component_type="remap",host="a0f0a4eed2c9",output="_default"} 10000
+vector_component_sent_events_total{component_id="metrics_out",component_kind="sink",component_type="prometheus_exporter",host="a0f0a4eed2c9"} 12786
+vector_component_sent_events_total{component_id="internal",component_kind="source",component_type="internal_metrics",host="a0f0a4eed2c9",output="_default"} 61782
+vector_component_sent_events_total{component_id="parse_nginx",component_kind="transform",component_type="remap",host="a0f0a4eed2c9",output="_default"} 10000
+vector_component_sent_events_total{component_id="dedupe_app",component_kind="transform",component_type="dedupe",host="a0f0a4eed2c9"} 2278
+vector_component_sent_events_total{component_id="to_nats",component_kind="sink",component_type="nats",host="a0f0a4eed2c9"} 10545
+
+--- aggregator :9598 vector_component_sent_events_total ---
+vector_component_sent_events_total{component_id="internal",component_kind="source",component_type="internal_metrics",host="945feb8e9326",output="_default"} 47037
+vector_component_sent_events_total{component_id="from_nats",component_kind="source",component_type="nats",host="945feb8e9326",output="_default"} 10545
+vector_component_sent_events_total{component_id="metrics_out",component_kind="sink",component_type="prometheus_exporter",host="945feb8e9326"} 9634
+vector_component_sent_events_total{component_id="archive",component_kind="sink",component_type="file",host="945feb8e9326",output="_default"} 10545
+vector_component_sent_events_total{component_id="mark_aggregator",component_kind="transform",component_type="remap",host="945feb8e9326",output="_default"} 10545
+vector_component_sent_events_total{component_id="opensearch",component_kind="sink",component_type="elasticsearch",host="945feb8e9326"} 10545
+
+Примечание: drop_health.sent = 8267 (10000 nginx-запросов минус запросы к /health),
+dedupe_app.sent = 2278 (после дедупликации из 10000 app-событий) — то есть
+to_nats.sent = drop_health.sent + dedupe_app.sent = 8267 + 2278 = 10545, и это же
+число видно на входе агрегатора (from_nats.sent = 10545) и в его синках
+(archive.sent = opensearch(received) = 10545) — метрики согласуются со сквозным
+контуром один в один.
+
+--- agent :9599 vector_buffer_events ---
+vector_buffer_events{buffer_id="metrics_out",buffer_type="memory",component_id="metrics_out",component_kind="sink",component_type="prometheus_exporter",host="a0f0a4eed2c9",stage="0"} 0
+vector_buffer_events{buffer_id="to_nats",buffer_type="memory",component_id="to_nats",component_kind="sink",component_type="nats",host="a0f0a4eed2c9",stage="0"} 0
+
+--- aggregator :9598 vector_buffer_events ---
+vector_buffer_events{buffer_id="metrics_out",buffer_type="memory",component_id="metrics_out",component_kind="sink",component_type="prometheus_exporter",host="945feb8e9326",stage="0"} 0
+vector_buffer_events{buffer_id="archive",buffer_type="memory",component_id="archive",component_kind="sink",component_type="file",host="945feb8e9326",stage="0"} 0
+vector_buffer_events{buffer_id="opensearch",buffer_type="memory",component_id="opensearch",component_kind="sink",component_type="elasticsearch",host="945feb8e9326",stage="0"} 0
+
+(буферы пусты — под этой нагрузкой ни один синк не подпирает; метрика будет
+содержательна в Task 10, где буфер намеренно переполняется отказавшим синком)
+
+===============================================================================
+verify.sh после добавления метрик (транспорт nats)
+===============================================================================
+$ ./scripts/verify.sh
+ожидалось: 10545 (nginx 8267 + app 2278)
+в архиве:  10545
+в индексе: 10545
+OK: доехало ровно столько, сколько должно
+
+Точное совпадение сохранилось — добавление internal_metrics/prometheus_exporter
+не повлияло на сквозной контур.

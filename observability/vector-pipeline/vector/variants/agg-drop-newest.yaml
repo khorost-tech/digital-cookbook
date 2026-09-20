@@ -1,0 +1,85 @@
+# Вариант aggregator-kafka.yaml для замера 5 (Task 10, scripts/fail-sink.sh):
+# единственное отличие от оригинала — when_full: drop_newest у буфера синка
+# opensearch (там block). Используется через AGG_CONFIG=/etc/vector/variants/
+# agg-drop-newest.yaml, подставляемую scripts/fail-sink.sh ДО вызова up.sh.
+#
+# Агрегатор: принимает поток из транспорта, помечает и складывает в архив.
+# Синки OpenSearch и prometheus_exporter добавляются в Tasks 8 и 9.
+#
+# Свой файл на каждый транспорт (aggregator.yaml / aggregator-kafka.yaml, как и у
+# агента: agent.yaml / agent-kafka.yaml) — а НЕ общий конфиг с обоими источниками
+# сразу. Причина — асимметрия в Vector 0.57 (проверено живьём): source kafka при
+# недоступном брокере просто логирует ошибки подключения и работает дальше, а
+# source nats на этапе сборки топологии синхронно вызывает connect().await? без
+# единой попытки повтора — при недоступном nats вся сборка падает как
+# "Configuration error", процесс завершается с кодом 78, утаскивая за собой любые
+# другие источники в том же конфиге. Не сливай источники обратно в один файл.
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  from_kafka:
+    type: kafka
+    bootstrap_servers: kafka:9092
+    topics: ["logs-pipeline"]
+    group_id: vp-aggregator
+    auto_offset_reset: earliest
+    decoding:
+      codec: json
+
+  internal:
+    type: internal_metrics
+
+transforms:
+  mark_aggregator:
+    type: remap
+    inputs: [from_kafka]
+    source: |
+      .pipeline_stage = "aggregated"
+
+sinks:
+  archive:
+    type: file
+    inputs: [mark_aggregator]
+    path: /archive/events.log
+    encoding:
+      codec: json
+
+  # api_version: v7 — OpenSearch 3.5.0 форк Elasticsearch 7.10 и не реализует API
+  # восьмой версии; при этом корневой ответ OpenSearch не отдаёт build_flavor, из-за
+  # чего автоопределение версии в Vector ненадёжно (см. Task 3, шаг 9). Литеральный
+  # префикс "logs-app-" в index — то, что требует template confinement Vector 0.57
+  # (см. vector/variants/unconfined-index.yaml и results/08-confinement.txt).
+  opensearch:
+    type: elasticsearch
+    inputs: [mark_aggregator]
+    endpoints: ["https://opensearch:9200"]
+    api_version: v7
+    auth:
+      strategy: basic
+      user: admin
+      password: "VectorDemo#2026"   # demo-only, self-signed demo security стенда
+    tls:
+      verify_certificate: false     # self-signed сертификат demo-security
+    bulk:
+      index: "logs-app-{{ service }}"
+    batch:
+      max_events: 1000
+      timeout_secs: 2
+    # Отличие от aggregator-kafka.yaml: when_full: drop_newest вместо block —
+    # при заполнении буфера новые события выбрасываются, а не создают обратное
+    # давление. Сравнение с block — замер 5, scripts/fail-sink.sh.
+    buffer:
+      type: disk
+      max_size: 268435488      # ~256 MiB
+      when_full: drop_newest
+    acknowledgements:
+      enabled: true
+
+  metrics_out:
+    type: prometheus_exporter
+    inputs: [internal]
+    address: 0.0.0.0:9598

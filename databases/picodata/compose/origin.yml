@@ -1,0 +1,18 @@
+# Источник истины стенда: тот же датасет, что у серии «Вычисления в оперативной
+# памяти», но в собственном экземпляре PostgreSQL — стенды не должны зависеть
+# друг от друга. Порт 5434: 5432 занят стендами databases/*, 5433 — стендом
+# performance/inmemory.
+name: picodata-cookbook
+networks:
+  picodata-net:
+    name: picodata-net
+services:
+  picodata-origin:
+    image: postgres:18.4
+    container_name: picodata-origin
+    environment:
+      POSTGRES_USER: picodata
+      POSTGRES_PASSWORD: picodata
+      POSTGRES_DB: catalog
+    ports: ["5434:5432"]
+    networks: [picodata-net]

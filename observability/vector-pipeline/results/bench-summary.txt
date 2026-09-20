@@ -1,0 +1,91 @@
+=== nats / agent / rate=1000
+сгенерировано: 60000
+ожидалось:     27362
+в архиве:      27362
+в индексе:     27362
+недоставлено:  0
+agent под нагрузкой: CPU 4.8%, RAM 219 MiB (по 119 выборкам)
+aggregator под нагрузкой: CPU 5.7%, RAM 187 MiB (по 119 выборкам)
+agent idle: CPU 0.2%, RAM 164 MiB
+aggregator idle: CPU 0.1%, RAM 137 MiB
+
+=== nats / agent / rate=5000
+сгенерировано: 300000
+ожидалось:     127541
+в архиве:      127541
+в индексе:     127541
+недоставлено:  0
+agent под нагрузкой: CPU 23.0%, RAM 287 MiB (по 117 выборкам)
+aggregator под нагрузкой: CPU 35.2%, RAM 242 MiB (по 117 выборкам)
+agent idle: CPU 0.2%, RAM 154 MiB
+aggregator idle: CPU 0.1%, RAM 136 MiB
+
+=== nats / agent / rate=20000
+сгенерировано: 1199200
+ожидалось:     502230
+в архиве:      502230
+в индексе:     502230
+недоставлено:  0
+agent под нагрузкой: CPU 98.1%, RAM 326 MiB (по 118 выборкам)
+aggregator под нагрузкой: CPU 144.8%, RAM 287 MiB (по 118 выборкам)
+agent idle: CPU 0.2%, RAM 143 MiB
+aggregator idle: CPU 0.2%, RAM 138 MiB
+
+=== nats / passthrough / rate=5000
+сгенерировано: 300000
+ожидалось:     300000
+в архиве:      300000
+в индексе:     0
+недоставлено:  300000
+  (passthrough не ставит service → синк opensearch не рендерит bulk.index
+   и роняет эти события; в архиве при этом полный поток — потери не в
+   транспорте/CPU-цене, а в маршрутизации индекса, см. Task 8/confinement)
+agent под нагрузкой: CPU 46.7%, RAM 208 MiB (по 118 выборкам)
+aggregator под нагрузкой: CPU 92.5%, RAM 192 MiB (по 118 выборкам)
+agent idle: CPU 0.1%, RAM 145 MiB
+aggregator idle: CPU 0.2%, RAM 135 MiB
+
+=== nats / nofilter / rate=5000
+сгенерировано: 300000
+ожидалось:     300000
+в архиве:      300000
+в индексе:     300000
+недоставлено:  0
+agent под нагрузкой: CPU 43.6%, RAM 262 MiB (по 118 выборкам)
+aggregator под нагрузкой: CPU 75.7%, RAM 263 MiB (по 118 выборкам)
+agent idle: CPU 0.2%, RAM 141 MiB
+aggregator idle: CPU 0.2%, RAM 129 MiB
+
+=== nats / agent / rate=5000
+сгенерировано: 300000
+ожидалось:     127541
+в архиве:      127541
+в индексе:     127541
+недоставлено:  0
+agent под нагрузкой: CPU 24.1%, RAM 291 MiB (по 118 выборкам)
+aggregator под нагрузкой: CPU 34.2%, RAM 239 MiB (по 118 выборкам)
+agent idle: CPU 0.2%, RAM 152 MiB
+aggregator idle: CPU 0.1%, RAM 132 MiB
+
+=== kafka / agent / rate=5000
+сгенерировано: 299750
+ожидалось:     127436
+в архиве:      127436
+в индексе:     127436
+недоставлено:  0
+agent под нагрузкой: CPU 12.2%, RAM 332 MiB (по 118 выборкам)
+aggregator под нагрузкой: CPU 27.8%, RAM 284 MiB (по 118 выборкам)
+agent idle: CPU 1.0%, RAM 179 MiB
+aggregator idle: CPU 0.2%, RAM 154 MiB
+
+=== kafka / agent / rate=5000
+сгенерировано: 299950
+ожидалось:     127523
+в архиве:      127523
+в индексе:     127523
+недоставлено:  0
+agent под нагрузкой: CPU 13.2%, RAM 362 MiB (по 119 выборкам)
+aggregator под нагрузкой: CPU 30.0%, RAM 287 MiB (по 119 выборкам)
+agent idle: CPU 1.1%, RAM 185 MiB
+aggregator idle: CPU 0.2%, RAM 154 MiB
+

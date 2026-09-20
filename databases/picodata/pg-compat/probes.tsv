@@ -1,0 +1,69 @@
+# Набор проб PostgreSQL-совместимости. Колонки разделены ТАБУЛЯЦИЕЙ: id, группа, SQL.
+# Первые две пробы — контрольные: они проверяют не Picodata, а сам раннер.
+# Раннер, у которого __control_ok не OK или __control_fail не FAIL, не различает
+# исходы, и его матрица ничего не значит — такой прогон отвергается report.py.
+__control_ok	контроль	SELECT 1
+__control_fail	контроль	SELECT * FROM таблицы_которой_нет_12345
+version	интроспекция	SELECT version()
+current_database	интроспекция	SELECT current_database()
+current_schema	интроспекция	SELECT current_schema()
+information_schema	интроспекция	SELECT count(*) FROM information_schema.tables
+pg_tables	интроспекция	SELECT count(*) FROM pg_catalog.pg_tables
+pg_class	интроспекция	SELECT count(*) FROM pg_catalog.pg_class
+cte	запросы	WITH t AS (SELECT 1 AS x) SELECT x FROM t
+cte_recursive	запросы	WITH RECURSIVE t(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM t WHERE n<3) SELECT count(*) FROM t
+join	запросы	SELECT count(*) FROM products a JOIN products b ON a.id=b.id WHERE a.id<10
+left_join	запросы	SELECT count(*) FROM products a LEFT JOIN products b ON a.id=b.id WHERE a.id<10
+subquery_in	запросы	SELECT count(*) FROM products WHERE id IN (SELECT id FROM products WHERE id<5)
+exists_uncorrelated	запросы	SELECT count(*) FROM products WHERE EXISTS (SELECT 1 FROM products q WHERE q.id<5)
+exists_correlated	запросы	SELECT count(*) FROM products p WHERE EXISTS (SELECT 1 FROM products q WHERE q.id=p.id AND q.id<5)
+union	запросы	SELECT id FROM products WHERE id=1 UNION SELECT id FROM products WHERE id=2
+union_all	запросы	SELECT id FROM products WHERE id=1 UNION ALL SELECT id FROM products WHERE id=1
+except	запросы	SELECT id FROM products WHERE id<5 EXCEPT SELECT id FROM products WHERE id<3
+intersect	запросы	SELECT id FROM products WHERE id<5 INTERSECT SELECT id FROM products WHERE id<3
+distinct	запросы	SELECT DISTINCT category FROM products
+group_having	запросы	SELECT category FROM products GROUP BY category HAVING count(*)>0
+order_by_projected	запросы	SELECT id, views FROM products ORDER BY views DESC LIMIT 3
+order_by_position	запросы	SELECT id FROM products ORDER BY 1 LIMIT 3
+order_by_unprojected	запросы	SELECT id FROM products ORDER BY views DESC LIMIT 3
+order_by_expr	запросы	SELECT id, views FROM products ORDER BY views+1 DESC LIMIT 3
+order_by_alias	запросы	SELECT views AS v FROM products ORDER BY v DESC LIMIT 3
+limit	запросы	SELECT id FROM products LIMIT 3
+offset	запросы	SELECT id FROM products ORDER BY id LIMIT 5 OFFSET 10
+window_row_number_small	запросы	SELECT row_number() OVER (ORDER BY id) FROM (SELECT id FROM products WHERE id<100) t LIMIT 1
+window_row_number_full	запросы	SELECT row_number() OVER (ORDER BY id) FROM products LIMIT 1
+window_rank	запросы	SELECT rank() OVER (PARTITION BY category ORDER BY views DESC) FROM products LIMIT 1
+case_when	выражения	SELECT CASE WHEN id>0 THEN 1 ELSE 0 END FROM products LIMIT 1
+coalesce	выражения	SELECT COALESCE(NULL, 1)
+cast	выражения	SELECT CAST(1 AS TEXT)
+like	выражения	SELECT count(*) FROM products WHERE category LIKE 'too%'
+ilike	выражения	SELECT count(*) FROM products WHERE category ILIKE 'TOO%'
+between	выражения	SELECT count(*) FROM products WHERE id BETWEEN 1 AND 10
+is_null	выражения	SELECT count(*) FROM products WHERE category IS NOT NULL
+concat	выражения	SELECT 'a' || 'b'
+substr	выражения	SELECT substr('abcdef', 2, 3)
+upper_lower	выражения	SELECT upper('abc'), lower('ABC')
+now	выражения	SELECT now()
+agg_basic	агрегаты	SELECT sum(views), avg(views), min(id), max(id), count(*) FROM products
+agg_string	агрегаты	SELECT string_agg(category, ',') FROM products WHERE id<3
+agg_count_distinct	агрегаты	SELECT count(DISTINCT category) FROM products
+explain	планы	EXPLAIN SELECT id FROM products WHERE id=1
+set_param	сессия	SET search_path TO public
+show_param	сессия	SHOW server_version
+# Блок DDL/DML идёт по порядку и работает на СВОЕЙ таблице ddl_probe: пробы,
+# меняющие схему, не должны трогать products — иначе стенд перестаёт быть
+# воспроизводимым, а следующий прогон видит уже другую таблицу.
+__setup_drop	служебное	DROP TABLE ddl_probe
+ddl_create_table	ddl	CREATE TABLE ddl_probe (id UNSIGNED NOT NULL, title TEXT NOT NULL, PRIMARY KEY (id)) USING memtx DISTRIBUTED BY (id)
+ddl_alter_add_column	ddl	ALTER TABLE ddl_probe ADD COLUMN note TEXT
+ddl_alter_drop_column	ddl	ALTER TABLE ddl_probe DROP COLUMN note
+ddl_create_index	ddl	CREATE INDEX idx_ddl_probe ON ddl_probe (title)
+ddl_drop_index	ddl	DROP INDEX idx_ddl_probe
+dml_insert	dml	INSERT INTO ddl_probe (id, title) VALUES (1, 'a')
+dml_insert_multi	dml	INSERT INTO ddl_probe (id, title) VALUES (2, 'b'), (3, 'c')
+dml_update	dml	UPDATE ddl_probe SET title = 'z' WHERE id = 1
+dml_delete	dml	DELETE FROM ddl_probe WHERE id = 3
+dml_returning	dml	INSERT INTO ddl_probe (id, title) VALUES (4, 'd') RETURNING id
+dml_upsert	dml	INSERT INTO ddl_probe (id, title) VALUES (1, 'dup') ON CONFLICT (id) DO UPDATE SET title = 'dup'
+dml_truncate	dml	TRUNCATE TABLE ddl_probe
+ddl_drop_table	ddl	DROP TABLE ddl_probe

@@ -1,0 +1,36 @@
+# НАМЕРЕННО СЛОМАННЫЙ КОНФИГ. НЕ ИСПРАВЛЯТЬ, НЕ ИСПОЛЬЗОВАТЬ В КОНТУРЕ.
+#
+# Демонстрирует ограничение Vector 0.57: routing-шаблон синка elasticsearch/
+# opensearch обязан иметь литеральный префикс, из которого Vector может вывести
+# "базу confinement" — набор индексов, которые синк потенциально затронет.
+# Шаблон "{{ service }}" целиком состоит из поля события и такого префикса не
+# даёт, поэтому Vector отказывается стартовать.
+#
+# Ключевой момент для статьи: `vector validate` эту ошибку НЕ ловит — валидация
+# проверяет только синтаксис и типы конфига, а не то, что шаблон синка можно
+# сконфинить. Ошибка "Configuration error" всплывает только при реальном
+# старте процесса, когда Vector строит топологию и пытается вычислить базу
+# confinement для этого синка. Рабочий вариант — vector/aggregator.yaml, где
+# индекс задан как "logs-app-{{ service }}" (литеральный префикс "logs-app-").
+data_dir: /var/lib/vector
+
+sources:
+  gen:
+    type: demo_logs
+    format: json
+    interval: 1
+
+transforms:
+  tag:
+    type: remap
+    inputs: [gen]
+    source: .service = "api"
+
+sinks:
+  opensearch:
+    type: elasticsearch
+    inputs: [tag]
+    endpoints: ["https://opensearch:9200"]
+    api_version: v7
+    bulk:
+      index: "{{ service }}"

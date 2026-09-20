@@ -10,6 +10,7 @@
 | [`identifiers/`](identifiers/) | Идентификаторы: локальность и bloat UUIDv4/UUIDv7/bigint в PostgreSQL, распределение в Mongo/Scylla, генерация в Go/Java/Rust | [статья](https://khorost.tech/databases/identifiers-index-locality-bloat/) |
 | [`mongodb/`](mongodb/) | MongoDB: глубокое погружение (модель, индексы, репликация, шардирование) | [статья](https://khorost.tech/databases/) |
 | [`opensearch/`](opensearch/) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
+| [`picodata/`](picodata/) | Picodata: распределённая СУБД на форке ядра Tarantool — плагин на Rust, PostgreSQL wire protocol, вычисления рядом с данными | 🔜 скоро |
 | [`postgres/`](postgres/) | Клиенты Go/Java/Rust к PostgreSQL: primary+replica+pgbouncer, failover | [статья](https://khorost.tech/databases/postgres-clients-reliability-go-java-rust/) |
 | [`redis/client-resilience/`](redis/client-resilience/) | Клиенты Go/Java/Rust к Redis: Cluster/Sentinel, reconnect и failover | [статья](https://khorost.tech/databases/redis-clients-go-java-rust/) |
 | [`redis/deep-dive/`](redis/deep-dive/) | Redis/Valkey: глубокое погружение (кодировки, event loop, персистентность, Cluster/Sentinel, память, streams/Lua, эксплуатация) | [статья](https://khorost.tech/databases/) |

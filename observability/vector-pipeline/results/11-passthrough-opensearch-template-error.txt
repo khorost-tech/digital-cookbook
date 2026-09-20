@@ -1,0 +1,65 @@
+Замер: passthrough не индексируется в OpenSearch — template_failed на bulk.index (Task 11)
+Дата: 2026-07-28
+Конфиг агента: vector/variants/passthrough.yaml (без парсинга — событие не несёт поле service)
+Конфиг агрегатора: vector/aggregator.yaml (без изменений), синк opensearch,
+  bulk.index: "logs-app-{{ service }}"
+Образ: timberio/vector:0.57.0-debian
+Транспорт: nats
+
+Команда:
+  cd observability/vector-pipeline
+  MSYS_NO_PATHCONV=1 AGENT_CONFIG=/etc/vector/variants/passthrough.yaml ./scripts/up.sh nats
+  docker compose run -d --rm loadgen -rate 200 -duration 15s
+  # ждём ~20 с (прогон + отправка в транспорт + попытка индексации)
+  docker compose logs aggregator
+
+Полный лог агрегатора (дословно):
+
+vp-agg  | 2026-07-28T05:04:26.172527Z  INFO vector::app: Log level is enabled. level="info"
+vp-agg  | 2026-07-28T05:04:26.190671Z  INFO vector::app: Loading configs. paths=["/etc/vector/aggregator.yaml"]
+vp-agg  | 2026-07-28T05:04:26.207488Z  INFO source{component_kind="source" component_id=from_nats component_type=nats}: async_nats::connector: connected successfully server=4222 max_payload=1048576
+vp-agg  | 2026-07-28T05:04:26.207660Z  INFO async_nats: event: connected
+vp-agg  | 2026-07-28T05:04:26.218033Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}: vector_core::tls::settings: The `verify_certificate` option is DISABLED, this may lead to security vulnerabilities.
+vp-agg  | 2026-07-28T05:04:26.251329Z  INFO vector::topology::running: Running healthchecks.
+vp-agg  | 2026-07-28T05:04:26.251512Z  INFO vector: Vector has started. debug="false" version="0.57.0" arch="x86_64" revision="8832452 2026-07-14 20:58:30.491174540"
+vp-agg  | 2026-07-28T05:04:26.251622Z  INFO vector::topology::builder: Healthcheck passed.
+vp-agg  | 2026-07-28T05:04:26.251655Z  INFO vector::topology::builder: Internal log [Healthcheck passed.] is being suppressed to avoid flooding.
+vp-agg  | 2026-07-28T05:04:26.251809Z  INFO vector::api::grpc_server: GRPC API server bound to 0.0.0.0:8686.
+vp-agg  | 2026-07-28T05:04:26.251869Z  INFO vector::api::grpc_server: GRPC API server started on 0.0.0.0:8686.
+vp-agg  | 2026-07-28T05:04:26.251926Z  INFO vector::internal_events::api: API server running. address=0.0.0.0:8686
+vp-agg  | 2026-07-28T05:04:26.261965Z  INFO sink{component_kind="sink" component_id=metrics_out component_type=prometheus_exporter}: vector::sinks::prometheus::exporter: Building HTTP server. address=0.0.0.0:9598
+vp-agg  | 2026-07-28T05:04:52.174826Z ERROR sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}: vector::internal_events::template: Failed to render template for "index". error=Missing fields on event: ["service"] error_type="template_failed" stage="processing"
+vp-agg  | 2026-07-28T05:04:52.174886Z ERROR sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}: vector_common::internal_event::component_events_dropped: Events dropped intentional=false count=1 reason="Failed to render template."
+vp-agg  | 2026-07-28T05:04:52.174901Z ERROR sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}: vector::internal_events::template: Internal log [Failed to render template for "index".] is being suppressed to avoid flooding.
+vp-agg  | 2026-07-28T05:04:52.174911Z ERROR sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}: vector_common::internal_event::component_events_dropped: Internal log [Events dropped] is being suppressed to avoid flooding.
+
+Корроборирующие цифры того же прогона (манифест генератора / архив агрегатора / OpenSearch):
+
+manifest: {"nginx":1500,"app":1500,"total":3000,"nginx_expected":1232,"app_expected":1033}
+архив агрегатора (wc -l /archive/events.log): 3000
+_cat/indices на OpenSearch: индекса "logs-app-*" НЕТ ВООБЩЕ (только служебные
+  .plugins-ml-config, .opendistro_security, top_queries-* — ни одного
+  документа от этого прогона)
+
+Вывод: все 3000 событий дошли до агрегатора и записались в архив (файловый
+синк без шаблона в пути — не зависит от confinement), но НИ ОДНО не попало
+в OpenSearch: bulk.index синка opensearch — "logs-app-{{ service }}", а
+passthrough не парсит события и не проставляет поле service, поэтому
+рендер шаблона для каждого события проваливается с error_type="template_failed"
+и Vector роняет событие (component_events_dropped, intentional=false).
+Ошибка после первого попадания подавляется логом "is being suppressed to
+avoid flooding" — Vector не спамит одинаковой ошибкой на каждое из 3000
+событий, но реально роняет их все (подтверждено отсутствием индекса).
+
+См. также results/08-confinement.txt — то же шаблонное ограничение с другой
+стороны. Там показано, что шаблон без литерального префикса полная
+`vector validate` ЛОВИТ и завершается кодом 78, а пропускает его только вызов
+с флагом --no-environment.
+
+Разница между двумя случаями важна и стоит того, чтобы её проговорить:
+в 08-confinement.txt шаблон в принципе не даёт вывести базу confinement —
+это статическое свойство самого конфига, потому проверка его и видит.
+Здесь конфиг корректен, и падает не он, а рендер шаблона на конкретном
+событии, у которого нет поля service. Такое не поймает никакая проверка
+конфига, ни с флагом, ни без: дефект проявляется только на данных, и
+единственный сигнал о нём — component_events_dropped с intentional=false.

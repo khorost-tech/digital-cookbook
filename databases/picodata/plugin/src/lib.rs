@@ -1,0 +1,27 @@
+mod config;
+mod handlers;
+mod models;
+mod service;
+
+use picodata_plugin::plugin::{interface::ServiceRegistry, prelude::service_registrar};
+
+#[service_registrar]
+pub fn service_registrar(reg: &mut ServiceRegistry) {
+    reg.add(
+        "near_data_service",
+        env!("CARGO_PKG_VERSION"),
+        service::ExampleService::default,
+    );
+    reg.add_config_validator::<service::ExampleService>(
+        "near_data_service",
+        env!("CARGO_PKG_VERSION"),
+        |cfg| {
+            if let Some(cfg_value) = cfg.value
+                && cfg_value == "tarantool"
+            {
+                return Err("Please call a pest control service!".into());
+            }
+            Ok(())
+        },
+    );
+}

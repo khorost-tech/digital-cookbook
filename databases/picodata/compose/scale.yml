@@ -1,0 +1,43 @@
+# Два дополнительных инстанса для сценария расширения кластера.
+#
+# Добавляются ПАРОЙ намеренно: при факторе репликации 2 одиночный новый инстанс
+# образует неполный репликасет и не получит ни одного бакета — ровно та же
+# ситуация, что с тремя инстансами на старте. Пара достраивает третий
+# репликасет целиком, и ребалансировка перераспределяет бакеты на него.
+name: picodata-cookbook
+networks:
+  picodata-net:
+    name: picodata-net
+    external: true
+volumes:
+  picodata-share:
+    name: picodata-share
+services:
+  picodata-5:
+    image: docker.binary.picodata.io/picodata:26.1.3
+    container_name: pd-5
+    command: >
+      run --instance-dir /var/lib/picodata --share-dir /var/lib/picodata-share
+      --iproto-listen 0.0.0.0:3301 --iproto-advertise picodata-5:3301
+      --peer picodata-1:3301
+      --pg-listen 0.0.0.0:5432 --pg-advertise picodata-5:5432
+      --http-listen 0.0.0.0:8081
+    volumes: ["picodata-share:/var/lib/picodata-share"]
+    ports: ["5446:5432", "8085:8081"]
+    networks:
+      picodata-net:
+        aliases: [picodata-5]
+  picodata-6:
+    image: docker.binary.picodata.io/picodata:26.1.3
+    container_name: pd-6
+    command: >
+      run --instance-dir /var/lib/picodata --share-dir /var/lib/picodata-share
+      --iproto-listen 0.0.0.0:3301 --iproto-advertise picodata-6:3301
+      --peer picodata-1:3301
+      --pg-listen 0.0.0.0:5432 --pg-advertise picodata-6:5432
+      --http-listen 0.0.0.0:8081
+    volumes: ["picodata-share:/var/lib/picodata-share"]
+    ports: ["5447:5432", "8086:8081"]
+    networks:
+      picodata-net:
+        aliases: [picodata-6]

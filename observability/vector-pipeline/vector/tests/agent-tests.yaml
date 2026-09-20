@@ -1,0 +1,69 @@
+tests:
+  - name: nginx_combined_parsed
+    inputs:
+      - insert_at: parse_nginx
+        type: log
+        log_fields:
+          message: '10.0.0.1 - alice [27/Jul/2026:10:15:01 +0000] "GET /api/items HTTP/1.1" 200 1234 "-" "curl/8.5.0"'
+    outputs:
+      - extract_from: parse_nginx
+        conditions:
+          - type: vrl
+            source: |
+              assert_eq!(.service, "nginx")
+              assert_eq!(.status, 200)
+              assert_eq!(.client, "10.0.0.1")
+              assert!(!exists(.message), "message должен быть удалён после парсинга")
+
+  - name: nginx_broken_line_is_marked_not_dropped
+    inputs:
+      - insert_at: parse_nginx
+        type: log
+        log_fields:
+          message: 'это не access-лог'
+    outputs:
+      - extract_from: parse_nginx
+        conditions:
+          - type: vrl
+            source: |
+              assert_eq!(.service, "unparsed")
+              assert!(exists(.parse_error), "непарсящаяся строка должна нести причину")
+
+  - name: app_json_parsed_and_enriched
+    inputs:
+      - insert_at: parse_app
+        type: log
+        log_fields:
+          message: '{"ts":"2026-07-27T10:15:01Z","level":"error","service":"api","msg":"db query slow","duration_ms":42}'
+    outputs:
+      - extract_from: parse_app
+        conditions:
+          - type: vrl
+            source: |
+              assert_eq!(.level, "error")
+              assert_eq!(.service, "api")
+              assert_eq!(.duration_ms, 42)
+              assert_eq!(.host_role, "agent")
+
+  - name: health_requests_dropped
+    inputs:
+      - insert_at: drop_health
+        type: log
+        log_fields:
+          service: nginx
+          request: "GET /health HTTP/1.1"
+    no_outputs_from:
+      - drop_health
+
+  - name: normal_requests_kept
+    inputs:
+      - insert_at: drop_health
+        type: log
+        log_fields:
+          service: nginx
+          request: "GET /api/items HTTP/1.1"
+    outputs:
+      - extract_from: drop_health
+        conditions:
+          - type: vrl
+            source: assert_eq!(.request, "GET /api/items HTTP/1.1")

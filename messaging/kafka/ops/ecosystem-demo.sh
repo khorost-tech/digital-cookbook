@@ -33,7 +33,7 @@
 # реестр принял её как валидную (!), создав subject с schemaType=PROTOBUF и
 # пустым телом, что затем ломало ВСЕ последующие попытки зарегистрировать
 # по-настоящему Avro-схему в тот же subject ("Cannot parse <null> schema").
-# Исправлено: тело JSON строится через `python -c` (json.dumps) — корректно
+# Исправлено: тело JSON строится через `$PYTHON_BIN -c` (json.dumps) — корректно
 # экранирует кавычки/переносы строк независимо от платформы, без хрупкого
 # sed/awk. Это ЕДИНСТВЕННОЕ место во всём стенде, где требуется python на
 # хосте (остальные ops/*.sh репозитория — чистый bash+docker).
@@ -57,6 +57,17 @@ CONNECT="http://127.0.0.1:18083" # с хоста (тот же баг, что о�
 SUBJECT="ecosystem-user-value"
 GOBIN="go/bin/ecosystem-serialization"
 SCRATCH="ecosystem/connect-data/.demo-scratch"  # внутри уже gitignored ecosystem/connect-data/
+
+# Интерпретатор python для сборки JSON-тела (см. content-note выше). В Git Bash
+# на Windows исполняемый файл называется `python`, в большинстве Linux-дистрибутивов
+# (в т.ч. Ubuntu в WSL) его нет вовсе — есть только `python3`, и жёсткий вызов
+# `python` ронял скрипт с "python: command not found" (RC=127) на середине
+# сценария schema-registry. Определяем доступный интерпретатор один раз.
+PYTHON_BIN="$(command -v python3 || command -v python || true)"
+if [ -z "$PYTHON_BIN" ]; then
+  echo "[ops] нужен python3 (или python) на хосте — только для сборки JSON-тела запроса к реестру" >&2
+  exit 1
+fi
 
 # curl_r — обёртка над curl с ретраями. ⚠️ Живая находка: на этой машине
 # localhost/127.0.0.1-подключения к сервисам стенда изредка "зависают" на
@@ -96,7 +107,7 @@ up_ecosystem() {
 # build_schema_body <avsc-файл> — {"schema": "...", "schemaType": "AVRO"} с
 # корректным JSON-экранированием (см. ⚠️ живую находку про sed/awk выше).
 build_schema_body() {
-  python -c "
+  "$PYTHON_BIN" -c "
 import json, sys
 with open(sys.argv[1], encoding='utf-8') as f:
     schema = f.read()

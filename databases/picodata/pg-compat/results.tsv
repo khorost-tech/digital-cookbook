@@ -1,0 +1,21 @@
+# Пары запросов «PostgreSQL | Picodata», результаты которых обязаны СОВПАСТЬ.
+#
+# Матрица probes.tsv отвечает на вопрос «принимается ли синтаксис». Этот набор
+# отвечает на другой: «совпадает ли результат». Без него утверждение «работает»
+# означало бы лишь «не отвергнуто», а это не одно и то же.
+#
+# Колонки разделены ТАБУЛЯЦИЕЙ: id, SQL для PostgreSQL, SQL для Picodata.
+# Запросы различаются, потому что различается схема: в источнике категория
+# лежит в JSONB-поле attrs, а просмотры считаются по отдельной таблице views;
+# в Picodata обе величины — плоские колонки. Сравнивается именно РЕЗУЛЬТАТ.
+count_all	SELECT count(*) FROM products	SELECT count(*) FROM products
+count_tools	SELECT count(*) FROM products WHERE attrs->>'category' = 'tools'	SELECT count(*) FROM products WHERE category = 'tools'
+count_by_category	SELECT attrs->>'category' AS c, count(*) FROM products GROUP BY 1 ORDER BY 1	SELECT category, count(*) FROM products GROUP BY category ORDER BY category
+min_max_id	SELECT min(id), max(id) FROM products	SELECT min(id), max(id) FROM products
+sum_price	SELECT sum(price_cents) FROM products WHERE id < 1000	SELECT sum(price_cents) FROM products WHERE id < 1000
+distinct_categories	SELECT DISTINCT attrs->>'category' AS c FROM products ORDER BY 1	SELECT DISTINCT category FROM products ORDER BY category
+point_lookup	SELECT id, sku, title FROM products WHERE id = 42	SELECT id, sku, title FROM products WHERE id = 42
+range_scan	SELECT id FROM products WHERE id BETWEEN 10 AND 20 ORDER BY id	SELECT id FROM products WHERE id BETWEEN 10 AND 20 ORDER BY id
+like_prefix	SELECT count(*) FROM products WHERE sku LIKE 'tools-%'	SELECT count(*) FROM products WHERE sku LIKE 'tools-%'
+top_by_views	SELECT p.id, p.title, COALESCE(v.views,0) AS views FROM products p LEFT JOIN (SELECT product_id, count(*) AS views FROM views GROUP BY product_id) v ON v.product_id = p.id WHERE p.attrs->>'category' = 'tools' ORDER BY views DESC, p.id DESC LIMIT 10	SELECT id, title, views FROM products WHERE category = 'tools' ORDER BY views DESC, id DESC LIMIT 10
+case_expr	SELECT count(*) FROM products WHERE CASE WHEN price_cents > 500000 THEN 1 ELSE 0 END = 1	SELECT count(*) FROM products WHERE CASE WHEN price_cents > 500000 THEN 1 ELSE 0 END = 1

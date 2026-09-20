@@ -48,6 +48,42 @@ wait_healthy() {
   echo "[mm2] $name healthy"
 }
 
+# wait_mm2_connectors — ждёт, пока dedicated-herder MM2 не поднимет ВСЕ ТРИ коннектора.
+#
+# ⚠️ Живая находка: раньше здесь стоял фиксированный `sleep 12`, за которым сразу шёл
+# `docker logs ... | grep -oE "connectorIds=..."`. Под `set -o pipefail` grep, не нашедший
+# строку, роняет весь конвейер, а `set -e` — весь скрипт: сценарий обрывался ещё до
+# репликации, трансляции offset и failover, и выглядело это как отказ MM2, хотя MM2 просто
+# не успел проинициализироваться. Замер на одной из машин: первая строка `connectorIds`
+# появляется через ~15с — то есть 12с не хватало буквально чуть-чуть, и падало не везде,
+# а только там, где инициализация чуть медленнее.
+#
+# Ждать «появилась строка connectorIds» тоже мало: первая такая строка — ПУСТАЯ
+# (`connectorIds=[]`), полный список из трёх коннекторов приходит позже. Поэтому условие —
+# наличие в одной строке всех трёх имён.
+wait_mm2_connectors() {
+  local tries=0 max=60 line=""
+  echo "[mm2] жду инициализацию трёх коннекторов MM2 (source/checkpoint/heartbeat)..."
+  while [ "$tries" -lt "$max" ]; do
+    line="$(docker logs kafka-cookbook-mm2 2>&1 \
+      | grep -oE "connectorIds=\[[^]]*\]" \
+      | grep "MirrorSourceConnector" \
+      | grep "MirrorCheckpointConnector" \
+      | grep "MirrorHeartbeatConnector" \
+      | tail -1 || true)"
+    if [ -n "$line" ]; then
+      echo "--- статус коннекторов (по логу, dedicated-режим REST не публикует) ---"
+      echo "$line"
+      return 0
+    fi
+    tries=$((tries + 1))
+    sleep 2
+  done
+  echo "[mm2] коннекторы MM2 не инициализировались за $((max * 2))s — последние строки лога:" >&2
+  docker logs kafka-cookbook-mm2 2>&1 | tail -40 >&2
+  exit 1
+}
+
 sum_offsets() {
   # sum_offsets BROKER TOPIC — суммарный latest-offset по всем партициям топика.
   docker exec "$1" /opt/kafka/bin/kafka-get-offsets.sh --bootstrap-server localhost:9092 \
@@ -78,10 +114,7 @@ scenario_setup() {
   docker compose -f "$COMPOSE_WEST" up -d
   wait_healthy kafka-cookbook-west-1
   docker compose -f "$COMPOSE_WEST" -f "$COMPOSE_MM2" up -d mm2
-  echo "[mm2] жду инициализацию трёх коннекторов MM2 (source/checkpoint/heartbeat)..."
-  sleep 12
-  echo "--- статус коннекторов (по логу, dedicated-режим REST не публикует) ---"
-  docker logs kafka-cookbook-mm2 2>&1 | grep -oE "connectorIds=\[[^]]*\]" | tail -3
+  wait_mm2_connectors
   if docker logs kafka-cookbook-mm2 2>&1 | grep -qiE "ERROR|Exception" ; then
     echo "[mm2] ⚠️ в логе MM2 есть ERROR/Exception — проверь docker logs kafka-cookbook-mm2" >&2
   fi
@@ -135,13 +168,22 @@ scenario_offsets() {
   docker exec kafka-cookbook-1 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
     --describe --group "$GROUP"
 
+  # Ждём появления транслированного offset поллингом, а не фиксированной паузой:
+  # sync.group.offsets срабатывает раз в 5с, но первый цикл может прийтись на любой
+  # момент, и на медленной машине 15с не хватало — ассерт падал не потому, что
+  # трансляции нет, а потому, что её ещё не успели записать.
   echo "[mm2] жду MirrorCheckpointConnector.sync.group.offsets (interval=5s)..."
-  sleep 15
+  local translated_sum=0 translated_n=0 waited=0
+  while [ "$waited" -lt 60 ]; do
+    read -r translated_sum translated_n <<< "$(sum_group_col kafka-cookbook-west-1 "$GROUP" "us-east.$TOPIC" 4)"
+    [ "$translated_n" -gt 0 ] && [ "$translated_sum" -gt 0 ] && break
+    waited=$((waited + 2))
+    sleep 2
+  done
+  echo "[mm2] транслированный offset появился через ~${waited}s ожидания"
   echo "--- транслированный offset на us-west (та же группа '$GROUP', топик 'us-east.$TOPIC') ---"
   docker exec kafka-cookbook-west-1 /opt/kafka/bin/kafka-consumer-groups.sh --bootstrap-server localhost:9092 \
     --describe --group "$GROUP"
-  local translated_sum translated_n
-  read -r translated_sum translated_n <<< "$(sum_group_col kafka-cookbook-west-1 "$GROUP" "us-east.$TOPIC" 4)"
   echo "[mm2] транслированный committed offset (сумма CURRENT-OFFSET по всем $translated_n партициям) = $translated_sum (source committed = $N_COMMITTED)"
   if [ "$translated_n" -gt 0 ] && [ "$translated_sum" -gt 0 ] && [ "$translated_sum" -le "$N_COMMITTED" ]; then
     echo "[assert] OK: 0 < транслированный offset (сумма по партициям, $translated_sum) <= source committed ($N_COMMITTED) — консервативная трансляция, без потери непрочитанного"
@@ -214,7 +256,9 @@ scenario_active_active() {
 
   echo "[mm2] пересоздаю MM2 с mm2-active-active.properties (dedicated-режим не подхватывает новую пару кластеров без рестарта)..."
   MM2_CONFIG=mm2-active-active.properties docker compose -f "$COMPOSE_WEST" -f "$COMPOSE_MM2" up -d --force-recreate mm2
-  sleep 15
+  # Контейнер пересоздан, лог начинается с нуля — ждём инициализацию коннекторов той же
+  # проверкой, что и при setup, вместо фиксированной паузы (см. wait_mm2_connectors).
+  wait_mm2_connectors
 
   local before after
   before=$(sum_offsets kafka-cookbook-west-1 "$TOPIC")

@@ -22,22 +22,83 @@
 # FileStreamSource/FileStreamSink и трансформации (SMT) уже в libs/ образа.
 
 services:
+  # Предсоздание служебных топиков KafkaSQL — обязательный шаг, а не оптимизация.
+  #
+  # Apicurio перед стартом ВЕРИФИЦИРУЕТ конфигурацию своих топиков и падает
+  # (RuntimeAssertionFailedException, контейнер Exited 1), если у них не
+  # 'retention.ms=-1' и 'retention.bytes=-1':
+  #   "Topic must have 'retention.ms=-1' and 'retention.bytes=-1' to prevent
+  #    accidental loss of data. Effective configuration value is
+  #    'retention.ms=604800000' and comes from built-in default configuration."
+  # Сам реестр создаёт топики правильно (partitions=1, RF=3, retention -1/-1,
+  # cleanup.policy=delete — снято с живого кластера), но внутри него есть гонка:
+  # consumer подписывается на kafkasql-journal раньше, чем AdminClient успевает
+  # его создать. Обращение к несуществующему топику (UnknownTopicOrPartitionException
+  # в логе) при включённом на брокере auto.create.topics.enable=true заставляет
+  # БРОКЕР создать топик с дефолтным недельным retention — и следующая же
+  # верификация валит старт. Кто выиграет гонку, зависит от машины, поэтому
+  # симптом выглядел плавающим: где-то стенд поднимался, где-то стабильно нет.
+  #
+  # Init создаёт топики с нужными параметрами до старта реестра и, если они уже
+  # существуют с неверным retention (наследие прошлых прогонов), чинит их через
+  # kafka-configs --alter — иначе такой кластер приходилось бы сносить с -v.
+  kafkasql-topics-init:
+    image: apache/kafka:4.3.1
+    container_name: kafka-cookbook-kafkasql-init
+    restart: "no"
+    depends_on:
+      kafka1: { condition: service_healthy }
+      kafka2: { condition: service_healthy }
+      kafka3: { condition: service_healthy }
+    entrypoint:
+      - /bin/bash
+      - -c
+      - |
+        set -euo pipefail
+        BS=kafka1:9092
+        for T in kafkasql-journal kafkasql-snapshots registry-events; do
+          /opt/kafka/bin/kafka-topics.sh --bootstrap-server "$$BS" --create --if-not-exists \
+            --topic "$$T" --partitions 1 --replication-factor 3 \
+            --config retention.ms=-1 --config retention.bytes=-1 --config cleanup.policy=delete
+          # топик мог существовать с дефолтным retention — приводим к требуемому
+          /opt/kafka/bin/kafka-configs.sh --bootstrap-server "$$BS" --entity-type topics \
+            --entity-name "$$T" --alter \
+            --add-config retention.ms=-1,retention.bytes=-1,cleanup.policy=delete
+          echo "[init] $$T: $$(/opt/kafka/bin/kafka-topics.sh --bootstrap-server "$$BS" --describe --topic "$$T" | head -1)"
+        done
+    networks:
+      - kafka-net
+
   schema-registry:
-    image: apicurio/apicurio-registry:latest-release
+    # Версия закреплена явно. Раньше стоял плавающий latest-release: он на момент
+    # написания стенда указывал на 3.2.6, но тег двигается — воспроизводимость
+    # стенда не должна зависеть от того, что выложили в реестр образов сегодня.
+    image: apicurio/apicurio-registry:3.2.6
     container_name: kafka-cookbook-schema-registry
     environment:
       APICURIO_STORAGE_KIND: kafkasql
       APICURIO_KAFKASQL_BOOTSTRAP_SERVERS: kafka1:9092,kafka2:9092,kafka3:9092
+    # Ждём не только здоровых брокеров, но и успешного завершения init'а: топики
+    # с retention.ms=-1 должны существовать ДО первого обращения реестра, иначе
+    # их с дефолтным retention создаст брокер и верификация уронит старт
+    # (подробности — в комментарии к kafkasql-topics-init выше).
+    depends_on:
+      kafka1: { condition: service_healthy }
+      kafka2: { condition: service_healthy }
+      kafka3: { condition: service_healthy }
+      kafkasql-topics-init: { condition: service_completed_successfully }
     networks:
       - kafka-net
     ports:
       - "18080:8080"
     healthcheck:
-      # ubi10-minimal (базовый образ apicurio/apicurio-registry) — БЕЗ
-      # wget/curl (проверено живьём: "wget: command not found"). bash с
-      # /dev/tcp — единственный доступный способ проверить, что HTTP-порт
-      # уже принимает соединения, без установки лишних пакетов в чужой образ.
-      test: ["CMD-SHELL", "bash -c 'echo > /dev/tcp/localhost/8080' || exit 1"]
+      # Проверяем реальный ответ API, а не просто открытый TCP-порт: с проверкой
+      # через bash /dev/tcp реестр показывал healthy даже при полностью погашенном
+      # кластере (проверено живьём), и ops/ecosystem-demo.sh шёл дальше к запросам,
+      # которые обслужить некому. curl в образе 3.2.6 есть (/usr/bin/curl) —
+      # прежний комментарий про "ubi10-minimal без wget/curl" для этой версии
+      # неверен, wget действительно отсутствует, а curl доступен.
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/apis/registry/v3/system/info || exit 1"]
       interval: 10s
       timeout: 10s
       retries: 15
@@ -47,6 +108,13 @@ services:
     image: apache/kafka:4.3.1
     container_name: kafka-cookbook-connect
     entrypoint: ["/opt/kafka/bin/connect-distributed.sh", "/etc/kafka-ecosystem/connect-distributed.properties"]
+    # Та же причина, что и у schema-registry: distributed worker при старте
+    # создаёт свои внутренние топики (offsets/configs/status) и без готового
+    # кластера уходит в ретраи с непредсказуемым исходом.
+    depends_on:
+      kafka1: { condition: service_healthy }
+      kafka2: { condition: service_healthy }
+      kafka3: { condition: service_healthy }
     volumes:
       - ../ecosystem/connect:/etc/kafka-ecosystem:ro
       # bind-mount (не named volume) — apache/kafka:4.3.1 в этом сервисе

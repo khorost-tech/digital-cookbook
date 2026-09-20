@@ -1,0 +1,94 @@
+# Агент: читает файлы логов, парсит и чистит поток, отдаёт дальше.
+# Переменные окружения в конфиге НЕ используются: Vector 0.57 не интерполирует ${VAR}
+# по умолчанию. Адреса берутся из DNS docker compose.
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  nginx_file:
+    type: file
+    include:
+      - /logs/nginx-access.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  app_file:
+    type: file
+    include:
+      - /logs/app.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  internal:
+    type: internal_metrics
+
+transforms:
+  parse_nginx:
+    type: remap
+    inputs: [nginx_file]
+    source: |
+      parsed, err = parse_nginx_log(.message, "combined")
+      if err != null {
+        .service = "unparsed"
+        .parse_error = err
+      } else {
+        . = merge(., parsed)
+        .service = "nginx"
+        del(.message)
+      }
+      .host_role = "agent"
+
+  parse_app:
+    type: remap
+    inputs: [app_file]
+    source: |
+      parsed, err = parse_json(.message)
+      if err != null {
+        .service = "unparsed"
+        .parse_error = err
+      } else {
+        . = merge(., object!(parsed))
+        del(.message)
+      }
+      .host_role = "agent"
+
+  drop_health:
+    type: filter
+    inputs: [parse_nginx]
+    condition:
+      type: vrl
+      source: |
+        req = to_string(.request) ?? ""
+        !contains(req, "/health")
+
+  # дедуп висит ТОЛЬКО на app-ветке: набор полей match описывает app-события.
+  # Если пустить сюда nginx-поток, все его события окажутся «одинаковыми» —
+  # полей level/msg/duration_ms у них нет, отсутствующие поля равны друг другу,
+  # и дедуп схлопнет весь nginx-поток в одно событие. Проверено живьём: при общем
+  # входе из ~1232 nginx-событий доезжало 2.
+  dedupe_app:
+    type: dedupe
+    inputs: [parse_app]
+    cache:
+      num_events: 5000
+    fields:
+      match: ["service", "level", "msg", "duration_ms"]
+
+sinks:
+  to_kafka:
+    type: kafka
+    inputs: [drop_health, dedupe_app]
+    bootstrap_servers: kafka:9092
+    topic: logs-pipeline
+    encoding:
+      codec: json
+
+  metrics_out:
+    type: prometheus_exporter
+    inputs: [internal]
+    address: 0.0.0.0:9599

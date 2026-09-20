@@ -1,0 +1,49 @@
+# Вариант агента БЕЗ трансформаций — база для замера 3 (Task 11, scripts/bench.sh):
+# синк принимает выходы источников файлов напрямую, минуя parse_nginx/parse_app/
+# drop_health/dedupe_app. Источники (nginx_file, app_file), внутренние метрики
+# (internal + metrics_out) и транспортный синк (to_nats) — те же, что в agent.yaml.
+# Используется через AGENT_CONFIG=/etc/vector/variants/passthrough.yaml, подставляемую
+# scripts/bench.sh ДО вызова up.sh.
+#
+# Разница CPU агента между этим вариантом и agent.yaml на одинаковом rate — и есть
+# цена VRL-парсинга плюс фильтрации/дедупликации: тут этого ничего нет.
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  nginx_file:
+    type: file
+    include:
+      - /logs/nginx-access.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  app_file:
+    type: file
+    include:
+      - /logs/app.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  internal:
+    type: internal_metrics
+
+sinks:
+  to_nats:
+    type: nats
+    inputs: [nginx_file, app_file]
+    url: nats://nats:4222
+    subject: logs.pipeline
+    connection_name: vp-agent
+    encoding:
+      codec: json
+
+  metrics_out:
+    type: prometheus_exporter
+    inputs: [internal]
+    address: 0.0.0.0:9599

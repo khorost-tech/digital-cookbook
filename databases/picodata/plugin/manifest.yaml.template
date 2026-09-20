@@ -1,0 +1,12 @@
+name: near_data
+description: A plugin for picodata
+version: {{ version }}
+services:
+  - name: near_data_service
+    description: топ товаров категории рядом с данными
+    default_configuration:
+      value: example
+migration:
+{% for migration in migrations -%}
+- {{ migration }}
+{% endfor -%}

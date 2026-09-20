@@ -1,0 +1,13 @@
+cluster:
+  name: "near_data"
+  tier:
+    default:
+      can_vote: true
+  default_replication_factor: 2
+
+instance:
+  log:
+    level: warn
+    format: plain
+  memtx:
+    memory: 67108864

@@ -1,0 +1,61 @@
+Замер: template confinement в Vector 0.57 — validate ловит, но --no-environment пропускает (Task 8)
+Дата: 2026-07-28 (исходные прогоны), 2026-07-28 дополнено прогоном без --no-environment
+Конфиг: vector/variants/unconfined-index.yaml (намеренно сломанный, bulk.index: "{{ service }}")
+Образ: timberio/vector:0.57.0-debian
+
+⚠ ИСПРАВЛЕНИЕ. Первая редакция этого файла делала вывод «vector validate не строит
+топологию, поэтому ошибку не видит». Это НЕВЕРНО. Ошибку не видит только вызов
+с флагом --no-environment; обычный `vector validate` её ловит и завершается с кодом 78.
+Ниже приведены все три прогона, чтобы разницу было видно.
+
+Команда 1 — vector validate С флагом --no-environment (ПРОПУСКАЕТ ошибку):
+
+$ cd observability/vector-pipeline && MSYS_NO_PATHCONV=1 docker run --rm -v "$PWD/vector:/etc/vector:ro" \
+  timberio/vector:0.57.0-debian validate --no-environment /etc/vector/variants/unconfined-index.yaml
+
+Вывод (дословно, код возврата 0):
+√ Loaded ["/etc/vector/variants/unconfined-index.yaml"]
+√ Transforms configuration
+-------------------------------------------------------
+                                              Validated
+
+Команда 2 — vector validate БЕЗ флага (ЛОВИТ ошибку):
+
+$ cd observability/vector-pipeline && MSYS_NO_PATHCONV=1 docker run --rm -v "$PWD/vector:/etc/vector:ro" \
+  timberio/vector:0.57.0-debian validate /etc/vector/variants/unconfined-index.yaml
+
+Вывод (дословно, код возврата 78):
+√ Loaded ["/etc/vector/variants/unconfined-index.yaml"]
+√ Transforms configuration
+
+Component errors
+----------------
+x Sink "opensearch": template references event fields (["service"]) but has no literal string prefix to derive a confinement base from. Add a static prefix to your template, or set `dangerously_allow_unconfined_template_resolution: true` to opt out.
+
+Команда 3 — реальный старт (ПАДАЕТ так же):
+
+$ cd observability/vector-pipeline && timeout 15 env MSYS_NO_PATHCONV=1 docker run --rm -v "$PWD/vector:/etc/vector:ro" \
+  timberio/vector:0.57.0-debian --config /etc/vector/variants/unconfined-index.yaml
+
+Вывод (дословно, код возврата 78):
+2026-07-28T00:57:59.681119Z  INFO vector::app: Log level is enabled. level="info"
+2026-07-28T00:57:59.710143Z  INFO vector::app: Loading configs. paths=["/etc/vector/variants/unconfined-index.yaml"]
+2026-07-28T00:57:59.723715Z ERROR vector::topology::builder: Configuration error. error=Sink "opensearch": template references event fields (["service"]) but has no literal string prefix to derive a confinement base from. Add a static prefix to your template, or set `dangerously_allow_unconfined_template_resolution: true` to opt out. internal_log_rate_limit=false
+
+Вывод:
+Ошибка ловится ещё на этапе валидации — при условии, что валидация полная.
+Флаг --no-environment отключает ту часть проверки, которая строит компоненты и
+вычисляет базу confinement для шаблонов синков, поэтому под ним конфиг выглядит
+корректным. Разница видна по коду возврата: 0 под флагом против 78 без него.
+
+Практическое следствие для CI: полная `vector validate` — рабочий гейт, она поймает
+и этот дефект, и минимум дискового буфера (см. results/13-min-disk-buffer.txt).
+А вот `validate --no-environment`, который удобно ставить в CI как «проверка без
+доступа к брокерам и хранилищам», единственным гейтом быть не должен: он пропускает
+целый класс ошибок конфигурации, и они всплывут только при старте в проде.
+
+Код 78 — общий код Vector для ошибок сборки конфигурации, не специфика confinement:
+тот же код даёт провал source nats при недоступном брокере (см. results/07-*.txt).
+
+Рабочий вариант с литеральным префиксом — vector/aggregator.yaml и
+vector/aggregator-kafka.yaml, синк opensearch, index: "logs-app-{{ service }}".

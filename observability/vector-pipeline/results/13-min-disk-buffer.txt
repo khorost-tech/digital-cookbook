@@ -1,0 +1,83 @@
+Замер: минимальный размер дискового буфера в Vector 0.57 — validate ловит, --no-environment пропускает
+Дата: 2026-07-28
+Образ: timberio/vector:0.57.0-debian
+
+Зачем: в vector/aggregator*.yaml стоит max_size: 268435488 с комментарием "минимум для
+дискового буфера". Утверждение до этого замера нигде не проверялось — проверяем и
+заодно смотрим, на каком этапе ограничение вообще обнаруживается.
+
+⚠ ИСПРАВЛЕНИЕ. Первая редакция делала вывод «vector validate этого не ловит». Это
+НЕВЕРНО: не ловит только вызов с флагом --no-environment. Обычный `vector validate`
+ошибку находит и завершается с кодом 78 — прогон добавлен ниже командой 2.
+
+Это ВТОРОЙ независимый пример того же разрыва, что и в results/08-confinement.txt:
+под флагом --no-environment не проверяется то, что проверяется при сборке
+топологии, валидации не видно. Первый пример — template confinement, этот — буфер.
+
+Минимальный конфиг для проверки (buffer.max_size = 1 MiB, заведомо ниже минимума);
+источник и синк взяты самые дешёвые, чтобы в проверке не участвовало ничего лишнего:
+
+  $ cat minbuf.yaml
+  data_dir: /var/lib/vector
+  sources:
+    s:
+      type: internal_metrics
+  sinks:
+    out:
+      type: blackhole
+      inputs: [s]
+      buffer:
+        type: disk
+        max_size: 1048576
+
+Команда 1 — vector validate С флагом --no-environment (ПРОПУСКАЕТ, хотя конфиг нерабочий):
+
+  $ MSYS_NO_PATHCONV=1 docker run --rm -v "$DIR:/cfg:ro" \
+      timberio/vector:0.57.0-debian validate --no-environment /cfg/minbuf.yaml
+
+Вывод (дословно):
+√ Loaded ["/cfg/minbuf.yaml"]
+√ Transforms configuration
+-----------------------------
+                    Validated
+
+Команда 2 — vector validate БЕЗ флага (ЛОВИТ, код возврата 78):
+
+  $ MSYS_NO_PATHCONV=1 docker run --rm -v "$DIR:/cfg:ro"       timberio/vector:0.57.0-debian validate /cfg/minbuf.yaml
+
+Вывод (дословно):
+√ Loaded ["/cfg/minbuf.yaml"]
+√ Transforms configuration
+
+Component errors
+----------------
+x Sink "out": error occurred when building buffer: failed to build individual stage 0: parameter 'max_buffer_size' was invalid: must be greater than or equal to 268435488 bytes
+
+Команда 3 — реальный старт (ПАДАЕТ так же):
+
+  $ MSYS_NO_PATHCONV=1 docker run --rm -v "$DIR:/cfg:ro" \
+      timberio/vector:0.57.0-debian --config /cfg/minbuf.yaml
+
+Вывод (дословно):
+2026-07-28T07:00:00.638842Z  INFO vector::app: Log level is enabled. level="info"
+2026-07-28T07:00:00.669549Z  INFO vector::app: Loading configs. paths=["/cfg/minbuf.yaml"]
+2026-07-28T07:00:00.760329Z ERROR vector::topology::builder: Configuration error. error=Sink "out": error occurred when building buffer: failed to build individual stage 0: parameter 'max_buffer_size' was invalid: must be greater than or equal to 268435488 bytes internal_log_rate_limit=false
+
+Вывод:
+1. Минимум дискового буфера в Vector 0.57 — 268435488 байт (256 MiB + 32 байта).
+   Значение в vector/aggregator*.yaml стоит ровно на этой границе, то есть это не
+   произвольно выбранный размер, а нижний допустимый.
+2. Ограничение документировано, а не только эмпирично:
+   https://vector.dev/docs/architecture/buffering-model/ — там же задан и потолок
+   сегмента 128 MiB ("append-only log files that grow to a maximum file size of
+   128MiB and are deleted once they have been processed fully").
+3. Полная `vector validate` это ловит — как и ошибку template confinement из
+   results/08-confinement.txt. А `validate --no-environment` пропускает оба случая.
+   Практический вывод для CI: полная валидация — рабочий гейт, но флаг
+   --no-environment, который удобно ставить в CI как «проверка без доступа к
+   брокерам и хранилищам», единственным гейтом быть не должен: он молча пропускает
+   целый класс ошибок конфигурации. Разница видна по коду возврата: 0 против 78.
+
+Примечание про воспроизведение на Windows/Git Bash: MSYS_NO_PATHCONV=1 обязательна,
+иначе MSYS перепишет /cfg/minbuf.yaml в путь Windows и Vector скажет
+"Config file not found in path" — см. раздел 9 README.

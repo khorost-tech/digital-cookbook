@@ -1,0 +1,10 @@
+global:
+  scrape_interval: 5s
+
+scrape_configs:
+  - job_name: vector-agent
+    static_configs:
+      - targets: ["agent:9599"]
+  - job_name: vector-aggregator
+    static_configs:
+      - targets: ["aggregator:9598"]

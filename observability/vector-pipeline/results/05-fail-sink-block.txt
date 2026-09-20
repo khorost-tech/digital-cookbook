@@ -1,0 +1,20 @@
+=== режим: block
+=== AGG_CONFIG: /etc/vector/aggregator-kafka.yaml
+=== параметры генерации: rate=8000 duration=240s
+=== останавливаем OpenSearch
+=== генерация при недоступном синке
+буфер на диске, КиБ: 131096
+=== поднимаем OpenSearch и ждём слива буфера
+=== внутренние метрики Vector (:9598/metrics)
+mark_aggregator component_received_events_total: 802661
+opensearch buffer_received_events_total (принято буфером синка): 802661
+сгенерировано (сырых строк, nginx+app): 1919840
+ожидалось без потерь синка (nginx_expected+app_expected после filter/dedupe): 802661
+в индексе:      802661
+разница от сырого total: 1117179
+потери на синке (expected_no_sink_loss - indexed): 0
+
+=== пересчёт единиц (строка добавлена позже, при подготовке статьи)
+131 096 КиБ = 134 242 304 байта = 128,02 MiB, то есть ровно потолок одного
+сегмента дискового буфера (границу 128 MiB подтверждает независимо
+results/05-fail-sink-drop-newest.txt через buffer_received_bytes_total).

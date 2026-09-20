@@ -1,0 +1,95 @@
+# Сквозной контур логов на Vector 0.57. Профили транспорта: nats | kafka.
+# demo security у OpenSearch (self-signed TLS, пароль ниже) — ТОЛЬКО для локального стенда.
+name: vector-pipeline
+
+volumes:
+  logs:
+  vector-agent-data:
+  vector-agg-data:
+  archive:
+
+services:
+  opensearch:
+    image: opensearchproject/opensearch:3.5.0
+    container_name: vp-os
+    environment:
+      - "discovery.type=single-node"
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=VectorDemo#2026"   # demo-only
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+    ports:
+      - "9224:9200"
+
+  prometheus:
+    image: prom/prometheus:v3.10.0
+    container_name: vp-prom
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9097:9090"
+
+  nats:
+    image: nats:2.12
+    container_name: vp-nats
+    profiles: ["nats"]
+    command: ["-m", "8222"]
+    ports:
+      - "4232:4222"
+
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: vp-kafka
+    profiles: ["kafka"]
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      CLUSTER_ID: vector-pipeline-demo-cid
+    ports:
+      - "9102:9092"
+
+  loadgen:
+    build: ./loadgen
+    container_name: vp-loadgen
+    # профиль gen — страховка от случайного автозапуска: генератор должен
+    # запускаться только явно, через `docker compose run --rm loadgen …`.
+    # Без профиля `docker compose up -d` поднимал бы его с командой ниже и
+    # молча портил любой замер.
+    profiles: ["gen"]
+    volumes:
+      - logs:/logs
+    command: ["-rate", "5000", "-duration", "60s", "-out", "/logs"]
+
+  agent:
+    image: timberio/vector:0.57.0-debian
+    container_name: vp-agent
+    # AGENT_CONFIG — переменная compose (не Vector): её подставляет docker compose
+    # при разворачивании command ДО старта контейнера, из shell-окружения или .env
+    # в текущей директории. Это НЕ интерполяция ${VAR} внутри YAML-конфигов Vector —
+    # ту Vector 0.57 не делает, и в vector/*.yaml переменных нет и не должно быть.
+    command: ["--config", "${AGENT_CONFIG:-/etc/vector/agent.yaml}"]
+    volumes:
+      - ./vector:/etc/vector:ro
+      - logs:/logs:ro
+      - vector-agent-data:/var/lib/vector
+    ports:
+      - "8686:8686"
+      - "9599:9599"
+
+  aggregator:
+    image: timberio/vector:0.57.0-debian
+    container_name: vp-agg
+    command: ["--config", "${AGG_CONFIG:-/etc/vector/aggregator.yaml}"]
+    volumes:
+      - ./vector:/etc/vector:ro
+      - vector-agg-data:/var/lib/vector
+      - archive:/archive
+    ports:
+      - "8687:8686"
+      - "9598:9598"

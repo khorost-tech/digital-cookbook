@@ -1,0 +1,15 @@
+[tier.default]
+replicasets = 2
+replication_factor = 2
+
+[plugin.near_data]
+migration_context = [
+    { name = "example_name", value = "example_value" },
+]
+
+# Имя сервиса обязано совпадать с тем, под которым он зарегистрирован в lib.rs
+# (`reg.add("near_data_service", ...)`). Рассинхронизация не ловится сборкой:
+# плагин соберётся и установится, а сервис не найдётся — кластер ответит
+# "Plugin partial load (some of services not found)".
+[plugin.near_data.service.near_data_service]
+tiers = ["default"]

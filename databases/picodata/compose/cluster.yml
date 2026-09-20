@@ -1,0 +1,87 @@
+# Кластер Picodata: 4 инстанса, 2 репликасета по 2.
+#
+# Почему четыре, а не три: при факторе репликации 2 три инстанса СТРУКТУРНО не
+# дают шардирования — один репликасет добирает двух членов и получает вес 1,
+# второй остаётся с одним членом и весом 0 навсегда, vshard не раздаёт ему
+# бакеты. Это не гонка ребалансировки, а документированная механика (установлено
+# живым прогоном в стенде performance/inmemory).
+#
+# --share-dir — общий том, куда кладётся собранный плагин. Плагин должен лежать
+# на КАЖДОМ узле кластера, поэтому том один на всех.
+#
+# Версия образа привязана к версии picodata-plugin, на которую собирается
+# плагин: шаблон pike 5.4.0 пинит picodata-plugin = "=26.1.3". Проверка версий
+# на стороне Picodata отключается переменной окружения, но документация этого
+# не рекомендует — здесь показан штатный путь: совпадающие версии.
+name: picodata-cookbook
+networks:
+  picodata-net:
+    name: picodata-net
+    external: true
+volumes:
+  # Имя тома задано явно: иначе Compose префиксует его именем проекта
+  # (picodata-cookbook_picodata-share), и build.sh, который кладёт собранный
+  # плагин, промахнётся мимо тома, смонтированного в кластер.
+  picodata-share:
+    name: picodata-share
+services:
+  picodata-1:
+    image: docker.binary.picodata.io/picodata:26.1.3
+    container_name: pd-1
+    command: >
+      run --instance-dir /var/lib/picodata --share-dir /var/lib/picodata-share
+      --iproto-listen 0.0.0.0:3301 --iproto-advertise picodata-1:3301
+      --peer picodata-1:3301
+      --pg-listen 0.0.0.0:5432 --pg-advertise picodata-1:5432
+      --http-listen 0.0.0.0:8081
+      --init-replication-factor 2
+    volumes: ["picodata-share:/var/lib/picodata-share"]
+    ports: ["3402:3301", "5442:5432", "8081:8081"]
+    networks:
+      picodata-net:
+        aliases: [picodata-1]
+  picodata-2:
+    image: docker.binary.picodata.io/picodata:26.1.3
+    container_name: pd-2
+    command: >
+      run --instance-dir /var/lib/picodata --share-dir /var/lib/picodata-share
+      --iproto-listen 0.0.0.0:3301 --iproto-advertise picodata-2:3301
+      --peer picodata-1:3301
+      --pg-listen 0.0.0.0:5432 --pg-advertise picodata-2:5432
+      --http-listen 0.0.0.0:8081
+    volumes: ["picodata-share:/var/lib/picodata-share"]
+    ports: ["5443:5432", "8082:8081"]
+    networks:
+      picodata-net:
+        aliases: [picodata-2]
+    depends_on: [picodata-1]
+  picodata-3:
+    image: docker.binary.picodata.io/picodata:26.1.3
+    container_name: pd-3
+    command: >
+      run --instance-dir /var/lib/picodata --share-dir /var/lib/picodata-share
+      --iproto-listen 0.0.0.0:3301 --iproto-advertise picodata-3:3301
+      --peer picodata-1:3301
+      --pg-listen 0.0.0.0:5432 --pg-advertise picodata-3:5432
+      --http-listen 0.0.0.0:8081
+    volumes: ["picodata-share:/var/lib/picodata-share"]
+    ports: ["5444:5432", "8083:8081"]
+    networks:
+      picodata-net:
+        aliases: [picodata-3]
+    depends_on: [picodata-1]
+  picodata-4:
+    image: docker.binary.picodata.io/picodata:26.1.3
+    container_name: pd-4
+    command: >
+      run --instance-dir /var/lib/picodata --share-dir /var/lib/picodata-share
+      --iproto-listen 0.0.0.0:3301 --iproto-advertise picodata-4:3301
+      --peer picodata-1:3301
+      --pg-listen 0.0.0.0:5432 --pg-advertise picodata-4:5432
+      --http-listen 0.0.0.0:8081
+    volumes: ["picodata-share:/var/lib/picodata-share"]
+    ports: ["5445:5432", "8084:8081"]
+    networks:
+      picodata-net:
+        aliases: [picodata-4]
+    depends_on: [picodata-1]

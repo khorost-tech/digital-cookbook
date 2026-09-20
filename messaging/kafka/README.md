@@ -51,7 +51,7 @@
 
 | Компонент | Версия | Примечание |
 |---|---|---|
-| Schema Registry | `apicurio/apicurio-registry:latest-release` → фактически `3.2.6` | `APICURIO_STORAGE_KIND=kafkasql`, хранилище — сам кластер `us-east` (топики `kafkasql-journal`/`kafkasql-snapshots`/`registry-events`). Confluent `cp-schema-registry` не пробовался (см. content-notes стенда #7). REST API — `/apis/ccompat/v7/...`, Confluent-совместимый. |
+| Schema Registry | `apicurio/apicurio-registry:3.2.6` (пин; раньше стоял плавающий `latest-release`) | `APICURIO_STORAGE_KIND=kafkasql`, хранилище — сам кластер `us-east` (топики `kafkasql-journal`/`kafkasql-snapshots`/`registry-events`). Confluent `cp-schema-registry` не пробовался (см. content-notes стенда #7). REST API — `/apis/ccompat/v7/...`, Confluent-совместимый. |
 | Kafka Connect | `apache/kafka:4.3.1` (тот же образ, что брокеры) | `connect-distributed.sh`, коннекторы `FileStreamSourceConnector`/`FileStreamSinkConnector` — встроены в дистрибутив, без Confluent-образов |
 
 ### Клиенты стенда #8 (11 драйверов, 7 языков — `clients/`)
@@ -1591,7 +1591,7 @@ Schema Registry и Connect управляются напрямую через RE
 
 Постановка стенда прямо указывала на риск: Confluent `cp-schema-registry` заточен под
 CP-Kafka и может не завестись против `apache/kafka` в KRaft-режиме.
-Проверено живьём: `apicurio/apicurio-registry:latest-release` (3.2.6) с
+Проверено живьём: `apicurio/apicurio-registry:3.2.6` с
 `APICURIO_STORAGE_KIND=kafkasql` и
 `APICURIO_KAFKASQL_BOOTSTRAP_SERVERS=kafka1:9092,kafka2:9092,kafka3:9092`
 поднялся с ПЕРВОЙ попытки против живого 3-брокерного `apache/kafka:4.3.1`
@@ -1615,10 +1615,57 @@ Confluent-совместимый (`/apis/ccompat/v7/...`), поэтому вес
 `curl`-сценарий сработал бы и против настоящего Confluent Schema Registry.
 
 ⚠️ **Живая находка при подъёме apicurio.** Базовый образ (`ubi10-minimal`)
-НЕ содержит `wget`/`curl` — healthcheck через `wget -q -O-` падал
-`"wget: command not found"`, контейнер вечно оставался `starting`. Исправлено
-на `bash -c 'echo > /dev/tcp/localhost/8080'` (bash с `/dev/tcp` — псевдо-файл
-для TCP-сокетов — в образе есть, `wget`/`curl` нет).
+НЕ содержит `wget` — healthcheck через `wget -q -O-` падал
+`"wget: command not found"`, контейнер вечно оставался `starting`. Первым
+обходом был `bash -c 'echo > /dev/tcp/localhost/8080'`, но такая проверка
+подтверждает лишь открытый TCP-порт: реестр показывал `healthy` даже при
+полностью погашённом кластере (проверено живьём), и `ops/ecosystem-demo.sh`
+шёл дальше к запросам, обслужить которые некому. `curl` в образе `3.2.6` есть
+(`/usr/bin/curl`), поэтому healthcheck переведён на реальный ответ API:
+`curl -fsS http://localhost:8080/apis/registry/v3/system/info`.
+
+⚠️ **Порядок старта.** У `schema-registry` и `kafka-connect` не было
+`depends_on` — оба стартовали одновременно с брокерами и уходили в ретраи
+(`Connection to node -1 (kafka1:9092) could not be established` в логе).
+Добавлен `depends_on` на все три брокера с `condition: service_healthy`.
+
+⚠️ **Главная причина «то поднимается, то нет»: верификация retention.**
+Apicurio перед стартом проверяет конфигурацию своих топиков и отказывается
+подниматься, если у них не бесконечное хранение — контейнер уходит в
+`Exited (1)`:
+
+```
+io.apicurio.registry.exception.RuntimeAssertionFailedException: Runtime assertion failed:
+To prevent accidental loss of data, Apicurio Registry verifies that Kafka topics are
+configured correctly before starting. The following issue was found with topic
+'kafkasql-journal': Topic must have 'retention.ms=-1' and 'retention.bytes=-1' to prevent
+accidental loss of data. Effective configuration value is 'retention.ms=604800000' and
+comes from built-in default configuration.
+```
+
+Сам реестр создаёт топики правильно (`partitions=1`, `RF=3`,
+`retention.ms=-1`, `retention.bytes=-1`, `cleanup.policy=delete` — снято
+`kafka-topics --describe` с живого кластера). Но внутри него есть гонка:
+consumer подписывается на `kafkasql-journal` раньше, чем AdminClient успевает
+его создать. Обращение к несуществующему топику (тот самый
+`UnknownTopicOrPartitionException`) при включённом на брокере
+`auto.create.topics.enable=true` заставляет **брокер** создать топик с
+дефолтным недельным retention — и следующая же верификация валит старт.
+Кто выиграет гонку, зависит от машины: на одной стенд поднимался стабильно,
+на другой — стабильно нет, при идентичных compose и версии образа.
+
+Лечится не отключением проверки (`APICURIO_KAFKASQL_TOPIC_CONFIGURATION_VERIFICATION_OVERRIDE_ENABLED`
+существует, но снимает защиту от потери данных), а предсозданием топиков:
+сервис `kafkasql-topics-init` создаёт все три с нужными параметрами до старта
+реестра, а если они уже существуют с неверным retention — чинит их через
+`kafka-configs --alter`, так что кластер с накопленным плохим состоянием не
+приходится сносить с `-v`. Реестр ждёт его через
+`condition: service_completed_successfully`.
+
+Проверено: на кластере с заведомо сломанным `kafkasql-journal` (создан с
+дефолтным retention) init привёл топик в порядок и реестр поднялся `healthy`;
+полный цикл `down -v` → `up -d` одной командой + `ops/ecosystem-demo.sh all`
+проходит с `RC=0` (все три сценария зелёные).
 
 ### 1. Schema Registry: регистрация + эволюция (ccompat v7 API)
 
@@ -1822,8 +1869,12 @@ bash ops/ecosystem-demo.sh cleanup          # коннекторы+subject+ра�
 `ops/ecosystem-demo.sh` требует python на хосте — ЕДИНСТВЕННОЕ место во
 всём стенде (см. ⚠️ живую находку в самом скрипте про поломанное
 экранирование backslash в sed/awk на Git Bash/Windows в этом окружении;
-`python -c "...json.dumps(...)"` строит корректно экранированное JSON-тело
-REST-запроса независимо от платформы).
+`json.dumps(...)` строит корректно экранированное JSON-тело
+REST-запроса независимо от платформы). Интерпретатор ищется как
+`python3`, затем `python`: в Git Bash на Windows бинарь называется `python`,
+а в Ubuntu (в т.ч. под WSL) существует только `python3` — жёсткий вызов
+`python` ронял сценарий `schema-registry` на середине с
+`python: command not found` (RC=127).
 
 ## Стенд #8: клиенты в разных языках (`clients`)
 
@@ -2188,13 +2239,43 @@ failover-консьюмера, и финальный LAG теперь счита
 
 ### 3. Лаг репликации (характерный прогон)
 
-Ещё 300 сообщений в `orders` на us-east — продюсинг (`acks=all`) занял
-**1945мс**. us-west (`us-east.orders`) достиг того же суммарного count
-(500 записей во всех партициях) при первой же проверке опроса, снятой
-**~1870мс** после завершения продюсинга. Абсолютные миллисекунды —
-host-зависимы (single-host docker, без реальной межрегиональной сети); сам
-факт (MM2 — асинхронная репликация, конечный, измеримый лаг, а не
-мгновенная синхронная запись) — нет.
+Ещё 300 сообщений в `orders` на us-east — продюсинг (`acks=all`) занимал
+**1945мс**, **1711мс** и **2076мс** в трёх прогонах. us-west (`us-east.orders`)
+достигал того же суммарного count (500 записей во всех партициях) через
+**~1870мс**, **~4478мс** и **~4199мс** после завершения продюсинга соответственно. Разброс догона больше
+чем вдвое — на одной и той же машине, поэтому цитировать одно «характерное»
+число здесь нельзя: host-зависимы даже не абсолютные значения, а сам порядок
+(single-host docker, без реальной межрегиональной сети). Сам факт (MM2 —
+асинхронная репликация, конечный, измеримый лаг, а не мгновенная синхронная
+запись) от этого не страдает.
+
+⚠️ Величина разрыва трансляции offset (в основном прогоне — 18, `120→102`) —
+тоже число конкретного прогона, а НЕ константа механизма: она определяется
+тем, когда `MirrorCheckpointConnector` успел зафиксировать соответствие
+offset'ов в `offset-syncs` относительно момента коммита группы. Устойчиво
+проверяемое свойство здесь одно — транслированный offset не превышает
+исходный committed (`0 < translated <= committed`), именно оно и стоит в
+ассерте.
+
+### ⚠️ Живая находка: `sleep 12` + `grep` под `pipefail` рвал верификацию
+
+Сценарий `setup` ждал инициализацию коннекторов MM2 фиксированной паузой, за
+которой сразу шёл `docker logs ... | grep -oE "connectorIds=..."`. Под
+`set -o pipefail` grep, не нашедший строку, роняет весь конвейер, а `set -e` —
+весь скрипт: прогон обрывался ещё до репликации, трансляции offset и failover,
+и выглядело это как отказ MM2, хотя MM2 просто не успел подняться. Замер на
+одной из машин: первая строка `connectorIds` появляется через **~15с** — то
+есть 12с не хватало буквально чуть-чуть, и падало не на всякой машине.
+
+Ждать «появилась строка `connectorIds`» тоже мало: первая такая строка —
+ПУСТАЯ (`connectorIds=[]`), полный список из трёх коннекторов приходит позже.
+`wait_mm2_connectors()` поллит лог до появления всех трёх имён в одной строке
+(таймаут 120с, при провале печатает хвост лога и выходит с 1).
+
+Тем же способом вылечены ещё две фиксированные паузы: ожидание
+`sync.group.offsets` (было `sleep 15`, теперь поллинг до появления
+транслированного offset — в контрольном прогоне он появился за **~4с**) и
+пауза после пересоздания MM2 в active-active.
 
 ### 4. Active-active: репликация в обе стороны, защита от циклов
 

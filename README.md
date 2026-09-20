@@ -14,6 +14,7 @@
 - [**infrastructure/**](infrastructure/) — Инфраструктура как код и деплой: Ansible, Terraform, Proxmox.
 - [**rust/**](rust/) — Rust для backend: async/Tokio, web-фреймворки, production-практики, минимальные образы.
 - [**docker/**](docker/) — Контейнеризация: rootful vs rootless.
+- [**observability/**](observability/) — Наблюдаемость: конвейеры логов, сбор и доставка телеметрии.
 - [**zig/**](zig/) — Zig: comptime и позиционирование среди C/Rust/C++.
 - [**security/**](security/) — Авторизация и готовый IdP, недоверенный ввод, аудит уязвимостей и изоляция декодеров.
 - [**lang/**](lang/) — Выразительность и границы языков: тьюринг-полнота, интерпретаторы.
