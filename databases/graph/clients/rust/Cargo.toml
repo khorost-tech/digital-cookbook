@@ -1,0 +1,15 @@
+[package]
+name = "graph-client-rust"
+version = "1.0.0"
+edition = "2021"
+
+[[bin]]
+name = "graph-client"
+path = "src/main.rs"
+
+[dependencies]
+tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
+tokio-postgres = "0.7"
+
+[profile.release]
+strip = true

@@ -1,0 +1,13 @@
+[package]
+name = "mm-rust"
+version = "0.1.0"
+edition = "2021"
+
+# std-only, без внешних зависимостей — сеть при сборке не нужна.
+
+[[bin]]
+name = "cycle"
+path = "src/bin/cycle.rs"
+
+[profile.release]
+opt-level = 3

@@ -1,0 +1,42 @@
+[0.088s][info][gc] Using The Z Garbage Collector
+[0.216s][info][gc,phases] GC(0) Pause Mark Start 0.007ms
+[0.221s][info][gc,phases] GC(0) Concurrent Mark 4.613ms
+[0.221s][info][gc,phases] GC(0) Pause Mark End 0.006ms
+[0.221s][info][gc,phases] GC(0) Concurrent Mark Free 0.000ms
+[0.221s][info][gc,phases] GC(0) Concurrent Process Non-Strong References 0.356ms
+[0.221s][info][gc,phases] GC(0) Concurrent Reset Relocation Set 0.000ms
+[0.223s][info][gc,phases] GC(0) Concurrent Select Relocation Set 1.281ms
+[0.223s][info][gc,phases] GC(0) Pause Relocate Start 0.003ms
+[0.223s][info][gc,phases] GC(0) Concurrent Relocate 0.293ms
+[0.223s][info][gc       ] GC(0) Garbage Collection (Warmup) 156M(30%)->44M(9%)
+[0.316s][info][gc,phases] GC(1) Pause Mark Start 0.006ms
+[0.320s][info][gc,phases] GC(1) Concurrent Mark 3.421ms
+[0.320s][info][gc,phases] GC(1) Pause Mark End 0.006ms
+[0.320s][info][gc,phases] GC(1) Concurrent Mark Free 0.000ms
+[0.320s][info][gc,phases] GC(1) Concurrent Process Non-Strong References 0.278ms
+[0.320s][info][gc,phases] GC(1) Concurrent Reset Relocation Set 0.001ms
+[0.322s][info][gc,phases] GC(1) Concurrent Select Relocation Set 1.284ms
+[0.322s][info][gc,phases] GC(1) Pause Relocate Start 0.003ms
+[0.322s][info][gc,phases] GC(1) Concurrent Relocate 0.363ms
+[0.322s][info][gc       ] GC(1) Garbage Collection (Warmup) 342M(67%)->48M(9%)
+[0.415s][info][gc,phases] GC(2) Pause Mark Start 0.005ms
+[0.419s][info][gc,phases] GC(2) Concurrent Mark 3.492ms
+[0.419s][info][gc,phases] GC(2) Pause Mark End 0.006ms
+[0.419s][info][gc,phases] GC(2) Concurrent Mark Free 0.001ms
+[0.420s][info][gc,phases] GC(2) Concurrent Process Non-Strong References 0.418ms
+[0.420s][info][gc,phases] GC(2) Concurrent Reset Relocation Set 0.001ms
+[0.421s][info][gc,phases] GC(2) Concurrent Select Relocation Set 1.194ms
+[0.421s][info][gc,phases] GC(2) Pause Relocate Start 0.003ms
+[0.421s][info][gc,phases] GC(2) Concurrent Relocate 0.384ms
+[0.421s][info][gc       ] GC(2) Garbage Collection (Warmup) 452M(88%)->46M(9%)
+[0.515s][info][gc,phases] GC(3) Pause Mark Start 0.006ms
+[0.520s][info][gc,phases] GC(3) Concurrent Mark 4.123ms
+[0.520s][info][gc,phases] GC(3) Pause Mark End 0.006ms
+[0.520s][info][gc,phases] GC(3) Concurrent Mark Free 0.000ms
+[0.520s][info][gc,phases] GC(3) Concurrent Process Non-Strong References 0.367ms
+[0.520s][info][gc,phases] GC(3) Concurrent Reset Relocation Set 0.001ms
+[0.520s][info][gc       ] Allocation Stall (main) 1.328ms
+[0.521s][info][gc,phases] GC(3) Concurrent Select Relocation Set 1.124ms
+[0.521s][info][gc,phases] GC(3) Pause Relocate Start 0.003ms
+[0.522s][info][gc,phases] GC(3) Concurrent Relocate 0.361ms
+[0.522s][info][gc       ] GC(3) Garbage Collection (Allocation Rate) 508M(99%)->42M(8%)

@@ -68,6 +68,9 @@
       "databases/db-indexes-patterns-antipatterns.md",
       "databases/db-indexes-types-and-internals.md"
     ],
+    "databases/graph": [
+      "databases/graph-databases-and-go.md"
+    ],
     "databases/identifiers": [
       "architecture/identifiers-across-languages.md",
       "databases/identifiers-index-locality-bloat.md"
@@ -264,9 +267,13 @@
       "performance/latency-budget-and-transport.md"
     ],
     "performance/inmemory": [
+      "performance/inmemory-aerospike-ignite-scale-grid.md",
       "performance/inmemory-computing-landscape-tradeoffs.md",
       "performance/inmemory-redis-cache-structures.md",
       "performance/inmemory-tarantool-picodata-compute-near-data.md"
+    ],
+    "performance/memory-management": [
+      "performance/memory-management-across-languages.md"
     ],
     "performance/probabilistic": [
       "performance/bloom-filters-probabilistic-structures.md"

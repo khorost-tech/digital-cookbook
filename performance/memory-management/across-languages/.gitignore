@@ -1,0 +1,12 @@
+# Rust
+rust/target/
+rust/Cargo.lock
+
+# Java
+java/target/
+
+# Go (артефактов сборки в репо нет; на всякий случай)
+go/*.exe
+
+# C++ (собирается в /tmp контейнера, локальных артефактов нет)
+cpp/a.out

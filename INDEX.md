@@ -26,6 +26,7 @@
 | [`databases/citus`](databases/citus) | Шардирование PostgreSQL через Citus: scatter-gather, колокация против репартиции, референсные таблицы, пагинация, ребаланс | [статья](https://khorost.tech/databases/sharding-in-production/) |
 | [`databases/clickhouse`](databases/clickhouse) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | [статья](https://khorost.tech/databases/clickhouse-when-olap/) |
 | [`databases/db-indexes`](databases/db-indexes) | Индексы в БД: PostgreSQL, MongoDB, Tarantool | [статья](https://khorost.tech/databases/) |
+| [`databases/graph`](databases/graph) | Графовые БД и Go: один и тот же граф платформы в трёх углах (Neo4j, Apache AGE, baseline на PostgreSQL) и одинаковые графовые запросы к каждому | 🔜 скоро |
 | [`databases/identifiers`](databases/identifiers) | Идентификаторы: локальность и bloat UUIDv4/UUIDv7/bigint в PostgreSQL, распределение в Mongo/Scylla, генерация в Go/Java/Rust | [статья](https://khorost.tech/databases/identifiers-index-locality-bloat/) |
 | [`databases/mongodb`](databases/mongodb) | MongoDB: глубокое погружение (модель, индексы, репликация, шардирование) | [статья](https://khorost.tech/databases/) |
 | [`databases/opensearch`](databases/opensearch) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
@@ -79,7 +80,8 @@
 | [`performance/compression`](performance/compression) | Кодеки сжатия на общем корпусе и нескольких профилях раскладки данных (NDJSON, поток мелких сообщений): размер против скорости | [статья](https://khorost.tech/performance/compression-tradeoffs/) |
 | [`performance/crypto-rsa-regression`](performance/crypto-rsa-regression) | Регрессия crypto/rsa в Go 1.20: одинаковые бенчмарки на шести версиях Go, просадка публичных verify/encrypt в 5–7 раз, benchstat и CI-гейт | [статья](https://khorost.tech/performance/go-crypto-rsa-regression/) |
 | [`performance/highload-lowlatency`](performance/highload-lowlatency) | Highload под SLA < 300 мс: HAProxy L7 (h2c) + пул Go/Java-бэкендов, L4 vs L7 | [статья](https://khorost.tech/performance/latency-budget-and-transport/) |
-| [`performance/inmemory`](performance/inmemory) | Вычисления в оперативной памяти: Redis, Tarantool, Picodata, Aerospike, Ignite и etcd на общем наборе сценариев | 🔜 скоро |
+| [`performance/inmemory`](performance/inmemory) | Вычисления в оперативной памяти: Redis, Tarantool, Picodata, Aerospike, Ignite и etcd на общем наборе сценариев | [статья](https://khorost.tech/performance/inmemory-computing-landscape-tradeoffs/) |
+| [`performance/memory-management`](performance/memory-management) | Управление памятью поперёк языков: куча и стек, сборка мусора против ручного управления — на одной задаче | 🔜 скоро |
 | [`performance/probabilistic`](performance/probabilistic) | Вероятностные структуры: Bloom и родственники | [статья](https://khorost.tech/performance/bloom-filters-probabilistic-structures/) |
 | [`performance/testcontainers-template-db`](performance/testcontainers-template-db) | Шаблонная база вместо контейнера на каждый тест: CREATE DATABASE ... TEMPLATE, замеры ×10 и ×36, границы приёма (права, FORCE, размер шаблона) | [статья](https://khorost.tech/performance/testcontainers-template-db/) |
 

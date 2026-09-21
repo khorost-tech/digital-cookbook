@@ -1,0 +1,10 @@
+goos: windows
+goarch: amd64
+pkg: memmgmt
+cpu: AMD Ryzen 7 5800X3D 8-Core Processor           
+BenchmarkNoPool-16    	 1788718	       686.8 ns/op	    4096 B/op	       1 allocs/op
+BenchmarkPool-16      	100000000	        11.30 ns/op	       0 B/op	       0 allocs/op
+PASS
+ok  	memmgmt	3.074s
+?   	memmgmt/cmd/cycle	[no test files]
+?   	memmgmt/cmd/gcpauses	[no test files]

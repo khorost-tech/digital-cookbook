@@ -1,0 +1,12 @@
+# сборочные артефакты
+**/target/
+**/*.class
+clients/go/graph-client
+bench/go/bench-runner
+
+# rust
+clients/rust/target/
+
+# сгенерированные датасеты и замеры (крупные, воспроизводятся из seed)
+dataset/out/
+bench/out/

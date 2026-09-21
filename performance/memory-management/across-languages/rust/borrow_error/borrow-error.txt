@@ -1,0 +1,21 @@
+$ rustc --edition 2021 borrow_error/uaf.rs
+error[E0502]: cannot borrow `v` as mutable because it is also borrowed as immutable
+  --> borrow_error/uaf.rs:23:5
+   |
+19 |     let first = &v[0];
+   |                  - immutable borrow occurs here
+...
+23 |     v.push(4);
+   |     ^^^^^^^^^ mutable borrow occurs here
+...
+26 |     println!("first = {}", first);
+   |                            ----- immutable borrow later used here
+
+error: aborting due to 1 previous error
+
+For more information about this error, try `rustc --explain E0502`.
+
+$ echo $?
+1
+# бинарь не создан (компиляция провалена) — это и есть суть опоры 2:
+# use-after-free ловится компилятором, а не рантаймом.

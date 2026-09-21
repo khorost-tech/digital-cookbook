@@ -1,0 +1,7 @@
+# Опора 2a: escape analysis
+# Команда: go build -gcflags='-m' ./...
+# go version: go version go1.26.3 windows/amd64
+
+## Строки по escape.go (stack vs heap):
+./escape.go:23:7: &point{...} does not escape
+./escape.go:32:2: moved to heap: p

@@ -1,0 +1,101 @@
+# databases/graph — стенд к статье «Графовые базы данных и Go».
+# Три угла на одном датасете:
+#   Neo4j (натив, bolt) · Apache AGE (openCypher поверх PostgreSQL) · PostgreSQL baseline (recursive CTE).
+# Одна инстанция PostgreSQL обслуживает и AGE, и baseline.
+#
+# Версии зафиксированы и сверены на актуальность (июль 2026):
+#   Neo4j 5.26 (community, LTS) · Apache AGE 1.6.0 на PostgreSQL 16.
+#
+#   docker compose up -d neo4j postgres        # поднять БД
+#   docker compose --profile go   up --build   # клиент Go   (Neo4j + AGE + baseline)
+#   docker compose --profile java up --build   # клиент Java (Neo4j + AGE + baseline)
+#   docker compose --profile rust up --build   # клиент Rust (AGE + baseline)
+#   docker compose down                        # остановить
+# Замеры (числа-эталон) гоняются с хоста: cd bench/go && go run .  (см. bench/scenarios.md)
+
+services:
+  neo4j:
+    image: neo4j:5.26-community
+    restart: unless-stopped
+    environment:
+      NEO4J_AUTH: "neo4j/graphlab-pass"
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    healthcheck:
+      test: ["CMD-SHELL", "cypher-shell -u neo4j -p graphlab-pass 'RETURN 1' || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      graph:
+        ipv4_address: 172.30.0.2
+
+  postgres:
+    image: apache/age:release_PG16_1.6.0
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: graphlab
+      POSTGRES_USER: graph
+      POSTGRES_PASSWORD: graph
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U graph -d graphlab"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks:
+      graph:
+        ipv4_address: 172.30.0.3
+
+  # ── клиенты (профили) ──────────────────────────────────────────────────────
+  client-go:
+    profiles: ["go"]
+    build:
+      context: ./clients/go
+      args:
+        GOPROXY: ${GOPROXY:-https://proxy.golang.org,direct}
+    environment:
+      GRAPH_BACKEND: ${GRAPH_BACKEND:-all}
+      NEO4J_URI: "bolt://neo4j:7687"
+      NEO4J_USER: "neo4j"
+      NEO4J_PASS: "graphlab-pass"
+      PG_DSN: "postgres://graph:graph@postgres:5432/graphlab"
+    depends_on:
+      neo4j: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+    networks: [graph]
+
+  client-java:
+    profiles: ["java"]
+    build:
+      context: ./clients/java
+    environment:
+      GRAPH_BACKEND: ${GRAPH_BACKEND:-all}
+      NEO4J_URI: "bolt://neo4j:7687"
+      NEO4J_USER: "neo4j"
+      NEO4J_PASS: "graphlab-pass"
+      PG_JDBC: "jdbc:postgresql://postgres:5432/graphlab?user=graph&password=graph"
+    depends_on:
+      neo4j: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+    networks: [graph]
+
+  client-rust:
+    profiles: ["rust"]
+    build:
+      context: ./clients/rust
+    environment:
+      GRAPH_BACKEND: ${GRAPH_BACKEND:-all}
+      PG_CONN: "host=postgres port=5432 user=graph password=graph dbname=graphlab"
+    depends_on:
+      postgres: { condition: service_healthy }
+    networks: [graph]
+
+networks:
+  graph:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.30.0.0/16
