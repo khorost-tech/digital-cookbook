@@ -1,0 +1,45 @@
+# Collector в роли КОНВЕРТЕРА кодировки OTLP: принимает JSON, отдаёт protobuf.
+#
+# Зачем. Генератор стенда шлёт OTLP/HTTP в JSON-кодировании — так видно, что
+# именно уходит на провод. Collector такой запрос принимает штатно, а Vector
+# отвергает:
+#   HTTP 500, ответ: 1Rejection(InvalidHeader { name: "content-type" })
+#
+# Чтобы проверить, что Vector делает с сигналами ПО СУЩЕСТВУ, а не спотыкается
+# о кодировку, сигнал пропускается через Collector: тот принимает JSON и
+# отправляет дальше по OTLP в protobuf, который Vector понимает.
+#
+# Заодно это честная проверка самого утверждения «Vector не принимает JSON»:
+# если после конвертации приём заработает, значит дело именно в кодировке,
+# а не в том, что Vector вообще не умеет OTLP.
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  otlp/to_vector:
+    endpoint: vector:4317
+    tls:
+      insecure: true
+
+  debug:
+    verbosity: basic
+
+service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [otlp/to_vector, debug]
+    logs:
+      receivers: [otlp]
+      exporters: [otlp/to_vector, debug]

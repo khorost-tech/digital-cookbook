@@ -1,0 +1,14 @@
+Критерий эквивалентности конвейеров
+Дата прогона: 2026-07-28 19:04:14 UTC
+
+=== прикладные поля документа, service=nginx
+  logs-vector: agent client pipeline referer request service size status
+  logs-otelcol: agent client pipeline referer request service size status
+  logs-fluentbit: agent client pipeline referer request service size status
+
+=== прикладные поля документа, service=api
+  logs-vector: duration_ms level msg pipeline service ts
+  logs-otelcol: duration_ms level msg pipeline service ts
+  logs-fluentbit: duration_ms level msg pipeline service ts
+
+OK: наборы прикладных полей совпадают, замеры сопоставимы

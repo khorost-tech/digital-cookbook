@@ -1,0 +1,103 @@
+# Конвейер OpenTelemetry Collector: файлы → OTTL → OpenSearch.
+# Та же задача, что у vector/agent.yaml: распарсить nginx combined и JSON
+# приложения, проставить pipeline, отсечь /health.
+#
+# Экспортёр — elasticsearch, а НЕ opensearch, хотя пишем в OpenSearch.
+# Причина в зрелости: в contrib 0.157.0 у elasticsearchexporter logs: Beta,
+# у opensearchexporter logs: Alpha (проверено `components`, см. results/02).
+receivers:
+  file_log/nginx:
+    include: [/logs/nginx-access.log]
+    start_at: beginning
+    storage: file_storage
+    force_flush_period: 0
+    operators:
+      - type: regex_parser
+        regex: '^(?P<client>\S+) \S+ (?P<user>\S+) \[(?P<ts>[^\]]+)\] "(?P<request>[^"]*)" (?P<status>\d+) (?P<size>\d+) "(?P<referer>[^"]*)" "(?P<agent>[^"]*)"'
+
+  file_log/app:
+    include: [/logs/app.log]
+    start_at: beginning
+    storage: file_storage
+    force_flush_period: 0
+    operators:
+      - type: json_parser
+
+processors:
+  transform/nginx:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["service"], "nginx")
+          - set(attributes["pipeline"], "otelcol")
+          - set(attributes["status"], Int(attributes["status"]))
+          - set(attributes["size"], Int(attributes["size"]))
+          # ts и user убираются, чтобы набор прикладных полей совпал с эталоном
+          # (vector/agent.yaml, см. results/01). Это не косметика: пока поле ts
+          # оставалось, nginx-ветка определяла attributes.ts как text
+          # ("28/Jul/2026:15:51:05 +0000"), app-ветка присылала в то же поле
+          # ISO-время, и OpenSearch отвергал ВЕСЬ bulk-запрос ошибкой
+          # "mapper [attributes.ts] cannot be changed from type [text] to [date]".
+          # У Vector этого конфликта нет: его parse_nginx_log кладёт время в
+          # служебное поле timestamp, а не в прикладное ts.
+          - delete_key(attributes, "ts")
+          - delete_key(attributes, "user")
+
+  transform/app:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["pipeline"], "otelcol")
+
+  filter/health:
+    error_mode: ignore
+    logs:
+      log_record:
+        - 'IsMatch(attributes["request"], "/health")'
+
+exporters:
+  opensearch:
+    http:
+      endpoint: https://opensearch:9200
+      tls:
+        insecure_skip_verify: true
+      auth:
+        authenticator: basicauth
+    logs_index: logs-otelcol
+
+extensions:
+  file_storage:
+    directory: /var/lib/otelcol
+    # Без этого validate падает ещё до старта, если каталога нет: проверка у
+    # Collector не ограничивается разбором YAML, она строит компоненты и
+    # трогает окружение.
+    create_directory: true
+
+  basicauth:
+    client_auth:
+      username: admin
+      password: VectorDemo#2026
+
+service:
+  extensions: [file_storage, basicauth]
+  telemetry:
+    # Формат 0.157: metrics.address удалён, вместо него readers. Старый ключ
+    # валидатор отвергает с 'migration.MetricsConfigV030' has invalid keys: address.
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    logs/nginx:
+      receivers: [file_log/nginx]
+      processors: [transform/nginx, filter/health]
+      exporters: [opensearch]
+    logs/app:
+      receivers: [file_log/app]
+      processors: [transform/app]
+      exporters: [opensearch]

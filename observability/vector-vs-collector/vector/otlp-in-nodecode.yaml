@@ -1,0 +1,52 @@
+# Vector как приёмник OTLP, декодирование сигналов ВЫКЛЮЧЕНО (умолчание).
+# Замер 5: что Vector делает со спанами и записями логов, пришедшими по OTLP.
+#
+# Ключевая настройка — use_otlp_decoding. По умолчанию все три сигнала стоят
+# в false, и это не мелочь конфигурации: от неё зависит, разбирает ли Vector
+# структуру сигнала или принимает тело как есть. Парный файл отличается ровно
+# этой секцией, чтобы разницу можно было увидеть, а не предположить.
+#
+# ВАЖНО про топологию: источник opentelemetry выдаёт ТРИ ИМЕНОВАННЫХ ВЫХОДА —
+# .logs, .traces и .metrics. Сослаться на источник целиком нельзя ни при каких
+# значениях use_otlp_decoding: конфиг с inputs: [otlp] отвергается на старте
+#   x Input "otlp" for sink "archive" doesn't match any components.
+# Здесь каждый сигнал уходит в свой файл — так видно, что именно доехало.
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  otlp:
+    type: opentelemetry
+    grpc:
+      address: 0.0.0.0:4317
+    http:
+      address: 0.0.0.0:4318
+    use_otlp_decoding:
+      logs: false
+      metrics: false
+      traces: false
+
+sinks:
+  out_logs:
+    type: file
+    inputs: [otlp.logs]
+    path: /var/lib/vector/otlp-raw-logs.json
+    encoding:
+      codec: json
+
+  out_traces:
+    type: file
+    inputs: [otlp.traces]
+    path: /var/lib/vector/otlp-raw-traces.json
+    encoding:
+      codec: json
+
+  out_metrics:
+    type: file
+    inputs: [otlp.metrics]
+    path: /var/lib/vector/otlp-raw-metrics.json
+    encoding:
+      codec: json

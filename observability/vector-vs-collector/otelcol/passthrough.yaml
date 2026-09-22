@@ -1,0 +1,59 @@
+# Тот же конвейер БЕЗ трансформаций: строки уходят в OpenSearch как есть.
+# Нужен для замера 2 — цена парсинга и фильтрации у Collector.
+# Сравнивать этот прогон можно ТОЛЬКО с otelcol/config.yaml на том же rate.
+receivers:
+  file_log/nginx:
+    include: [/logs/nginx-access.log]
+    start_at: beginning
+    storage: file_storage
+    # Умолчание 500 мс отправляет НЕЗАВЕРШЁННУЮ строку как отдельную запись,
+    # если файл дописывается медленнее. Живьём это дало 26 обрывков вместо
+    # 13 целых строк (см. results/bench-summary.txt и 02-otelcol-pipeline.txt).
+    force_flush_period: 0
+
+  file_log/app:
+    include: [/logs/app.log]
+    start_at: beginning
+    storage: file_storage
+    # Умолчание 500 мс отправляет НЕЗАВЕРШЁННУЮ строку как отдельную запись,
+    # если файл дописывается медленнее. Живьём это дало 26 обрывков вместо
+    # 13 целых строк (см. results/bench-summary.txt и 02-otelcol-pipeline.txt).
+    force_flush_period: 0
+
+exporters:
+  opensearch:
+    http:
+      endpoint: https://opensearch:9200
+      tls:
+        insecure_skip_verify: true
+      auth:
+        authenticator: basicauth
+    logs_index: logs-otelcol-passthrough
+
+extensions:
+  file_storage:
+    directory: /var/lib/otelcol
+    create_directory: true
+
+  basicauth:
+    client_auth:
+      username: admin
+      password: VectorDemo#2026
+
+service:
+  extensions: [file_storage, basicauth]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    logs/nginx:
+      receivers: [file_log/nginx]
+      exporters: [opensearch]
+    logs/app:
+      receivers: [file_log/app]
+      exporters: [opensearch]

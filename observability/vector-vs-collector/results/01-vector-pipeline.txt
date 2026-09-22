@@ -1,0 +1,95 @@
+Замер: сквозной прогон конвейера Vector, эталонная схема выходного документа (Task 3)
+Дата: 2026-07-28
+Образ: timberio/vector:0.57.0-debian
+Конфиг: vector/agent.yaml (file → VRL → OpenSearch, индекс logs-vector)
+Бэкенд: opensearchproject/opensearch:3.5.0
+
+Команды:
+  cd observability/vector-vs-collector
+  ./scripts/up.sh vector
+  MSYS_NO_PATHCONV=1 docker compose run --rm loadgen -rate 1000 -duration 20s
+
+Манифест генератора (дословно):
+  {"nginx":10000,"app":10000,"total":20000,"nginx_expected":8267,"app_expected":2278}
+
+Ожидание для ЭТОГО стенда:
+  nginx_expected + app = 8267 + 10000 = 18267
+
+  Внимание на app: берётся ПОЛНОЕ число app-событий (10000), а не app_expected
+  (2278). Поле app_expected считает различимые комбинации полей дедупликации и
+  осмысленно только там, где дедуп включён — на соседнем стенде vector-pipeline.
+  Здесь дедупликации нет намеренно: у Fluent Bit прямого аналога dedupe нет, и
+  включение её сломало бы эквивалентность трёх конвейеров. Подставить сюда
+  app_expected значило бы ждать 10545 и объявить провалом верный результат.
+
+Факт (после стабилизации счётчика):
+  logs-vector/_count = 18267
+
+  Совпадает с ожиданием ровно, расхождение 0.
+
+Эталонная схема выходного документа. На неё равняются конвейеры Collector и
+Fluent Bit; расхождение прикладных полей означает, что замеры CPU сравнивают
+разную работу и публиковать их нельзя.
+
+nginx-событие (service:nginx), дословно из индекса:
+{
+ "agent": "curl/8.5.0",
+ "client": "10.0.0.1",
+ "file": "/logs/nginx-access.log",
+ "host": "50e193a4f486",
+ "pipeline": "vector",
+ "referer": "-",
+ "request": "GET / HTTP/1.1",
+ "service": "nginx",
+ "size": 3545,
+ "source_type": "file",
+ "status": 404,
+ "timestamp": "2026-07-28T15:51:05Z"
+}
+
+app-событие (service:api), дословно из индекса:
+{
+ "duration_ms": 15,
+ "file": "/logs/app.log",
+ "host": "50e193a4f486",
+ "level": "debug",
+ "msg": "retry scheduled",
+ "pipeline": "vector",
+ "service": "api",
+ "source_type": "file",
+ "timestamp": "2026-07-28T15:51:25.269642140Z",
+ "ts": "2026-07-28T15:51:05Z"
+}
+
+Разделение полей на прикладные и служебные (важно для сверки эквивалентности):
+
+  прикладные, обязаны совпасть у всех трёх конвейеров:
+    nginx — client, request, status, size, agent, referer, service, pipeline
+    app   — level, msg, duration_ms, service, pipeline, ts
+
+  служебные, порождены самим инструментом и совпадать не обязаны:
+    Vector — file, host, source_type, timestamp
+
+  Служебные поля — это МОДЕЛЬ ДАННЫХ инструмента, а не лишняя работа. У Vector
+  их четыре и они плоские; у Collector на их месте будет структура OTel
+  (resource, scope, severity, observed_timestamp). Выпиливать их ради красивой
+  сверки было бы подгонкой: разница моделей — предмет статьи, а не помеха.
+
+Отдельная находка среды, не относящаяся к Vector:
+
+  Проброшенные на хост порты Docker Desktop на этой машине НЕ отвечают — curl
+  к https://localhost:9225 (OpenSearch), http://127.0.0.1:9099 (Prometheus) и
+  http://127.0.0.1:8689 (Vector API) одинаково даёт rc=28 (таймаут). Проверено,
+  что это не свойство стенда: чужой контейнер, поднятый другим проектом
+  (neo4j, порт 7474), недоступен так же. Изнутри docker-сети всё работает
+  мгновенно.
+
+  Из вывода curl -v видно, что соединение сначала уходит в [::1]:9225 (IPv6),
+  затем в 127.0.0.1 — и оба варианта таймаутят, то есть дело не только в
+  порядке резолва localhost.
+
+  Следствие для стенда: все обращения к OpenSearch в скриптах идут ЧЕРЕЗ
+  контейнер (docker compose exec -T opensearch curl ... https://localhost:9200/...),
+  а не через проброшенный порт. Это к тому же кросс-платформенно и снимает
+  зависимость от self-signed TLS через хостовой порт. Порты в docker-compose.yml
+  оставлены — они полезны для ручного просмотра там, где проброс исправен.

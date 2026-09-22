@@ -1,0 +1,20 @@
+Замер 4: перезапуск конвейера otelcol, режим wipe
+Дата: 2026-07-28 22:08:28 UTC
+Параметры: rate=2000, длительность=20s
+
+в индексе ДО перезапуска: 36627
+перезапуск: контейнер пересоздан, том состояния УДАЛЁН
+в индексе ПОСЛЕ перезапуска: 73254
+дельта: 36627
+
+--- лог конвейера после перезапуска (последние 10 строк) ---
+  vvc-otelcol  | 2026-07-28T22:08:35.026Z	info	extensions/extensions.go:44	Starting extensions...	{"resource": {"service.instance.id": "2125df6d-94e2-4996-8d44-01616615752b", "service.name": "otelcol-contrib", "service.version": "0.157.0"}}
+  vvc-otelcol  | 2026-07-28T22:08:35.026Z	info	extensions/extensions.go:48	Extension is starting...	{"resource": {"service.instance.id": "2125df6d-94e2-4996-8d44-01616615752b", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "basicauth", "otelcol.component.kind": "extension"}
+  vvc-otelcol  | 2026-07-28T22:08:35.026Z	info	extensions/extensions.go:66	Extension started.	{"resource": {"service.instance.id": "2125df6d-94e2-4996-8d44-01616615752b", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "basicauth", "otelcol.component.kind": "extension"}
+  vvc-otelcol  | 2026-07-28T22:08:35.026Z	info	extensions/extensions.go:48	Extension is starting...	{"resource": {"service.instance.id": "2125df6d-94e2-4996-8d44-01616615752b", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_storage", "otelcol.component.kind": "extension"}
+  vvc-otelcol  | 2026-07-28T22:08:35.026Z	info	extensions/extensions.go:66	Extension started.	{"resource": {"service.instance.id": "2125df6d-94e2-4996-8d44-01616615752b", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_storage", "otelcol.component.kind": "extension"}
+  vvc-otelcol  | 2026-07-28T22:08:35.026Z	info	adapter/receiver.go:41	Starting stanza receiver	{"resource": {"service.instance.id": "2125df6d-94e2-4996-8d44-01616615752b", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/nginx", "otelcol.component.kind": "receiver", "otelcol.signal": "logs"}
+  vvc-otelcol  | 2026-07-28T22:08:35.038Z	info	adapter/receiver.go:41	Starting stanza receiver	{"resource": {"service.instance.id": "2125df6d-94e2-4996-8d44-01616615752b", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/app", "otelcol.component.kind": "receiver", "otelcol.signal": "logs"}
+  vvc-otelcol  | 2026-07-28T22:08:35.049Z	info	service@v0.157.0/service.go:282	Everything is ready. Begin running and processing data.	{"resource": {"service.instance.id": "2125df6d-94e2-4996-8d44-01616615752b", "service.name": "otelcol-contrib", "service.version": "0.157.0"}}
+  vvc-otelcol  | 2026-07-28T22:08:36.361Z	info	fileconsumer/file.go:423	Started watching file	{"resource": {"service.instance.id": "2125df6d-94e2-4996-8d44-01616615752b", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/nginx", "otelcol.component.kind": "receiver", "otelcol.signal": "logs", "component": "fileconsumer", "path": "/logs/nginx-access.log"}
+  vvc-otelcol  | 2026-07-28T22:08:36.372Z	info	fileconsumer/file.go:423	Started watching file	{"resource": {"service.instance.id": "2125df6d-94e2-4996-8d44-01616615752b", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/app", "otelcol.component.kind": "receiver", "otelcol.signal": "logs", "component": "fileconsumer", "path": "/logs/app.log"}

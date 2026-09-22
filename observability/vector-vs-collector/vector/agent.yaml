@@ -1,0 +1,108 @@
+# Конвейер Vector: файлы → VRL → OpenSearch.
+# Задача, одинаковая для всех трёх конвейеров стенда: распарсить nginx combined
+# и JSON приложения, проставить поле pipeline, отсечь запросы к /health.
+#
+# Переменные окружения в конфиге НЕ используются: Vector 0.57 не интерполирует
+# ${VAR} по умолчанию. Адреса берутся из DNS docker compose.
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  nginx_file:
+    type: file
+    include:
+      - /logs/nginx-access.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  app_file:
+    type: file
+    include:
+      - /logs/app.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  internal:
+    type: internal_metrics
+
+transforms:
+  # Две РАЗДЕЛЬНЫЕ ветки, а не общий вход: у nginx- и app-событий разные наборы
+  # полей, и фильтр с общим входом схлопнул бы поток. На соседнем стенде общий
+  # вход у dedupe оставил от 1232 nginx-событий ровно 2.
+  parse_nginx:
+    type: remap
+    inputs: [nginx_file]
+    source: |
+      parsed, err = parse_nginx_log(.message, "combined")
+      if err != null {
+        .service = "unparsed"
+      } else {
+        . = merge(., parsed)
+        .service = "nginx"
+        del(.message)
+      }
+      .pipeline = "vector"
+
+  parse_app:
+    type: remap
+    inputs: [app_file]
+    source: |
+      parsed, err = parse_json(.message)
+      if err != null {
+        .service = "unparsed"
+      } else {
+        . = merge(., object!(parsed))
+        del(.message)
+      }
+      .pipeline = "vector"
+
+  drop_health:
+    type: filter
+    inputs: [parse_nginx]
+    condition:
+      type: vrl
+      source: |
+        req = to_string(.request) ?? ""
+        !contains(req, "/health")
+
+sinks:
+  opensearch:
+    type: elasticsearch
+    inputs: [drop_health, parse_app]
+    endpoints:
+      - https://opensearch:9200
+    mode: bulk
+    # Версия API задана ЯВНО. По умолчанию api_version: auto — Vector
+    # опрашивает бэкенд и подстраивает формат bulk. Когда определение не
+    # срабатывает, он молча уходит в формат Elasticsearch 6/7 и добавляет в
+    # метаданные параметр _type, которого в OpenSearch 3.x больше нет. Ответ:
+    #   400 illegal_argument_exception:
+    #   "Action/metadata line [1] contains an unknown parameter [_type]"
+    # Vector считает 400 неретраибельной ошибкой и выбрасывает пачку целиком
+    # (Events dropped ... count=10163). Поток теряется весь, при исправных
+    # сети и бэкенде. Живьём одна и та же конфигурация вела себя по-разному:
+    # при неспешном старте определение проходило и запись шла, при быстром
+    # перезапуске в bench.sh — нет.
+    api_version: v8
+    bulk:
+      # Индекс задан ЛИТЕРАЛОМ. Vector 0.57 ввёл template confinement: шаблон
+      # без литерального префикса отвергается на старте с кодом 78. Здесь
+      # динамика и не нужна — каждый конвейер стенда пишет в свой фиксированный
+      # индекс, и сравнивать их так только проще.
+      index: logs-vector
+    auth:
+      strategy: basic
+      user: admin
+      password: VectorDemo#2026
+    tls:
+      verify_certificate: false
+
+  metrics_out:
+    type: prometheus_exporter
+    inputs: [internal]
+    address: 0.0.0.0:9602

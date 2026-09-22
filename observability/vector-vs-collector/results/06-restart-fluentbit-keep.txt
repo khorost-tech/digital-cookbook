@@ -1,0 +1,20 @@
+Замер 4: перезапуск конвейера fluentbit, режим keep
+Дата: 2026-07-28 22:10:55 UTC
+Параметры: rate=2000, длительность=20s
+
+в индексе ДО перезапуска: 36627
+перезапуск: docker compose restart (том состояния СОХРАНЁН)
+в индексе ПОСЛЕ перезапуска: 36627
+дельта: 0
+
+--- лог конвейера после перезапуска (последние 10 строк) ---
+  vvc-fluentbit  | [2026/07/28 22:10:57.591] [ info] [input:tail:tail.1] storage_strategy='filesystem' (memory + filesystem)
+  vvc-fluentbit  | [2026/07/28 22:10:57.592] [ info] [input:tail:tail.1] db: delete unmonitored stale inodes from the database: count=0
+  vvc-fluentbit  | [2026/07/28 22:10:57.592] [ info] [input:storage_backlog:storage_backlog.2] initializing
+  vvc-fluentbit  | [2026/07/28 22:10:57.592] [ info] [input:storage_backlog:storage_backlog.2] storage_strategy='memory' (memory only)
+  vvc-fluentbit  | [2026/07/28 22:10:57.592] [ info] [input:storage_backlog:storage_backlog.2] queue memory limit: 95.4M
+  vvc-fluentbit  | [2026/07/28 22:10:57.595] [ info] [http_server] listen iface=0.0.0.0 tcp_port=2020
+  vvc-fluentbit  | [2026/07/28 22:10:57.595] [ info] [sp] stream processor started
+  vvc-fluentbit  | [2026/07/28 22:10:57.595] [ info] [engine] Shutdown Grace Period=5, Shutdown Input Grace Period=2
+  vvc-fluentbit  | [2026/07/28 22:10:57.596] [ info] [input:tail:tail.0] inotify_fs_add(): inode=2605556 watch_fd=1 name=/logs/nginx-access.log
+  vvc-fluentbit  | [2026/07/28 22:10:57.596] [ info] [input:tail:tail.1] inotify_fs_add(): inode=2605561 watch_fd=1 name=/logs/app.log

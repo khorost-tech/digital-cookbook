@@ -1,0 +1,245 @@
+Замер: сквозной прогон конвейера OpenTelemetry Collector (Task 4)
+Дата: 2026-07-28
+Образ: otel/opentelemetry-collector-contrib:0.157.0
+Конфиг: otelcol/config.yaml (file_log → OTTL → OpenSearch, индекс logs-otelcol)
+Вход: те же файлы того же прогона генератора, что читал Vector (см. results/01)
+
+ИТОГ: logs-otelcol/_count = 18267 — ровно столько же, сколько у Vector,
+расхождение 0. Прикладные поля выходного документа совпали с эталоном.
+
+Путь к этому результату дал больше материала, чем сам результат. Ниже всё,
+что выяснилось живьём.
+
+────────────────────────────────────────────────────────────────────────
+1. Что вообще есть в образе (вывод `components`, дословно по нужным пунктам)
+
+  exporters:
+    elasticsearch   logs: Beta    traces: Beta
+    opensearch      logs: Alpha   traces: Alpha
+  processors:
+    transform       logs: Beta
+    filter          logs: Alpha
+  extensions:
+    file_storage    (есть)
+    basicauth       extension: Beta
+
+  Здесь ловушка выбора: писать собираемся в OpenSearch, и «родной»
+  opensearchexporter выглядит очевидным выбором, но он Alpha, тогда как
+  чужой по названию elasticsearchexporter — Beta. Разрешение ниже, пункт 4.
+
+────────────────────────────────────────────────────────────────────────
+2. Ресивер называется file_log, а не filelog
+
+  В выводе `components` — file_log. Конфиг принимает ОБА имени, но на старом
+  печатает предупреждение:
+
+  warn  builders/builders.go:40  "filelog" alias is deprecated; use "file_log" instead
+
+  В конфиге стенда используется file_log.
+
+────────────────────────────────────────────────────────────────────────
+3. validate у Collector строит компоненты и трогает окружение
+
+  Проверка конфига — не разбор YAML. Она поймала два дефекта до всякого старта:
+
+  а) устаревший формат телеметрии:
+     Error: failed to get config: cannot unmarshal the configuration:
+     'service.telemetry.metrics' decoding failed due to the following error(s):
+     'migration.MetricsConfigV030' has invalid keys: address
+     (в 0.157 metrics.address заменён на metrics.readers, см. конфиг)
+
+  б) отсутствие каталога состояния:
+     Error: extensions::file_storage: directory must exist: stat /var/lib/otelcol:
+     no such file or directory. You can enable the create_directory option
+
+  Это ровно тот класс проверки, который у Vector даёт ПОЛНАЯ `vector validate`
+  (и который пропускает vector validate --no-environment).
+
+────────────────────────────────────────────────────────────────────────
+4. elasticsearchexporter с OpenSearch 3.5.0 НЕ работает
+
+  Симптом (дословно):
+    error  elasticsearchexporter@v0.157.0/bulkindexer.go:343  bulk indexer flush error
+      error: flush failed (400): {"error":{"type":"illegal_argument_exception","caused_by":{}}}
+    error  internal/queue_sender.go:50  Exporting failed. Dropping data.
+      dropped_items: 820
+
+  Проверено, что дело НЕ в конфиге стенда — три независимых прогона:
+    - mapping.mode по умолчанию (otel) → 400, индекс не создан;
+    - mapping.mode: raw                → 400, индекс не создан;
+    - после устранения конфликта типов поля ts (см. пункт 5), конфиг
+      otelcol/exporter-elasticsearch.yaml, всё остальное идентично рабочему
+                                        → 400, индекс logs-otelcol-es не создан.
+
+  Состояние OpenSearch после попыток: индекса logs-otelcol-es нет,
+  _data_stream пуст ({"data_streams":[]}). То есть отвергается первый же
+  bulk-запрос целиком.
+
+  ⚠ Причина 400 НЕ УСТАНОВЛЕНА. OpenSearch возвращает illegal_argument_exception
+  с пустым caused_by, а тела запроса экспортёра в логах нет. Утверждать, будто
+  дело в dynamic_templates из Elasticsearch 8 или в data streams, было бы
+  догадкой: ни то, ни другое не проверено. Установлено ровно следующее —
+  экспортёр воспроизводимо получает 400 и роняет данные, а opensearchexporter
+  на том же конвейере и том же бэкенде работает.
+
+  Практический вывод для стенда: используется opensearchexporter (Alpha).
+  Зрелость по метке стабильности и работоспособность на конкретном бэкенде —
+  разные вещи, и вторая важнее.
+
+────────────────────────────────────────────────────────────────────────
+5. Конфликт типов поля ts — дефект КОНФИГА, а не инструмента
+
+  Первая версия config.yaml называла regex-группу времени nginx как ts.
+  Значение "28/Jul/2026:15:51:06 +0000" ложилось в attributes.ts как text,
+  а app-ветка присылала в то же поле ISO-время. OpenSearch отвергал bulk:
+
+    "reason":"mapper [attributes.ts] cannot be changed from type [text] to [date]"
+    rejected_items: 100
+
+  Важно: этот текст показал opensearchexporter. elasticsearchexporter на той
+  же ошибке печатал только illegal_argument_exception с пустым caused_by —
+  то есть один экспортёр диагностируем, другой нет.
+
+  У Vector конфликта не возникает: parse_nginx_log кладёт время в служебное
+  поле timestamp, прикладного ts у nginx-события нет вовсе. Исправление —
+  delete_key(attributes, "ts") и delete_key(attributes, "user") в transform.
+
+────────────────────────────────────────────────────────────────────────
+6. Том состояния и непривилегированный пользователь
+
+  Первый старт упал:
+    error: "storage client: open /var/lib/otelcol/receiver_filelog_nginx: permission denied"
+
+  Причина — в правах, и она показательна. Пользователь по умолчанию
+  (docker image inspect -f '{{.Config.User}}'):
+    otel/opentelemetry-collector-contrib:0.157.0 → 10001:10001
+    fluent/fluent-bit:5.0.9                      → 0
+    timberio/vector:0.57.0-debian                → (не задан, то есть root)
+
+  Collector — единственный из трёх, кто по умолчанию непривилегированный,
+  и ровно поэтому спотыкается о named volume, созданный docker'ом как root.
+  Vector и Fluent Bit проблемы не замечают потому, что идут от root.
+  Решение в стенде — подготовка тома перед стартом (scripts/up.sh), как это
+  делает initContainer в k8s, а не понижение Collector до root.
+
+  Смежное: образы Collector и Fluent Bit — distroless, внутрь не зайти
+  (`docker run --entrypoint sh` даёт exec: "sh": executable file not found).
+  Образ Vector в варианте -debian shell содержит.
+
+────────────────────────────────────────────────────────────────────────
+7. Выходной документ Collector (дословно из индекса)
+
+nginx-событие:
+{
+ "attributes": {
+  "agent": "Mozilla/5.0",
+  "client": "10.0.0.2",
+  "data_stream": {"dataset": "default", "namespace": "namespace", "type": "record"},
+  "log.file.name": "nginx-access.log",
+  "pipeline": "otelcol",
+  "referer": "-",
+  "request": "GET /api/items/7 HTTP/1.1",
+  "service": "nginx",
+  "size": 1381,
+  "status": 500
+ },
+ "body": "10.0.0.2 - carol [28/Jul/2026:15:51:06 +0000] \"GET /api/items/7 HTTP/1.1\" 500 1381 \"-\" \"Mozilla/5.0\"",
+ "instrumentationScope": {},
+ "observedTimestamp": "2026-07-28T16:05:08.63987961Z",
+ "severity": {},
+ "@timestamp": "1970-01-01T00:00:00Z"
+}
+
+app-событие:
+{
+ "attributes": {
+  "data_stream": {"dataset": "default", "namespace": "namespace", "type": "record"},
+  "duration_ms": 13,
+  "level": "error",
+  "log.file.name": "app.log",
+  "msg": "db query slow",
+  "pipeline": "otelcol",
+  "service": "api",
+  "ts": "2026-07-28T15:51:07Z"
+ },
+ "body": "{\"ts\":\"2026-07-28T15:51:07Z\",\"level\":\"error\",\"service\":\"api\",\"msg\":\"db query slow\",\"duration_ms\":13}",
+ "instrumentationScope": {},
+ "observedTimestamp": "2026-07-28T16:05:08.660385064Z",
+ "severity": {},
+ "@timestamp": "1970-01-01T00:00:00Z"
+}
+
+Сверка с эталоном (results/01):
+  прикладные поля nginx — agent, client, referer, request, service, size,
+    status, pipeline — СОВПАДАЮТ;
+  прикладные поля app — duration_ms, level, msg, service, ts, pipeline —
+    СОВПАДАЮТ.
+
+Модельные различия, которые НЕ являются расхождением работы:
+  - у Collector прикладные поля лежат внутри attributes, у Vector — в корне;
+  - Collector сохраняет исходную строку в body; Vector её удаляет (del(.message)).
+    Это разница моделей: у OTel body — обязательная часть записи лога;
+  - служебные поля Collector: data_stream, log.file.name, instrumentationScope,
+    severity, observedTimestamp, @timestamp;
+  - ⚠ @timestamp равен эпохе (1970-01-01T00:00:00Z): без явного time_parser
+    Collector не выводит время события из строки лога. Vector в том же
+    сценарии проставил timestamp=2026-07-28T15:51:05Z, потому что
+    parse_nginx_log разбирает время сам. Для конвейера, где время события
+    важно, у Collector нужен отдельный оператор — это не умолчание.
+
+────────────────────────────────────────────────────────────────────────
+7а. force_flush_period режет строки активно пишущегося файла
+
+  Обнаружено на замере ресурсов: при rate 5000 в индексе Collector стабильно
+  оказывалось БОЛЬШЕ документов, чем ожидалось:
+
+    прогон r1: ожидалось 275098, в индексе 275125  (+27)
+    прогон r2: ожидалось 274869, в индексе 274895  (+26)
+
+  У Vector и Fluent Bit на том же входе расхождение было ровно 0, по два
+  прогона у каждого. То есть дело не во входных данных.
+
+  Разбор. Лишние документы — не дубли и не пропущенный фильтр (запросов к
+  /health в индексе 0). Это ОБРЫВКИ строк: 26 записей в индексе не имеют
+  поля client, то есть не прошли regex. Дословно из индекса, подряд идущие:
+
+    '10.0.0.2 - carol [28/Jul/2026:20:40:26 +0000] "GET /static/app.js HTTP/1.1" 200 6579 "-'
+    '" "Go-http-client/2.0"'
+
+    '172.17.0.5 - - [28/Jul/2026:2'
+    '0:40:31 +0000] "DELETE /api/orders HTTP/1.1" 200 7656 "-" "Go-http-client/2.0"'
+
+  Одна строка лога уехала двумя событиями. 26 обрывков = 13 разорванных
+  строк × 2 части, ровно на столько и расходился счётчик.
+
+  Причина — параметр force_flush_period ресивера file_log, по умолчанию
+  500 мс: если за это время строка не завершилась переводом каретки, ресивер
+  отправляет прочитанное как самостоятельную запись. Генератор пишет пачками,
+  и в редких случаях пауза внутри строки превышала таймер.
+
+  Проверка гипотезы: тот же прогон с force_flush_period: 0 —
+
+    ожидалось 275141, в индексе 275141, расхождение 0
+    CPU 34.2% (против 37.6/37.2% на прежней конфигурации — в пределах разброса)
+
+  Вывод. Умолчание рассчитано на источники, которые пишут строку целиком и
+  сразу; на файле, дописываемом рывками, оно молча портит данные. Заметить
+  это можно только сверкой счётчиков: ошибок в логе нет, доставка идёт,
+  документы в индексе есть — просто часть из них битая.
+
+  Vector и Fluent Bit в тех же условиях дожидаются конца строки.
+
+────────────────────────────────────────────────────────────────────────
+8. Побочное наблюдение о чекпойнтах (пригодится замеру 4)
+
+  Перезапуск контейнера при СОХРАНЁННОМ томе:
+    info fileconsumer/file.go:72  Resuming from previously known offset(s).
+                                  'start_at' setting is not applicable.
+  Файлы не перечитываются.
+
+  Тот же перезапуск с УДАЛЁННЫМ томом дал ровное удвоение: 18267 → 36534.
+
+  Отдельно: `docker volume rm` на томе ОСТАНОВЛЕННОГО, но существующего
+  контейнера молча не срабатывает — том удаляется только после
+  `docker compose rm -sf <svc>`. Легко принять за «состояние очищено» и
+  получить замер, объясняющий совсем не то, что предполагалось.

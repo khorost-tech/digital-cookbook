@@ -1,0 +1,104 @@
+# Конвейер Collector с ОЧЕРЕДЬЮ НА ДИСКЕ — для замера 3 (недоступный бэкенд).
+# Отдельный файл по той же причине, что и vector/buffered.yaml: конфигурацию,
+# на которой сняты замеры 1 и 2, задним числом менять нельзя.
+#
+# У Collector дисковая устойчивость собирается из двух частей: sending_queue
+# у экспортёра и extension file_storage, который эту очередь хранит. У Vector
+# то же самое — одна секция buffer на синке.
+receivers:
+  file_log/nginx:
+    include: [/logs/nginx-access.log]
+    start_at: beginning
+    storage: file_storage
+    # Умолчание 500 мс отправляет НЕЗАВЕРШЁННУЮ строку как отдельную запись,
+    # если файл дописывается медленнее. Живьём это дало 26 обрывков вместо
+    # 13 целых строк (см. results/bench-summary.txt и 02-otelcol-pipeline.txt).
+    force_flush_period: 0
+    operators:
+      - type: regex_parser
+        regex: '^(?P<client>\S+) \S+ (?P<user>\S+) \[(?P<ts>[^\]]+)\] "(?P<request>[^"]*)" (?P<status>\d+) (?P<size>\d+) "(?P<referer>[^"]*)" "(?P<agent>[^"]*)"'
+
+  file_log/app:
+    include: [/logs/app.log]
+    start_at: beginning
+    storage: file_storage
+    # Умолчание 500 мс отправляет НЕЗАВЕРШЁННУЮ строку как отдельную запись,
+    # если файл дописывается медленнее. Живьём это дало 26 обрывков вместо
+    # 13 целых строк (см. results/bench-summary.txt и 02-otelcol-pipeline.txt).
+    force_flush_period: 0
+    operators:
+      - type: json_parser
+
+processors:
+  transform/nginx:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["service"], "nginx")
+          - set(attributes["pipeline"], "otelcol")
+          - set(attributes["status"], Int(attributes["status"]))
+          - set(attributes["size"], Int(attributes["size"]))
+          - delete_key(attributes, "ts")
+          - delete_key(attributes, "user")
+
+  transform/app:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["pipeline"], "otelcol")
+
+  filter/health:
+    error_mode: ignore
+    logs:
+      log_record:
+        - 'IsMatch(attributes["request"], "/health")'
+
+exporters:
+  opensearch:
+    http:
+      endpoint: https://opensearch:9200
+      tls:
+        insecure_skip_verify: true
+      auth:
+        authenticator: basicauth
+    logs_index: logs-otelcol-buffered
+    sending_queue:
+      enabled: true
+      storage: file_storage
+    retry_on_failure:
+      enabled: true
+      initial_interval: 1s
+      max_interval: 10s
+      max_elapsed_time: 300s
+
+extensions:
+  file_storage:
+    directory: /var/lib/otelcol
+    create_directory: true
+
+  basicauth:
+    client_auth:
+      username: admin
+      password: VectorDemo#2026
+
+service:
+  extensions: [file_storage, basicauth]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    logs/nginx:
+      receivers: [file_log/nginx]
+      processors: [transform/nginx, filter/health]
+      exporters: [opensearch]
+    logs/app:
+      receivers: [file_log/app]
+      processors: [transform/app]
+      exporters: [opensearch]

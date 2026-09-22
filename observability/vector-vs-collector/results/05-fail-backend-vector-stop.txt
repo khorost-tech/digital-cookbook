@@ -1,0 +1,43 @@
+Замер 3: отказ бэкенда, конвейер vector
+Дата: 2026-07-28 21:41:06 UTC
+Параметры: rate=5000, длительность прогона=60s, простой бэкенда=60s
+Конфиг: /etc/vector/buffered.yaml
+
+состояние на диске ДО остановки бэкенда: 17900 КиБ
+--- останавливаем OpenSearch на 60s ---
+состояние на диске во время недоступности: 86128 КиБ
+--- лог конвейера во время недоступности (последние 15 строк) ---
+  vvc-vector  | 2026-07-28T21:41:32.526745Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=4}:http: vector::internal_events::http_client: Internal log [HTTP error.] is being suppressed to avoid flooding.
+  vvc-vector  | 2026-07-28T21:41:32.526827Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=4}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
+  vvc-vector  | 2026-07-28T21:41:32.526921Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}: vector::sinks::util::service::health: Endpoint is unhealthy. endpoint=https://opensearch:9200
+  vvc-vector  | 2026-07-28T21:41:42.751450Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=2}:http: vector::internal_events::http_client: Internal log [HTTP error.] has been suppressed 2 times.
+  vvc-vector  | 2026-07-28T21:41:42.751482Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=2}:http: vector::internal_events::http_client: HTTP error. error=error trying to connect: dns error: failed to lookup address information: Name or service not known error_type="request_failed" stage="processing"
+  vvc-vector  | 2026-07-28T21:41:42.751524Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=2}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 2 times.
+  vvc-vector  | 2026-07-28T21:41:42.751527Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=2}: vector::sinks::util::retries: Retrying after error. error=Failed to make HTTP(S) request: error trying to connect: dns error: failed to lookup address information: Name or service not known
+  vvc-vector  | 2026-07-28T21:41:53.166885Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=6}:http: vector::internal_events::http_client: Internal log [HTTP error.] is being suppressed to avoid flooding.
+  vvc-vector  | 2026-07-28T21:41:53.167113Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=6}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
+  vvc-vector  | 2026-07-28T21:42:04.733715Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=3}:http: vector::internal_events::http_client: Internal log [HTTP error.] has been suppressed 1 times.
+  vvc-vector  | 2026-07-28T21:42:04.733761Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=3}:http: vector::internal_events::http_client: HTTP error. error=error trying to connect: dns error: failed to lookup address information: Name or service not known error_type="request_failed" stage="processing"
+  vvc-vector  | 2026-07-28T21:42:04.733853Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=3}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 1 times.
+  vvc-vector  | 2026-07-28T21:42:04.733874Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=3}: vector::sinks::util::retries: Retrying after error. error=Failed to make HTTP(S) request: error trying to connect: dns error: failed to lookup address information: Name or service not known
+  vvc-vector  | 2026-07-28T21:42:23.569878Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=1}:http: vector::internal_events::http_client: HTTP error. error=error trying to connect: tcp connect error: Connection refused (os error 111) error_type="request_failed" stage="processing"
+  vvc-vector  | 2026-07-28T21:42:23.569966Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=1}: vector::sinks::util::retries: Retrying after error. error=Failed to make HTTP(S) request: error trying to connect: tcp connect error: Connection refused (os error 111)
+
+--- OpenSearch поднят обратно ---
+сгенерировано:   300000
+ожидалось:       275141
+в индексе:       275141
+потеряно:        0
+состояние на диске после доставки: 86128 КиБ
+
+--- лог конвейера после восстановления (последние 10 строк) ---
+  vvc-vector  | 2026-07-28T21:41:42.751527Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=2}: vector::sinks::util::retries: Retrying after error. error=Failed to make HTTP(S) request: error trying to connect: dns error: failed to lookup address information: Name or service not known
+  vvc-vector  | 2026-07-28T21:41:53.166885Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=6}:http: vector::internal_events::http_client: Internal log [HTTP error.] is being suppressed to avoid flooding.
+  vvc-vector  | 2026-07-28T21:41:53.167113Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=6}: vector::sinks::util::retries: Internal log [Retrying after error.] is being suppressed to avoid flooding.
+  vvc-vector  | 2026-07-28T21:42:04.733715Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=3}:http: vector::internal_events::http_client: Internal log [HTTP error.] has been suppressed 1 times.
+  vvc-vector  | 2026-07-28T21:42:04.733761Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=3}:http: vector::internal_events::http_client: HTTP error. error=error trying to connect: dns error: failed to lookup address information: Name or service not known error_type="request_failed" stage="processing"
+  vvc-vector  | 2026-07-28T21:42:04.733853Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=3}: vector::sinks::util::retries: Internal log [Retrying after error.] has been suppressed 1 times.
+  vvc-vector  | 2026-07-28T21:42:04.733874Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=3}: vector::sinks::util::retries: Retrying after error. error=Failed to make HTTP(S) request: error trying to connect: dns error: failed to lookup address information: Name or service not known
+  vvc-vector  | 2026-07-28T21:42:23.569878Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=1}:http: vector::internal_events::http_client: HTTP error. error=error trying to connect: tcp connect error: Connection refused (os error 111) error_type="request_failed" stage="processing"
+  vvc-vector  | 2026-07-28T21:42:23.569966Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}:request{request_id=1}: vector::sinks::util::retries: Retrying after error. error=Failed to make HTTP(S) request: error trying to connect: tcp connect error: Connection refused (os error 111)
+  vvc-vector  | 2026-07-28T21:42:59.892062Z  INFO sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}: vector::sinks::util::service::health: Endpoint is healthy. endpoint=https://opensearch:9200

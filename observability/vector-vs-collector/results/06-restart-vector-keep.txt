@@ -1,0 +1,20 @@
+Замер 4: перезапуск конвейера vector, режим keep
+Дата: 2026-07-28 22:16:05 UTC
+Параметры: rate=2000, длительность=20s
+
+в индексе ДО перезапуска: 36627
+перезапуск: docker compose restart (том состояния СОХРАНЁН)
+в индексе ПОСЛЕ перезапуска: 36627
+дельта: 0
+
+--- лог конвейера после перезапуска (последние 10 строк) ---
+  vvc-vector  | 2026-07-28T22:16:07.751849Z  INFO vector::api::grpc_server: GRPC API server started on 0.0.0.0:8686.
+  vvc-vector  | 2026-07-28T22:16:07.751884Z  INFO vector::internal_events::api: API server running. address=0.0.0.0:8686
+  vvc-vector  | 2026-07-28T22:16:07.751883Z  INFO source{component_kind="source" component_id=nginx_file component_type=file}: vector::sources::file: Starting file server. include=["/logs/nginx-access.log"] exclude=[]
+  vvc-vector  | 2026-07-28T22:16:07.752793Z  INFO vector::topology::builder: Healthcheck passed.
+  vvc-vector  | 2026-07-28T22:16:07.761872Z  INFO sink{component_kind="sink" component_id=metrics_out component_type=prometheus_exporter}: vector::sinks::prometheus::exporter: Building HTTP server. address=0.0.0.0:9602
+  vvc-vector  | 2026-07-28T22:16:07.765330Z  INFO source{component_kind="source" component_id=nginx_file component_type=file}:file_server: file_source_common::checkpointer: Loaded checkpoint data.
+  vvc-vector  | 2026-07-28T22:16:07.767881Z  INFO source{component_kind="source" component_id=app_file component_type=file}:file_server: file_source_common::checkpointer: Loaded checkpoint data.
+  vvc-vector  | 2026-07-28T22:16:07.769240Z  INFO source{component_kind="source" component_id=nginx_file component_type=file}:file_server: vector::internal_events::file::source: Resuming to watch file. file=/logs/nginx-access.log file_position=2003972
+  vvc-vector  | 2026-07-28T22:16:07.769541Z  INFO source{component_kind="source" component_id=app_file component_type=file}:file_server: vector::internal_events::file::source: Resuming to watch file. file=/logs/app.log file_position=2034470
+  vvc-vector  | 2026-07-28T22:16:07.775721Z  INFO vector::topology::builder: Internal log [Healthcheck passed.] is being suppressed to avoid flooding.

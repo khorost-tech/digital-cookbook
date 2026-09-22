@@ -1,0 +1,43 @@
+Замер 3: отказ бэкенда, конвейер fluentbit, режим pause
+Дата: 2026-07-28 21:54:15 UTC
+Параметры: rate=5000, длительность прогона=60s, простой бэкенда=60s
+Конфиг: /etc/fluent-bit/buffered.yaml
+
+состояние на диске ДО остановки бэкенда: 108 КиБ
+--- ЗАМОРАЖИВАЕМ OpenSearch на 60s (DNS на месте, соединение виснет) ---
+состояние на диске во время недоступности: 38456 КиБ
+--- лог конвейера во время недоступности (последние 15 строк) ---
+  vvc-fluentbit  | [2026/07/28 21:55:24.258] [ warn] [engine] failed to flush chunk '1-1785275713.756103183.flb', retry in 8 seconds: task_id=14, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:24.258] [ warn] [engine] failed to flush chunk '1-1785275714.4378857.flb', retry in 9 seconds: task_id=15, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:24.258] [ warn] [engine] failed to flush chunk '1-1785275713.152738321.flb', retry in 6 seconds: task_id=8, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:28.673] [error] [upstream] connection #97 to tcp://172.28.0.3:9200 timed out after 10 seconds (connection timeout)
+  vvc-fluentbit  | [2026/07/28 21:55:28.673] [error] [upstream] connection #99 to tcp://172.28.0.3:9200 timed out after 10 seconds (connection timeout)
+  vvc-fluentbit  | [2026/07/28 21:55:28.674] [ warn] [engine] failed to flush chunk '1-1785275715.468969834.flb', retry in 6 seconds: task_id=16, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:28.674] [ warn] [engine] failed to flush chunk '1-1785275716.278430368.flb', retry in 10 seconds: task_id=17, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:30.173] [error] [upstream] connection #101 to tcp://172.28.0.3:9200 timed out after 10 seconds (connection timeout)
+  vvc-fluentbit  | [2026/07/28 21:55:30.173] [error] [upstream] connection #103 to tcp://172.28.0.3:9200 timed out after 10 seconds (connection timeout)
+  vvc-fluentbit  | [2026/07/28 21:55:30.174] [ warn] [engine] failed to flush chunk '1-1785275719.597804777.flb', retry in 8 seconds: task_id=18, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:30.174] [ warn] [engine] failed to flush chunk '1-1785275720.458181942.flb', retry in 6 seconds: task_id=19, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:33.173] [error] [upstream] connection #106 to tcp://172.28.0.3:9200 timed out after 10 seconds (connection timeout)
+  vvc-fluentbit  | [2026/07/28 21:55:33.173] [error] [upstream] connection #107 to tcp://172.28.0.3:9200 timed out after 10 seconds (connection timeout)
+  vvc-fluentbit  | [2026/07/28 21:55:33.173] [ warn] [engine] failed to flush chunk '1-1785275721.867375546.flb', retry in 9 seconds: task_id=20, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:33.174] [ warn] [engine] failed to flush chunk '1-1785275721.869162465.flb', retry in 7 seconds: task_id=21, input=tail.1 > output=opensearch.0 (out_id=0)
+
+--- OpenSearch возвращён в работу ---
+сгенерировано:   300000
+ожидалось:       275141
+в индексе:       275141
+потеряно:        0
+состояние на диске после доставки: 3856 КиБ
+
+--- лог конвейера после восстановления (последние 10 строк) ---
+  vvc-fluentbit  | [2026/07/28 21:55:40.048] [ info] [engine] flush chunk '1-1785275713.756103183.flb' succeeded at retry 1: task_id=14, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:40.083] [ info] [engine] flush chunk '1-1785275713.544287654.flb' succeeded at retry 1: task_id=10, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:40.104] [ info] [engine] flush chunk '1-1785275712.758454219.flb' succeeded at retry 1: task_id=0, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:40.154] [ info] [engine] flush chunk '1-1785275712.800757050.flb' succeeded at retry 1: task_id=6, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:40.297] [ info] [engine] flush chunk '1-1785275713.152738321.flb' succeeded at retry 1: task_id=8, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:40.298] [ info] [engine] flush chunk '1-1785275716.278430368.flb' succeeded at retry 1: task_id=17, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:40.299] [ info] [engine] flush chunk '1-1785275719.597804777.flb' succeeded at retry 1: task_id=18, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:40.300] [ info] [engine] flush chunk '1-1785275721.869162465.flb' succeeded at retry 1: task_id=21, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:40.412] [ info] [engine] flush chunk '1-1785275713.349399157.flb' succeeded at retry 1: task_id=9, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:55:41.904] [ info] [engine] flush chunk '1-1785275721.867375546.flb' succeeded at retry 1: task_id=20, input=tail.0 > output=opensearch.0 (out_id=0)

@@ -1,0 +1,43 @@
+Замер 3: отказ бэкенда, конвейер vector, режим pause
+Дата: 2026-07-28 21:50:23 UTC
+Параметры: rate=5000, длительность прогона=60s, простой бэкенда=60s
+Конфиг: /etc/vector/buffered.yaml
+
+состояние на диске ДО остановки бэкенда: 17888 КиБ
+--- ЗАМОРАЖИВАЕМ OpenSearch на 60s (DNS на месте, соединение виснет) ---
+состояние на диске во время недоступности: 86132 КиБ
+--- лог конвейера во время недоступности (последние 15 строк) ---
+  vvc-vector  | 2026-07-28T21:50:15.644307Z  WARN sink{component_kind="sink" component_id=opensearch component_type=elasticsearch}: vector_core::tls::settings: The `verify_certificate` option is DISABLED, this may lead to security vulnerabilities.
+  vvc-vector  | 2026-07-28T21:50:15.665289Z  INFO vector::topology::running: Running healthchecks.
+  vvc-vector  | 2026-07-28T21:50:15.665562Z  INFO vector: Vector has started. debug="false" version="0.57.0" arch="x86_64" revision="8832452 2026-07-14 20:58:30.491174540"
+  vvc-vector  | 2026-07-28T21:50:15.666499Z  INFO source{component_kind="source" component_id=nginx_file component_type=file}: vector::sources::file: Starting file server. include=["/logs/nginx-access.log"] exclude=[]
+  vvc-vector  | 2026-07-28T21:50:15.666542Z  INFO source{component_kind="source" component_id=app_file component_type=file}: vector::sources::file: Starting file server. include=["/logs/app.log"] exclude=[]
+  vvc-vector  | 2026-07-28T21:50:15.666695Z  INFO vector::api::grpc_server: GRPC API server bound to 0.0.0.0:8686.
+  vvc-vector  | 2026-07-28T21:50:15.666758Z  INFO vector::api::grpc_server: GRPC API server started on 0.0.0.0:8686.
+  vvc-vector  | 2026-07-28T21:50:15.666767Z  INFO vector::internal_events::api: API server running. address=0.0.0.0:8686
+  vvc-vector  | 2026-07-28T21:50:15.669655Z  INFO vector::topology::builder: Healthcheck passed.
+  vvc-vector  | 2026-07-28T21:50:15.678395Z  INFO sink{component_kind="sink" component_id=metrics_out component_type=prometheus_exporter}: vector::sinks::prometheus::exporter: Building HTTP server. address=0.0.0.0:9602
+  vvc-vector  | 2026-07-28T21:50:15.700209Z  INFO vector::topology::builder: Internal log [Healthcheck passed.] is being suppressed to avoid flooding.
+  vvc-vector  | 2026-07-28T21:50:25.943301Z  WARN source{component_kind="source" component_id=nginx_file component_type=file}:file_server: vector::internal_events::file::source: Currently ignoring file too small to fingerprint. file=/logs/nginx-access.log
+  vvc-vector  | 2026-07-28T21:50:25.950744Z  WARN source{component_kind="source" component_id=app_file component_type=file}:file_server: vector::internal_events::file::source: Currently ignoring file too small to fingerprint. file=/logs/app.log
+  vvc-vector  | 2026-07-28T21:50:32.810201Z  INFO source{component_kind="source" component_id=nginx_file component_type=file}:file_server: vector::internal_events::file::source: Found new file to watch. file=/logs/nginx-access.log
+  vvc-vector  | 2026-07-28T21:50:32.817681Z  INFO source{component_kind="source" component_id=app_file component_type=file}:file_server: vector::internal_events::file::source: Found new file to watch. file=/logs/app.log
+
+--- OpenSearch возвращён в работу ---
+сгенерировано:   300000
+ожидалось:       275141
+в индексе:       275141
+потеряно:        0
+состояние на диске после доставки: 86132 КиБ
+
+--- лог конвейера после восстановления (последние 10 строк) ---
+  vvc-vector  | 2026-07-28T21:50:15.666695Z  INFO vector::api::grpc_server: GRPC API server bound to 0.0.0.0:8686.
+  vvc-vector  | 2026-07-28T21:50:15.666758Z  INFO vector::api::grpc_server: GRPC API server started on 0.0.0.0:8686.
+  vvc-vector  | 2026-07-28T21:50:15.666767Z  INFO vector::internal_events::api: API server running. address=0.0.0.0:8686
+  vvc-vector  | 2026-07-28T21:50:15.669655Z  INFO vector::topology::builder: Healthcheck passed.
+  vvc-vector  | 2026-07-28T21:50:15.678395Z  INFO sink{component_kind="sink" component_id=metrics_out component_type=prometheus_exporter}: vector::sinks::prometheus::exporter: Building HTTP server. address=0.0.0.0:9602
+  vvc-vector  | 2026-07-28T21:50:15.700209Z  INFO vector::topology::builder: Internal log [Healthcheck passed.] is being suppressed to avoid flooding.
+  vvc-vector  | 2026-07-28T21:50:25.943301Z  WARN source{component_kind="source" component_id=nginx_file component_type=file}:file_server: vector::internal_events::file::source: Currently ignoring file too small to fingerprint. file=/logs/nginx-access.log
+  vvc-vector  | 2026-07-28T21:50:25.950744Z  WARN source{component_kind="source" component_id=app_file component_type=file}:file_server: vector::internal_events::file::source: Currently ignoring file too small to fingerprint. file=/logs/app.log
+  vvc-vector  | 2026-07-28T21:50:32.810201Z  INFO source{component_kind="source" component_id=nginx_file component_type=file}:file_server: vector::internal_events::file::source: Found new file to watch. file=/logs/nginx-access.log
+  vvc-vector  | 2026-07-28T21:50:32.817681Z  INFO source{component_kind="source" component_id=app_file component_type=file}:file_server: vector::internal_events::file::source: Found new file to watch. file=/logs/app.log

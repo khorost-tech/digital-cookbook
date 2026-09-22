@@ -1,0 +1,16 @@
+parsers:
+  # nginx combined. Группа time объявлена time_key: Fluent Bit заберёт её как
+  # время записи и в поля документа не положит — так же, как Vector кладёт
+  # время в служебное поле, а не в прикладное. Иначе у nginx-события появилось
+  # бы прикладное поле времени, которого нет у двух других конвейеров.
+  - name: nginx_combined
+    format: regex
+    regex: '^(?<client>[^ ]*) [^ ]* (?<user>[^ ]*) \[(?<time>[^\]]*)\] "(?<request>[^"]*)" (?<status>[^ ]*) (?<size>[^ ]*) "(?<referer>[^"]*)" "(?<agent>[^"]*)"$'
+    time_key: time
+    time_format: "%d/%b/%Y:%H:%M:%S %z"
+    types: "status:integer size:integer"
+
+  # У app-события поле ts, наоборот, ОСТАЁТСЯ прикладным: оно есть в документе
+  # и у Vector, и у Collector. Поэтому time_key здесь не задаётся.
+  - name: app_json
+    format: json

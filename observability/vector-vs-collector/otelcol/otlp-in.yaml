@@ -1,0 +1,37 @@
+# Collector как приёмник OTLP — контрольная точка замера 5.
+#
+# Нужен, чтобы отделить дефект генератора от поведения Vector: если спаны не
+# доходят и до Collector, значит виноват отправитель, и выводы о Vector делать
+# рано. Проверять приёмник, не убедившись в исправности источника, — верный
+# способ описать в статье чужую ошибку как свойство инструмента.
+#
+# Выход — debug-экспортёр с подробной детализацией: он печатает содержимое
+# сигнала в лог, и видно не только «сколько», но и «что».
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  debug:
+    verbosity: detailed
+
+service:
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      exporters: [debug]
+    logs:
+      receivers: [otlp]
+      exporters: [debug]

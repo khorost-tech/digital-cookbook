@@ -1,0 +1,43 @@
+Замер 3: отказ бэкенда, конвейер otelcol, режим pause
+Дата: 2026-07-28 21:52:22 UTC
+Параметры: rate=5000, длительность прогона=60s, простой бэкенда=60s
+Конфиг: /etc/otelcol/buffered.yaml
+
+состояние на диске ДО остановки бэкенда: 6572 КиБ
+--- ЗАМОРАЖИВАЕМ OpenSearch на 60s (DNS на месте, соединение виснет) ---
+состояние на диске во время недоступности: 29576 КиБ
+--- лог конвейера во время недоступности (последние 15 строк) ---
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.157.0/adapter/receiver.go:62
+  vvc-otelcol  | github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*BatchingLogEmitter).flusher
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.157.0/operator/helper/emitter.go:171
+  vvc-otelcol  | 2026-07-28T21:53:29.608Z	error	consumerretry/logs.go:39	ConsumeLogs() failed. Enable retry_on_failure to slow down reading logs and avoid dropping.	{"resource": {"service.instance.id": "de39c662-b6fb-4b59-9e3c-4835b763a7d9", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/nginx", "otelcol.component.kind": "receiver", "otelcol.signal": "logs", "error": "sending queue is full"}
+  vvc-otelcol  | github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/consumerretry.(*logsConsumer).ConsumeLogs
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.157.0/consumerretry/logs.go:39
+  vvc-otelcol  | github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.157.0/adapter/receiver.go:62
+  vvc-otelcol  | github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*BatchingLogEmitter).flusher
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.157.0/operator/helper/emitter.go:171
+  vvc-otelcol  | 2026-07-28T21:53:29.608Z	error	adapter/receiver.go:64	ConsumeLogs() failed	{"resource": {"service.instance.id": "de39c662-b6fb-4b59-9e3c-4835b763a7d9", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/nginx", "otelcol.component.kind": "receiver", "otelcol.signal": "logs", "error": "sending queue is full"}
+  vvc-otelcol  | github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.157.0/adapter/receiver.go:64
+  vvc-otelcol  | github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*BatchingLogEmitter).flusher
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.157.0/operator/helper/emitter.go:171
+
+--- OpenSearch возвращён в работу ---
+сгенерировано:   300000
+ожидалось:       275141
+в индексе:       148573
+потеряно:        126568
+состояние на диске после доставки: 29576 КиБ
+
+--- лог конвейера после восстановления (последние 10 строк) ---
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal@v0.157.0/consumerretry/logs.go:39
+  vvc-otelcol  | github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.157.0/adapter/receiver.go:62
+  vvc-otelcol  | github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*BatchingLogEmitter).flusher
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.157.0/operator/helper/emitter.go:171
+  vvc-otelcol  | 2026-07-28T21:53:29.608Z	error	adapter/receiver.go:64	ConsumeLogs() failed	{"resource": {"service.instance.id": "de39c662-b6fb-4b59-9e3c-4835b763a7d9", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/nginx", "otelcol.component.kind": "receiver", "otelcol.signal": "logs", "error": "sending queue is full"}
+  vvc-otelcol  | github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/adapter.(*receiver).consumeEntries
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.157.0/adapter/receiver.go:64
+  vvc-otelcol  | github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper.(*BatchingLogEmitter).flusher
+  vvc-otelcol  | 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza@v0.157.0/operator/helper/emitter.go:171

@@ -1,0 +1,43 @@
+Замер 3: отказ бэкенда, конвейер fluentbit, режим stop
+Дата: 2026-07-28 21:47:30 UTC
+Параметры: rate=5000, длительность прогона=60s, простой бэкенда=60s
+Конфиг: /etc/fluent-bit/buffered.yaml
+
+состояние на диске ДО остановки бэкенда: 108 КиБ
+--- ОСТАНАВЛИВАЕМ OpenSearch на 60s (DNS-запись исчезает) ---
+состояние на диске во время недоступности: 38488 КиБ
+--- лог конвейера во время недоступности (последние 15 строк) ---
+  vvc-fluentbit  | [2026/07/28 21:48:44.964] [ warn] [engine] failed to flush chunk '1-1785275309.52922382.flb', retry in 18 seconds: task_id=3, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:48:45.959] [ warn] [net] getaddrinfo(host='opensearch', err=4): Domain name not found
+  vvc-fluentbit  | [2026/07/28 21:48:45.959] [ warn] [engine] failed to flush chunk '1-1785275309.222003494.flb', retry in 12 seconds: task_id=4, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:48:45.972] [ warn] [net] getaddrinfo(host='opensearch', err=4): Domain name not found
+  vvc-fluentbit  | [2026/07/28 21:48:45.972] [ warn] [engine] failed to flush chunk '1-1785275309.99453811.flb', retry in 18 seconds: task_id=9, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:48:48.048] [ warn] [net] getaddrinfo(host='opensearch', err=4): Domain name not found
+  vvc-fluentbit  | [2026/07/28 21:48:48.048] [ warn] [net] getaddrinfo(host='opensearch', err=4): Domain name not found
+  vvc-fluentbit  | [2026/07/28 21:48:48.048] [ warn] [engine] failed to flush chunk '1-1785275309.282828576.flb', retry in 21 seconds: task_id=10, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:48:48.048] [ warn] [engine] failed to flush chunk '1-1785275309.467947704.flb', retry in 17 seconds: task_id=11, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:48:49.077] [ warn] [net] getaddrinfo(host='opensearch', err=4): Domain name not found
+  vvc-fluentbit  | [2026/07/28 21:48:49.077] [ warn] [net] getaddrinfo(host='opensearch', err=4): Domain name not found
+  vvc-fluentbit  | [2026/07/28 21:48:49.077] [ warn] [engine] failed to flush chunk '1-1785275315.318801372.flb', retry in 21 seconds: task_id=18, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:48:49.077] [ warn] [engine] failed to flush chunk '1-1785275316.178509825.flb', retry in 16 seconds: task_id=19, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:48:49.077] [ warn] [net] getaddrinfo(host='opensearch', err=4): Domain name not found
+  vvc-fluentbit  | [2026/07/28 21:48:49.077] [ warn] [engine] failed to flush chunk '1-1785275309.490119174.flb', retry in 9 seconds: task_id=12, input=tail.0 > output=opensearch.0 (out_id=0)
+
+--- OpenSearch возвращён в работу ---
+сгенерировано:   299950
+ожидалось:       275098
+в индексе:       275098
+потеряно:        0
+состояние на диске после доставки: 3856 КиБ
+
+--- лог конвейера после восстановления (последние 10 строк) ---
+  vvc-fluentbit  | [2026/07/28 21:49:33.425] [ info] [engine] flush chunk '1-1785275309.222003494.flb' succeeded at retry 3: task_id=4, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:49:34.397] [ info] [engine] flush chunk '1-1785275309.670792469.flb' succeeded at retry 3: task_id=13, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:49:34.491] [ info] [engine] flush chunk '1-1785275309.490119174.flb' succeeded at retry 3: task_id=12, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:49:34.609] [ info] [engine] flush chunk '1-1785275309.99453811.flb' succeeded at retry 3: task_id=9, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:49:35.430] [ info] [engine] flush chunk '1-1785275309.683536141.flb' succeeded at retry 4: task_id=15, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:49:35.538] [ info] [engine] flush chunk '1-1785275308.731400822.flb' succeeded at retry 3: task_id=7, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:49:36.114] [ info] [engine] flush chunk '1-1785275309.467947704.flb' succeeded at retry 3: task_id=11, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:49:40.442] [ info] [engine] flush chunk '1-1785275308.493147769.flb' succeeded at retry 3: task_id=0, input=tail.0 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:49:50.552] [ info] [engine] flush chunk '1-1785275308.544587836.flb' succeeded at retry 4: task_id=6, input=tail.1 > output=opensearch.0 (out_id=0)
+  vvc-fluentbit  | [2026/07/28 21:49:52.667] [ info] [engine] flush chunk '1-1785275308.921752508.flb' succeeded at retry 4: task_id=8, input=tail.1 > output=opensearch.0 (out_id=0)

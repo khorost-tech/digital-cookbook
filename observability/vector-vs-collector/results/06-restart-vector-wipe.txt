@@ -1,0 +1,20 @@
+Замер 4: перезапуск конвейера vector, режим wipe
+Дата: 2026-07-28 22:18:18 UTC
+Параметры: rate=2000, длительность=20s
+
+в индексе ДО перезапуска: 36627
+перезапуск: контейнер пересоздан, том состояния УДАЛЁН
+в индексе ПОСЛЕ перезапуска: 73254
+дельта: 36627
+
+--- лог конвейера после перезапуска (последние 10 строк) ---
+  vvc-vector  | 2026-07-28T22:18:22.348567Z  INFO vector: Vector has started. debug="false" version="0.57.0" arch="x86_64" revision="8832452 2026-07-14 20:58:30.491174540"
+  vvc-vector  | 2026-07-28T22:18:22.348634Z  INFO source{component_kind="source" component_id=app_file component_type=file}: vector::sources::file: Starting file server. include=["/logs/app.log"] exclude=[]
+  vvc-vector  | 2026-07-28T22:18:22.348702Z  INFO source{component_kind="source" component_id=nginx_file component_type=file}: vector::sources::file: Starting file server. include=["/logs/nginx-access.log"] exclude=[]
+  vvc-vector  | 2026-07-28T22:18:22.348886Z  INFO vector::api::grpc_server: GRPC API server bound to 0.0.0.0:8686.
+  vvc-vector  | 2026-07-28T22:18:22.350027Z  INFO vector::api::grpc_server: GRPC API server started on 0.0.0.0:8686.
+  vvc-vector  | 2026-07-28T22:18:22.350955Z  INFO vector::internal_events::api: API server running. address=0.0.0.0:8686
+  vvc-vector  | 2026-07-28T22:18:22.361496Z  INFO sink{component_kind="sink" component_id=metrics_out component_type=prometheus_exporter}: vector::sinks::prometheus::exporter: Building HTTP server. address=0.0.0.0:9602
+  vvc-vector  | 2026-07-28T22:18:22.371485Z  INFO source{component_kind="source" component_id=nginx_file component_type=file}:file_server: vector::internal_events::file::source: Found new file to watch. file=/logs/nginx-access.log
+  vvc-vector  | 2026-07-28T22:18:22.372673Z  INFO source{component_kind="source" component_id=app_file component_type=file}:file_server: vector::internal_events::file::source: Found new file to watch. file=/logs/app.log
+  vvc-vector  | 2026-07-28T22:18:22.377155Z  INFO vector::topology::builder: Internal log [Healthcheck passed.] is being suppressed to avoid flooding.

@@ -1,0 +1,133 @@
+# Связка Vector → OTLP → Collector, вариант с encoding.codec: otlp.
+#
+# Кодек otlp существует и кодирует в protobuf — то есть в том виде, который
+# источник Collector принимает. Но он НЕ преобразует произвольное событие
+# Vector в OTLP: он ожидает событие, уже имеющее структуру OTLP, и на обычном
+# разобранном логе падает:
+#
+#   Failed serializing frame.
+#   error=Log event does not contain OTLP top-level fields (resourceLogs or resourceMetrics)
+#   error_code="encoder_serialize" error_type="encoder_failed"
+#
+# Поэтому структуру приходится собирать вручную в VRL — трансформация to_otlp
+# ниже. Это и есть настоящая цена связки: не «подходящего кодека нет», а
+# «событие надо самому уложить в proto-модель OTel».
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  nginx_file:
+    type: file
+    include:
+      - /logs/nginx-access.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  app_file:
+    type: file
+    include:
+      - /logs/app.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  internal:
+    type: internal_metrics
+
+transforms:
+  parse_nginx:
+    type: remap
+    inputs: [nginx_file]
+    source: |
+      parsed, err = parse_nginx_log(.message, "combined")
+      if err != null {
+        .service = "unparsed"
+      } else {
+        . = merge(., parsed)
+        .service = "nginx"
+        del(.message)
+      }
+      .pipeline = "vector-combo"
+
+  parse_app:
+    type: remap
+    inputs: [app_file]
+    source: |
+      parsed, err = parse_json(.message)
+      if err != null {
+        .service = "unparsed"
+      } else {
+        . = merge(., object!(parsed))
+        del(.message)
+      }
+      .pipeline = "vector-combo"
+
+  drop_health:
+    type: filter
+    inputs: [parse_nginx]
+    condition:
+      type: vrl
+      source: |
+        req = to_string(.request) ?? ""
+        !contains(req, "/health")
+
+  # Ручная укладка события в proto-модель OTel — ровно то, чего кодек otlp
+  # не делает сам: resourceLogs → scopeLogs → logRecords, атрибуты массивом
+  # пар key/value с типизированными значениями.
+  to_otlp:
+    type: remap
+    inputs: [drop_health, parse_app]
+    source: |
+      svc = to_string(.service) ?? "unknown"
+      pipe = to_string(.pipeline) ?? "vector-combo"
+      msg = encode_json(.)
+      ts = to_string(to_unix_timestamp(now(), unit: "nanoseconds"))
+
+      . = {
+        "resourceLogs": [
+          {
+            "resource": {
+              "attributes": [
+                {"key": "service.name", "value": {"stringValue": svc}}
+              ]
+            },
+            "scopeLogs": [
+              {
+                "scope": {"name": "vector"},
+                "logRecords": [
+                  {
+                    "timeUnixNano": ts,
+                    "observedTimeUnixNano": ts,
+                    "severityNumber": 9,
+                    "severityText": "INFO",
+                    "body": {"stringValue": msg},
+                    "attributes": [
+                      {"key": "pipeline", "value": {"stringValue": pipe}},
+                      {"key": "service", "value": {"stringValue": svc}}
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+
+sinks:
+  to_collector:
+    type: opentelemetry
+    inputs: [to_otlp]
+    protocol:
+      type: http
+      uri: http://otelcol:4318/v1/logs
+      encoding:
+        codec: otlp
+
+  metrics_out:
+    type: prometheus_exporter
+    inputs: [internal]
+    address: 0.0.0.0:9602

@@ -1,0 +1,70 @@
+# Конвейер Fluent Bit: файлы → parsers/filters → OpenSearch.
+# Та же задача, что у vector/agent.yaml и otelcol/config.yaml: распарсить
+# nginx combined и JSON приложения, проставить pipeline, отсечь /health.
+service:
+  flush: 1
+  log_level: info
+  parsers_file: /etc/fluent-bit/parsers.yaml
+  http_server: on
+  http_listen: 0.0.0.0
+  http_port: 2020
+  storage.path: /var/lib/fluent-bit
+  storage.sync: normal
+
+pipeline:
+  inputs:
+    - name: tail
+      path: /logs/nginx-access.log
+      tag: nginx
+      parser: nginx_combined
+      read_from_head: true
+      db: /var/lib/fluent-bit/nginx.db
+      storage.type: filesystem
+
+    - name: tail
+      path: /logs/app.log
+      tag: app
+      parser: app_json
+      read_from_head: true
+      db: /var/lib/fluent-bit/app.db
+      storage.type: filesystem
+
+  filters:
+    # user удаляется ради паритета: ни Vector, ни Collector его в документ
+    # не кладут (см. results/01 и results/02).
+    - name: modify
+      match: nginx
+      set:
+        - service nginx
+        - pipeline fluentbit
+      remove:
+        - user
+
+    - name: modify
+      match: app
+      set:
+        - pipeline fluentbit
+
+    - name: grep
+      match: nginx
+      exclude: request /health
+
+  outputs:
+    - name: opensearch
+      match: "*"
+      host: opensearch
+      port: 9200
+      index: logs-fluentbit
+      tls: on
+      tls.verify: off
+      http_user: admin
+      http_passwd: VectorDemo#2026
+      suppress_type_name: on
+      # Лимит буфера ОТВЕТА, по умолчанию 512K. OpenSearch отвечает на bulk
+      # статусом по каждому документу, и на пачках этого стенда ответ в
+      # умолчание не влезает. Симптом обманчив — выглядит как сетевой сбой:
+      #   [warn] [http_client] cannot increase buffer: current=512000 requested=544768 max=512000
+      #   [warn] [output:opensearch] http_do=-1 URI=/_bulk
+      #   [error] [engine] chunk '...' cannot be retried
+      # Данные при этом теряются целыми чанками, хотя и сеть, и бэкенд исправны.
+      buffer_size: 8M

@@ -1,0 +1,88 @@
+# Связка «оба вместе», сторона Vector: агент логов на хосте.
+# Читает файлы, парсит своим VRL и отдаёт дальше по OTLP — не в OpenSearch
+# напрямую, а Collector'у, который работает хабом.
+#
+# Это третья ветка развилки статьи, и обычно она в сравнениях теряется:
+# Vector силён на файлах и трансформации, Collector — на OTLP и маршрутизации,
+# и ставить их вместе разумнее, чем выбирать одного.
+#
+# Синк opentelemetry у Vector — HTTP-обёртка; в `vector generate` uri по
+# умолчанию http://localhost:5318/v1/logs, то есть заточен под ЛОГИ.
+# Что происходит с другими сигналами — предмет замера 6, а не догадки.
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  nginx_file:
+    type: file
+    include:
+      - /logs/nginx-access.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  app_file:
+    type: file
+    include:
+      - /logs/app.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  internal:
+    type: internal_metrics
+
+transforms:
+  parse_nginx:
+    type: remap
+    inputs: [nginx_file]
+    source: |
+      parsed, err = parse_nginx_log(.message, "combined")
+      if err != null {
+        .service = "unparsed"
+      } else {
+        . = merge(., parsed)
+        .service = "nginx"
+        del(.message)
+      }
+      .pipeline = "combo"
+
+  parse_app:
+    type: remap
+    inputs: [app_file]
+    source: |
+      parsed, err = parse_json(.message)
+      if err != null {
+        .service = "unparsed"
+      } else {
+        . = merge(., object!(parsed))
+        del(.message)
+      }
+      .pipeline = "combo"
+
+  drop_health:
+    type: filter
+    inputs: [parse_nginx]
+    condition:
+      type: vrl
+      source: |
+        req = to_string(.request) ?? ""
+        !contains(req, "/health")
+
+sinks:
+  to_collector:
+    type: opentelemetry
+    inputs: [drop_health, parse_app]
+    protocol:
+      type: http
+      uri: http://otelcol:4318/v1/logs
+      encoding:
+        codec: json
+
+  metrics_out:
+    type: prometheus_exporter
+    inputs: [internal]
+    address: 0.0.0.0:9602

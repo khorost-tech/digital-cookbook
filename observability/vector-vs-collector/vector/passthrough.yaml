@@ -1,0 +1,55 @@
+# Тот же конвейер БЕЗ трансформаций: файлы уходят в синк как есть.
+# Нужен для замера 2 — цена парсинга и фильтрации. Сравнивать этот прогон
+# можно ТОЛЬКО с agent.yaml того же стенда на том же rate: сравнение вариантов
+# при разном объёме потока на соседнем стенде уже давало неверный вывод.
+#
+# Индекс отдельный, чтобы не смешивать документы с основным прогоном.
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  nginx_file:
+    type: file
+    include:
+      - /logs/nginx-access.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  app_file:
+    type: file
+    include:
+      - /logs/app.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  internal:
+    type: internal_metrics
+
+sinks:
+  opensearch:
+    type: elasticsearch
+    inputs: [nginx_file, app_file]
+    endpoints:
+      - https://opensearch:9200
+    mode: bulk
+    # См. комментарий в agent.yaml: без явного api_version Vector может уйти
+    # в формат ES 6/7 с параметром _type и потерять весь поток на OpenSearch 3.x.
+    api_version: v8
+    bulk:
+      index: logs-vector-passthrough
+    auth:
+      strategy: basic
+      user: admin
+      password: VectorDemo#2026
+    tls:
+      verify_certificate: false
+
+  metrics_out:
+    type: prometheus_exporter
+    inputs: [internal]
+    address: 0.0.0.0:9602

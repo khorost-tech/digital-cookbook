@@ -1,0 +1,20 @@
+Замер 4: перезапуск конвейера otelcol, режим keep
+Дата: 2026-07-28 22:06:46 UTC
+Параметры: rate=2000, длительность=20s
+
+в индексе ДО перезапуска: 36627
+перезапуск: docker compose restart (том состояния СОХРАНЁН)
+в индексе ПОСЛЕ перезапуска: 36627
+дельта: 0
+
+--- лог конвейера после перезапуска (последние 10 строк) ---
+  vvc-otelcol  | 2026-07-28T22:06:49.546Z	info	extensions/extensions.go:44	Starting extensions...	{"resource": {"service.instance.id": "4b2116ef-f0ef-4a29-9df9-9a6de62942c8", "service.name": "otelcol-contrib", "service.version": "0.157.0"}}
+  vvc-otelcol  | 2026-07-28T22:06:49.546Z	info	extensions/extensions.go:48	Extension is starting...	{"resource": {"service.instance.id": "4b2116ef-f0ef-4a29-9df9-9a6de62942c8", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "basicauth", "otelcol.component.kind": "extension"}
+  vvc-otelcol  | 2026-07-28T22:06:49.546Z	info	extensions/extensions.go:66	Extension started.	{"resource": {"service.instance.id": "4b2116ef-f0ef-4a29-9df9-9a6de62942c8", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "basicauth", "otelcol.component.kind": "extension"}
+  vvc-otelcol  | 2026-07-28T22:06:49.546Z	info	extensions/extensions.go:48	Extension is starting...	{"resource": {"service.instance.id": "4b2116ef-f0ef-4a29-9df9-9a6de62942c8", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_storage", "otelcol.component.kind": "extension"}
+  vvc-otelcol  | 2026-07-28T22:06:49.546Z	info	extensions/extensions.go:66	Extension started.	{"resource": {"service.instance.id": "4b2116ef-f0ef-4a29-9df9-9a6de62942c8", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_storage", "otelcol.component.kind": "extension"}
+  vvc-otelcol  | 2026-07-28T22:06:49.546Z	info	adapter/receiver.go:41	Starting stanza receiver	{"resource": {"service.instance.id": "4b2116ef-f0ef-4a29-9df9-9a6de62942c8", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/nginx", "otelcol.component.kind": "receiver", "otelcol.signal": "logs"}
+  vvc-otelcol  | 2026-07-28T22:06:49.547Z	info	fileconsumer/file.go:72	Resuming from previously known offset(s). 'start_at' setting is not applicable.	{"resource": {"service.instance.id": "4b2116ef-f0ef-4a29-9df9-9a6de62942c8", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/nginx", "otelcol.component.kind": "receiver", "otelcol.signal": "logs", "component": "fileconsumer"}
+  vvc-otelcol  | 2026-07-28T22:06:49.547Z	info	adapter/receiver.go:41	Starting stanza receiver	{"resource": {"service.instance.id": "4b2116ef-f0ef-4a29-9df9-9a6de62942c8", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/app", "otelcol.component.kind": "receiver", "otelcol.signal": "logs"}
+  vvc-otelcol  | 2026-07-28T22:06:49.547Z	info	fileconsumer/file.go:72	Resuming from previously known offset(s). 'start_at' setting is not applicable.	{"resource": {"service.instance.id": "4b2116ef-f0ef-4a29-9df9-9a6de62942c8", "service.name": "otelcol-contrib", "service.version": "0.157.0"}, "otelcol.component.id": "file_log/app", "otelcol.component.kind": "receiver", "otelcol.signal": "logs", "component": "fileconsumer"}
+  vvc-otelcol  | 2026-07-28T22:06:49.547Z	info	service@v0.157.0/service.go:282	Everything is ready. Begin running and processing data.	{"resource": {"service.instance.id": "4b2116ef-f0ef-4a29-9df9-9a6de62942c8", "service.name": "otelcol-contrib", "service.version": "0.157.0"}}

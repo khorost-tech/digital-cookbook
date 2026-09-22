@@ -1,0 +1,55 @@
+# Связка «оба вместе», сторона Collector: OTLP-хаб перед бэкендом.
+# Принимает то, что прислал Vector-агент, и кладёт в OpenSearch.
+#
+# Трансформации здесь нет намеренно: разделение обязанностей в этой ветке
+# такое, что парсинг делает Vector на хосте, а Collector отвечает за приём
+# по OTLP и маршрутизацию. Дублировать разбор на обеих сторонах незачем.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+exporters:
+  opensearch:
+    http:
+      endpoint: https://opensearch:9200
+      tls:
+        insecure_skip_verify: true
+      auth:
+        authenticator: basicauth
+    logs_index: logs-combo
+
+  # Для трейсов бэкенда в этом стенде нет, поэтому они идут в лог: замер 6
+  # выясняет, доходит ли до хаба хоть что-то по сигналу traces, отправленное
+  # через Vector, а не как это выглядит в трейсовом хранилище.
+  debug:
+    verbosity: basic
+
+extensions:
+  basicauth:
+    client_auth:
+      username: admin
+      password: VectorDemo#2026
+
+service:
+  extensions: [basicauth]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    logs:
+      receivers: [otlp]
+      exporters: [opensearch]
+    # Трейсы принимаем тоже: замер 6 проверяет, доедет ли до этого конца
+    # хоть что-то по сигналу traces, если направить его через Vector.
+    traces:
+      receivers: [otlp]
+      exporters: [debug]

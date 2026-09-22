@@ -1,0 +1,86 @@
+# Сравнительный стенд: один и тот же поток логов через четыре конвейера.
+# Профили: vector | otelcol | fluentbit | combo | otlp — поднимается ВСЕГДА ОДИН.
+# Одновременный запуск нескольких конвейеров означал бы конкуренцию за CPU,
+# и замеры сравнивали бы не инструменты, а случайное распределение ядер.
+# demo security у OpenSearch (self-signed TLS, пароль ниже) — ТОЛЬКО для локального стенда.
+name: vector-vs-collector
+
+volumes:
+  logs:
+  vector-data:
+  otelcol-data:
+  fluentbit-data:
+
+services:
+  opensearch:
+    image: opensearchproject/opensearch:3.5.0
+    container_name: vvc-os
+    environment:
+      - "discovery.type=single-node"
+      - "OPENSEARCH_INITIAL_ADMIN_PASSWORD=VectorDemo#2026"   # demo-only
+      - "OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g"
+    ports:
+      - "9225:9200"
+
+  prometheus:
+    image: prom/prometheus:v3.10.0
+    container_name: vvc-prom
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9099:9090"
+
+  loadgen:
+    build: ./loadgen
+    container_name: vvc-loadgen
+    # профиль gen — страховка от случайного автозапуска: генератор должен
+    # запускаться только явно, через `docker compose run --rm loadgen …`.
+    # Без профиля `docker compose up -d` поднимал бы его с командой ниже и
+    # молча портил любой замер.
+    profiles: ["gen"]
+    volumes:
+      - logs:/logs
+    command: ["-rate", "5000", "-duration", "60s", "-out", "/logs"]
+
+  vector:
+    image: timberio/vector:0.57.0-debian
+    container_name: vvc-vector
+    profiles: ["vector", "combo", "otlp"]
+    # VECTOR_CONFIG — переменная compose (не Vector): её подставляет docker compose
+    # при разворачивании command ДО старта контейнера. Это НЕ интерполяция ${VAR}
+    # внутри YAML-конфигов Vector — ту Vector 0.57 не делает по умолчанию,
+    # и в vector/*.yaml переменных нет и не должно быть.
+    command: ["--config", "${VECTOR_CONFIG:-/etc/vector/agent.yaml}"]
+    volumes:
+      - ./vector:/etc/vector:ro
+      - logs:/logs:ro
+      - vector-data:/var/lib/vector
+    ports:
+      - "8689:8686"
+      - "9602:9602"
+
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.157.0
+    container_name: vvc-otelcol
+    profiles: ["otelcol", "combo", "otlp"]
+    command: ["--config", "${OTELCOL_CONFIG:-/etc/otelcol/config.yaml}"]
+    volumes:
+      - ./otelcol:/etc/otelcol:ro
+      - logs:/logs:ro
+      - otelcol-data:/var/lib/otelcol
+    ports:
+      - "4327:4317"
+      - "4328:4318"
+      - "8890:8888"
+
+  fluentbit:
+    image: fluent/fluent-bit:5.0.9
+    container_name: vvc-fluentbit
+    profiles: ["fluentbit"]
+    command: ["--config=${FLUENTBIT_CONFIG:-/etc/fluent-bit/fluent-bit.yaml}"]
+    volumes:
+      - ./fluentbit:/etc/fluent-bit:ro
+      - logs:/logs:ro
+      - fluentbit-data:/var/lib/fluent-bit
+    ports:
+      - "2021:2020"

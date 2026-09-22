@@ -1,0 +1,30 @@
+Замер 7: эксплуатационная цена трёх конвейеров
+Дата: 2026-07-28
+
+── Размер образа ─────────────────────────────────────────────
+  timberio/vector:0.57.0-debian                  88 МБ
+  otel/opentelemetry-collector-contrib:0.157.0   108 МБ
+  fluent/fluent-bit:5.0.9                        48 МБ
+
+  Оговорка: у Vector взят вариант -debian (с shell внутри), он заведомо
+  больше distroless-варианта. Образы Collector и Fluent Bit — distroless,
+  внутрь зайти нельзя: docker run --entrypoint sh даёт
+  exec: "sh": executable file not found in $PATH.
+
+── Пользователь по умолчанию ─────────────────────────────────
+  timberio/vector:0.57.0-debian                  (не задан, то есть root)
+  otel/opentelemetry-collector-contrib:0.157.0   10001:10001
+  fluent/fluent-bit:5.0.9                        0
+
+── Объём конфига под одну и ту же задачу (строк без комментариев) ──
+  vector/agent.yaml                              75
+  otelcol/config.yaml                            75
+  fluentbit/fluent-bit.yaml + parsers.yaml       61
+
+── Валидация конфига ─────────────────────────────────────────
+  vector validate          код возврата 78 на заведомо сломанном конфиге
+  otelcol validate         код возврата 1 на заведомо сломанном конфиге
+  fluent-bit (старт)  код возврата 1 — отдельной подкоманды валидации НЕТ
+
+  Ненулевой код = ошибка найдена. Для CI важно именно это, а не наличие
+  команды: у Fluent Bit проверить конфиг можно только запуском.

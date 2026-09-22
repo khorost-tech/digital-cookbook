@@ -1,0 +1,104 @@
+# Конвейер Vector с ДИСКОВЫМ буфером — для замера 3 (недоступный бэкенд).
+# Отдельный файл, а не правка agent.yaml: замеры 1 и 2 сняты на конфигурации
+# без дискового буфера, и менять её задним числом значило бы сделать уже
+# снятые числа несравнимыми.
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  nginx_file:
+    type: file
+    include:
+      - /logs/nginx-access.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  app_file:
+    type: file
+    include:
+      - /logs/app.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+  internal:
+    type: internal_metrics
+
+transforms:
+  parse_nginx:
+    type: remap
+    inputs: [nginx_file]
+    source: |
+      parsed, err = parse_nginx_log(.message, "combined")
+      if err != null {
+        .service = "unparsed"
+      } else {
+        . = merge(., parsed)
+        .service = "nginx"
+        del(.message)
+      }
+      .pipeline = "vector"
+
+  parse_app:
+    type: remap
+    inputs: [app_file]
+    source: |
+      parsed, err = parse_json(.message)
+      if err != null {
+        .service = "unparsed"
+      } else {
+        . = merge(., object!(parsed))
+        del(.message)
+      }
+      .pipeline = "vector"
+
+  drop_health:
+    type: filter
+    inputs: [parse_nginx]
+    condition:
+      type: vrl
+      source: |
+        req = to_string(.request) ?? ""
+        !contains(req, "/health")
+
+sinks:
+  opensearch:
+    type: elasticsearch
+    inputs: [drop_health, parse_app]
+    endpoints:
+      - https://opensearch:9200
+    mode: bulk
+    api_version: v8
+    bulk:
+      index: logs-vector-buffered
+    auth:
+      strategy: basic
+      user: admin
+      password: VectorDemo#2026
+    tls:
+      verify_certificate: false
+    # Дисковый буфер. Минимум — 268435488 байт, то есть 256 МиБ ПЛЮС 32 байта.
+    # Ровно 256 МиБ (268435456) Vector отвергает на старте:
+    #   Configuration error. error=Sink "opensearch": error occurred when
+    #   building buffer: failed to build individual stage 0: parameter
+    #   'max_buffer_size' was invalid: must be greater than or equal to
+    #   268435488 bytes
+    # Тридцать два лишних байта — служебный заголовок; круглое значение,
+    # которое напрашивается само, не проходит.
+    #
+    # when_full: block означает «тормозить источник, но не терять»: на соседнем
+    # стенде block удержал 0 потерь из 802661, тогда как drop_newest потерял
+    # 525974 (65.5%).
+    buffer:
+      type: disk
+      max_size: 268435488
+      when_full: block
+
+  metrics_out:
+    type: prometheus_exporter
+    inputs: [internal]
+    address: 0.0.0.0:9602

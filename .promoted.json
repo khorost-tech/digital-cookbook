@@ -253,6 +253,9 @@
     "observability/vector-pipeline": [
       "observability/vector-data-pipeline.md"
     ],
+    "observability/vector-vs-collector": [
+      "observability/vector-vs-otel-collector.md"
+    ],
     "performance/compression": [
       "performance/compression-tradeoffs.md"
     ],
@@ -269,6 +272,7 @@
     "performance/inmemory": [
       "performance/inmemory-aerospike-ignite-scale-grid.md",
       "performance/inmemory-computing-landscape-tradeoffs.md",
+      "performance/inmemory-etcd-coordination-not-speed.md",
       "performance/inmemory-redis-cache-structures.md",
       "performance/inmemory-tarantool-picodata-compute-near-data.md"
     ],

@@ -1,0 +1,40 @@
+# Тот же конвейер БЕЗ парсеров и фильтров: строки уходят в OpenSearch как есть.
+# Нужен для замера 2 — цена парсинга и фильтрации у Fluent Bit.
+# Сравнивать этот прогон можно ТОЛЬКО с fluentbit/fluent-bit.yaml на том же rate.
+service:
+  flush: 1
+  log_level: info
+  http_server: on
+  http_listen: 0.0.0.0
+  http_port: 2020
+  storage.path: /var/lib/fluent-bit
+  storage.sync: normal
+
+pipeline:
+  inputs:
+    - name: tail
+      path: /logs/nginx-access.log
+      tag: nginx
+      read_from_head: true
+      db: /var/lib/fluent-bit/nginx.db
+      storage.type: filesystem
+
+    - name: tail
+      path: /logs/app.log
+      tag: app
+      read_from_head: true
+      db: /var/lib/fluent-bit/app.db
+      storage.type: filesystem
+
+  outputs:
+    - name: opensearch
+      match: "*"
+      host: opensearch
+      port: 9200
+      index: logs-fluentbit-passthrough
+      tls: on
+      tls.verify: off
+      http_user: admin
+      http_passwd: VectorDemo#2026
+      suppress_type_name: on
+      buffer_size: 8M
