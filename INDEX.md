@@ -30,7 +30,7 @@
 | [`databases/identifiers`](databases/identifiers) | Идентификаторы: локальность и bloat UUIDv4/UUIDv7/bigint в PostgreSQL, распределение в Mongo/Scylla, генерация в Go/Java/Rust | [статья](https://khorost.tech/databases/identifiers-index-locality-bloat/) |
 | [`databases/mongodb`](databases/mongodb) | MongoDB: глубокое погружение (модель, индексы, репликация, шардирование) | [статья](https://khorost.tech/databases/) |
 | [`databases/opensearch`](databases/opensearch) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
-| [`databases/picodata`](databases/picodata) | Picodata: распределённая СУБД на форке ядра Tarantool — плагин на Rust, PostgreSQL wire protocol, вычисления рядом с данными | 🔜 скоро |
+| [`databases/picodata`](databases/picodata) | Picodata: распределённая СУБД на форке ядра Tarantool — плагин на Rust, PostgreSQL wire protocol, вычисления рядом с данными | [статья](https://khorost.tech/databases/picodata-architecture-fork-vs-product/) |
 | [`databases/postgres`](databases/postgres) | Клиенты Go/Java/Rust к PostgreSQL: primary+replica+pgbouncer, failover | [статья](https://khorost.tech/databases/postgres-clients-reliability-go-java-rust/) |
 | [`databases/redis/client-resilience`](databases/redis/client-resilience) | Клиенты Go/Java/Rust к Redis: Cluster/Sentinel, reconnect и failover | [статья](https://khorost.tech/databases/redis-clients-go-java-rust/) |
 | [`databases/redis/deep-dive`](databases/redis/deep-dive) | Redis/Valkey: глубокое погружение (кодировки, event loop, персистентность, Cluster/Sentinel, память, streams/Lua, эксплуатация) | [статья](https://khorost.tech/databases/) |
@@ -113,7 +113,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`observability/vector-pipeline`](observability/vector-pipeline) | Сквозной контур логов на Vector 0.57: file source с checkpoints, VRL-парсинг и фильтрация, транспорт NATS/Kafka, доставка в OpenSearch 3.5.0, дисковые буферы и подтверждения; семь замеров со скриптами | 🔜 скоро |
+| [`observability/vector-pipeline`](observability/vector-pipeline) | Сквозной контур логов на Vector 0.57: file source с checkpoints, VRL-парсинг и фильтрация, транспорт NATS/Kafka, доставка в OpenSearch 3.5.0, дисковые буферы и подтверждения; семь замеров со скриптами | [статья](https://khorost.tech/observability/vector-data-pipeline/) |
 | [`observability/vector-vs-collector`](observability/vector-vs-collector) | Vector, OpenTelemetry Collector и Fluent Bit на одном потоке логов: конфигурация, поведение под нагрузкой, сравнение | 🔜 скоро |
 
 ## Zig

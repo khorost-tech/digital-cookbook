@@ -271,6 +271,7 @@
     ],
     "performance/inmemory": [
       "performance/inmemory-aerospike-ignite-scale-grid.md",
+      "performance/inmemory-benchmark-decision-map.md",
       "performance/inmemory-computing-landscape-tradeoffs.md",
       "performance/inmemory-etcd-coordination-not-speed.md",
       "performance/inmemory-redis-cache-structures.md",
