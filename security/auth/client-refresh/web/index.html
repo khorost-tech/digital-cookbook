@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>client-refresh demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+  button { font-size: 1rem; padding: 0.4rem 0.9rem; margin-right: 0.5rem; }
+  #status { font-weight: bold; }
+  body[data-loggedout="false"] #status { color: #146c2e; }
+  body[data-loggedout="true"] #status { color: #a4262c; }
+  #log { background: #f4f4f4; padding: 0.5rem; height: 12rem; overflow-y: auto; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 0.85rem; }
+</style>
+</head>
+<!--
+  data-loggedout — читается Playwright-тестами (e2e/tabs.spec.ts) как источник
+  истины по вкладке: "true" — вкладка считает себя разлогиненной, "false" —
+  залогинена. Выставляется naive.js/coordinated.js через common.setLoggedIn().
+-->
+<body data-loggedout="true">
+  <h1>client-refresh demo</h1>
+  <p>mode: <code id="mode"></code></p>
+  <p>status: <span id="status">logged-out</span></p>
+  <p>
+    <button id="login" type="button">Login</button>
+    <button id="force-refresh" type="button">Force refresh</button>
+  </p>
+  <pre id="log"></pre>
+
+  <script type="module">
+    // Бутстрап без сборки: выбор naive.js/coordinated.js по ?mode=,
+    // дефолт — naive (демонстрирует проблему по умолчанию).
+    const params = new URLSearchParams(location.search);
+    const mode = params.get('mode') === 'coordinated' ? 'coordinated' : 'naive';
+    document.getElementById('mode').textContent = mode;
+
+    const impl = mode === 'coordinated'
+      ? await import('./coordinated.js')
+      : await import('./naive.js');
+
+    impl.init();
+  </script>
+</body>
+</html>

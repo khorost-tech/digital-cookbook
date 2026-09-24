@@ -1,0 +1,139 @@
+services:
+  redis:
+    image: redis:7.4-alpine
+    ports: ["6379:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  single-service:
+    build:
+      context: .
+      dockerfile: single-service/Dockerfile
+    environment:
+      REDIS_ADDR: redis:6379
+    ports: ["8081:8081"]
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  authservice:
+    build:
+      context: .
+      dockerfile: multi-service/authservice/Dockerfile
+    environment:
+      JWT_SECRET: devsecret
+      REDIS_ADDR: redis:6379
+    ports: ["8082:8082"]
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  consumer:
+    build:
+      context: .
+      dockerfile: multi-service/consumer/Dockerfile
+    environment:
+      # Тот же секрет, что у authservice: consumer валидирует JWT локально,
+      # без похода в auth на каждый запрос.
+      JWT_SECRET: devsecret
+    ports: ["8083:8083"]
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  login-methods:
+    build:
+      context: .
+      dockerfile: login-methods/Dockerfile
+    environment:
+      JWT_SECRET: devsecret
+      REDIS_ADDR: redis:6379
+      # Фиктивный bot-token для demo — реальный виджет Telegram Login с ним
+      # не заработает, но алгоритм HMAC-проверки тот же самый.
+      TELEGRAM_BOT_TOKEN: "123456:demo-bot-token-not-real"
+      # mockidp встроен в этот же процесс на /mockidp (см. login-methods/main.go);
+      # OIDC_ISSUER не задан — по умолчанию используется PUBLIC_URL + "/mockidp".
+      PUBLIC_URL: http://localhost:8084
+      OIDC_CLIENT_ID: login-methods-demo
+    ports: ["8084:8084"]
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  client-refresh:
+    build:
+      context: .
+      dockerfile: client-refresh/Dockerfile
+    environment:
+      JWT_SECRET: devsecret
+      REDIS_ADDR: redis:6379
+    ports: ["8085:8085"]
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  totp:
+    build:
+      context: .
+      dockerfile: totp/Dockerfile
+    environment:
+      REDIS_ADDR: redis:6379
+    ports: ["8086:8086"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    # GET /health не трогает Redis — только подтверждает, что процесс поднялся
+    # и слушает :8086 (busybox wget есть в alpine, curl — нет).
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8086/health"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  webauthn-go:
+    build:
+      context: .
+      dockerfile: webauthn/backend-go/Dockerfile
+    environment:
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_RP_ORIGINS: http://localhost:8087
+      WEBAUTHN_RP_NAME: "Khorost WebAuthn Demo"
+      REDIS_ADDR: redis:6379
+    ports: ["8087:8087"]
+    depends_on:
+      redis:
+        condition: service_healthy
+    # Отдельного /health нет — "/" отдаёт статичный frontend (web/index.html,
+    # см. STATIC_DIR в main.go), 200 достаточно, чтобы подтвердить, что процесс
+    # поднялся и раздаёт HTTP.
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8087/"]
+      interval: 2s
+      timeout: 2s
+      retries: 10
+
+  # Второй WebAuthn-верификатор — Java (Spring Boot + webauthn4j), тот же контракт
+  # (/register/begin|finish, /login/begin|finish), что и webauthn-go, для контраста
+  # реализаций в статье. In-memory хранилище (без Redis) — demo-уровня достаточно.
+  webauthn-java:
+    build:
+      context: .
+      dockerfile: webauthn/backend-java/Dockerfile
+    environment:
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_RP_ORIGIN: http://localhost:8088
+      WEBAUTHN_RP_NAME: "Khorost WebAuthn Demo (Java)"
+    ports: ["8088:8088"]
+    # eclipse-temurin:21-jre — Ubuntu-база, curl есть из коробки (в отличие от
+    # alpine выше). "/" — тот же статичный frontend, что и у webauthn-go
+    # (Spring Boot отдаёт index.html из classpath:/static/ по умолчанию).
+    # start_period с запасом на прогрев JVM/Spring Boot context.
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8088/"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+      start_period: 30s

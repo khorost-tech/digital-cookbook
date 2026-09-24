@@ -1,0 +1,12 @@
+{
+  "name": "webauthn-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Playwright CDP virtual authenticator: register+login против обоих webauthn-бэкендов (Go :8087, Java :8088, ст. 8)",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "name": "client-refresh-e2e",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Playwright-замер устранения ложных разлогинов под гонкой вкладок (client-refresh demo, ст. 5)",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0"
+  }
+}

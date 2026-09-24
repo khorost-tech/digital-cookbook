@@ -1,0 +1,5 @@
+/bin/
+*.out
+*.test
+# Артефакты локальных прогонов (build/test/bench/lint) — не коммитятся.
+*.txt

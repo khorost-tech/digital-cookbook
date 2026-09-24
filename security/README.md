@@ -4,6 +4,7 @@
 
 | Стенд | Описание | Статья |
 |---|---|---|
+| [`auth/`](auth/) | Авторизация: opaque-сессии против JWT, refresh и ротация, вход с нескольких устройств, OIDC-потоки, TOTP и WebAuthn | 🔜 скоро |
 | [`keycloak/`](keycloak/) | Keycloak как готовый IdP: realms и clients, потоки аутентификации, деплой и интеграция сервисов | [статья](https://khorost.tech/security/keycloak-when-to-use-idp/) |
 | [`pixelsmash/`](pixelsmash/) | CVE-2026-8461 в декодерах FFmpeg: оборонительный стенд — аудит-скрипты и песочница для декодирования недоверенного видео | [статья](https://khorost.tech/security/pixelsmash-ffmpeg/) |
 | [`tls-fundamentals/`](tls-fundamentals/) | Фундамент TLS: матрица сломов цепочки доверия на четырёх клиентах, взаимное рукопожатие, имя сервера открытым текстом до шифрования, метка о понижении версии, число сообщений в 1.2 против 1.3 | [статья](https://khorost.tech/security/tls-fundamentals/) |

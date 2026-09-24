@@ -26,7 +26,7 @@
 | [`databases/citus`](databases/citus) | Шардирование PostgreSQL через Citus: scatter-gather, колокация против репартиции, референсные таблицы, пагинация, ребаланс | [статья](https://khorost.tech/databases/sharding-in-production/) |
 | [`databases/clickhouse`](databases/clickhouse) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | [статья](https://khorost.tech/databases/clickhouse-when-olap/) |
 | [`databases/db-indexes`](databases/db-indexes) | Индексы в БД: PostgreSQL, MongoDB, Tarantool | [статья](https://khorost.tech/databases/) |
-| [`databases/graph`](databases/graph) | Графовые БД и Go: один и тот же граф платформы в трёх углах (Neo4j, Apache AGE, baseline на PostgreSQL) и одинаковые графовые запросы к каждому | 🔜 скоро |
+| [`databases/graph`](databases/graph) | Графовые БД и Go: один и тот же граф платформы в трёх углах (Neo4j, Apache AGE, baseline на PostgreSQL) и одинаковые графовые запросы к каждому | [статья](https://khorost.tech/databases/graph-databases-and-go/) |
 | [`databases/identifiers`](databases/identifiers) | Идентификаторы: локальность и bloat UUIDv4/UUIDv7/bigint в PostgreSQL, распределение в Mongo/Scylla, генерация в Go/Java/Rust | [статья](https://khorost.tech/databases/identifiers-index-locality-bloat/) |
 | [`databases/mongodb`](databases/mongodb) | MongoDB: глубокое погружение (модель, индексы, репликация, шардирование) | [статья](https://khorost.tech/databases/) |
 | [`databases/opensearch`](databases/opensearch) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
@@ -81,7 +81,7 @@
 | [`performance/crypto-rsa-regression`](performance/crypto-rsa-regression) | Регрессия crypto/rsa в Go 1.20: одинаковые бенчмарки на шести версиях Go, просадка публичных verify/encrypt в 5–7 раз, benchstat и CI-гейт | [статья](https://khorost.tech/performance/go-crypto-rsa-regression/) |
 | [`performance/highload-lowlatency`](performance/highload-lowlatency) | Highload под SLA < 300 мс: HAProxy L7 (h2c) + пул Go/Java-бэкендов, L4 vs L7 | [статья](https://khorost.tech/performance/latency-budget-and-transport/) |
 | [`performance/inmemory`](performance/inmemory) | Вычисления в оперативной памяти: Redis, Tarantool, Picodata, Aerospike, Ignite и etcd на общем наборе сценариев | [статья](https://khorost.tech/performance/inmemory-computing-landscape-tradeoffs/) |
-| [`performance/memory-management`](performance/memory-management) | Управление памятью поперёк языков: куча и стек, сборка мусора против ручного управления — на одной задаче | 🔜 скоро |
+| [`performance/memory-management`](performance/memory-management) | Управление памятью поперёк языков: куча и стек, сборка мусора против ручного управления — на одной задаче | [статья](https://khorost.tech/performance/memory-management-across-languages/) |
 | [`performance/probabilistic`](performance/probabilistic) | Вероятностные структуры: Bloom и родственники | [статья](https://khorost.tech/performance/bloom-filters-probabilistic-structures/) |
 | [`performance/testcontainers-template-db`](performance/testcontainers-template-db) | Шаблонная база вместо контейнера на каждый тест: CREATE DATABASE ... TEMPLATE, замеры ×10 и ×36, границы приёма (права, FORCE, размер шаблона) | [статья](https://khorost.tech/performance/testcontainers-template-db/) |
 
@@ -126,6 +126,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
+| [`security/auth`](security/auth) | Авторизация: opaque-сессии против JWT, refresh и ротация, вход с нескольких устройств, OIDC-потоки, TOTP и WebAuthn | 🔜 скоро |
 | [`security/keycloak`](security/keycloak) | Keycloak как готовый IdP: realms и clients, потоки аутентификации, деплой и интеграция сервисов | [статья](https://khorost.tech/security/keycloak-when-to-use-idp/) |
 | [`security/pixelsmash`](security/pixelsmash) | CVE-2026-8461 в декодерах FFmpeg: оборонительный стенд — аудит-скрипты и песочница для декодирования недоверенного видео | [статья](https://khorost.tech/security/pixelsmash-ffmpeg/) |
 | [`security/tls-fundamentals`](security/tls-fundamentals) | Фундамент TLS: матрица сломов цепочки доверия на четырёх клиентах, взаимное рукопожатие, имя сервера открытым текстом до шифрования, метка о понижении версии, число сообщений в 1.2 против 1.3 | [статья](https://khorost.tech/security/tls-fundamentals/) |

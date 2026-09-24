@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>webauthn demo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { font-family: system-ui, sans-serif; max-width: 640px; margin: 2rem auto; padding: 0 1rem; }
+  input, button { font-size: 1rem; padding: 0.4rem 0.6rem; }
+  button { margin-right: 0.5rem; }
+  #status { font-weight: bold; }
+  body[data-authok="registered"] #status,
+  body[data-authok="logged-in"] #status { color: #146c2e; }
+  body[data-authok="failed"] #status { color: #a4262c; }
+  #log { background: #f4f4f4; padding: 0.5rem; height: 12rem; overflow-y: auto; white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 0.85rem; margin-top: 1rem; }
+</style>
+</head>
+<!--
+  data-authok — читается Playwright-тестами (e2e/webauthn.spec.ts) как источник
+  истины: "registered" после успешной регистрации, "logged-in" после успешного
+  логина, "failed" при отказе бэкенда на любом из шагов. Выставляется app.js.
+
+  Страница раздаётся тем же бэкендом, который она вызывает (одинаковый origin у
+  обоих: webauthn-go на :8087, webauthn-java на :8088) — поэтому ?backend=
+  переключает только базовый URL для fetch, а не origin самой страницы.
+-->
+<body data-authok="">
+  <h1>webauthn demo</h1>
+  <p>backend: <code id="backend"></code></p>
+  <p>
+    <label>username <input id="username" type="text" value="demo"></label>
+  </p>
+  <p>
+    <button id="register" type="button">Register</button>
+    <button id="login" type="button">Login</button>
+  </p>
+  <p>status: <span id="status">idle</span></p>
+  <pre id="log"></pre>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>
