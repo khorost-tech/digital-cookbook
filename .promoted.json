@@ -302,7 +302,8 @@
       "rust/rust-web-frameworks.md"
     ],
     "security/auth": [
-      "security/auth-session-models-opaque-vs-jwt.md"
+      "security/auth-session-models-opaque-vs-jwt.md",
+      "security/auth-single-service-opaque-sessions-redis.md"
     ],
     "security/keycloak": [
       "security/keycloak-login-themes-federation.md",

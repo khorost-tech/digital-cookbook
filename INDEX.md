@@ -114,7 +114,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`observability/vector-pipeline`](observability/vector-pipeline) | Сквозной контур логов на Vector 0.57: file source с checkpoints, VRL-парсинг и фильтрация, транспорт NATS/Kafka, доставка в OpenSearch 3.5.0, дисковые буферы и подтверждения; семь замеров со скриптами | [статья](https://khorost.tech/observability/vector-data-pipeline/) |
-| [`observability/vector-vs-collector`](observability/vector-vs-collector) | Vector, OpenTelemetry Collector и Fluent Bit на одном потоке логов: конфигурация, поведение под нагрузкой, сравнение | 🔜 скоро |
+| [`observability/vector-vs-collector`](observability/vector-vs-collector) | Vector, OpenTelemetry Collector и Fluent Bit на одном потоке логов: конфигурация, поведение под нагрузкой, сравнение | [статья](https://khorost.tech/observability/vector-vs-otel-collector/) |
 
 ## Zig
 
