@@ -99,6 +99,9 @@
     "databases/postgres": [
       "databases/postgres-clients-reliability-go-java-rust.md"
     ],
+    "databases/postgres-ops": [
+      "databases/postgres-ha-patroni-replication.md"
+    ],
     "databases/redis": [
       "databases/redis-clients-go-java-rust.md",
       "databases/redis-data-model-structures-deep.md",
@@ -302,6 +305,7 @@
       "rust/rust-web-frameworks.md"
     ],
     "security/auth": [
+      "security/auth-multi-service-jwt-refresh-redis.md",
       "security/auth-session-models-opaque-vs-jwt.md",
       "security/auth-single-service-opaque-sessions-redis.md"
     ],

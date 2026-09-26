@@ -1,0 +1,40 @@
+# Прогон 02-scan-types.sql (PostgreSQL 18.4, 2026-07-22)
+# Четыре типа узлов сканирования — селективность решает.
+
+=== Seq Scan: ~40% строк 'paid' (748k из 2M) ===
+ Aggregate  (cost=43837.33..43837.34 rows=1 width=8) (actual time=191.524..191.525 rows=1.00 loops=1)
+   ->  Seq Scan on orders  (cost=0.00..41959.00 rows=751333 width=0)
+                           (actual time=0.131..158.371 rows=748267.00 loops=1)
+         Filter: (status = 'paid'::text)
+         Rows Removed by Filter: 1251733
+         Buffers: shared hit=376 read=16583
+ Execution Time: 191.613 ms
+# Индекс не помог бы: строк слишком много, дешевле читать таблицу подряд.
+
+=== Index Scan: customer_id = 12345 (47 строк) ===
+ Index Scan using idx_orders_customer on orders  (cost=0.43..47.34 rows=41 width=36)
+                                                 (actual time=0.045..0.286 rows=47.00 loops=1)
+   Index Cond: (customer_id = 12345)
+   Buffers: shared hit=5 read=48
+ Execution Time: 0.337 ms
+# Index Cond — предикат ушёл в индекс. 47 строк → 53 буфера. 0.3 мс против 191 мс.
+
+=== Bitmap Heap Scan + Bitmap Index Scan: диапазон (20030 строк) ===
+ Bitmap Heap Scan on orders  (cost=247.13..14043.62 rows=21922 width=36)
+                             (actual time=2.376..44.103 rows=20030.00 loops=1)
+   Recheck Cond: ((customer_id >= 10000) AND (customer_id <= 10500))
+   Heap Blocks: exact=11805
+   ->  Bitmap Index Scan on idx_orders_customer  (cost=0.00..241.65 rows=21922 width=0)
+                                                 (actual time=1.071..1.071 rows=20030.00 loops=1)
+         Index Cond: ((customer_id >= 10000) AND (customer_id <= 10500))
+ Execution Time: 44.958 ms
+# Строк много и они разбросаны: индекс строит битовую карту страниц,
+# heap читается по физическому порядку (Heap Blocks: exact=11805).
+
+=== Index Only Scan: SELECT customer_id (покрыт индексом) ===
+ Index Only Scan using idx_orders_customer on orders  (cost=0.43..2.25 rows=41 width=8)
+                                                      (actual time=0.191..0.195 rows=47.00 loops=1)
+   Index Cond: (customer_id = 12345)
+   Heap Fetches: 0
+ Execution Time: 0.206 ms
+# Heap Fetches: 0 — в heap не ходили вовсе, всё взято из индекса.

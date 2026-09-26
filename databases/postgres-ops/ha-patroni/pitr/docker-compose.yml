@@ -1,0 +1,24 @@
+# PITR-подстенд: два независимых single-node инстанса, по одному на инструмент.
+# Контейнеры долгоживущие (tail -f) — postgres запускаем/останавливаем сами через pg_ctl,
+# чтобы показать полный цикл backup → изменения → restore на момент времени.
+services:
+  pg-pgbackrest:
+    build:
+      context: .
+      args:
+        HTTPS_PROXY: ${HTTPS_PROXY:-}
+    image: postgres-ops-pitr:18.4
+    user: postgres
+    entrypoint: ["bash", "-c", "tail -f /dev/null"]
+    environment:
+      PGDATA: /var/lib/postgresql/data/pgdata
+    volumes:
+      - ./pgbackrest.conf:/etc/pgbackrest/pgbackrest.conf:ro
+
+  pg-walg:
+    image: postgres-ops-pitr:18.4
+    user: postgres
+    entrypoint: ["bash", "-c", "tail -f /dev/null"]
+    environment:
+      WALG_FILE_PREFIX: /var/lib/postgresql/walg
+      PGDATA: /var/lib/postgresql/data/pgdata

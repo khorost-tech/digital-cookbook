@@ -1,0 +1,41 @@
+# Что transaction pooling ломает — и что уже нет (PgBouncer 1.25.2, PostgreSQL 18.4, 2026-07-22)
+
+## 1. Server-side prepared statements — ИСТОРИЧЕСКИ ломались, СЕЙЧАС решено
+
+break-prepared.sh (pgbench -M prepared, 10 клиентов через PgBouncer):
+
+### max_prepared_statements=0 — как ломалось раньше
+pgbench: error: ERROR:  prepared statement "P_0" already exists
+pgbench: error: ERROR:  prepared statement "P_0" does not exist
+# prepared готовится на одном server-соединении, следующий запрос попадает на другое,
+# где его нет (или где имя занято чужим prepared).
+
+### max_prepared_statements=200 — ДЕФОЛТ PgBouncer 1.25.2
+number of transactions actually processed: 500/500
+tps = 11158
+# PgBouncer с 1.21 отслеживает prepared и переигрывает их на каждый server-бэкенд.
+# По умолчанию 200 — поэтому «классическая» поломка на актуальной версии НЕ проявляется.
+
+cmd/break-prepared (pgx v5, обычный кеш prepared) — на дефолтном PgBouncer всё работает:
+  PgBouncer, обычный pgx (кеш prepared)     ok (10 запросов прошли)
+  PgBouncer, simple protocol                ok
+  напрямую к postgres                       ok
+
+## 2. LISTEN / NOTIFY — ломается НАДЁЖНО (cmd/listen-notify)
+
+  через PgBouncer (transaction)  уведомление ПОТЕРЯНО (за 2 c не пришло)
+  напрямую к postgres            уведомление ПОЛУЧЕНО
+# LISTEN живёт, пока держится тот же server-бэкенд. В transaction pooling server
+# отвязывается после транзакции с LISTEN — подписка теряется, NOTIFY не доходит.
+# Это не лечится настройкой: LISTEN/NOTIFY несовместимы с transaction pooling.
+
+## 3. Сессионные SET — «работают» обманчиво
+
+  SET application_name='breaker'; SHOW application_name;  →  breaker  (через PgBouncer)
+# С ОДНИМ клиентом PgBouncer держит один server (sticky), и SET «сохраняется».
+# Но это не гарантия: под конкуренцией за пул server переиспользуется другим клиентом,
+# и настройка исчезает. Опаснейший класс: работает в тесте, ломается в проде под нагрузкой.
+
+# Вывод: в transaction pooling нельзя полагаться на состояние ПОВЕРХ транзакции —
+# сессионные SET, LISTEN/NOTIFY, session-level advisory locks. prepared statements —
+# особый случай: современный PgBouncer их поддерживает штатно.

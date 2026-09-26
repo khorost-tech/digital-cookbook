@@ -1,0 +1,24 @@
+# Прогон 07-stats-stale.sql (PostgreSQL 18.4, 2026-07-22)
+# Диагностика устаревшей статистики по самому плану: rows (оценка) против actual rows.
+
+=== фаза 1: статистика свежая — оценка ≈ факт ===
+   ->  Index Only Scan using idx_fresh_status on fresh_orders
+              (cost=0.42..147.41 rows=3000 width=0) (actual ... rows=3099.00 ...)
+         Index Cond: (status = 'active'::text)
+# оценка 3000 ≈ факт 3099. Всё в порядке.
+
+=== фаза 2: +300k 'active', БЕЗ ANALYZE — оценка врёт ===
+   ->  Index Only Scan using idx_fresh_status on fresh_orders
+              (cost=0.42..270.56 rows=5546 width=0) (actual ... rows=303099.00 ...)
+         Index Cond: (status = 'active'::text)
+# rows=5546 (оценка) против actual rows=303099 — расхождение ~55×.
+# Планировщик масштабировал общее число строк, но долю 'active' взял из старой
+# статистики (~1%). На реальном запросе такой misestimate ведёт к плохому выбору
+# соединений/сканов — это первый признак «пора ANALYZE».
+
+=== после ANALYZE — оценка сходится с фактом ===
+   ->  Index Only Scan using idx_fresh_status on fresh_orders
+              (cost=0.42..8952.50 rows=302480 width=0) (actual ... rows=303099.00 ...)
+# rows=302480 ≈ факт 303099. И заметьте рост cost: 270 → 8952 —
+# планировщик наконец «увидел», что строк сотни тысяч, а не тысячи.
+# Статистику обновляет autovacuum; но после массовой загрузки надёжнее ANALYZE вручную.

@@ -1,0 +1,39 @@
+# Прогон 01-partitioning.sql (PostgreSQL 18.4, 2026-07-22)
+# Declarative partitioning: главный выигрыш — partition pruning в плане.
+
+=== RANGE pruning: запрос за март сканирует ТОЛЬКО одну партицию ===
+ Aggregate  (actual time=16.102..16.103 rows=1.00 loops=1)
+   ->  Seq Scan on measurements_2026_03 measurements  (... rows=103546.00 ...)
+         Filter: ((ts >= '2026-03-01') AND (ts < '2026-04-01'))
+ Execution Time: 16.122 ms
+# В плане ОДНА партиция из шести. Остальные 5 отброшены на этапе планирования —
+# планировщик доказал, что искомого времени в них быть не может.
+
+=== без условия на ключ партиционирования — Append по ВСЕМ партициям ===
+ Finalize Aggregate  (actual time=20.004..24.463 ...)
+   ->  Gather (Workers Launched: 2)
+         ->  Parallel Append
+               ->  Parallel Seq Scan on measurements_2026_01 ...
+               ->  Parallel Seq Scan on measurements_2026_02 ...
+               ->  ... (все 6 партиций)
+ Execution Time: 24.488 ms
+# Предикат по value (не по ключу ts) → pruning невозможен, читаются все партиции.
+
+=== обслуживание: DETACH + DROP старого месяца ===
+ALTER TABLE ... DETACH PARTITION measurements_2026_01;   -- мгновенно, без DELETE и bloat
+SELECT count(*) WHERE ts в январе  →  0 строк (партиция отсоединена)
+# Удаление месяца данных = метаданная-операция, а не построчный DELETE (который дал бы bloat).
+
+=== ATTACH нового месяца — партиций стало 6 ===
+ parts = 6
+
+=== LIST по региону: pruning на sales_eu ===
+ ->  Seq Scan on sales_eu sales  (... rows=24907.00 ...)   -- только партиция EU
+
+=== HASH: равномерное распределение по 4 партициям ===
+  partition  | count
+-------------+-------
+ accounts_p0 | 25126
+ accounts_p1 | 24978
+ accounts_p2 | 24971
+ accounts_p3 | 24925

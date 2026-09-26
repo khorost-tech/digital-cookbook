@@ -1,0 +1,33 @@
+services:
+  postgres:
+    image: postgres:18.4
+    environment:
+      POSTGRES_PASSWORD: pooldemo
+      POSTGRES_DB: opsdemo
+      POSTGRES_HOST_AUTH_METHOD: trust    # стенд в изолированной сети; упрощает auth трёх пулеров
+    ports: ["5436:5432"]
+    # max_connections=100 — чтобы наглядно показать предел прямых соединений (сц.01).
+    command: ["postgres", "-c", "max_connections=100", "-c", "shared_buffers=256MB"]
+
+  pgbouncer:
+    build: ./pgbouncer
+    image: postgres-ops-pgbouncer:1.25.2
+    depends_on: [postgres]
+    volumes:
+      - ./pgbouncer/pgbouncer.ini:/etc/pgbouncer/pgbouncer.ini:ro
+      - ./pgbouncer/userlist.txt:/etc/pgbouncer/userlist.txt:ro
+    ports: ["6432:6432"]
+
+  pgcat:
+    image: ghcr.io/postgresml/pgcat:v1.2.0
+    depends_on: [postgres]
+    volumes: ["./pgcat/pgcat.toml:/etc/pgcat/pgcat.toml:ro"]
+    command: ["pgcat", "/etc/pgcat/pgcat.toml"]
+    ports: ["6433:6433"]
+
+  odyssey:
+    image: ghcr.io/yandex/odyssey:1.5.1
+    depends_on: [postgres]
+    volumes: ["./odyssey/odyssey.conf:/etc/odyssey/odyssey.conf:ro"]
+    command: ["/usr/bin/odyssey", "/etc/odyssey/odyssey.conf"]
+    ports: ["6434:6434"]

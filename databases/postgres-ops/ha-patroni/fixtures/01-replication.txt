@@ -1,0 +1,24 @@
+# Прогон 01-replication.sql + repl-demo.sh (PostgreSQL 18.4, Patroni, 2026-07-22)
+# 3-узловой кластер: лидер + 2 streaming-реплики. Sync против async — цена по latency.
+
+=== pg_stat_replication на лидере (async по умолчанию) ===
+ application_name | client_addr |   state   | sync_state
+------------------+-------------+-----------+------------
+ patroni2         | 172.23.0.7  | streaming | async
+ patroni3         | 172.23.0.6  | streaming | async
+ synchronous_standby_names = (пусто)   → лидер никого не ждёт
+
+=== latency записи: async vs sync (pgbench, 4 клиента × 500 commit) ===
+АСИНХРОННАЯ:  latency average =  7.24 ms   tps = 553
+СИНХРОННАЯ:   latency average = 10.94 ms   tps = 366
+
+# После включения synchronous_mode Patroni назначил ОДНУ sync-реплику:
+ patroni2 | sync      ← лидер ждёт подтверждения именно от неё
+ patroni3 | async
+
+# Цена синхронности: +51% к latency (7.24 → 10.94 мс), −34% к tps (553 → 366).
+# Взамен — RPO = 0: подтверждённая транзакция гарантированно есть хотя бы на одной
+# реплике, и падение лидера не теряет данные. async быстрее, но при падении лидера
+# теряются последние транзакции, не успевшие уехать на реплику (RPO > 0).
+# Patroni synchronous_mode держит ровно одну sync-реплику, автоматически переназначая
+# её при сбоях, — так синхронность не превращается в единую точку отказа.

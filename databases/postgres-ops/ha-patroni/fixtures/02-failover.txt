@@ -1,0 +1,27 @@
+# Прогон failover-demo.sh (PostgreSQL 18.4, Patroni, etcd 3.6.13, 2026-07-22)
+# Убиваем лидера — Patroni промоутит реплику, HAProxy переключает запись. Меряем RTO.
+
+=== до сбоя ===
+| patroni1 | Leader  | running   | TL 1 |
+| patroni2 | Replica | streaming | TL 1 |
+| patroni3 | Replica | streaming | TL 1 |
+
+=== убили patroni1 ===
+    RTO = 32.6 c (запись снова проходит через HAProxy :5000)
+
+=== после failover ===
+| patroni2 | Leader  | running   | TL 2 |   ← промоутнут, timeline 1 → 2
+| patroni3 | Replica | streaming | TL 2 |
+
+=== вернули patroni1 ===
+| patroni1 | Replica | streaming | TL 2 |   ← вошёл РЕПЛИКОЙ, а не вторым лидером
+| patroni2 | Leader  | running   | TL 2 |
+| patroni3 | Replica | streaming | TL 2 |
+
+# Split-brain невозможен: лидерство — это lease в etcd, он один. Новый лидер стартует
+# на НОВОМ timeline (2). Вернувшийся старый лидер видит по DCS, что он больше не лидер,
+# и через pg_rewind догоняет новый timeline как реплика. Двух «главных» баз не возникает.
+#
+# RTO = 32.6 c определяется в основном ttl=30 (срок lease лидера в etcd): пока старый
+# lease не истёк, новый лидер не выбирается. Уменьшение ttl/loop_wait ускоряет failover,
+# но повышает риск ложных срабатываний при сетевых задержках — это осознанный трейдоф.

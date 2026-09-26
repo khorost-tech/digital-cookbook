@@ -1,0 +1,18 @@
+# Прогон 02-slots.sql (PostgreSQL 18.4, Patroni, 2026-07-22)
+# Replication slots: страховка от отставания реплики — и риск переполнения WAL.
+
+=== слоты на лидере (patroni2 после failover) ===
+ slot_name | slot_type | active | active_pid | retained_wal
+-----------+-----------+--------+------------+--------------
+ patroni1  | physical  | t      |        324 | 0 bytes
+ patroni3  | physical  | t      |        267 | 0 bytes
+ inactive_slots = 0
+
+# Patroni создаёт physical slot на каждую реплику автоматически. Пока реплика активна
+# (active=t) и не отстаёт, retained_wal ≈ 0 — лидер спокойно удаляет отработанный WAL.
+#
+# Опасность: если реплика ОТВАЛИТСЯ, slot остаётся (active=f), restart_lsn застывает,
+# и лидер вынужден хранить весь WAL с этого момента — retained_wal растёт, пока не
+# переполнит диск. Поэтому за неактивными слотами следят (inactive_slots > 0 + растущий
+# retained_wal) и вовремя удаляют осиротевшие. В PostgreSQL это же прикрывает
+# max_slot_wal_keep_size — потолок, после которого slot инвалидируется ради спасения диска.

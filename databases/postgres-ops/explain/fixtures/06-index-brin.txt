@@ -1,0 +1,32 @@
+# Прогон 06-index-brin.sql (PostgreSQL 18.4, 2026-07-22)
+# BRIN: мин/макс на диапазон блоков. Крошечный размер, грубость видна в плане.
+
+=== correlation created_at ===
+ correlation
+-------------
+           1
+# Ровно 1: orders вставлялись по возрастанию created_at → физический порядок = порядок значений.
+# Без высокой корреляции BRIN бесполезен (мин/макс блоков перекрываются).
+
+=== BRIN в плане (btree по колонке временно убран) ===
+ Aggregate  (cost=16724.03..16724.04 rows=1 width=8) (actual time=4.956..4.957 rows=1.00 loops=1)
+   ->  Bitmap Heap Scan on orders  (cost=8.32..16674.59 rows=19777 width=0)
+                                   (actual time=0.632..4.149 rows=19162.00 loops=1)
+         Recheck Cond: ((created_at >= (now() - '7 days')) AND (created_at <= now()))
+         Rows Removed by Index Recheck: 3270
+         Heap Blocks: lossy=191
+         ->  Bitmap Index Scan on idx_orders_created_brin  (cost=0.00..3.37 rows=30075 width=0)
+                                                           (actual time=0.036..0.036 rows=1910.00 loops=1)
+ Execution Time: 4.975 ms
+# Характерные черты BRIN в выводе:
+#   Heap Blocks: lossy=191 — BRIN указывает БЛОКИ (не строки), отсюда "lossy".
+#   Rows Removed by Index Recheck: 3270 — грубость: лишние строки в блоках отсеяны на heap.
+#   Bitmap Index Scan rows=1910 — индекс вернул кандидатов-блоков, а не точные строки.
+
+=== размер: BRIN против btree на той же колонке ===
+      indexrelname       | size  |  bytes
+-------------------------+-------+----------
+ idx_orders_created_brin | 24 kB |    24576
+ idx_orders_created      | 43 MB | 44949504
+# BRIN в ~1800 раз меньше btree (24 КБ против 43 МБ на 2M строк).
+# Компромисс: платим точностью (recheck), выигрываем место и стоимость сопровождения.

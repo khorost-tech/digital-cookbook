@@ -1,0 +1,26 @@
+# Прогон 04-vacuum-repack.sql + pg_repack CLI (PostgreSQL 18.4, pg_repack 1.5.3, 2026-07-22)
+# Три способа против bloat. Размер отдают ОС только VACUUM FULL и pg_repack.
+
+=== VACUUM FULL (bloat_a) ===
+ДО:    heap_size = 269 MB, free_pct = 50.1
+VACUUM FULL bloat_a;
+ПОСЛЕ: heap_size = 135 MB, free_pct =  0.6
+# Отдал ОС ~134 МБ. НО во время работы держал ACCESS EXCLUSIVE — таблица была
+# недоступна даже для SELECT (см. lock-demo.sh).
+
+=== pg_repack (bloat_b, CLI-утилита) ===
+ДО:    heap_size = 269 MB, free_pct = 50.1
+$ docker compose exec -T postgres pg_repack -U postgres -d opsdemo -t bloat_b --no-order
+INFO: repacking table "public.bloat_b"
+ПОСЛЕ: heap_size = 135 MB, free_pct =  0.6
+# Тот же результат по размеру, но онлайн: короткая блокировка лишь в начале и конце,
+# основную работу читатели и писатели не замечают.
+
+# Итог:
+#   VACUUM      → место остаётся в файле (переиспользование), простоя нет.
+#   VACUUM FULL → место возвращается ОС, но ACCESS EXCLUSIVE = простой на всю операцию.
+#   pg_repack   → место возвращается ОС почти без простоя, ценой временного удвоения места
+#                 на диске (пишет копию) и требования PK/уникального индекса.
+#
+# PostgreSQL 19 (beta) вводит нативный REPACK ... CONCURRENTLY — то, что сейчас делает
+# внешний pg_repack, встраивается в сервер.

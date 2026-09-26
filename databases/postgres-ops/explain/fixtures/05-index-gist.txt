@@ -1,0 +1,24 @@
+# Прогон 05-index-gist.sql (PostgreSQL 18.4, 2026-07-22)
+# GiST: перекрытия диапазонов (&&) и поиск ближайших (kNN, <->).
+
+=== GiST range: period && tstzrange(now(), now()+1day) — активные акции ===
+ Aggregate  (cost=938.86..938.87 rows=1 width=8) (actual time=1.236..1.237 rows=1.00 loops=1)
+   ->  Bitmap Heap Scan on promotions  (cost=39.31..932.31 rows=2622 width=0)
+                                       (actual time=0.555..1.143 rows=2508.00 loops=1)
+         Recheck Cond: (period && tstzrange(now(), (now() + '1 day'::interval)))
+         Heap Blocks: exact=792
+         ->  Bitmap Index Scan on idx_promotions_period_gist  (... rows=2508.00 ...)
+               Index Cond: (period && tstzrange(now(), (now() + '1 day'::interval)))
+ Execution Time: 1.521 ms
+# 2508 активных акций из 100k. GiST по range-типу отвечает на «пересекается ли период»,
+# чего btree не умеет. В плане — Bitmap Index Scan по gist + Recheck Cond.
+
+=== GiST kNN: ORDER BY (price::float8) <-> 500 LIMIT 5 — ближайшие по цене ===
+ Limit  (cost=0.28..0.54 rows=5 width=22) (actual time=0.094..0.102 rows=5.00 loops=1)
+   ->  Index Scan using idx_products_price_gist on products
+              (cost=0.28..5280.78 rows=100000 width=22) (actual time=0.093..0.101 rows=5.00 loops=1)
+         Order By: ((price)::double precision <-> '500'::double precision)
+ Execution Time: 0.146 ms
+# Order By в узле Index Scan (не Sort!): GiST обходит дерево от ближайшего к 500.
+# Узла Sort нет — индекс выдаёт строки уже по возрастанию расстояния.
+# btree_gist добавляет <-> для float8 (для numeric он не определён — отсюда приведение).

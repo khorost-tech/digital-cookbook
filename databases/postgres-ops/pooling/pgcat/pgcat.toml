@@ -1,0 +1,23 @@
+# pgcat 1.2.0 — пулер на Rust с шардингом, балансировкой и чтением с реплик.
+# Здесь минимальная конфигурация: один шард (primary), transaction pooling.
+
+[general]
+host = "0.0.0.0"
+port = 6433
+admin_username = "admin"
+admin_password = "admin"
+
+[pools.opsdemo]
+pool_mode = "transaction"       # тот же боевой режим, что у PgBouncer
+default_role = "primary"
+query_parser_enabled = false
+sharding_function = "pg_bigint_hash"
+
+[pools.opsdemo.users.0]
+username = "postgres"
+password = "pooldemo"
+pool_size = 5                   # намеренно мало — показать мультиплексирование
+
+[pools.opsdemo.shards.0]
+servers = [["postgres", 5432, "primary"]]
+database = "opsdemo"

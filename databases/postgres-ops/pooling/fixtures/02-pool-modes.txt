@@ -1,0 +1,33 @@
+# Прогон pool-modes.sh (PgBouncer 1.25.2, PostgreSQL 18.4, 2026-07-22)
+# Одна БД под тремя pool_mode. Команды поданы РАЗДЕЛЬНЫМИ запросами (иначе psql -c
+# шлёт их одним пакетом и statement-режиму нечего ловить).
+
+### transaction — многооператорная транзакция РАБОТАЕТ
+BEGIN
+ a=1
+ b=2
+COMMIT
+
+### statement — та же транзакция ЛОМАЕТСЯ
+FATAL:  transaction blocks not allowed in statement pooling mode
+server closed the connection unexpectedly
+# statement-режим возвращает server-соединение в пул после каждого оператора,
+# поэтому транзакция из нескольких операторов невозможна в принципе.
+
+### session — работает как обычное соединение
+BEGIN
+ a=1
+ b=2
+COMMIT
+
+### режим пулинга по каждой БД (SHOW DATABASES)
+name       | opsdemo             pool_mode |            (пусто = дефолт transaction)
+name       | opsdemo_session     pool_mode | session
+name       | opsdemo_statement   pool_mode | statement
+
+# Итог:
+#   session     — семантика полного соединения (prepared, SET, LISTEN, advisory работают),
+#                 но idle-клиент держит server → мультиплексирование слабое.
+#   transaction — компромисс по умолчанию: транзакции целы, соединение свободно между ними.
+#   statement   — максимум мультиплексирования, но нельзя даже BEGIN…COMMIT.
+# Что именно ломает transaction pooling за пределами транзакции — см. 03-break-*.

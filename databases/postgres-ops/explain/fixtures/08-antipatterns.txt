@@ -1,0 +1,56 @@
+# Прогон 08-antipatterns.sql (PostgreSQL 18.4, 2026-07-22)
+# Диагноз по плану: Seq Scan/Filter там, где ждали Index Cond.
+
+=== 1. функция по колонке ===
+# СЛОМАНО: lower(name) = 'ivan'
+ Seq Scan on customers  (cost=0.00..1211.00 rows=250 width=42) (actual ... rows=8384.00 ...)
+   Filter: (lower(name) = 'ivan'::text)
+   Rows Removed by Filter: 41616
+ Execution Time: 13.388 ms
+# КАК НАДО: name = 'ivan'
+ Bitmap Heap Scan on customers  (... rows=2793.00 ...)
+   Recheck Cond: (name = 'ivan'::text)
+   ->  Bitmap Index Scan on idx_customers_name
+         Index Cond: (name = 'ivan'::text)
+ Execution Time: 0.774 ms
+# 13.4 мс → 0.77 мс. Функция на колонке уводит предикат в Filter (btree по name не годится).
+# Лечение: переписать без функции ИЛИ создать expression-индекс на lower(name).
+
+=== 2. вычисление/каст по колонке ===
+# СЛОМАНО: created_at::date = current_date
+ Index Only Scan using idx_orders_created on orders  (cost=0.43..51036.13 rows=10000 ...)
+   Filter: ((created_at)::date = CURRENT_DATE)
+   Rows Removed by Filter: 1998549
+ Execution Time: 316.932 ms
+# Каст по колонке → нет Index Cond, сканируется ВЕСЬ индекс с Filter (1.99M строк отброшено).
+# КАК НАДО: полуинтервал по самой колонке
+ Index Only Scan using idx_orders_created on orders  (cost=0.43..33.00 rows=1408 ...)
+   Index Cond: ((created_at >= CURRENT_DATE) AND (created_at < (CURRENT_DATE + 1)))
+ Execution Time: 0.217 ms
+# 317 мс → 0.22 мс (~1400×). Тот же индекс, но теперь Index Cond, а не Filter.
+
+=== 3. OR: миф и реальность ===
+# НЕ антипаттерн: оба операнда селективны и под индексами → BitmapOr
+ Bitmap Heap Scan on orders  (... rows=79.00 ...)
+   Recheck Cond: ((customer_id = 12345) OR (created_at >= (now() - '00:30:00')))
+   ->  BitmapOr
+         ->  Bitmap Index Scan on idx_orders_customer   (Index Cond: customer_id = 12345)
+         ->  Bitmap Index Scan on idx_orders_created    (Index Cond: created_at >= ...)
+ Execution Time: 0.073 ms
+# АНТИПАТТЕРН: один операнд без индекса (status) → весь OR уходит в Seq Scan
+ Seq Scan on orders  (... rows=250349.00 ...)
+   Filter: ((customer_id = 12345) OR (status = 'cancelled'::text))
+ Execution Time: 158.286 ms
+# Вывод: OR не зло. Зло — неиндексируемая ветвь: достаточно одной, чтобы убить весь OR.
+
+=== 4. LIKE с ведущим % ===
+# СЛОМАНО: name LIKE '%van%'
+ Seq Scan on customers  (... rows=8384.00 ...)
+   Filter: (name ~~ '%van%'::text)
+ Execution Time: 3.474 ms
+# КАК НАДО: name LIKE 'Iva%' с индексом text_pattern_ops
+ Bitmap Heap Scan on customers  (... rows=5591.00 ...)
+   ->  Bitmap Index Scan on idx_customers_name_pat
+         Index Cond: ((name ~>=~ 'Iva'::text) AND (name ~<~ 'Ivb'::text))
+ Execution Time: 1.836 ms
+# Ведущий % не даёт опоры слева — btree бессилен. Якорь слева + text_pattern_ops → Index Cond.

@@ -1,0 +1,29 @@
+# Прогон 03-index-btree.sql (PostgreSQL 18.4, 2026-07-22)
+# btree даёт и поиск (Index Cond), и порядок (нет узла Sort).
+
+=== ORDER BY created_at DESC LIMIT 10 — С btree ===
+ Limit  (cost=0.43..0.69 rows=10 width=36) (actual time=0.006..0.008 rows=10.00 loops=1)
+   ->  Index Scan Backward using idx_orders_created on orders
+              (cost=0.43..52995.23 rows=2000000 width=36) (actual time=0.006..0.007 rows=10.00 loops=1)
+ Execution Time: 0.014 ms
+# Индекс отсортирован → идём с конца, берём 10 строк. Узла Sort нет.
+
+=== ТОТ ЖЕ запрос с enable_indexscan=off — btree убрал вот это ===
+ Limit  (cost=80178.28..80178.31 rows=10 ...) (actual time=300.282..300.285 rows=10.00 loops=1)
+   ->  Sort  (cost=80178.28..85178.28 rows=2000000 width=36) (actual time=300.281..300.282 ...)
+         Sort Key: created_at DESC
+         Sort Method: top-N heapsort  Memory: 26kB
+         ->  Seq Scan on orders (... rows=2000000.00 ...)
+ Execution Time: 300.304 ms
+# Без индекса: прочитать все 2M строк и отсортировать. 300 мс против 0.014 мс — ~20000×.
+
+=== Range BETWEEN — Index Cond с двумя границами ===
+ Index Only Scan using idx_orders_created on orders (... actual ... rows=19173.00 ...)
+   Index Cond: ((created_at >= (now() - '7 days')) AND (created_at <= now()))
+   Heap Fetches: 0
+ Execution Time: 2.478 ms
+
+=== Равенство (created_at = max) — Index Cond + InitPlan ===
+ Index Scan using idx_orders_created on orders (... rows=1.00 ...)
+   Index Cond: (created_at = (InitPlan 2).col1)
+ Execution Time: 0.327 ms

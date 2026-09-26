@@ -1,0 +1,26 @@
+# Прогон 01-explain-basics.sql (PostgreSQL 18.4, 2026-07-22)
+# Анатомия EXPLAIN: оценка → факт → JSON.
+
+=== 1. EXPLAIN без выполнения: только оценка ===
+ Seq Scan on orders  (cost=0.00..56959.00 rows=31324 width=36)
+   Filter: ((status = 'paid'::text) AND (created_at > (now() - '30 days'::interval)))
+
+=== 2. EXPLAIN (ANALYZE, BUFFERS): реальное выполнение ===
+ Seq Scan on orders  (cost=0.00..56959.00 rows=31324 width=36)
+                     (actual time=221.581..231.097 rows=30715.00 loops=1)
+   Filter: ((status = 'paid'::text) AND (created_at > (now() - '30 days'::interval)))
+   Rows Removed by Filter: 1969285
+   Buffers: shared read=16959
+ Planning Time: 0.035 ms
+ Execution Time: 232.011 ms
+
+# Читать:
+#   cost=0.00..56959.00 — оценка стоимости (старт..итог), в абстрактных единицах.
+#   rows=31324 (оценка) против actual rows=30715 — статистика свежая, оценка точна.
+#   Rows Removed by Filter=1969285 — сколько строк отброшено предикатом (весь seq scan).
+#   Buffers: shared read=16959 — все 8-КБ страницы прочитаны с диска (холодный кеш).
+#   Второй прогон дал бы shared hit (из кеша).
+
+=== 3. JSON (фрагмент) ===
+#   "Node Type": "Seq Scan", "Plan Rows": 31324, "Actual Rows": 30715.00,
+#   "Shared Hit Blocks": 188, "Shared Read Blocks": 16771  (JSON для инструментов-визуализаторов)

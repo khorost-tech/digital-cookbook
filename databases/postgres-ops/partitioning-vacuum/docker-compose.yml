@@ -1,0 +1,26 @@
+services:
+  postgres:
+    build: .
+    image: postgres-ops-repack:18.4
+    environment:
+      POSTGRES_PASSWORD: opsdemo
+      POSTGRES_DB: opsdemo
+    ports: ["5435:5432"]
+    # log_autovacuum_min_duration=0 — логировать КАЖДЫЙ проход autovacuum (видно в
+    #   `docker compose logs`, как autovacuum реагирует на нагрузку).
+    # autovacuum_naptime=10s — чаще проверять таблицы, чтобы сценарии не ждали минуту.
+    # track_io_timing=on — точные буферные тайминги в VACUUM (VERBOSE) и EXPLAIN.
+    command:
+      - postgres
+      - -c
+      - shared_buffers=256MB
+      - -c
+      - work_mem=64MB
+      - -c
+      - maintenance_work_mem=256MB
+      - -c
+      - log_autovacuum_min_duration=0
+      - -c
+      - autovacuum_naptime=10s
+      - -c
+      - track_io_timing=on

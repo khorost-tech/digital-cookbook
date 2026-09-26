@@ -1,0 +1,28 @@
+# Прогон 04-index-gin.sql (PostgreSQL 18.4, 2026-07-22)
+# GiN → Bitmap Index Scan + Recheck Cond (индекс хранит ключи/лексемы, не строки).
+
+=== GiN полнотекст (search @@ to_tsquery('russian','ноутбук & игровой')) ===
+ Bitmap Heap Scan on products  (cost=22.07..1240.72 rows=1534 width=42)
+                               (actual time=1.242..2.033 rows=1535.00 loops=1)
+   Recheck Cond: (search @@ '''ноутбук'' & ''игров'''::tsquery)
+   Heap Blocks: exact=1142
+   ->  Bitmap Index Scan on idx_products_search_gin  (... rows=1535.00 ...)
+         Index Cond: (search @@ '''ноутбук'' & ''игров'''::tsquery)
+ Execution Time: 2.353 ms
+# Заметьте: запрос 'игровой', а в индексе лексема 'игров' — стемминг russian-конфига.
+
+=== GiN jsonb containment (attrs @> '{"brand":"acme","color":"blue"}') ===
+ Bitmap Heap Scan on products  (cost=30.49..1658.82 rows=2326 width=0)
+                               (actual time=2.179..3.496 rows=2084.00 loops=1)
+   Recheck Cond: (attrs @> '{"brand": "acme", "color": "blue"}'::jsonb)
+   Heap Blocks: exact=1402
+   ->  Bitmap Index Scan on idx_products_attrs_gin  (... rows=2084.00 ...)
+ Execution Time: 3.599 ms
+# Тот же тип узла (Bitmap Index Scan + Recheck), другой оператор (@>).
+
+=== почему Recheck: что лежит в индексе ===
+      title      |        search
+-----------------+-----------------------
+ ноутбук игровой | 'игров':2 'ноутбук':1
+# GiN индексирует лексемы с позициями, а не текст. Совпадение по ключам
+# перепроверяется на строке (Recheck Cond) — отсюда узел над Bitmap Heap Scan.

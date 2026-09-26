@@ -1,0 +1,70 @@
+x-etcd: &etcd-base
+  image: quay.io/coreos/etcd:v3.6.13
+  environment: &etcd-env
+    ETCD_INITIAL_CLUSTER: etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
+    ETCD_INITIAL_CLUSTER_STATE: new
+    ETCD_INITIAL_CLUSTER_TOKEN: ha-etcd-token
+    ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+    ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+
+x-patroni: &patroni-base
+  build: ./patroni
+  image: postgres-ops-patroni:18.4
+  entrypoint: ["patroni", "/etc/patroni/patroni.yml"]
+  volumes:
+    - ./patroni/patroni.yml:/etc/patroni/patroni.yml:ro
+  depends_on: [etcd1, etcd2, etcd3]
+
+services:
+  etcd1:
+    <<: *etcd-base
+    environment:
+      <<: *etcd-env
+      ETCD_NAME: etcd1
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd1:2380
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd1:2379
+  etcd2:
+    <<: *etcd-base
+    environment:
+      <<: *etcd-env
+      ETCD_NAME: etcd2
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd2:2380
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd2:2379
+  etcd3:
+    <<: *etcd-base
+    environment:
+      <<: *etcd-env
+      ETCD_NAME: etcd3
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd3:2380
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd3:2379
+
+  patroni1:
+    <<: *patroni-base
+    environment:
+      PATRONI_NAME: patroni1
+      PATRONI_RESTAPI_CONNECT_ADDRESS: patroni1:8008
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: patroni1:5432
+    ports:
+      - "8008:8008"   # Patroni REST API — для Go health-check с хоста
+  patroni2:
+    <<: *patroni-base
+    environment:
+      PATRONI_NAME: patroni2
+      PATRONI_RESTAPI_CONNECT_ADDRESS: patroni2:8008
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: patroni2:5432
+  patroni3:
+    <<: *patroni-base
+    environment:
+      PATRONI_NAME: patroni3
+      PATRONI_RESTAPI_CONNECT_ADDRESS: patroni3:8008
+      PATRONI_POSTGRESQL_CONNECT_ADDRESS: patroni3:5432
+
+  haproxy:
+    image: haproxy:3.0
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "5000:5000"   # primary (запись)
+      - "5001:5001"   # replicas (чтение)
+      - "7000:7000"   # статистика HAProxy
+    depends_on: [patroni1, patroni2, patroni3]

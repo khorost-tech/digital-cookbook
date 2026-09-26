@@ -32,6 +32,7 @@
 | [`databases/opensearch`](databases/opensearch) | OpenSearch: кластер, индексы, ingest, полнотекст, ISM, семантика, Dashboards | [статья](https://khorost.tech/infrastructure/opensearch-cluster-ansible/) |
 | [`databases/picodata`](databases/picodata) | Picodata: распределённая СУБД на форке ядра Tarantool — плагин на Rust, PostgreSQL wire protocol, вычисления рядом с данными | [статья](https://khorost.tech/databases/picodata-architecture-fork-vs-product/) |
 | [`databases/postgres`](databases/postgres) | Клиенты Go/Java/Rust к PostgreSQL: primary+replica+pgbouncer, failover | [статья](https://khorost.tech/databases/postgres-clients-reliability-go-java-rust/) |
+| [`databases/postgres-ops`](databases/postgres-ops) | PostgreSQL в проде: репликация и HA на Patroni, пулинг через PgBouncer, партиционирование и bloat, разбор планов; плюс прод-кейс TimescaleDB | 🔜 скоро |
 | [`databases/redis/client-resilience`](databases/redis/client-resilience) | Клиенты Go/Java/Rust к Redis: Cluster/Sentinel, reconnect и failover | [статья](https://khorost.tech/databases/redis-clients-go-java-rust/) |
 | [`databases/redis/deep-dive`](databases/redis/deep-dive) | Redis/Valkey: глубокое погружение (кодировки, event loop, персистентность, Cluster/Sentinel, память, streams/Lua, эксплуатация) | [статья](https://khorost.tech/databases/) |
 | [`databases/scylladb`](databases/scylladb) | ScyllaDB: глубокое погружение (топология, компакция, LWT, драйверы) | [статья](https://khorost.tech/databases/) |

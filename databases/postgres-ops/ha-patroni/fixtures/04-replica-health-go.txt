@@ -1,0 +1,20 @@
+# Запуск cmd/replica-health (Go 1.26.3, pgx v5.10.0, 2026-07-22)
+# go run .   (лидер через HAProxy :5000, Patroni REST :8008)
+
+== реплики со стороны лидера (pg_stat_replication) ==
+replica      state      sync       replay_lag_bytes
+patroni1     streaming  async      0
+patroni3     streaming  async      0
+
+== топология кластера (Patroni REST /cluster) ==
+member       role       state
+patroni1     replica    streaming
+patroni2     leader     running
+patroni3     replica    streaming
+
+# Два независимых источника здоровья кластера, согласованы:
+#   pg_stat_replication (SQL к лидеру) — реальный лаг каждой реплики в БАЙТАХ WAL
+#     (replay_lag_bytes=0 → реплики полностью догнали). Основа алерта «реплика отстала».
+#   Patroni REST /cluster (HTTP) — кто сейчас лидер и в каком состоянии узлы; так
+#     health-check ловит смену лидера, не открывая SQL-сессий.
+# В проде это опрашивают периодически и шлют в метрики (khorost_tech.* / Prometheus).

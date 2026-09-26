@@ -1,0 +1,19 @@
+# Прогон 00-schema.sql (PostgreSQL 18.4, 2026-07-22)
+# Генерация датасета магазина, setseed для воспроизводимости.
+
+INSERT 0 50000     customers    (153 ms)
+INSERT 0 100000    products     (784 ms)
+INSERT 0 2000000   orders       (6.5 s)
+INSERT 0 6000000   order_items  (16.8 s)
+INSERT 0 100000    promotions   (233 ms)
+ANALYZE                          (1.5 s)
+
+=== размеры таблиц ===
+     tbl     | approx_rows | total_size
+-------------+-------------+------------
+ order_items | 6,000,000   | 519 MB
+ orders      | 2,000,000   | 175 MB
+ products    | 100,000     | 21 MB
+ promotions  | 100,000     | 8912 kB
+ customers   | 50,000      | 4832 kB
+(5 rows)
