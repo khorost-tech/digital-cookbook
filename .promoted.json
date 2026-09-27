@@ -100,7 +100,8 @@
       "databases/postgres-clients-reliability-go-java-rust.md"
     ],
     "databases/postgres-ops": [
-      "databases/postgres-ha-patroni-replication.md"
+      "databases/postgres-ha-patroni-replication.md",
+      "databases/postgres-pooling-pgbouncer.md"
     ],
     "databases/redis": [
       "databases/redis-clients-go-java-rust.md",
@@ -305,6 +306,7 @@
       "rust/rust-web-frameworks.md"
     ],
     "security/auth": [
+      "security/auth-login-registration-oauth-otp-telegram.md",
       "security/auth-multi-service-jwt-refresh-redis.md",
       "security/auth-session-models-opaque-vs-jwt.md",
       "security/auth-single-service-opaque-sessions-redis.md"

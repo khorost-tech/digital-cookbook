@@ -127,7 +127,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`security/auth`](security/auth) | Авторизация: opaque-сессии против JWT, refresh и ротация, вход с нескольких устройств, OIDC-потоки, TOTP и WebAuthn | 🔜 скоро |
+| [`security/auth`](security/auth) | Авторизация: opaque-сессии против JWT, refresh и ротация, вход с нескольких устройств, OIDC-потоки, TOTP и WebAuthn | [статья](https://khorost.tech/security/auth-session-models-opaque-vs-jwt/) |
 | [`security/keycloak`](security/keycloak) | Keycloak как готовый IdP: realms и clients, потоки аутентификации, деплой и интеграция сервисов | [статья](https://khorost.tech/security/keycloak-when-to-use-idp/) |
 | [`security/pixelsmash`](security/pixelsmash) | CVE-2026-8461 в декодерах FFmpeg: оборонительный стенд — аудит-скрипты и песочница для декодирования недоверенного видео | [статья](https://khorost.tech/security/pixelsmash-ffmpeg/) |
 | [`security/tls-fundamentals`](security/tls-fundamentals) | Фундамент TLS: матрица сломов цепочки доверия на четырёх клиентах, взаимное рукопожатие, имя сервера открытым текстом до шифрования, метка о понижении версии, число сообщений в 1.2 против 1.3 | [статья](https://khorost.tech/security/tls-fundamentals/) |
