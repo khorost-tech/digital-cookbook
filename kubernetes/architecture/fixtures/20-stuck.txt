@@ -1,0 +1,131 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 20-stuck
+# cmd: kubectl get pod -n cookbook-k8s stuck-pending stuck-imagepull stuck-crashloop -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,REASON:.status.containerStatuses[0].state.waiting.reason,RESTARTS:.status.containerStatuses[0].restartCount,NODE:.spec.nodeName
+# ---
+NAME              PHASE     REASON             RESTARTS   NODE
+stuck-pending     Pending   <none>             <none>     <none>
+stuck-imagepull   Pending   ImagePullBackOff   0          k8s-volga-wk03
+stuck-crashloop   Running   CrashLoopBackOff   4          k8s-volga-wk03
+
+--- stuck-pending: события ---
+# cmd: kubectl -n cookbook-k8s describe pod stuck-pending | awk '/^Events:/{f=1} f'
+Events:
+  Type     Reason            Age    From               Message
+  ----     ------            ----   ----               -------
+  Warning  FailedScheduling  2m54s  default-scheduler  0/6 nodes are available: 3 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling.
+
+--- stuck-imagepull: события ---
+# cmd: kubectl -n cookbook-k8s describe pod stuck-imagepull | awk '/^Events:/{f=1} f'
+Events:
+  Type     Reason     Age                  From               Message
+  ----     ------     ----                 ----               -------
+  Normal   Scheduled  2m54s                default-scheduler  Successfully assigned cookbook-k8s/stuck-imagepull to k8s-volga-wk03
+  Normal   Pulling    79s (x4 over 2m53s)  kubelet            spec.containers{nope}: Pulling image "example.invalid/nope:0.0.1"
+  Warning  Failed     79s (x4 over 2m53s)  kubelet            spec.containers{nope}: Failed to pull image "example.invalid/nope:0.0.1": failed to pull and unpack image "example.invalid/nope:0.0.1": failed to resolve reference "example.invalid/nope:0.0.1": failed to do request: Head "https://example.invalid/v2/nope/manifests/0.0.1": Service Unavailable
+  Warning  Failed     79s (x4 over 2m53s)  kubelet            spec.containers{nope}: Error: ErrImagePull
+  Normal   BackOff    0s (x11 over 2m53s)  kubelet            spec.containers{nope}: Back-off pulling image "example.invalid/nope:0.0.1"
+  Warning  Failed     0s (x11 over 2m53s)  kubelet            spec.containers{nope}: Error: ImagePullBackOff
+
+--- stuck-crashloop: события ---
+# cmd: kubectl -n cookbook-k8s describe pod stuck-crashloop | awk '/^Events:/{f=1} f'
+Events:
+  Type     Reason     Age                  From               Message
+  ----     ------     ----                 ----               -------
+  Normal   Scheduled  2m54s                default-scheduler  Successfully assigned cookbook-k8s/stuck-crashloop to k8s-volga-wk03
+  Normal   Pulled     78s (x5 over 2m53s)  kubelet            spec.containers{crasher}: Container image "busybox:1.37" already present on machine and can be accessed by the pod
+  Normal   Created    78s (x5 over 2m53s)  kubelet            spec.containers{crasher}: Container created
+  Normal   Started    78s (x5 over 2m53s)  kubelet            spec.containers{crasher}: Container started
+  Warning  BackOff    8s (x5 over 2m51s)   kubelet            spec.containers{crasher}: Back-off restarting failed container crasher in pod stuck-crashloop_cookbook-k8s(5a947fc5-f487-4581-a7d0-f56da80df9d1)
+
+--- на какой стадии пути остановился каждый ---
+# cmd: kubectl -n cookbook-k8s get pod stuck-pending stuck-imagepull stuck-crashloop -o custom-columns=NAME:.metadata.name,SCHEDULED:.status.conditions[?(@.type=='PodScheduled')].status,NODE:.spec.nodeName,READY:.status.conditions[?(@.type=='Ready')].status
+NAME              SCHEDULED   NODE             READY
+stuck-pending     False       <none>           <none>
+stuck-imagepull   True        k8s-volga-wk03   False
+stuck-crashloop   True        k8s-volga-wk03   False
+
+--- чем именно закончился прошлый запуск stuck-crashloop ---
+# cmd: kubectl -n cookbook-k8s get pod stuck-crashloop -o jsonpath='{.status.containerStatuses[0].lastState.terminated.reason} exitCode={.status.containerStatuses[0].lastState.terminated.exitCode}'
+Error exitCode=1
+
+=== почему stuck-pending сделан через nodeSelector, а не через огромный requests.cpu ===
+# Отказ на admission и отказ планировщика — РАЗНЫЕ стадии. Ниже — факты этого кластера.
+
+# cmd: kubectl get nodes -o custom-columns=NAME:.metadata.name,CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory --no-headers
+k8s-volga-cp01   1950m   3360936Ki
+k8s-volga-cp02   1950m   3360936Ki
+k8s-volga-cp03   1950m   3360936Ki
+k8s-volga-wk01   3950m   7613952Ki
+k8s-volga-wk02   3950m   7613960Ki
+k8s-volga-wk03   3950m   7613956Ki
+
+# Сколько CPU уже занято запросами на воркерах (колонка Requests):
+# cmd: kubectl describe node k8s-volga-wk01 k8s-volga-wk02 k8s-volga-wk03 | grep -E '^Name:|^  Resource +Requests|^  cpu +[0-9]'
+Name:               k8s-volga-wk01
+  Resource           Requests      Limits
+  cpu                780m (19%)    2300m (58%)
+Name:               k8s-volga-wk02
+  Resource           Requests      Limits
+  cpu                830m (21%)    4500m (113%)
+Name:               k8s-volga-wk03
+  Resource           Requests     Limits
+  cpu                630m (15%)   2900m (73%)
+# Свободно на воркерах = allocatable - requests: wk01 3170m, wk02 3120m, wk03 3320m.
+
+# cmd: kubectl get limitrange cookbook-limits -n cookbook-k8s -o jsonpath='{.spec.limits[0].type}: max={.spec.limits[0].max} defaultRequest={.spec.limits[0].defaultRequest} default={.spec.limits[0].default}'
+Container: max={"cpu":"2","memory":"2Gi"} defaultRequest={"cpu":"100m","memory":"64Mi"} default={"cpu":"200m","memory":"128Mi"}
+# ВАЖНО: max в LimitRange — НА КОНТЕЙНЕР, не на под (тип Container, и это же сказано
+# в тексте отказа ниже: "maximum cpu usage per Container is 2").
+
+# Потолок на весь namespace задаёт ResourceQuota (тот же снимок, что в блоке «после уборки»):
+# cmd: kubectl describe quota -n cookbook-k8s | tail -8
+Namespace:       cookbook-k8s
+Resource         Used    Hard
+--------         ----    ----
+limits.cpu       3       8
+limits.memory    2432Mi  8Gi
+pods             13      30
+requests.cpu     950m    4
+requests.memory  992Mi   4Gi
+# Остаток по квоте: requests.cpu = 4 - 950m = 3050m.
+
+# Попытка сделать под неразмещаемым по CPU (5 CPU > 3950m allocatable самого крупного узла):
+# cmd: kubectl apply -f - <<'EOF'
+#   apiVersion: v1
+#   kind: Pod
+#   metadata: {name: stuck-pending-cpu, namespace: cookbook-k8s, labels: {stand: cookbook-architecture}}
+#   spec:
+#     containers:
+#       - name: pause
+#         image: registry.k8s.io/pause:3.10
+#         resources: {requests: {cpu: "5", memory: 16Mi}, limits: {cpu: "5", memory: 32Mi}}
+#   EOF
+Error from server (Forbidden): error when creating "STDIN": pods "stuck-pending-cpu" is forbidden: maximum cpu usage per Container is 2, but limit is 5
+# Объект НЕ создан: отказ на admission (LimitRange), планировщик его не видел.
+
+# cmd: kubectl -n cookbook-k8s get pod stuck-pending-cpu
+Error from server (NotFound): pods "stuck-pending-cpu" not found
+# LimitRange потолок пода НЕ задаёт: max 2 CPU — на контейнер, под из двух контейнеров
+# по 1525m прошёл бы и LimitRange, и квоту. Реальный потолок — ResourceQuota namespace:
+# остаток requests.cpu = 4 - 950m = 3050m.
+# Минимум свободного на воркерах — wk02: 3950m - 830m = 3120m, и это больше 3050m.
+# Запас всего 70m, но знак верный: меньше 3120m свободного нет ни на одном воркере,
+# значит любой под, прошедший квоту, размещается на любом из них.
+# Значит на этом кластере Pending по нехватке CPU недостижим — закрывает его квота,
+# а не LimitRange. Взят другой предикат той же стадии:
+# nodeSelector khorost.tech/nonexistent-hardware=true.
+
+--- после уборки ---
+# cmd: kubectl describe quota -n cookbook-k8s | tail -8
+Namespace:       cookbook-k8s
+Resource         Used    Hard
+--------         ----    ----
+limits.cpu       3       8
+limits.memory    2432Mi  8Gi
+pods             13      30
+requests.cpu     950m    4
+requests.memory  992Mi   4Gi
+
+# cmd: kubectl -n cookbook-k8s get pod -l stand=cookbook-architecture
+NAME                          READY   STATUS    RESTARTS   AGE
+trace-demo-58b97d487c-4lj98   1/1     Running   0          80m
+trace-demo-58b97d487c-zczbk   1/1     Running   0          80m

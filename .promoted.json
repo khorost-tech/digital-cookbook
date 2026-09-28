@@ -209,6 +209,9 @@
       "java/kotlin-for-backend.md",
       "java/spring-boot-deep-dive.md"
     ],
+    "kubernetes/architecture": [
+      "kubernetes/k8s-architecture-control-plane.md"
+    ],
     "lang/brainfuck": [
       "lang/turing-completeness-and-expressiveness.md"
     ],
@@ -306,6 +309,7 @@
       "rust/rust-web-frameworks.md"
     ],
     "security/auth": [
+      "security/auth-client-refresh-multi-device-tabs.md",
       "security/auth-login-registration-oauth-otp-telegram.md",
       "security/auth-multi-service-jwt-refresh-redis.md",
       "security/auth-session-models-opaque-vs-jwt.md",

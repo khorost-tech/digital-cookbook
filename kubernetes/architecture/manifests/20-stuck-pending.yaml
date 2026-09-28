@@ -1,0 +1,38 @@
+# Залипание №1: под не дошёл до узла — остановился на стадии планировщика.
+#
+# Замысел был сделать под неразмещаемым по CPU: попросить больше, чем allocatable
+# самого крупного узла (3950m у воркеров k8s-volga). На этом кластере так нельзя.
+# Первым на пути встаёт admission: LimitRange cookbook-limits задаёт max cpu = 2
+# НА КОНТЕЙНЕР, и запрос на 5 CPU одним контейнером не создаётся вовсе — до планировщика
+# дело не доходит (точный текст отказа — в fixtures/20-stuck.txt).
+# Но потолок пода задаёт не LimitRange: под из двух контейнеров по 1525m прошёл бы его.
+# Настоящий потолок — ResourceQuota namespace: остаток requests.cpu = 4 - 950m = 3050m,
+# а свободного CPU на самом загруженном воркере (wk02) 3950m - 830m = 3120m. Всё, что
+# пропускает квота, на воркер влезает — значит Insufficient cpu здесь недостижим.
+#
+# Поэтому Pending здесь получен другой причиной той же стадии — заведомо невыполнимым
+# nodeSelector. Стадия та же (планировщик), предикат другой: не «Insufficient cpu»,
+# а несовпадение меток узла. Requests намеренно скромные — чтобы ресурсы вообще
+# не участвовали в отборе и в событии FailedScheduling было видно только реальную причину.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: stuck-pending
+  namespace: cookbook-k8s
+  labels:
+    app: stuck-pending
+    stand: cookbook-architecture
+spec:
+  # такой метки нет ни на одном узле кластера — ни один узел не пройдёт отбор
+  nodeSelector:
+    khorost.tech/nonexistent-hardware: "true"
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause:3.10
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 32Mi

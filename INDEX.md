@@ -123,6 +123,12 @@
 |---|---|---|
 | [`zig/hello-comptime`](zig/hello-comptime) | Zig: comptime и позиционирование среди C/Rust/C++ | [статья](https://khorost.tech/zig/zig-positioning-among-c-rust-cpp/) |
 
+## Kubernetes
+
+| Пример | Описание | Статья |
+|---|---|---|
+| [`kubernetes/architecture`](kubernetes/architecture) | Архитектура Kubernetes на живом кластере: из чего состоит control plane, кто ведущий, что происходит между kubectl apply и запущенным контейнером | 🔜 скоро |
+
 ## Security
 
 | Пример | Описание | Статья |

@@ -1,0 +1,49 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 00-control-plane
+# cmd: kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion,OS:.status.nodeInfo.osImage,RUNTIME:.status.nodeInfo.containerRuntimeVersion,TAINTS:.spec.taints
+# ---
+NAME             VERSION   OS                RUNTIME              TAINTS
+k8s-volga-cp01   v1.36.2   Talos (v1.13.6)   containerd://2.2.5   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]
+k8s-volga-cp02   v1.36.2   Talos (v1.13.6)   containerd://2.2.5   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]
+k8s-volga-cp03   v1.36.2   Talos (v1.13.6)   containerd://2.2.5   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]
+k8s-volga-wk01   v1.36.2   Talos (v1.13.6)   containerd://2.2.5   <none>
+k8s-volga-wk02   v1.36.2   Talos (v1.13.6)   containerd://2.2.5   <none>
+k8s-volga-wk03   v1.36.2   Talos (v1.13.6)   containerd://2.2.5   <none>
+--- компоненты control plane ---
+kube-apiserver-k8s-volga-cp01            k8s-volga-cp01   Running
+kube-apiserver-k8s-volga-cp02            k8s-volga-cp02   Running
+kube-apiserver-k8s-volga-cp03            k8s-volga-cp03   Running
+kube-controller-manager-k8s-volga-cp01   k8s-volga-cp01   Running
+kube-controller-manager-k8s-volga-cp02   k8s-volga-cp02   Running
+kube-controller-manager-k8s-volga-cp03   k8s-volga-cp03   Running
+kube-scheduler-k8s-volga-cp01            k8s-volga-cp01   Running
+kube-scheduler-k8s-volga-cp02            k8s-volga-cp02   Running
+kube-scheduler-k8s-volga-cp03            k8s-volga-cp03   Running
+--- а есть ли под etcd? ---
+(подов с etcd в имени не найдено ни в одном namespace)
+--- лидерство: аренда (Lease) ---
+kube-controller-manager                        k8s-volga-cp01_45d5c755-126d-4f77-8f2b-5877c488a851                             2026-07-24T07:55:03.810125Z
+kube-scheduler                                 k8s-volga-cp01_43df9b3b-94f2-457c-85db-791d6f6d2c4f                             2026-07-24T07:55:03.373783Z
+2026-07-24T07:55:03Z
+--- те же аренды через 20 с ---
+kube-controller-manager                        k8s-volga-cp01_45d5c755-126d-4f77-8f2b-5877c488a851                             2026-07-24T07:55:35.992875Z
+kube-scheduler                                 k8s-volga-cp01_43df9b3b-94f2-457c-85db-791d6f6d2c4f                             2026-07-24T07:55:35.522676Z
+2026-07-24T07:55:36Z
+--- сколько API-групп отдаёт API server ---
+44
+--- первые из них ---
+acme.cert-manager.io/v1
+acme.selectel.ru/v1alpha1
+admissionregistration.k8s.io/v1
+apiextensions.k8s.io/v1
+apiregistration.k8s.io/v1
+apps/v1
+argocd-image-updater.argoproj.io/v1alpha1
+argoproj.io/v1alpha1
+authentication.k8s.io/v1
+authorization.k8s.io/v1
+autoscaling.k8s.io/v1
+autoscaling/v1
+--- версия сервера и клиента ---
+Client Version: v1.36.1
+Kustomize Version: v5.8.1
+Server Version: v1.36.2

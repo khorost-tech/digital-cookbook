@@ -1,0 +1,26 @@
+# Залипание №2: узел УЖЕ выбран, дальше не пошло — kubelet не смог получить образ.
+# Реестра example.invalid не существует (домен .invalid зарезервирован RFC 2606).
+# В снятых событиях kubelet упирается не в резолв имени (тогда было бы
+# "dial tcp: lookup ...: no such host"), а в HTTP-ответ на запрос к Registry API:
+# Head "https://example.invalid/v2/nope/manifests/0.0.1": Service Unavailable —
+# то есть недоступность реестра, а не отказ авторизации.
+# Стадия — kubelet, не планировщик: у пода есть nodeName и PodScheduled=True.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: stuck-imagepull
+  namespace: cookbook-k8s
+  labels:
+    app: stuck-imagepull
+    stand: cookbook-architecture
+spec:
+  containers:
+    - name: nope
+      image: example.invalid/nope:0.0.1
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 32Mi

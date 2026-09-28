@@ -1,0 +1,25 @@
+# Залипание №3: узел выбран, образ скачан, контейнер ЗАПУЩЕН — и сразу упал.
+# Дальше всех по пути: сработали и планировщик, и загрузка образа, и запуск.
+# restartPolicy: Always заставляет kubelet перезапускать контейнер с растущей паузой
+# (backoff), состояние — CrashLoopBackOff, restartCount растёт.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: stuck-crashloop
+  namespace: cookbook-k8s
+  labels:
+    app: stuck-crashloop
+    stand: cookbook-architecture
+spec:
+  restartPolicy: Always
+  containers:
+    - name: crasher
+      image: busybox:1.37
+      command: ["sh", "-c", "exit 1"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 32Mi

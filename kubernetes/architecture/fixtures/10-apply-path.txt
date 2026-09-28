@@ -1,0 +1,112 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 10-apply-path
+# cmd: kubectl get deploy,replicaset,pod -n cookbook-k8s -l stand=cookbook-architecture
+# ---
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/trace-demo   2/2     2            2           15s
+
+NAME                                    DESIRED   CURRENT   READY   AGE
+replicaset.apps/trace-demo-58b97d487c   2         2         2       15s
+
+NAME                              READY   STATUS    RESTARTS   AGE
+pod/trace-demo-58b97d487c-4lj98   1/1     Running   0          15s
+pod/trace-demo-58b97d487c-zczbk   1/1     Running   0          15s
+--- что отправляет kubectl (сокращённо) ---
+I0724 11:27:56.402222   78580 round_trippers.go:632] "Response" verb="GET" url="https://192.168.71.208:6443/openapi/v3?timeout=32s" status="200 OK" milliseconds=3
+I0724 11:27:56.404914   78580 round_trippers.go:632] "Response" verb="GET" url="https://192.168.71.208:6443/openapi/v3/apis/apps/v1?hash=E6837BF046F7D2603C949276F19DA2050C7521B0E5FA9FC64556E8AA9C500719EB5CE97EB6FDF85ABEDA04A50BDA5D2B5F59DA2B283D8B76A82BA2A256AFD626&timeout=32s" status="200 OK" milliseconds=1
+I0724 11:27:56.420625   78580 round_trippers.go:632] "Response" verb="GET" url="https://192.168.71.208:6443/api?timeout=32s" status="200 OK" milliseconds=1
+I0724 11:27:56.424313   78580 round_trippers.go:632] "Response" verb="GET" url="https://192.168.71.208:6443/apis?timeout=32s" status="200 OK" milliseconds=1
+I0724 11:27:56.429594   78580 round_trippers.go:632] "Response" verb="GET" url="https://192.168.71.208:6443/apis/apps/v1/namespaces/cookbook-k8s/deployments/trace-demo" status="404 Not Found" milliseconds=1
+I0724 11:27:56.430870   78580 round_trippers.go:632] "Response" verb="GET" url="https://192.168.71.208:6443/api/v1/namespaces/cookbook-k8s" status="200 OK" milliseconds=1
+I0724 11:27:56.442722   78580 round_trippers.go:632] "Response" verb="POST" url="https://192.168.71.208:6443/apis/apps/v1/namespaces/cookbook-k8s/deployments?fieldManager=kubectl-client-side-apply&fieldValidation=Strict" status="201 Created" milliseconds=11
+--- цепочка владения: Pod -> ReplicaSet -> Deployment ---
+pod=trace-demo-58b97d487c-4lj98 owner=ReplicaSet/trace-demo-58b97d487c
+rs=trace-demo-58b97d487c owner=Deployment/trace-demo
+--- события: порядок шагов и кто источник ---
+# cmd: kubectl -n cookbook-k8s get events --sort-by=.metadata.creationTimestamp \
+#        -o custom-columns=TIME:.metadata.creationTimestamp,KIND:.involvedObject.kind,NAME:.involvedObject.name,REASON:.reason,SRC:.source.component,RCTRL:.reportingComponent,MSG:.message \
+#        --no-headers | grep trace-demo
+# (колонка OBJ вида .involvedObject.kind/.involvedObject.name даёт <none> — '/' не является
+#  валидным JSONPath, поэтому kind и name сняты отдельными колонками; колонка RCTRL добавлена
+#  потому что у событий планировщика .source.component пуст — см. блок ниже)
+2026-07-24T08:27:57Z   Pod           trace-demo-58b97d487c-4lj98   Scheduled           <none>                  default-scheduler       Successfully assigned cookbook-k8s/trace-demo-58b97d487c-4lj98 to k8s-volga-wk03
+2026-07-24T08:27:57Z   Pod           trace-demo-58b97d487c-4lj98   Pulled              kubelet                 kubelet                 Container image "registry.k8s.io/pause:3.10" already present on machine and can be accessed by the pod
+2026-07-24T08:27:57Z   Pod           trace-demo-58b97d487c-zczbk   Scheduled           <none>                  default-scheduler       Successfully assigned cookbook-k8s/trace-demo-58b97d487c-zczbk to k8s-volga-wk02
+2026-07-24T08:27:57Z   ReplicaSet    trace-demo-58b97d487c         SuccessfulCreate    replicaset-controller   replicaset-controller   Created pod: trace-demo-58b97d487c-4lj98
+2026-07-24T08:27:57Z   ReplicaSet    trace-demo-58b97d487c         SuccessfulCreate    replicaset-controller   replicaset-controller   Created pod: trace-demo-58b97d487c-zczbk
+2026-07-24T08:27:57Z   Deployment    trace-demo                    ScalingReplicaSet   deployment-controller   deployment-controller   Scaled up replica set trace-demo-58b97d487c from 0 to 2
+2026-07-24T08:27:58Z   Pod           trace-demo-58b97d487c-4lj98   Created             kubelet                 kubelet                 Container created
+2026-07-24T08:27:58Z   Pod           trace-demo-58b97d487c-4lj98   Started             kubelet                 kubelet                 Container started
+2026-07-24T08:27:58Z   Pod           trace-demo-58b97d487c-zczbk   Pulled              kubelet                 kubelet                 Container image "registry.k8s.io/pause:3.10" already present on machine and can be accessed by the pod
+2026-07-24T08:27:58Z   Pod           trace-demo-58b97d487c-zczbk   Created             kubelet                 kubelet                 Container created
+2026-07-24T08:27:58Z   Pod           trace-demo-58b97d487c-zczbk   Started             kubelet                 kubelet                 Container started
+--- точный порядок внутри одной секунды ---
+# В колонке TIME разрешение — секунда, и первые шесть событий попали в одну и ту же
+# секунду: по ней причинный порядок не восстанавливается. Имя события — <объект>.<hex
+# наносекунд>, поэтому сортировка по hex-суффиксу даёт порядок ПОЯВЛЕНИЯ событий.
+# Наносекунда в имени — момент ЗАПИСИ события, а не момент самого действия.
+# (проверка: суффикс 18c52c6dc652668c = 1784881677312616076 нс = 08:27:57.312616Z,
+#  а .eventTime того же события = 2026-07-24T08:27:57.312611Z)
+#
+# ПРОВЕНАНС ЧАСОВ (важно: сравнивать наносекунды можно не везде).
+# * Первые ПЯТЬ строк списка ниже (ScalingReplicaSet, SuccessfulCreate x2, Scheduled x2)
+#   эмитит ОДИН хост: и kube-controller-manager, и kube-scheduler держат аренду на
+#   k8s-volga-cp01 — см. фикстуру 00-control-plane.txt, блок «лидерство: аренда (Lease)»
+#   (holderIdentity обеих аренд начинается с k8s-volga-cp01_); там же .reportingInstance
+#   планировщика = default-scheduler-k8s-volga-cp01. Часы одни, поэтому сравнение
+#   наносекунд здесь корректно и порядок этих пяти событий ДОКАЗАН.
+# * События Pulled/Created/Started пишут kubelet'ы РАЗНЫХ узлов — k8s-volga-wk03 (под
+#   ...-4lj98) и k8s-volga-wk02 (под ...-zczbk), см. блок «узел-источник» ниже. Порядок
+#   таких событий ВНУТРИ одного пода снят с одних часов, а вот их ВЗАИМНЫЙ порядок
+#   МЕЖДУ двумя подами опирается на синхронность часов двух узлов и этой фикстурой
+#   НЕ ДОКАЗАН.
+# cmd: kubectl -n cookbook-k8s get events -o jsonpath='{range .items[*]}{.metadata.name}{" "}{.reason}{" "}{.involvedObject.kind}/{.involvedObject.name}{"\n"}{end}' \
+#        | grep trace-demo | awk -F. '{print $2}' | sort
+18c52c6dc5033ae7 ScalingReplicaSet Deployment/trace-demo
+18c52c6dc606d9d9 SuccessfulCreate ReplicaSet/trace-demo-58b97d487c
+18c52c6dc652668c Scheduled Pod/trace-demo-58b97d487c-4lj98
+18c52c6dc697a3e4 SuccessfulCreate ReplicaSet/trace-demo-58b97d487c
+18c52c6dc70842a2 Scheduled Pod/trace-demo-58b97d487c-zczbk
+18c52c6deeff187a Pulled Pod/trace-demo-58b97d487c-4lj98
+18c52c6defd8fa1b Created Pod/trace-demo-58b97d487c-4lj98
+18c52c6df476a548 Pulled Pod/trace-demo-58b97d487c-zczbk
+18c52c6df5014d8e Created Pod/trace-demo-58b97d487c-zczbk
+18c52c6dfb415353 Started Pod/trace-demo-58b97d487c-4lj98
+18c52c6e064a1300 Started Pod/trace-demo-58b97d487c-zczbk
+--- узел-источник каждого события (чьи это часы) ---
+# cmd: kubectl -n cookbook-k8s get events \
+#        -o custom-columns=OBJ:.involvedObject.name,REASON:.reason,SRCHOST:.source.host,RINST:.reportingInstance \
+#        --no-headers | grep trace-demo
+# У событий kubelet .source.host = имя узла: видно, что два пода обслуживают разные узлы.
+# У событий контроллеров и планировщика .source.host пуст; хост планировщика виден в
+# .reportingInstance, хост контроллеров — по аренде в 00-control-plane.txt (оба на cp01).
+trace-demo-58b97d487c-4lj98   Scheduled           <none>           default-scheduler-k8s-volga-cp01
+trace-demo-58b97d487c-4lj98   Pulled              k8s-volga-wk03   k8s-volga-wk03
+trace-demo-58b97d487c-4lj98   Created             k8s-volga-wk03   k8s-volga-wk03
+trace-demo-58b97d487c-4lj98   Started             k8s-volga-wk03   k8s-volga-wk03
+trace-demo-58b97d487c-zczbk   Scheduled           <none>           default-scheduler-k8s-volga-cp01
+trace-demo-58b97d487c-zczbk   Pulled              k8s-volga-wk02   k8s-volga-wk02
+trace-demo-58b97d487c-zczbk   Created             k8s-volga-wk02   k8s-volga-wk02
+trace-demo-58b97d487c-zczbk   Started             k8s-volga-wk02   k8s-volga-wk02
+trace-demo-58b97d487c         SuccessfulCreate    <none>
+trace-demo-58b97d487c         SuccessfulCreate    <none>
+trace-demo                    ScalingReplicaSet   <none>
+--- кто принял решение о размещении ---
+# cmd: kubectl -n cookbook-k8s get events --field-selector reason=Scheduled \
+#        -o custom-columns=OBJ:.involvedObject.name,SRC:.source.component,RCTRL:.reportingComponent,RINST:.reportingInstance,MSG:.message --no-headers | grep trace-demo
+# .source.component у этих событий пуст: планировщик пишет через events.k8s.io/v1,
+# где источник лежит в .reportingComponent/.reportingInstance.
+trace-demo-58b97d487c-4lj98   <none>   default-scheduler   default-scheduler-k8s-volga-cp01   Successfully assigned cookbook-k8s/trace-demo-58b97d487c-4lj98 to k8s-volga-wk03
+trace-demo-58b97d487c-zczbk   <none>   default-scheduler   default-scheduler-k8s-volga-cp01   Successfully assigned cookbook-k8s/trace-demo-58b97d487c-zczbk to k8s-volga-wk02
+--- сколько живут события: проверка через 1 ч 37 мин после демо ---
+# Демо 1 применено в 08:27:57Z (метки событий выше и .status.startTime подов).
+# Ниже — те же запросы, выполненные при финализации стенда.
+# cmd: date -u +%Y-%m-%dT%H:%M:%SZ
+2026-07-24T10:05:28Z
+# cmd: kubectl -n cookbook-k8s get pod -l stand=cookbook-architecture -o custom-columns=NAME:.metadata.name,START:.status.startTime --no-headers
+trace-demo-58b97d487c-4lj98   2026-07-24T08:27:57Z
+trace-demo-58b97d487c-zczbk   2026-07-24T08:27:57Z
+# cmd: kubectl -n cookbook-k8s get events --no-headers | grep -c trace-demo
+0
+# Ноль: поды живы и работают, а ВСЕ события их создания уже вычищены apiserver'ом
+# (--event-ttl, по умолчанию 1h). Снимать фикстуру событий можно только сразу
+# после применения — через час восстановить эту картину уже нечем.
