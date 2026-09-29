@@ -101,6 +101,7 @@
     ],
     "databases/postgres-ops": [
       "databases/postgres-ha-patroni-replication.md",
+      "databases/postgres-partitioning-vacuum-bloat.md",
       "databases/postgres-pooling-pgbouncer.md"
     ],
     "databases/redis": [
@@ -312,10 +313,12 @@
       "security/auth-client-refresh-multi-device-tabs.md",
       "security/auth-login-registration-oauth-otp-telegram.md",
       "security/auth-multi-service-jwt-refresh-redis.md",
+      "security/auth-oauth2-oidc-flows.md",
       "security/auth-session-models-opaque-vs-jwt.md",
       "security/auth-single-service-opaque-sessions-redis.md"
     ],
     "security/keycloak": [
+      "security/auth-oauth2-oidc-flows.md",
       "security/keycloak-login-themes-federation.md",
       "security/keycloak-production-ha-backups.md",
       "security/keycloak-realms-clients-deploy.md",
