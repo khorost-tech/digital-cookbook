@@ -312,6 +312,7 @@
     "security/auth": [
       "security/auth-client-refresh-multi-device-tabs.md",
       "security/auth-login-registration-oauth-otp-telegram.md",
+      "security/auth-mfa-totp.md",
       "security/auth-multi-service-jwt-refresh-redis.md",
       "security/auth-oauth2-oidc-flows.md",
       "security/auth-session-models-opaque-vs-jwt.md",
