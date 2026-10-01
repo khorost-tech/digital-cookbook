@@ -4,7 +4,7 @@ Kubernetes на практике: control plane и планирование, р�
 
 | Стенд | Описание | Статья |
 |---|---|---|
-| [`architecture/`](architecture/) | Архитектура Kubernetes на живом кластере: из чего состоит control plane, кто ведущий, что происходит между kubectl apply и запущенным контейнером | 🔜 скоро |
+| [`architecture/`](architecture/) | Архитектура Kubernetes на живом кластере: из чего состоит control plane, кто ведущий, что происходит между kubectl apply и запущенным контейнером | [статья](https://khorost.tech/kubernetes/k8s-architecture-control-plane/) |
 
 ---
 
