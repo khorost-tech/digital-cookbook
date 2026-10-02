@@ -94,6 +94,7 @@
       "observability/opensearch-dashboards.md"
     ],
     "databases/picodata": [
+      "databases/picodata-architecture-fork-vs-product.md",
       "performance/inmemory-tarantool-picodata-compute-near-data.md"
     ],
     "databases/postgres": [
@@ -315,6 +316,7 @@
       "security/auth-mfa-totp.md",
       "security/auth-multi-service-jwt-refresh-redis.md",
       "security/auth-oauth2-oidc-flows.md",
+      "security/auth-passkeys-webauthn.md",
       "security/auth-session-models-opaque-vs-jwt.md",
       "security/auth-single-service-opaque-sessions-redis.md"
     ],
