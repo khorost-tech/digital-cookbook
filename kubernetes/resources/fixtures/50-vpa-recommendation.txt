@@ -1,0 +1,4 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 50-vpa-recommendation
+# cmd: kubectl get vpa -n cookbook-k8s vpa-sample -o jsonpath={range .status.recommendation.containerRecommendations[*]}container={.containerName} target={.target} lowerBound={.lowerBound} upperBound={.upperBound}{"\n"}{end}
+# ---
+container=app target={"cpu":"587m","memory":"250Mi"} lowerBound={"cpu":"307m","memory":"250Mi"} upperBound={"cpu":"224997m","memory":"42092091239"}

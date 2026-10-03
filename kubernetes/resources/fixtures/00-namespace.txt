@@ -1,0 +1,8 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 00-namespace
+# cmd: kubectl get resourcequota,limitrange -n cookbook-k8s
+# ---
+NAME                           REQUEST                                                 LIMIT                                   AGE
+resourcequota/cookbook-quota   pods: 0/30, requests.cpu: 0/4, requests.memory: 0/4Gi   limits.cpu: 0/8, limits.memory: 0/8Gi   5s
+
+NAME                         CREATED AT
+limitrange/cookbook-limits   2026-07-22T23:20:23Z

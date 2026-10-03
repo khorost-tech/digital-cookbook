@@ -103,7 +103,8 @@
     "databases/postgres-ops": [
       "databases/postgres-ha-patroni-replication.md",
       "databases/postgres-partitioning-vacuum-bloat.md",
-      "databases/postgres-pooling-pgbouncer.md"
+      "databases/postgres-pooling-pgbouncer.md",
+      "databases/postgres-query-optimization-explain.md"
     ],
     "databases/redis": [
       "databases/redis-clients-go-java-rust.md",
@@ -213,6 +214,9 @@
     ],
     "kubernetes/architecture": [
       "kubernetes/k8s-architecture-control-plane.md"
+    ],
+    "kubernetes/resources": [
+      "kubernetes/k8s-resources-requests-limits-qos.md"
     ],
     "lang/brainfuck": [
       "lang/turing-completeness-and-expressiveness.md"

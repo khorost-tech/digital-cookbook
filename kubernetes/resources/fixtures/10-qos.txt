@@ -1,0 +1,8 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 10-qos
+# cmd: kubectl get pod -n cookbook-k8s guaranteed burstable -o custom-columns=NAME:.metadata.name,QOS:.status.qosClass,REQ:.spec.containers[0].resources.requests,LIM:.spec.containers[0].resources.limits
+# ---
+NAME         QOS          REQ                         LIM
+guaranteed   Guaranteed   map[cpu:100m memory:64Mi]   map[cpu:100m memory:64Mi]
+burstable    Burstable    map[cpu:100m memory:64Mi]   map[cpu:200m memory:128Mi]
+NAME         QOS
+besteffort   BestEffort

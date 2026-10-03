@@ -1,0 +1,24 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: vpa-sample, namespace: cookbook-k8s }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: vpa-sample } }
+  template:
+    metadata: { labels: { app: vpa-sample } }
+    spec:
+      containers:
+        - name: app
+          image: polinux/stress:1.0.4
+          command: ["stress"]
+          args: ["--cpu", "1", "--vm", "1", "--vm-bytes", "80M", "--vm-hang", "1"]
+          resources:
+            requests: { cpu: 50m, memory: 32Mi }
+            limits:   { cpu: 500m, memory: 256Mi }
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata: { name: vpa-sample, namespace: cookbook-k8s }
+spec:
+  targetRef: { apiVersion: apps/v1, kind: Deployment, name: vpa-sample }
+  updatePolicy: { updateMode: "Off" }

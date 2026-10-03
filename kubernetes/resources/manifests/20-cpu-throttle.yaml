@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: Pod
+metadata: { name: cpu-throttle, namespace: cookbook-k8s }
+spec:
+  containers:
+    - name: stress
+      image: polinux/stress:1.0.4
+      command: ["stress"]
+      args: ["--cpu", "4"]
+      resources:
+        requests: { cpu: 250m, memory: 64Mi }
+        limits:   { cpu: 500m, memory: 128Mi }

@@ -1,0 +1,33 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 20-cpu-throttle
+# cmd: kubectl exec -n cookbook-k8s cpu-throttle -- cat /sys/fs/cgroup/cpu.stat
+# ---
+usage_usec 42664095
+user_usec 42595339
+system_usec 68755
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 853
+nr_throttled 853
+throttled_usec 142285008
+nr_bursts 0
+burst_usec 0
+
+# second snapshot, fixture: 20-cpu-throttle
+# интервал между снимками — 284 периода CFS по 100ms, т.е. 28.4s
+# (сверка: usage_usec +14235772 мкс / 28.4s = 0.501 ядра, что сходится с kubectl top 502m ниже)
+# cmd: kubectl exec -n cookbook-k8s cpu-throttle -- cat /sys/fs/cgroup/cpu.stat
+# ---
+usage_usec 56899867
+user_usec 56810938
+system_usec 88928
+nice_usec 0
+core_sched.force_idle_usec 0
+nr_periods 1137
+nr_throttled 1137
+throttled_usec 189639688
+nr_bursts 0
+burst_usec 0
+
+# kubectl top pod
+NAME           CPU(cores)   MEMORY(bytes)   
+cpu-throttle   502m         0Mi             

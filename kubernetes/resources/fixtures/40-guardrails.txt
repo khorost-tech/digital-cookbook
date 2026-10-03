@@ -1,0 +1,19 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 40-guardrails
+# cmd: kubectl get pod -n cookbook-k8s no-resources -o jsonpath={.spec.containers[0].resources}
+# ---
+{"limits":{"cpu":"200m","memory":"128Mi"},"requests":{"cpu":"100m","memory":"64Mi"}}
+--- quota-buster deploy ---
+NAME           READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                       SELECTOR
+quota-buster   3/6     3            3           10s   app          registry.k8s.io/pause:3.10   app=quota-buster
+--- replicaset events (exceeded quota) ---
+  ReplicaFailure   True    FailedCreate
+  Warning  FailedCreate      10s              replicaset-controller  Error creating: pods "quota-buster-cbdfdd97f-kpksz" is forbidden: exceeded quota: cookbook-quota, requested: requests.memory=1Gi, used: requests.memory=3264Mi, limited: requests.memory=4Gi
+  Warning  FailedCreate      10s              replicaset-controller  Error creating: pods "quota-buster-cbdfdd97f-gzt6j" is forbidden: exceeded quota: cookbook-quota, requested: requests.memory=1Gi, used: requests.memory=3264Mi, limited: requests.memory=4Gi
+  Warning  FailedCreate      10s              replicaset-controller  Error creating: pods "quota-buster-cbdfdd97f-8hhj6" is forbidden: exceeded quota: cookbook-quota, requested: requests.memory=1Gi, used: requests.memory=3264Mi, limited: requests.memory=4Gi
+  Warning  FailedCreate      10s              replicaset-controller  Error creating: pods "quota-buster-cbdfdd97f-9z8hf" is forbidden: exceeded quota: cookbook-quota, requested: requests.memory=1Gi, used: requests.memory=3264Mi, limited: requests.memory=4Gi
+  Warning  FailedCreate      10s              replicaset-controller  Error creating: pods "quota-buster-cbdfdd97f-fkgh9" is forbidden: exceeded quota: cookbook-quota, requested: requests.memory=1Gi, used: requests.memory=3264Mi, limited: requests.memory=4Gi
+  Warning  FailedCreate      10s              replicaset-controller  Error creating: pods "quota-buster-cbdfdd97f-hz86d" is forbidden: exceeded quota: cookbook-quota, requested: requests.memory=1Gi, used: requests.memory=3264Mi, limited: requests.memory=4Gi
+  Warning  FailedCreate      10s              replicaset-controller  Error creating: pods "quota-buster-cbdfdd97f-vj44g" is forbidden: exceeded quota: cookbook-quota, requested: requests.memory=1Gi, used: requests.memory=3264Mi, limited: requests.memory=4Gi
+  Warning  FailedCreate      10s              replicaset-controller  Error creating: pods "quota-buster-cbdfdd97f-hp9t9" is forbidden: exceeded quota: cookbook-quota, requested: requests.memory=1Gi, used: requests.memory=3264Mi, limited: requests.memory=4Gi
+  Warning  FailedCreate      9s               replicaset-controller  Error creating: pods "quota-buster-cbdfdd97f-lcxjh" is forbidden: exceeded quota: cookbook-quota, requested: requests.memory=1Gi, used: requests.memory=3264Mi, limited: requests.memory=4Gi
+  Warning  FailedCreate      8s (x9 over 9s)  replicaset-controller  (combined from similar events): Error creating: pods "quota-buster-cbdfdd97f-4ndjl" is forbidden: exceeded quota: cookbook-quota, requested: requests.memory=1Gi, used: requests.memory=3264Mi, limited: requests.memory=4Gi

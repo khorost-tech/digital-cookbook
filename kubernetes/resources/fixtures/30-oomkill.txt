@@ -1,0 +1,22 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 30-oomkill
+# cmd: kubectl get pod -n cookbook-k8s oomkill -o jsonpath={range .status.containerStatuses[*]}reason={.lastState.terminated.reason} exitCode={.lastState.terminated.exitCode} restartCount={.restartCount}{"\n"}{end}
+# ---
+reason=OOMKilled exitCode=137 restartCount=3
+      Reason:       OOMKilled
+      Exit Code:    137
+      Started:      Thu, 23 Jul 2026 02:37:09 +0300
+--
+    Last State:     Terminated
+      Reason:       OOMKilled
+      Exit Code:    137
+      Started:      Thu, 23 Jul 2026 02:36:40 +0300
+--
+  Type     Reason     Age                From               Message
+  ----     ------     ----               ----               -------
+  Normal   Scheduled  61s                default-scheduler  Successfully assigned cookbook-k8s/oomkill to k8s-volga-wk02
+LAST SEEN   TYPE      REASON      OBJECT        MESSAGE
+62s         Normal    Scheduled   pod/oomkill   Successfully assigned cookbook-k8s/oomkill to k8s-volga-wk02
+17s         Normal    Pulled      pod/oomkill   Container image "polinux/stress:1.0.4" already present on machine and can be accessed by the pod
+17s         Normal    Created     pod/oomkill   Container created
+17s         Normal    Started     pod/oomkill   Container started
+16s         Warning   BackOff     pod/oomkill   Back-off restarting failed container stress in pod oomkill_cookbook-k8s(1a0f9c69-9bf0-46f0-bfdb-7a6706f74182)
