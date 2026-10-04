@@ -1,0 +1,32 @@
+service.instance.id в индексных лейблах Loki: замер
+===================================================
+Дата: 2026-08-06 06:41 UTC. Рестартов на конфиг: 3,
+нагрузка между рестартами: 40 запросов.
+
+Утверждение «Loki индексирует только фиксированный список ресурсных
+атрибутов, значит кардинальность под контролем» проверяется здесь напрямую.
+Список действительно фиксирован, но в него по умолчанию входит
+service.instance.id, уникальный для экземпляра: Java-агент генерирует новый
+UUID при каждом старте процесса.
+
+КОНФИГ РЕСТАРТОВ СТРИМОВ У JAVA-BACKEND  ЛЕЙБЛЫ ИНДЕКСА
+defaults          0         3              2  deployment_environment,service_instance_id,service_name
+defaults          1         4              3  deployment_environment,service_instance_id,service_name
+defaults          2         5              4  deployment_environment,service_instance_id,service_name
+defaults          3         6              5  deployment_environment,service_instance_id,service_name
+safe              0         2              1  deployment_environment,service_name
+safe              1         2              1  deployment_environment,service_name
+safe              2         2              1  deployment_environment,service_name
+safe              3         2              1  deployment_environment,service_name
+
+defaults — loki-default-labels.yaml, дефолтный набор (18 атрибутов, среди них
+  service.instance.id, k8s.pod.name, k8s.replicaset.name, container.name).
+safe     — loki.yaml стенда: явный набор service.name, service.namespace,
+  deployment.environment и ignore_defaults: true.
+
+Значение не потеряно: после safe-прогона фильтр по structured metadata
+{service_name="java-backend"} | service_instance_id != "" находит 388 записей.
+
+Перезапускается именно Java-сервис. Go SDK атрибута service.instance.id не
+выставляет вовсе, поэтому рестарты Go-сервиса на число потоков не влияют —
+первая версия этого опыта рестартовала Go и не показала ничего.

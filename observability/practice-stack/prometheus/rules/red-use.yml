@@ -1,0 +1,121 @@
+# Правила записи (recording rules) для RED и USE.
+#
+# Зачем они вообще нужны, если те же выражения можно написать в панели Grafana:
+# 1. Выражение с гистограммой и `rate` по 45 сериям на сервис считается заново при
+#    КАЖДОМ открытии дашборда и при каждом срабатывании правила алерта. Правило
+#    записи считает один раз в evaluation_interval и кладёт результат в одну серию.
+# 2. Алерт, написанный поверх правила записи, и панель, написанная поверх него же,
+#    показывают ОДНО И ТО ЖЕ число. Если каждый пишет своё выражение, панель и
+#    алерт расходятся, и разбор инцидента начинается со спора о том, кто прав.
+#
+# Соглашение об именах — уровень:метрика:операция (принято в сообществе
+# Prometheus). `job:` здесь означает «агрегировано до сервиса», то есть
+# инстансы и прочие ресурсные лейблы уже схлопнуты.
+
+groups:
+  - name: red
+    # 15 с — это evaluation_interval из prometheus.yml. Окно rate взято 5m: оно
+    # должно быть кратно и заметно больше scrape_interval (5 с), иначе на редких
+    # метриках rate вернёт пустоту, а не ноль.
+    interval: 15s
+    rules:
+      # R — Rate. sum by (service_name) схлопывает всё лишнее: instance,
+      # container_id, версии рантайма. Без этого правило записи унаследовало бы
+      # все 35 лейблов исходной серии и не сэкономило бы ничего.
+      - record: job:http_server_requests:rate5m
+        expr: |
+          sum by (service_name) (
+            rate(http_server_request_duration_seconds_count[5m])
+          )
+
+      # E — Errors. Именно 5xx, а не «всё, что не 200»: 404 на несуществующий
+      # товар — нормальная работа системы, и включать его в бюджет ошибок значит
+      # получать алерт каждый раз, когда пользователь ошибся в артикуле.
+      #
+      # Хвост `or on(service_name) (0 * ...)` выглядит избыточным, но без него
+      # правило ЗАМАЛЧИВАЕТ здоровые сервисы. Селектор {status=~"5.."} требует
+      # существования серии, а у сервиса, который ни разу не отдал 5xx, её просто
+      # нет — не «нулевая», а отсутствующая. Проверено на стенде: до этой правки
+      # правило возвращало только java-backend (у него 5xx были в прошлых
+      # прогонах), а go-frontend отсутствовал целиком. На дашборде это выглядит
+      # как «No data», то есть как поломка мониторинга, а не как «ошибок нет».
+      #
+      # Умножение на ноль берётся именно от знаменателя, а не `or vector(0)`:
+      # vector(0) — серия без лейблов, она не подставится под `by (service_name)`
+      # и не даст имени сервиса.
+      - record: job:http_server_requests_errors:rate5m
+        expr: |
+          sum by (service_name) (
+            rate(http_server_request_duration_seconds_count{http_response_status_code=~"5.."}[5m])
+          )
+          or on (service_name)
+          (0 * job:http_server_requests:rate5m)
+
+      # Доля ошибок. Знаменатель НЕ занулён намеренно: если трафика нет, правильный
+      # ответ — «данных нет», а не «ошибок 0%». Подставленный сюда ноль выглядит
+      # как здоровый сервис и прячет полную остановку приёма запросов.
+      - record: job:http_server_requests_errors:ratio5m
+        expr: |
+          job:http_server_requests_errors:rate5m
+            /
+          job:http_server_requests:rate5m
+
+      # D — Duration. histogram_quantile считается ПОСЛЕ суммирования бакетов:
+      # сначала sum by (service_name, le), потом квантиль. Обратный порядок
+      # (квантиль по каждой серии, потом среднее) даёт другое число, и это одна
+      # из самых частых ошибок в дашбордах.
+      - record: job:http_server_request_duration_seconds:p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service_name, le) (
+              rate(http_server_request_duration_seconds_bucket[5m])
+            )
+          )
+
+      - record: job:http_server_request_duration_seconds:p99_5m
+        expr: |
+          histogram_quantile(0.99,
+            sum by (service_name, le) (
+              rate(http_server_request_duration_seconds_bucket[5m])
+            )
+          )
+
+      # RED на бизнес-операцию, а не на HTTP. Отличие содержательное: HTTP-метрика
+      # скажет «200 OK», даже если заказ не создан, потому что товара не хватило.
+      - record: job:order_duration_seconds:p95_5m
+        expr: |
+          histogram_quantile(0.95,
+            sum by (le) (
+              rate(khorost_tech_order_duration_seconds_bucket{outcome="ok"}[5m])
+            )
+          )
+
+      - record: job:orders:rate5m
+        expr: sum(rate(khorost_tech_orders_created_total[5m]))
+
+  - name: use
+    interval: 15s
+    rules:
+      # U — Utilization пула соединений к БД. Метрика приходит от Java-агента
+      # автоматически: инструментировать Hikari руками не нужно.
+      - record: job:db_pool:utilization
+        expr: |
+          sum by (service_name) (db_client_connections_usage{state="used"})
+            /
+          sum by (service_name) (db_client_connections_max)
+
+      # S — Saturation. Это и есть главное число USE: сколько потоков СТОЯТ в
+      # очереди за соединением. Пока оно нулевое, пул не узкое место, каким бы
+      # высоким ни было utilization.
+      - record: job:db_pool:pending
+        expr: sum by (service_name) (db_client_connections_pending_requests)
+
+      # Сатурация самого конвейера телеметрии. Забитая очередь экспортёра — это
+      # молчаливая потеря данных: приложение работает, метрики «есть», но до
+      # бэкенда они не доезжают. Проверять надо ровно так же, как прикладные
+      # очереди.
+      - record: job:otelcol_exporter_queue:utilization
+        expr: |
+          sum by (exporter) (otelcol_exporter_queue_size)
+            /
+          sum by (exporter) (otelcol_exporter_queue_capacity)

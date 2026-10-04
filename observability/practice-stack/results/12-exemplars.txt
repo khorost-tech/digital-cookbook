@@ -1,0 +1,19 @@
+Самопроверка exemplars: прыжок metric -> trace
+==============================================
+Прогон: 200 запросов, seed 42. Режим стенда: spanmetrics.
+Метрика: traces_span_metrics_duration_milliseconds_bucket{service_name="go-frontend",span_name="POST /order"}
+
+Три звена цепочки:
+  1) exemplars в Prometheus:      13
+  2) trace_id из exemplar:        249cf7caa22fd5cba0b92bf47c8a430c
+     трейс в Tempo:               9092 байт, спанов 8
+  3) сервис go-frontend в трейсе: yes
+     операция 'POST /order':         yes
+
+Условия, без которых цепочка рвётся МОЛЧА (метрики при этом исправны):
+  - prometheus:  --enable-feature=exemplar-storage
+  - collector:   exporters.prometheus.enable_open_metrics: true
+  - collector:   connectors.spanmetrics.exemplars.enabled: true
+  - grafana:     exemplarTraceIdDestinations в datasource Prometheus
+
+ИТОГ: ГОДЕН

@@ -1,0 +1,68 @@
+# Loki в режиме одного бинарника, хранение на локальном диске.
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2026-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  # ЯВНЫЙ безопасный набор индексных лейблов.
+  #
+  # Дефолтный список Loki (default_resource_attributes_as_index_labels, виден в
+  # /config) включает service.instance.id — а он МЕНЯЕТСЯ при каждом перезапуске
+  # процесса и у каждого пода. Проверено на этом стенде: OTel Java agent
+  # генерирует новый UUID при старте, и каждый рестарт java-backend добавлял
+  # отдельный стрим — 2, 3, 4, 5 стримов у ОДНОГО сервиса после трёх рестартов.
+  # В Kubernetes с несколькими репликами и регулярными раскатками это растёт
+  # линейно по числу перезапусков.
+  #
+  # Поэтому instance.id тут НЕ индексируется: он остаётся в structured metadata,
+  # где по нему по-прежнему можно фильтровать, но индекс он не раздувает.
+  # ignore_defaults отключает дефолтный список целиком, иначе он применяется
+  # поверх нашего.
+  otlp_config:
+    resource_attributes:
+      ignore_defaults: true
+      attributes_config:
+        - action: index_label
+          attributes:
+            - service.name
+            - service.namespace
+            - deployment.environment
+  # Нужно для OTLP: trace_id и span_id приходят как structured metadata, а не
+  # как лейблы. Без этого Loki отвергнет запись.
+  allow_structured_metadata: true
+  volume_enabled: true
+  retention_period: 24h
+  # Поднято намеренно: в статье 3 мы ставим опыт с высокой кардинальностью и
+  # хотим увидеть последствия, а не отказ на входе.
+  max_label_names_per_series: 30
+
+pattern_ingester:
+  enabled: false
+
+analytics:
+  reporting_enabled: false

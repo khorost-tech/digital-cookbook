@@ -1,0 +1,38 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: java-backend
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://postgres:5432/orders}
+    username: ${DB_USER:orders}
+    password: ${DB_PASSWORD:orders}
+    hikari:
+      maximum-pool-size: 10
+      # Имя пула попадает в метрики пула соединений — в статье 4 по нему видно,
+      # что USE-метрики ресурса берутся не из воздуха.
+      pool-name: inventory-pool
+
+app:
+  nats:
+    url: ${NATS_URL:nats://nats:4222}
+    subject: ${NATS_SUBJECT:orders.created}
+
+logging:
+  level:
+    root: INFO
+    tech.khorost.observability: INFO
+  # Структурные логи в stdout БЕЗ сторонних библиотек: Spring Boot умеет это сам
+  # (форматы ecs, logstash, gelf — проверено по содержимому spring-boot-4.1.0.jar,
+  # пакет org.springframework.boot.logging.structured). Формат ECS выбран потому,
+  # что он включает MDC, а OTel-агент кладёт туда trace_id и span_id — то есть
+  # корреляция появляется и во втором маршруте доставки логов, файловом.
+  structured:
+    format:
+      console: ecs
+    ecs:
+      service:
+        name: java-backend
+        version: 1.0.0
+        environment: stand

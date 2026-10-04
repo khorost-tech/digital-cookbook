@@ -1,0 +1,68 @@
+# НАМЕРЕННО ПЛОХАЯ настройка Loki: trace_id разрешён как лейбл индекса.
+#
+# Нужна для замера последствий высокой кардинальности. Просто прислать trace_id
+# в атрибуте ресурса НЕДОСТАТОЧНО: Loki 3.x индексирует только фиксированный
+# белый список ресурсных атрибутов (service.name, service.instance.id,
+# deployment.environment, cloud.*, k8s.* — см. default_resource_attributes_as_index_labels
+# в /config), а всё остальное уходит в structured metadata и индекс не раздувает.
+# То есть по умолчанию Loki от этой ошибки защищён, и чтобы её совершить, надо
+# явно разрешить — что и сделано ниже.
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2026-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  # Здесь и ломаем: trace_id_label объявлен лейблом индекса. Каждый уникальный
+  # trace_id теперь создаёт отдельный поток.
+  #
+  # Базовый набор — тот же безопасный, что в loki.yaml (service.name,
+  # service.namespace, deployment.environment, БЕЗ service.instance.id), чтобы
+  # разница между прогонами объяснялась ровно одной добавленной строкой, а не
+  # заодно и дефолтным списком Loki.
+  otlp_config:
+    resource_attributes:
+      ignore_defaults: true
+      attributes_config:
+        - action: index_label
+          attributes:
+            - service.name
+            - service.namespace
+            - deployment.environment
+            - trace_id_label
+  allow_structured_metadata: true
+  volume_enabled: true
+  retention_period: 24h
+  # Поднято намеренно: в статье 3 мы ставим опыт с высокой кардинальностью и
+  # хотим увидеть последствия, а не отказ на входе.
+  max_label_names_per_series: 30
+
+pattern_ingester:
+  enabled: false
+
+analytics:
+  reporting_enabled: false

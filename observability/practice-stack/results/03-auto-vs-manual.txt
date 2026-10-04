@@ -1,0 +1,91 @@
+Автоматическое инструментирование против ручного
+=================================================
+Проверено 2026-08-06 на прогоне 300 запросов, метка load.run=cover-1.
+Разбирался один трейс медленного пути (SKU-0004, 156 мс).
+
+1. Что появилось в трейсе БЕЗ единой строки кода про телеметрию
+---------------------------------------------------------------
+Трейс одного запроса: 5 спанов, 2 сервиса. Ручной здесь только один.
+
+СЕРВИС         СПАН                      ВИД        ДЛИТ.    ОТКУДА ВЗЯЛСЯ
+go-frontend    POST /order               SERVER    156.8 мс  otelhttp (обёртка Handler)
+go-frontend    create_order              INTERNAL  156.7 мс  РУЧНОЙ, код приложения
+go-frontend    HTTP GET                  CLIENT    156.6 мс  otelhttp (обёртка Transport)
+java-backend   GET /inventory/{sku}      SERVER    153.3 мс  Java-агент, io.opentelemetry.tomcat-10.0
+java-backend   SELECT orders.inventory   CLIENT    151.7 мс  Java-агент, io.opentelemetry.jdbc
+
+151,7 мс из 156,8 — внутри запроса к БД. Это следствие того, что медленный путь
+сделан pg_sleep(0.15) в самом запросе, а не Thread.sleep в приложении: в трейсе
+видно, что время потрачено в базе, и вывод «узкое место — БД» не подделан.
+
+2. Атрибуты: что даёт автоматика, а что только руки
+----------------------------------------------------
+otelhttp, серверный спан (13 атрибутов, все по семантическим конвенциям):
+  client.address, http.request.body.size, http.request.method,
+  http.response.body.size, http.response.status_code, network.peer.address,
+  network.peer.port, network.protocol.version, server.address, server.port,
+  url.path, url.scheme, user_agent.original
+
+otelhttp, клиентский спан (6 атрибутов):
+  http.request.method, http.response.status_code, network.protocol.version,
+  server.address, server.port, url.full
+
+Java-агент, спан Tomcat (14 атрибутов):
+  всё то же плюс http.route (шаблон маршрута «/inventory/{sku}», а не конкретный
+  путь) и thread.id / thread.name
+
+Java-агент, спан JDBC (11 атрибутов):
+  db.connection_string, db.name, db.operation, db.sql.table, db.statement,
+  db.system, db.user, server.address, server.port, thread.id, thread.name
+
+РУЧНОЙ спан create_order (5 атрибутов):
+  load.run, order.id, order.quantity, order.reserved, order.sku
+
+Вывод, который видно прямо в этом списке: автоматика знает ПРОТОКОЛЫ и не знает
+ПРЕДМЕТНУЮ ОБЛАСТЬ. Ни один автоматический атрибут не отвечает на вопрос «что за
+заказ и удалось ли его зарезервировать» — для этого нужен ручной спан. Обратное
+тоже верно: расписывать руками http.request.method бессмысленно.
+
+Два различия, которых у Go нет, а у Java-агента есть:
+  - http.route — шаблон маршрута. У Go в этом стенде его нет: otelhttp получает
+    уже готовый путь, а шаблон знает только ServeMux. Практическое следствие —
+    группировать метрики по маршруту в Go придётся руками.
+  - thread.id / thread.name — у Go нет тредов в этом смысле, зато у Java по ним
+    видно, в каком пуле выполнялась работа.
+
+3. db.statement и персональные данные: агент обезличивает сам
+-------------------------------------------------------------
+Проверено запросом значений атрибута span.db.statement в Tempo. Агент 2.30.0
+подставляет вместо литералов вопросительные знаки:
+
+  SELECT sku, name, quantity, pg_sleep(?) FROM inventory WHERE sku = ?
+  SELECT sku, name, quantity FROM inventory WHERE sku = ?
+  INSERT INTO orders (order_id, sku, quantity, reserved) VALUES (?, ?, ?, ?) ON CONFLICT (order_id) DO NOTHING
+  SHOW TRANSACTION ISOLATION LEVEL
+
+То есть предупреждение «осторожно с PII в db.statement» нуждается в уточнении: по
+умолчанию значения параметров в трейс НЕ попадают, обезличивание включено. Риск
+появляется, если его отключить или если значения зашиты прямо в текст запроса
+строковой конкатенацией — тогда обезличивать нечего.
+
+Побочно видно, чего в коде приложения нет вовсе: SHOW TRANSACTION ISOLATION LEVEL
+— это запрос пула соединений Hikari. Автоматика показывает и то, о чём автор
+приложения не думает.
+
+4. Опыт: код с API работает, а телеметрия не уходит
+----------------------------------------------------
+Режим `./scripts/up.sh all off`: у Go выставлена штатная OTEL_SDK_DISABLED=true,
+у Java просто нет -javaagent. Код приложения НЕ менялся — те же вызовы
+otel.Tracer(...).Start и счётчика остаются на месте и получают no-op реализации.
+
+  прогон 120 запросов, метка load.run=sdk-off
+  ответы: 201 = 105, 404 = 10, 502 = 5 — факт совпал с планом,
+          то есть приложение работает полностью;
+  трейсы с меткой sdk-off в Tempo: 0;
+  метрика khorost_tech_orders_created_total: 275 — столько же, сколько до
+          прогона, то есть не выросла;
+  лог самого приложения: {"msg":"режим телеметрии","sdk_enabled":false}.
+
+Это и есть разделение API и SDK в наблюдаемом виде: приложение зависит от API и
+работает без SDK, а сигналов при этом нет. Ловушка не в том, что что-то падает —
+падать как раз ничего не будет, и потому «пустые дашборды» ищут долго.

@@ -1,0 +1,50 @@
+# Loki с ДЕФОЛТНЫМ набором индексных лейблов — для опыта scripts/bench-instance-id.sh.
+#
+# Отличается от рабочего loki.yaml ровно одним: секции otlp_config здесь нет, то
+# есть действует встроенный список default_resource_attributes_as_index_labels.
+# В нём 18 атрибутов, и среди них меняющиеся при каждой раскатке:
+# service.instance.id, k8s.pod.name, k8s.replicaset.name, container.name.
+#
+# Конфиг существует, чтобы показать разницу, а не для использования.
+auth_enabled: false
+
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+  log_level: warn
+
+common:
+  instance_addr: 127.0.0.1
+  path_prefix: /loki
+  storage:
+    filesystem:
+      chunks_directory: /loki/chunks
+      rules_directory: /loki/rules
+  replication_factor: 1
+  ring:
+    kvstore:
+      store: inmemory
+
+schema_config:
+  configs:
+    - from: 2026-01-01
+      store: tsdb
+      object_store: filesystem
+      schema: v13
+      index:
+        prefix: index_
+        period: 24h
+
+limits_config:
+  allow_structured_metadata: true
+  volume_enabled: true
+  retention_period: 24h
+  # Поднято намеренно: в статье 3 мы ставим опыт с высокой кардинальностью и
+  # хотим увидеть последствия, а не отказ на входе.
+  max_label_names_per_series: 30
+
+pattern_ingester:
+  enabled: false
+
+analytics:
+  reporting_enabled: false

@@ -1,0 +1,291 @@
+# Стенд серии «Наблюдаемость на практике»: стек наблюдаемости плюс подопытная
+# система. Версии пинуются, latest не используется — иначе стенд перестаёт быть
+# воспроизводимым через месяц.
+#
+# Порты выбраны из диапазона 93xx/43xx, чтобы не конфликтовать с соседними
+# стендами observability/vector-pipeline и observability/vector-vs-collector.
+name: practice-stack
+
+services:
+  # --- стек наблюдаемости ---------------------------------------------------
+
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.158.0
+    container_name: ops-otelcol
+    # Конфиг выбирается переменной: обычный или с tail_sampling. Оба лежат в
+    # репозитории и оба валидируются перед подъёмом.
+    command: ["--config=/etc/otelcol/${OTELCOL_CONFIG:-config.yaml}"]
+    volumes:
+      - ./otelcol:/etc/otelcol:ro
+    ports:
+      - "4337:4317"   # OTLP gRPC
+      - "4338:4318"   # OTLP HTTP
+      - "9301:8888"   # собственная телеметрия Collector
+    depends_on:
+      - tempo
+      - loki
+
+  tempo:
+    image: grafana/tempo:3.0.2
+    container_name: ops-tempo
+    command: ["-config.file=/etc/tempo/tempo.yaml"]
+    volumes:
+      # Конфиг выбирается переменной, как у Collector: режим spanmetrics
+      # подставляет вариант с генератором метрик, остальные режимы — базовый.
+      - ./tempo/${TEMPO_CONFIG:-tempo.yaml}:/etc/tempo/tempo.yaml:ro
+      - tempo-data:/var/tempo
+    ports:
+      - "9302:3200"
+
+  loki:
+    image: grafana/loki:3.7.5
+    container_name: ops-loki
+    # Конфиг выбирается переменной: обычный или с разрешённым лейблом высокой
+    # кардинальности (для замера в статье 3).
+    command: ["-config.file=/etc/loki/${LOKI_CONFIG:-loki.yaml}"]
+    volumes:
+      - ./loki:/etc/loki:ro
+      - loki-data:/loki
+    ports:
+      - "9303:3100"
+
+  prometheus:
+    image: prom/prometheus:v3.13.2
+    container_name: ops-prometheus
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=24h
+      # Без этого флага POST /-/reload отвечает 403, и перечитать правила можно
+      # только рестартом контейнера — то есть потеряв всё, что накоплено в TSDB
+      # за прогон. На стенде это критично: правила правятся постоянно.
+      - --web.enable-lifecycle
+      # Первое из трёх условий цепочки exemplars (два других — enable_open_metrics
+      # у экспортёра Collector и exemplars.enabled у коннектора spanmetrics).
+      # Без флага Prometheus принимает метрики как обычно, а exemplars молча
+      # отбрасывает: /api/v1/query_exemplars отдаёт пустоту при полностью
+      # исправном Collector, и понять это по метрикам невозможно.
+      - --enable-feature=exemplar-storage
+      # Приёмник remote-write нужен второму пути span-метрик: Tempo
+      # metrics-generator считает их сам и присылает сюда (ст. 7).
+      - --web.enable-remote-write-receiver
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./prometheus/rules:/etc/prometheus/rules:ro
+      - prometheus-data:/prometheus
+    ports:
+      - "9304:9090"
+
+  grafana:
+    image: grafana/grafana:13.1.2
+    container_name: ops-grafana
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_AUTH_DISABLE_LOGIN_FORM: "true"
+      GF_FEATURE_TOGGLES_ENABLE: traceToMetrics
+      GF_ANALYTICS_REPORTING_ENABLED: "false"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "9305:3000"
+    depends_on:
+      - tempo
+      - loki
+      - prometheus
+
+  # --- инфраструктура подопытной системы ------------------------------------
+
+  postgres:
+    image: postgres:18.4-alpine
+    container_name: ops-postgres
+    environment:
+      POSTGRES_USER: orders
+      POSTGRES_PASSWORD: orders
+      POSTGRES_DB: orders
+    volumes:
+      # ВНИМАНИЕ на путь: у официального образа PostgreSQL 18 точка монтирования
+      # изменилась. Данные лежат в /var/lib/postgresql/<major>/docker, а монтировать
+      # надо каталог уровнем выше — /var/lib/postgresql. Привычный по 17 и раньше
+      # том на /var/lib/postgresql/data образ отвергает при старте:
+      #   "PostgreSQL data in: /var/lib/postgresql/data (unused mount/volume)"
+      # и контейнер выходит с кодом 1. Смена сделана ради pg_upgrade --link.
+      - postgres-data:/var/lib/postgresql
+      # init.sql применяется ТОЛЬКО при пустом томе. Если схема изменилась —
+      # нужен ./scripts/down.sh clean, иначе правка молча не подхватится.
+      - ./db/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    ports:
+      - "9306:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U orders -d orders"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+  nats:
+    image: nats:2.14.4-alpine
+    container_name: ops-nats
+    command: ["--http_port", "8222", "--jetstream", "--store_dir", "/data"]
+    volumes:
+      - nats-data:/data
+    ports:
+      - "9307:4222"
+      - "9308:8222"
+
+  # --- подопытная система ---------------------------------------------------
+  #
+  # Телеметрия у приложений включается ПЕРЕМЕННЫМИ, а не разными образами: один
+  # образ даёт и базовую линию без телеметрии, и вариант с SDK или агентом.
+  # Иначе замер накладных расходов сравнивал бы разные сборки.
+
+  java-backend:
+    build:
+      context: ./apps/java-backend
+    container_name: ops-java-backend
+    environment:
+      DB_URL: jdbc:postgresql://postgres:5432/orders
+      DB_USER: orders
+      DB_PASSWORD: orders
+      NATS_URL: nats://nats:4222
+      NATS_SUBJECT: orders.created
+      # Пусто в базовой линии; в замерах ст. 1 сюда подставляется
+      # -javaagent:/app/opentelemetry-javaagent.jar
+      JAVA_TOOL_OPTIONS: "${JAVA_BACKEND_JAVA_TOOL_OPTIONS:-}"
+      OTEL_SERVICE_NAME: java-backend
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_HTTP_ENDPOINT:-http://otelcol:4318}"
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=stand"
+      # Агент Pyroscope настраивается только переменными; -javaagent для него
+      # подставляется в JAVA_BACKEND_JAVA_TOOL_OPTIONS вместе с агентом OTel.
+      PYROSCOPE_APPLICATION_NAME: java-backend
+      PYROSCOPE_SERVER_ADDRESS: "http://pyroscope:4040"
+      # Режим сэмплирования оставлен дефолтным (ITIMER): он не требует
+      # perf_events и работает в контейнере без capabilities. Проверено —
+      # perf_event_paranoid=2 и CapEff=0, профили при этом собираются.
+      # Режим CPU включается PYROSCOPE_PROFILER_EVENT=cpu; ВНИМАНИЕ на имя,
+      # PYROSCOPE_PROFILING_EVENT не читается и молча оставляет ITIMER.
+      PYROSCOPE_FORMAT: jfr
+    ports:
+      - "9311:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      nats:
+        condition: service_started
+
+  go-frontend:
+    build:
+      context: ./apps/go-frontend
+    container_name: ops-go-frontend
+    environment:
+      LISTEN_ADDR: ":8080"
+      INVENTORY_URL: http://java-backend:8080
+      NATS_URL: nats://nats:4222
+      NATS_SUBJECT: orders.created
+      OTEL_SERVICE_NAME: go-frontend
+      OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_GRPC_ENDPOINT:-http://otelcol:4317}"
+      # В Go SDK gRPC и HTTP — разные модули экспортёров, поэтому переменная
+      # читается кодом приложения, а не самим SDK.
+      OTEL_EXPORTER_OTLP_PROTOCOL: "${GO_OTLP_PROTOCOL:-grpc}"
+      OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=stand"
+      # Выключатель телеметрии для базовой линии — штатная переменная OTel SDK.
+      OTEL_SDK_DISABLED: "${OTEL_SDK_DISABLED:-false}"
+      # Штатные переменные сэмплирования по спецификации OTel. Проверяем, читает
+      # ли их Go SDK сам (у Java-агента читает).
+      OTEL_TRACES_SAMPLER: "${OTEL_TRACES_SAMPLER:-}"
+      OTEL_TRACES_SAMPLER_ARG: "${OTEL_TRACES_SAMPLER_ARG:-}"
+      # Опыт статьи 8: сколько различных значений order_id вешать в лейбл
+      # метрики. Ноль (по умолчанию) — опыт выключен и поведение обычное.
+      CARDINALITY_BOMB_MAX: "${CARDINALITY_BOMB_MAX:-0}"
+      # Переключатели воспроизводимых поломок для опытов статей 2 и 3.
+      PLAIN_HTTP_CLIENT: "${PLAIN_HTTP_CLIENT:-false}"
+      PLAIN_NATS_PUBLISH: "${PLAIN_NATS_PUBLISH:-false}"
+      LOG_WITHOUT_CONTEXT: "${LOG_WITHOUT_CONTEXT:-false}"
+      # Профилирование — четвёртый сигнал, включается отдельно от первых трёх:
+      # у него свой бэкенд и своя цена, которую замеряет bench-profiling-overhead.sh.
+      PROFILING_ENABLED: "${PROFILING_ENABLED:-false}"
+      PYROSCOPE_ADDRESS: "http://pyroscope:4040"
+      DEPLOY_ENV: stand
+    ports:
+      - "9310:8080"
+    depends_on:
+      - java-backend
+      - nats
+      # Зависимости от pyroscope здесь НЕТ намеренно, и это не упущение. Во-первых,
+      # он в профиле compose и при выключенном профилировании не поднимается — с
+      # depends_on конфиг стал бы невалидным. Во-вторых, отказ профилировщика не
+      # должен задерживать старт приложения: startProfiling логирует предупреждение
+      # и продолжает, потому что без профилей сервис остаётся рабочим и наблюдаемым,
+      # а без телеметрии — нет.
+
+  pyroscope:
+    image: grafana/pyroscope:2.2.0
+    container_name: ops-pyroscope
+    # ПРОФИЛЬ compose: Pyroscope нужен только статье 6. Статьи 4 и 5 (метрики и
+    # SLO) не должны зависеть от его долгой готовности — иначе подъём стенда для
+    # них упирается в компонент, который им не нужен. Поднимается через
+    # `up.sh all otel none go|both`, который добавляет `--profile profiling`.
+    profiles: ["profiling"]
+    # Дефолты годятся: MinIO не нужен. Release notes 2.0.0 обещают отказ на старте,
+    # если -architecture.storage включает v2 без объектного хранилища, а дефолт —
+    # v1-v2-dual. Проверено: отказа нет, потому что второе изменение того же
+    # релиза переключило дефолтный backend с пустого на filesystem, и условие
+    # отказа не выполняется.
+    #
+    # ГОТОВНОСТЬ НАСТУПАЕТ ЧЕРЕЗ МИНУТЫ, и это три последовательные фазы, а не
+    # две, как я записал сначала. Замерено по телу ответа /ready:
+    #   "Metastore not ready: 14.99s before reporting readiness"
+    #   "Ingester not ready: waiting for 15s after being ready"
+    #   "Segment Writer not ready: waiting for 30s after being ready"
+    # То есть минимум 15+15+30 = 60 с чистого ожидания плюс запуск модулей; на
+    # этой машине фактически около 4 минут после старта контейнера. Поэтому
+    # up.sh ждёт его отдельно и с большим запасом, а wait_ready печатает тело
+    # ответа — без него отказ выглядит как «просто не поднялся».
+    ports:
+      - "9314:4040"
+
+  alertmanager:
+    image: prom/alertmanager:v0.33.1
+    container_name: ops-alertmanager
+    command:
+      - --config.file=/etc/alertmanager/alertmanager.yml
+      - --storage.path=/alertmanager
+      # Внешний URL Alertmanager подставляет в ссылки уведомлений. Без него в
+      # уведомлении оказывается имя контейнера, по которому снаружи не пройти.
+      - --web.external-url=http://localhost:9312
+    volumes:
+      - ./alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+    ports:
+      - "9312:9093"
+    depends_on:
+      - alert-webhook
+
+  # Приёмник уведомлений. Заглушка на netcat здесь принципиально не годится: она
+  # не отвечает HTTP-ответом, и Alertmanager считает доставку неудачной — шесть
+  # попыток и «notify retry canceled after 6 attempts» в логах. Проверено.
+  alert-webhook:
+    build:
+      context: ./alertmanager/webhook
+    container_name: ops-alert-webhook
+    environment:
+      LISTEN_ADDR: ":9099"
+    ports:
+      - "9313:9099"
+
+  # Генератор нагрузки — не сервис, а разовая задача: профиль не даёт ему
+  # подниматься вместе со стеком.
+  loadgen:
+    build:
+      context: ./loadgen
+    container_name: ops-loadgen
+    profiles: ["load"]
+    environment:
+      TARGET: http://go-frontend:8080
+    depends_on:
+      - go-frontend
+
+volumes:
+  tempo-data:
+  loki-data:
+  prometheus-data:
+  nats-data:
+  postgres-data:

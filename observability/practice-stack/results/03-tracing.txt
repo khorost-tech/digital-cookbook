@@ -1,0 +1,343 @@
+Распределённый трейсинг: пропагация, разрывы, сэмплирование
+============================================================
+Проверено 2026-08-06 на стенде practice-stack.
+
+1. Целый трейс: что в нём есть
+-------------------------------
+Один запрос по медленному пути (SKU-0004) даёт ОДИН трейс из 10 спанов и двух
+сервисов. Состав (scripts/trace-probe.sh):
+
+  go-frontend    POST /order               SERVER      вход, otelhttp
+  go-frontend    create_order              INTERNAL    ручной спан
+  go-frontend    HTTP GET                  CLIENT      otelhttp Transport
+  go-frontend    orders.created publish    PRODUCER    ручной спан вокруг NATS
+  java-backend   GET /inventory/{sku}      SERVER      агент, tomcat-10.0
+  java-backend   SELECT orders.inventory   CLIENT      агент, jdbc
+  java-backend   orders.created process    CONSUMER    агент, jnats
+  java-backend   INSERT orders.orders      CLIENT      агент, jdbc
+  java-backend   orders (x2)               CLIENT      транзакционные запросы пула
+
+Существенно: спан CONSUMER принадлежит ТОМУ ЖЕ трейсу, что и заказ. Это работает
+потому, что go-frontend переносит trace context в заголовки сообщения NATS, а
+Java-агент их извлекает. Готового переносчика для брокера нет — для HTTP есть
+propagation.HeaderCarrier, для NATS пришлось написать три метода (Get/Set/Keys).
+
+2. Разрывы: воспроизведены поломкой одной вещи
+----------------------------------------------
+Каждый опыт поднимается одной командой, поломка задаётся переменной.
+
+  ./scripts/up.sh all otel http     PLAIN_HTTP_CLIENT=true
+  ./scripts/trace-probe.sh broken
+
+  Из трейса с меткой прогона исчезли: исходящий HTTP-вызов, серверный спан Java,
+  запрос SELECT. Java-часть уехала в СВОЙ трейс — без клиентского спана нет и
+  traceparent в заголовках, принимающая сторона начинает новый трейс.
+  Асинхронная ветка при этом осталась связанной: она чинится отдельным
+  механизмом и от HTTP не зависит.
+
+  ./scripts/up.sh all otel nats     PLAIN_NATS_PUBLISH=true
+  ./scripts/trace-probe.sh broken
+
+  Из трейса исчезли: обработка события и INSERT. Теперь наоборот — HTTP-ветка
+  цела, асинхронная уехала в отдельный трейс.
+
+Вывод, который стоит запомнить: границы чинятся ПО ОТДЕЛЬНОСТИ. Работающий
+проброс через HTTP ничего не говорит о том, что трейс переживёт брокер.
+
+3. Head sampling: Go SDK читает штатные переменные
+---------------------------------------------------
+Распространённое мнение, что Go SDK (в отличие от Java-агента) не настраивается
+переменными окружения, для сэмплера НЕ подтвердилось. Проверено прямым опытом:
+
+  контроль, без OTEL_TRACES_SAMPLER            200 трейсов из 200 запросов
+  OTEL_TRACES_SAMPLER=traceidratio, ARG=0.1     27 из  200  (13,5 %)
+  то же, другой seed нагрузки                   28 из  200  (14,0 %)
+  то же, 1000 запросов                         118 из 1000  (11,8 %)
+
+Контрольная точка здесь обязательна: без неё «27 трейсов» ничего не доказывают —
+может, просто потерялись. 200 из 200 показывают, что счёт исправен.
+
+Про долю. На 200 запросах отклонение от заявленных 10 % заметное (13,5-14 %), на
+1000 — уже 11,8 %. То есть проверять сэмплирование на сотне запросов
+бессмысленно: разброс биномиального распределения того же порядка, что и сама
+доля. Заявленная доля — это про поток, а не про сотню запросов.
+
+ЛОВУШКА ИЗМЕРЕНИЯ. Первая редакция подсчёта трейсов использовала limit=200 в
+запросе к Tempo. Контроль показывал ровно 200 — и выглядел подтверждением, хотя
+на самом деле счёт упирался в лимит. На прогоне из 1000 запросов это дало бы
+«200 трейсов» независимо от истины. Лимит поднят до 5000.
+
+4. Tail sampling: политики решают после сбора трейса
+----------------------------------------------------
+Конфиг otelcol/config-tail-sampling.yaml, три политики: все ошибки, все трейсы
+дольше 100 мс, остальное — 10 %.
+
+Прогон: 400 запросов, seed 42. Точный состав плана посчитан ДО прогона:
+  SKU-0004 (медленный, pg_sleep 0.15) — 34
+  SKU-NOPE (нет товара, 404)          — 18
+  SKU-BOOM (отказ бэкенда, 502)       — 17
+  быстрые успешные                    — 331
+
+Метрики самого процессора (otelcol:8888/metrics) — источник точнее любых
+догадок:
+
+  policy=errors  sampled=35   not_sampled=370
+  policy=slow    sampled=81   not_sampled=324
+  policy=rest    sampled=33   not_sampled=372
+  global         sampled=138  not_sampled=267
+  new_trace_id_received = 405
+
+Что из этого следует:
+  - ошибки сохранены ВСЕ: 35 = 18 + 17, ровно столько было в плане;
+  - вероятностная политика дала 33 из 405 = 8,1 % при заявленных 10 % — в
+    пределах разброса;
+  - политика latency отобрала 81 трейс, хотя намеренно медленных было 34. То
+    есть 47 «быстрых» запросов реально заняли больше 100 мс — конкуренция за
+    ядра, GC, пул соединений. Это не дефект политики, а свойство стенда, и
+    именно так tail sampling и работает: он ловит фактическую латентность, а не
+    ту, которую вы задумали;
+  - 405 новых trace id при 400 запросах: лишние пять — от проверок готовности
+    java-backend, которые up.sh делает при подъёме.
+
+ЛОВУШКА ИЗМЕРЕНИЯ. Проверять политику latency запросом TraceQL {duration > 100ms}
+неверно, и это даёт правдоподобное неверное число:
+
+  {span.load.run="tail-1" && duration>100ms}         34   (это про СПАН)
+  {span.load.run="tail-1" && trace:duration>100ms}   80   (это про ТРЕЙС)
+
+Политика Collector смотрит на длительность ТРЕЙСА, поэтому сопоставлять надо со
+второй строкой: 80 против 81 у процессора. По первой строке легко заключить, что
+политика отобрала «только намеренно медленные», и ошибиться вдвое.
+
+
+5. Протоколы trace-probe.sh (сырые выводы)
+------------------------------------------
+
+Проверка целостности трейса, метка probe-1785976372
+============================================================
+трейсов с меткой прогона: 1
+
+трейс b8ffe29ddae07639362f17c2c4c71012: спанов 10, сервисов 2
+  go-frontend    POST /order                        SPAN_KIND_SERVER        181.9 мс
+  go-frontend    create_order                       SPAN_KIND_INTERNAL      180.9 мс
+  go-frontend    HTTP GET                           SPAN_KIND_CLIENT        180.0 мс
+  java-backend   GET /inventory/{sku}               SPAN_KIND_SERVER        173.6 мс
+  java-backend   SELECT orders.inventory            SPAN_KIND_CLIENT        152.2 мс
+  java-backend   orders.created process             SPAN_KIND_CONSUMER       15.1 мс
+  java-backend   INSERT orders.orders               SPAN_KIND_CLIENT         10.9 мс
+  java-backend   orders                             SPAN_KIND_CLIENT          0.8 мс
+  java-backend   orders                             SPAN_KIND_CLIENT          0.5 мс
+  go-frontend    orders.created publish             SPAN_KIND_PRODUCER        0.1 мс
+
+ОЖИДАЕМЫЕ УЧАСТКИ
+  есть   вход go-frontend
+  есть   бизнес-спан create_order
+  есть   исходящий HTTP-вызов
+  есть   публикация в NATS
+  есть   серверный спан java
+  есть   запрос SELECT
+  есть   обработка события
+  есть   запись INSERT
+
+сервисов в одном трейсе: ['go-frontend', 'java-backend']
+трейсов со спаном 'orders.created process' за окно: 20
+
+ИТОГ: трейс целый — 1 трейс, 10 спанов, 2 сервиса, все участки на месте.
+
+Проверка целостности трейса, метка probe-1785976475
+============================================================
+трейсов с меткой прогона: 1
+
+трейс adf5971876de14cc3e64cda390fc1ebc: спанов 5, сервисов 2
+  go-frontend    POST /order                        SPAN_KIND_SERVER        165.1 мс
+  go-frontend    create_order                       SPAN_KIND_INTERNAL      164.9 мс
+  java-backend   orders.created process             SPAN_KIND_CONSUMER       54.6 мс
+  java-backend   INSERT orders.orders               SPAN_KIND_CLIENT          4.2 мс
+  go-frontend    orders.created publish             SPAN_KIND_PRODUCER        0.1 мс
+
+ОЖИДАЕМЫЕ УЧАСТКИ
+  есть   вход go-frontend
+  есть   бизнес-спан create_order
+  НЕТ    исходящий HTTP-вызов
+  есть   публикация в NATS
+  НЕТ    серверный спан java
+  НЕТ    запрос SELECT
+  есть   обработка события
+  есть   запись INSERT
+
+сервисов в одном трейсе: ['go-frontend', 'java-backend']
+трейсов со спаном 'orders.created process' за окно: 20
+
+ИТОГ: разрыв воспроизведён. Трейсов с меткой 1, сервисов в них 2, недостающие участки: ['исходящий HTTP-вызов', 'серверный спан java', 'запрос SELECT']
+
+Проверка целостности трейса, метка probe-1785976558
+============================================================
+трейсов с меткой прогона: 1
+
+трейс 3e23ff3e2d5ba384aac64f5957fc8a7: спанов 7, сервисов 2
+  go-frontend    POST /order                        SPAN_KIND_SERVER        166.3 мс
+  go-frontend    create_order                       SPAN_KIND_INTERNAL      165.7 мс
+  go-frontend    HTTP GET                           SPAN_KIND_CLIENT        164.9 мс
+  java-backend   GET /inventory/{sku}               SPAN_KIND_SERVER        161.2 мс
+  java-backend   SELECT orders.inventory            SPAN_KIND_CLIENT        151.9 мс
+  java-backend   orders                             SPAN_KIND_CLIENT          0.4 мс
+  go-frontend    orders.created publish             SPAN_KIND_PRODUCER        0.0 мс
+
+ОЖИДАЕМЫЕ УЧАСТКИ
+  есть   вход go-frontend
+  есть   бизнес-спан create_order
+  есть   исходящий HTTP-вызов
+  есть   публикация в NATS
+  есть   серверный спан java
+  есть   запрос SELECT
+  НЕТ    обработка события
+  НЕТ    запись INSERT
+
+сервисов в одном трейсе: ['go-frontend', 'java-backend']
+трейсов со спаном 'orders.created process' за окно: 20
+
+ИТОГ: разрыв воспроизведён. Трейсов с меткой 1, сервисов в них 2, недостающие участки: ['обработка события', 'запись INSERT']
+
+
+6. traceparent дословно: снято с провода
+-----------------------------------------
+Способ: в сеть стенда поставлен приёмник на netcat, go-frontend направлен на него
+переменной INVENTORY_URL. То, что печатает nc, и есть запрос как он есть.
+
+С инструментированным транспортом (otelhttp.NewTransport):
+
+  GET /inventory/SKU-0001 HTTP/1.1
+  Host: hdr-catcher:8080
+  User-Agent: Go-http-client/1.1
+  Traceparent: 00-cbf7140397a7ca78a0ea9dde68a5a0ff-fc5e7dd1460a7338-01
+  Accept-Encoding: gzip
+
+Разбор значения: 00 — версия формата, cbf714... (32 hex) — trace id,
+fc5e7dd1460a7338 (16 hex) — span id родителя, 01 — флаги, младший бит означает
+«трейс сэмплирован».
+
+Тот же запрос при PLAIN_HTTP_CLIENT=true (обычный http.Client):
+
+  GET /inventory/SKU-0002 HTTP/1.1
+  Host: hdr-catcher:8080
+  User-Agent: Go-http-client/1.1
+  Accept-Encoding: gzip
+
+Заголовка нет вовсе. Принимающая сторона в этом случае не «теряет» контекст — она
+его просто никогда не видит и честно начинает новый трейс.
+Проверка целостности трейса, метка probe-1785993807
+============================================================
+трейсов с меткой прогона: 1
+
+трейс 193cadc533a50211386e5a9ec4771bff: спанов 10, сервисов 2
+  go-frontend    POST /order                        SPAN_KIND_SERVER        160.1 мс
+  go-frontend    create_order                       SPAN_KIND_INTERNAL      160.0 мс
+  go-frontend    HTTP GET                           SPAN_KIND_CLIENT        159.6 мс
+  java-backend   GET /inventory/{sku}               SPAN_KIND_SERVER        158.2 мс
+  java-backend   SELECT orders.inventory            SPAN_KIND_CLIENT        153.9 мс
+  java-backend   orders.created process             SPAN_KIND_CONSUMER        3.3 мс
+  java-backend   INSERT orders.orders               SPAN_KIND_CLIENT          2.1 мс
+  java-backend   orders                             SPAN_KIND_CLIENT          1.3 мс
+  java-backend   orders                             SPAN_KIND_CLIENT          0.3 мс
+  go-frontend    orders.created publish             SPAN_KIND_PRODUCER        0.0 мс
+
+ОЖИДАЕМЫЕ УЧАСТКИ
+  есть   вход go-frontend
+  есть   бизнес-спан create_order
+  есть   исходящий HTTP-вызов
+  есть   публикация в NATS
+  есть   серверный спан java
+  есть   запрос SELECT
+  есть   обработка события
+  есть   запись INSERT
+
+сервисов в одном трейсе: ['go-frontend', 'java-backend']
+трейсов со спаном 'orders.created process' за окно: 20
+
+ИТОГ: трейс целый — 1 трейс, 10 спанов, 2 сервиса, все участки на месте.
+
+Проверка целостности трейса, метка probe-1785993941
+============================================================
+трейсов с меткой прогона: 1
+
+трейс 288145f0e425e86a9980e66d97c29376: спанов 5, сервисов 2
+  go-frontend    POST /order                        SPAN_KIND_SERVER        168.9 мс
+  go-frontend    create_order                       SPAN_KIND_INTERNAL      168.7 мс
+  java-backend   orders.created process             SPAN_KIND_CONSUMER       77.2 мс
+  java-backend   INSERT orders.orders               SPAN_KIND_CLIENT          7.3 мс
+  go-frontend    orders.created publish             SPAN_KIND_PRODUCER        0.1 мс
+
+ОЖИДАЕМЫЕ УЧАСТКИ
+  есть   вход go-frontend
+  есть   бизнес-спан create_order
+  НЕТ    исходящий HTTP-вызов
+  есть   публикация в NATS
+  НЕТ    серверный спан java
+  НЕТ    запрос SELECT
+  есть   обработка события
+  есть   запись INSERT
+
+сервисов в одном трейсе: ['go-frontend', 'java-backend']
+трейсов со спаном 'orders.created process' за окно: 20
+
+ИТОГ: разрыв воспроизведён. Трейсов с меткой 1, сервисов в них 2, недостающие участки: ['исходящий HTTP-вызов', 'серверный спан java', 'запрос SELECT']
+
+Проверка целостности трейса, метка probe-1785994192
+============================================================
+трейсов с меткой прогона: 1
+
+трейс 74dcc791af3d1039a3279003573fb24b: спанов 7, сервисов 2
+  go-frontend    POST /order                        SPAN_KIND_SERVER        183.4 мс
+  go-frontend    create_order                       SPAN_KIND_INTERNAL      182.7 мс
+  go-frontend    HTTP GET                           SPAN_KIND_CLIENT        180.9 мс
+  java-backend   GET /inventory/{sku}               SPAN_KIND_SERVER        174.8 мс
+  java-backend   SELECT orders.inventory            SPAN_KIND_CLIENT        152.7 мс
+  java-backend   orders                             SPAN_KIND_CLIENT          0.9 мс
+  go-frontend    orders.created publish             SPAN_KIND_PRODUCER        0.0 мс
+
+ОЖИДАЕМЫЕ УЧАСТКИ
+  есть   вход go-frontend
+  есть   бизнес-спан create_order
+  есть   исходящий HTTP-вызов
+  есть   публикация в NATS
+  есть   серверный спан java
+  есть   запрос SELECT
+  НЕТ    обработка события
+  НЕТ    запись INSERT
+
+сервисов в одном трейсе: ['go-frontend', 'java-backend']
+трейсов со спаном 'orders.created process' за окно: 20
+
+ИТОГ: разрыв воспроизведён. Трейсов с меткой 1, сервисов в них 2, недостающие участки: ['обработка события', 'запись INSERT']
+
+Проверка целостности трейса, метка probe-1785996495
+============================================================
+трейсов с меткой прогона: 1
+
+трейс f7428cc72ad0cde352afe7c092767233: спанов 10, сервисов 2
+  go-frontend    POST /order                        SPAN_KIND_SERVER        161.2 мс
+  go-frontend    create_order                       SPAN_KIND_INTERNAL      161.1 мс
+  go-frontend    HTTP GET                           SPAN_KIND_CLIENT        160.8 мс
+  java-backend   GET /inventory/{sku}               SPAN_KIND_SERVER        154.6 мс
+  java-backend   SELECT orders.inventory            SPAN_KIND_CLIENT        150.9 мс
+  java-backend   orders.created process             SPAN_KIND_CONSUMER        5.8 мс
+  java-backend   INSERT orders.orders               SPAN_KIND_CLIENT          4.9 мс
+  java-backend   orders                             SPAN_KIND_CLIENT          0.4 мс
+  java-backend   orders                             SPAN_KIND_CLIENT          0.3 мс
+  go-frontend    orders.created publish             SPAN_KIND_PRODUCER        0.0 мс
+
+ОЖИДАЕМЫЕ УЧАСТКИ
+  есть   вход go-frontend
+  есть   бизнес-спан create_order
+  есть   исходящий HTTP-вызов
+  есть   публикация в NATS
+  есть   серверный спан java
+  есть   запрос SELECT
+  есть   обработка события
+  есть   запись INSERT
+
+сервисов в одном трейсе: ['go-frontend', 'java-backend']
+трейсов со спаном 'orders.created process' за окно: 20
+
+ИТОГ: трейс целый — 1 трейс, 10 спанов, 2 сервиса, все участки на месте.
+

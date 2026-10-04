@@ -1,0 +1,102 @@
+# Тот же Collector, что в config.yaml, плюс процессор tail_sampling.
+#
+# Разница между head и tail в одном: head решает НА ВХОДЕ, зная только trace id,
+# tail — после того, как собран весь трейс, и потому может смотреть на признаки:
+# была ли ошибка, сколько заняло. Платой служит буфер: Collector держит спаны в
+# памяти decision_wait и только потом решает.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  tail_sampling:
+    # Сколько ждать «хвост» трейса перед решением. Слишком мало — решение
+    # принимается по неполному трейсу и ошибка в конце запроса будет пропущена;
+    # слишком много — растёт память.
+    decision_wait: 5s
+    num_traces: 50000
+    expected_new_traces_per_sec: 200
+    policies:
+      # 1. Ошибки сохраняем ВСЕ. Это главный смысл tail sampling: редкие
+      #    ошибочные трейсы нельзя отдавать на волю вероятности.
+      - name: errors
+        type: status_code
+        status_code:
+          status_codes: [ERROR]
+
+      # 2. Медленные сохраняем все: в стенде это путь с pg_sleep(0.15).
+      - name: slow
+        type: latency
+        latency:
+          threshold_ms: 100
+
+      # 3. Остальное — десятая часть. Быстрые успешные запросы одинаковы, и
+      #    хранить их целиком незачем.
+      - name: rest
+        type: probabilistic
+        probabilistic:
+          sampling_percentage: 10
+
+  batch:
+    timeout: 1s
+    send_batch_size: 512
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+    # То же значение, что и в базовом config.yaml, и держать их согласованными
+    # обязательно. От этого параметра зависит, через сколько исчезает метрика
+    # умершего сервиса, а значит и через сколько срабатывает ServiceDown. Если
+    # оставить вариант на умолчании, тот же опыт в этом режиме даст другую
+    # задержку — и разница будет выглядеть как поведение алерта, хотя это разница
+    # в конфигурации экспортёра.
+    metric_expiration: 2m
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      # Порядок важен: tail_sampling должен стоять ДО batch, иначе решение
+      # принимается по уже разбитым на пачки спанам одного трейса.
+      processors: [memory_limiter, tail_sampling, batch]
+      exporters: [otlp/tempo]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]

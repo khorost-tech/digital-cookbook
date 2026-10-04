@@ -1,0 +1,145 @@
+Task 0 волны 2: выполнимость Pyroscope, профилирования и алертинга
+==================================================================
+Проверено 2026-08-06 на машине автора: 16 CPU, 62 ГиБ RAM, Docker 29.6.1.
+
+ВЕРДИКТ: всё влезает и работает, план идёт как написан. Оба заявленных риска не
+подтвердились, но каждый оставил по фактической детали, которую иначе пришлось бы
+искать во время работы.
+
+1. Версии
+----------
+Теги сверены с версией от самого бинарника — совпали оба.
+
+  Pyroscope      grafana/pyroscope:2.2.0     -> pyroscope, version 2.2.0 (8f5e03fbc)
+  Alertmanager   prom/alertmanager:v0.33.1   -> alertmanager, version 0.33.1
+                                                 build date 20260704-19:26:21
+  pyroscope-go        v1.4.1   (2026-07-09)
+  otel-profiling-go   v0.6.0   (2026-06-09)
+  Java-агент Pyroscope io.pyroscope:agent:2.9.0, 5,5 МБ
+
+2. Pyroscope 2.x: заявленный отказ на старте НЕ воспроизвёлся
+--------------------------------------------------------------
+Release notes v2.0.0 обещают: «Error at startup when -architecture.storage
+includes v2 and no object-storage backend is configured», а дефолт —
+`v1-v2-dual`. Значит стенд без MinIO должен был падать.
+
+Фактически Pyroscope 2.2.0 с дефолтами поднимается. В логах видно, что работают
+ОБА пути записи:
+
+  msg="initializing v2 admin (metastore-based)"
+  starting module=segment-writer
+  starting module=ingester
+
+Причина, почему отказа нет: второе изменение того же релиза гасит первое —
+«Default storage backend flipped from empty to filesystem». Filesystem считается
+настроенным хранилищем, поэтому условие отказа не выполняется. Предупреждение
+остаётся только такое:
+
+  level=warn msg="when running with storage.backend 'filesystem' it is important
+  that all replicas/components share the same filesystem"
+
+Вывод для стенда: MinIO НЕ нужен, дефолты годятся.
+
+Попутно: перейти в чистый v1 одним флагом нельзя. `-architecture.storage=v1`
+роняет процесс с внятным сообщением
+
+  failed creating pyroscope: write-path=ingester is required for v1 storage layer
+
+то есть флаги идут парой: `-architecture.storage=v1 -write-path=ingester`.
+
+3. Готовность Pyroscope наступает не сразу
+-------------------------------------------
+`/ready` отдаёт 503 около полуминуты после старта, причём с внятной причиной:
+
+  "Metastore not ready: 14.999999905s before reporting readiness"
+  затем "Ingester not ready: waiting for 15s after being ready"
+
+Две паузы по 15 с складываются. Для стенда это значит: wait_ready должен ждать
+Pyroscope дольше, чем остальные компоненты. Если ждать привычные ~20 с, получишь
+ложный вывод «не поднялся».
+
+4. Профилирование Java в контейнере: прав НЕ требует
+-----------------------------------------------------
+Ожидание было обратным: async-profiler в режиме CPU использует perf-события, а в
+контейнере они закрыты. Замеры подтверждают закрытость:
+
+  /proc/sys/kernel/perf_event_paranoid = 2   (и в контейнере, и на хосте WSL2)
+  CapEff у java-backend               = 0000000000000000  (ни одной capability)
+
+Тем не менее агент 2.9.0 профилирует без всяких прав. Причина — в его дефолте:
+
+  Config{... profilerType=ASYNC, profilingEvent=ITIMER, ...}
+  [INFO] Profiling started
+  [DEBUG] Upload attempt 1 to http://pyroscope:4040/ingest?...&format=jfr.
+          Profile: 394624 bytes
+
+ITIMER — сэмплирование по таймеру, а не через perf_events, поэтому capabilities
+не нужны. Режим CPU (perf) включается переменной PYROSCOPE_PROFILER_EVENT=cpu —
+имя важно: PYROSCOPE_PROFILING_EVENT (как можно предположить по имени поля
+конфига) НЕ читается, конфиг остаётся ITIMER.
+
+С `PYROSCOPE_PROFILER_EVENT=cpu` агент тоже сообщает "Profiling started" — и без
+прав, и с `--cap-add PERFMON`. То есть по логу отличить работающий perf от
+отката нельзя; проверять надо по данным. Для стенда достаточно дефолтного ITIMER,
+и в статье про это стоит сказать прямо.
+
+5. Как я чуть не записал «профилирование не работает»
+------------------------------------------------------
+Профили загружались (агент рапортовал байты), Pyroscope их принимал
+(pyroscope_distributor_received_compressed_bytes — 27 наблюдений), а рендер
+возвращал пустоту: «фреймов: 1, numTicks: 0». Полчаса это выглядело как разрыв
+между v1-приёмом и v2-чтением в dual-режиме.
+
+Причина оказалась в ЗАПРОСЕ. Я спрашивал тип профиля
+`process_cpu:samples:count:cpu:nanoseconds` — он существует, но принадлежит
+Go-агенту. У Java-профиля другой ID:
+
+  process_cpu:cpu:nanoseconds:cpu:nanoseconds   -> 2996 фреймов, numTicks 10710000000
+      свои фреймы: tech/khorost/observability/InventoryApplication.main
+                   tech/khorost/observability/OrderListener.subscribe
+  process_cpu:samples:count:cpu:nanoseconds     -> 1 фрейм, numTicks 0
+
+Запрос по «не тому» типу отвечает HTTP 200 с пустым флеймграфом, а не ошибкой.
+Правильный способ узнать, что есть в наличии, — спросить сам Pyroscope:
+
+  POST /querier.v1.QuerierService/ProfileTypes  -> список ID типов
+  POST /querier.v1.QuerierService/Series        -> service_name и __name__
+
+Именно так и нашлось: service_name="java-v1", __name__="process_cpu".
+
+6. Alertmanager: работает, но приёмник обязан отвечать
+-------------------------------------------------------
+Alertmanager 0.33.1 принял алерт через API (`POST /api/v2/alerts` -> 200),
+сгруппировал и доставил: приёмник получил POST /alerts с полным телом
+(receiver, status=firing, labels, annotations, groupKey, version 4).
+
+Но приёмник на `nc` не отвечает HTTP-ответом, и Alertmanager считает доставку
+неудачной:
+
+  level=WARN msg="Notify attempt failed, will retry later" attempts=1 err="EOF"
+  ... attempts=2 "connection reset by peer" ... attempts=3 "connection refused"
+  level=ERROR msg="Notify for alerts failed" err="notify retry canceled after
+    6 attempts"
+
+То есть шесть попыток и явный отказ. Для стенда это значит: webhook-приёмник надо
+писать настоящим сервисом (в плане так и заложено), а не заглушкой на netcat.
+Заодно это хороший наблюдаемый факт для статьи: недоставленный алерт виден и в
+логах, и в метриках Alertmanager.
+
+7. Память
+----------
+  Pyroscope       143,0 МиБ  (среднее из 5 снимков --no-stream)
+  Alertmanager     17,7 МиБ
+  webhook-приёмник ожидаемо единицы МиБ (Go-сервис без зависимостей)
+
+Стек волны 1 в простое занимал 438,9 МиБ на семи контейнерах. С тремя новыми
+компонентами ожидается около 600 МиБ при 62 ГиБ доступных — профили запуска по
+сигналам не нужны, поднимаем всё сразу.
+
+8. Что из этого попадёт в статьи
+---------------------------------
+- ст. 6: версионная деталь Pyroscope 2.x (два изменения релиза гасят друг друга),
+  паузы готовности, ITIMER против perf и почему в контейнере хватает первого,
+  разные ID типов профиля у Go и Java плюс способ спросить их у сервера;
+- ст. 5: поведение Alertmanager при недоступном приёмнике — шесть попыток и явный
+  отказ в логах.

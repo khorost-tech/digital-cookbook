@@ -1,0 +1,98 @@
+# НАМЕРЕННО ПЛОХОЙ конфиг: trace_id уезжает в ЛЕЙБЛ Loki.
+#
+# Нужен ровно для одного — измерить последствия. Утверждение «высокую
+# кардинальность в лейблы класть нельзя» должно опираться на замер, а не на
+# предупреждение из документации, поэтому в стенде есть способ сделать именно
+# так, как делать не надо.
+#
+# Механика: Loki строит лейблы индекса из АТРИБУТОВ РЕСУРСА пришедшего OTLP-лога.
+# Всё остальное — trace_id, span_id, severity — попадает в structured metadata и
+# индекс не раздувает. Значит, чтобы испортить индекс, достаточно переложить
+# trace_id из записи в ресурс.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # Скопировать trace_id в атрибут ЗАПИСИ.
+  #
+  # Здесь важно, чего делать нельзя: set(resource.attributes["..."]) в контексте
+  # log меняет ресурс ВСЕЙ ГРУППЫ записей, а не отдельной записи — ресурс у
+  # ResourceLogs общий. Первая редакция этого конфига делала именно так, и
+  # уникальных значений лейбла получилось шесть на 600 запросов: в атрибут
+  # попадал trace_id какой-то одной записи из пачки. Взрыв кардинальности при
+  # этом не воспроизводился, хотя конфиг «ломал честно».
+  transform/copy_trace_id:
+    error_mode: ignore
+    log_statements:
+      - context: log
+        statements:
+          - set(attributes["trace_id_label"], trace_id.string)
+
+  # А вот это и делает из атрибута записи атрибут ресурса — разбивая поток на
+  # отдельные ResourceLogs по каждому уникальному значению. Именно так и
+  # получается по стриму на trace_id.
+  groupbyattrs:
+    keys: [trace_id_label]
+
+  batch:
+    timeout: 1s
+    send_batch_size: 512
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+    # То же значение, что и в базовом config.yaml, и держать их согласованными
+    # обязательно. От этого параметра зависит, через сколько исчезает метрика
+    # умершего сервиса, а значит и через сколько срабатывает ServiceDown. Если
+    # оставить вариант на умолчании, тот же опыт в этом режиме даст другую
+    # задержку — и разница будет выглядеть как поведение алерта, хотя это разница
+    # в конфигурации экспортёра.
+    metric_expiration: 2m
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, transform/copy_trace_id, groupbyattrs, batch]
+      exporters: [otlphttp/loki]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]

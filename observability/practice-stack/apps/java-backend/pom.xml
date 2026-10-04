@@ -1,0 +1,73 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <!-- Версия Spring Boot взята из maven-metadata.xml, а НЕ из search.maven.org:
+       его индекс отстаёт (отдавал 3.5.3 от июня 2025 как последнюю, тогда как
+       фактическая latest — 4.1.0). -->
+  <parent>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-parent</artifactId>
+    <version>4.1.0</version>
+    <relativePath/>
+  </parent>
+
+  <groupId>tech.khorost.observability</groupId>
+  <artifactId>java-backend</artifactId>
+  <version>1.0.0</version>
+  <name>java-backend</name>
+  <description>Подопытный сервис склада для серии «Наблюдаемость на практике»</description>
+
+  <properties>
+    <java.version>21</java.version>
+    <jnats.version>2.26.1</jnats.version>
+  </properties>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-web</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-jdbc</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>org.postgresql</groupId>
+      <artifactId>postgresql</artifactId>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.nats</groupId>
+      <artifactId>jnats</artifactId>
+      <version>${jnats.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <!-- В Spring Boot 4 тестовые слайсы вынесены из starter-test в отдельные
+         артефакты по технологии: @WebMvcTest живёт в spring-boot-webmvc-test,
+         пакет org.springframework.boot.webmvc.test.autoconfigure. Прежний
+         org.springframework.boot.test.autoconfigure.web.servlet больше не
+         существует, и starter-test сам по себе @WebMvcTest не приносит. -->
+    <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-webmvc-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <build>
+    <plugins>
+      <plugin>
+        <groupId>org.springframework.boot</groupId>
+        <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,22 @@
+# Артефакты сборки Java: собираются в контейнере, в репозиторий не попадают.
+apps/java-backend/target/
+.env
+results/.last-load.json
+results/.bench/
+results/.cardinality/
+results/.cover-spans.txt
+results/.instance-id/
+results/.last-load-metrics.json
+results/.last-load-alerts.json
+results/.last-load-alerts-good.json
+results/.last-load-profiles.json
+results/.profbench/
+scripts/.snapshot-*.sh
+results/.last-load-health.json
+results/.last-up-sampling.log
+results/.last-load-spanmetrics.json
+apps/go-frontend/go-frontend.exe
+results/.case-*.txt
+results/.last-load-cardinality.json
+results/.last-up-card.log
+results/.last-load-we.json

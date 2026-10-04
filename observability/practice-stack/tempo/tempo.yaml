@@ -1,0 +1,41 @@
+# Tempo 3.0 в монолитном режиме (-target=all по умолчанию): всё в одном
+# процессе, хранение на локальном диске.
+#
+# ВАЖНО про версию. Tempo 3.0 — мажорный релиз с новой архитектурой записи:
+# legacy ingesters удалены, вместо них live-store и block-builder, компакция
+# управляется backend-scheduler. Конфиг из 2.x здесь НЕ заводится: секции
+# `ingester` и `compactor` на верхнем уровне отвергаются с
+#   field ingester not found in type app.Config
+#   field compactor not found in type app.Config
+# (проверено `-config.verify=true` на 3.0.2). Для переноса своих 2.x-конфигов
+# в комплекте есть `tempo-cli migrate config`.
+#
+# Единственная причина, по которой стенду не нужны эти секции: в 3.0 дефолты
+# live-store уже подходящие — max_block_duration 30s, complete_block_timeout
+# 20m. В 2.x приходилось их занижать вручную, иначе свежий трейс не находился
+# поиском ещё полчаса после прогона.
+stream_over_http_enabled: true
+
+server:
+  http_listen_port: 3200
+  log_level: warn
+
+distributor:
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+
+storage:
+  trace:
+    backend: local
+    wal:
+      path: /var/tempo/wal
+    local:
+      path: /var/tempo/blocks
+
+usage_report:
+  reporting_enabled: false

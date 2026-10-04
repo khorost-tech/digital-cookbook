@@ -1,0 +1,90 @@
+# Collector с резкой высококардинального лейбла в пайплайне (ст. 8).
+#
+# Отличается от базового config.yaml ровно одним процессором. Смысл опыта в том,
+# чтобы лейбл order_id ПРИХОДИЛ от приложения (как в жизни приходит от чужого
+# кода или библиотеки, которую не переписать), а срезался уже по дороге — до
+# того, как попадёт в хранилище и превратится в серии.
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 384
+    spike_limit_mib: 96
+
+  # Резка С АГРЕГАЦИЕЙ. Оставляем только перечисленные лейблы, а точки, которые
+  # после удаления остальных стали неразличимы, СКЛАДЫВАЕМ.
+  #
+  # Наивный вариант (`transform` + delete_key на контексте datapoint) выглядит
+  # проще и работает наполовину: серий действительно становится 2 вместо 507 —
+  # и значение счётчика при этом равно 1 вместо шестисот. Точки с одинаковыми
+  # лейблами не складываются сами: экспортёр берёт последнюю. Метрика остаётся
+  # дешёвой и НЕВЕРНОЙ, причём внешне исправной — серии есть, значения есть,
+  # график рисуется. Проверено на этом стенде, см. results/13-*.
+  #
+  # Поэтому здесь metrics_transform с aggregation_type: sum, а не удаление ключа.
+  metrics_transform/drop_order_id:
+    transforms:
+      - include: khorost_tech.orders.created
+        action: update
+        operations:
+          - action: aggregate_labels
+            label_set: [reserved]
+            aggregation_type: sum
+
+  batch:
+    timeout: 1s
+    send_batch_size: 512
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+    # Держать одинаковым во всех конфигах: расхождение выглядит как разное
+    # поведение алерта ServiceDown, хотя дело в настройке экспортёра.
+    metric_expiration: 2m
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  telemetry:
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki]
+    metrics:
+      receivers: [otlp]
+      # Порядок важен: резать надо ДО batch, иначе в пачку уедут точки, которые
+      # всё равно предстоит слить, — лишняя работа на каждом шаге дальше.
+      processors: [memory_limiter, metrics_transform/drop_order_id, batch]
+      exporters: [prometheus]

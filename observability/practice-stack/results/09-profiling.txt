@@ -1,0 +1,34 @@
+Самопроверка профилирования
+===========================
+РЕЖИМ: FRESH — хранилище Pyroscope стёрто до прогона, окно начинается
+       от старта проверки. Найденное принадлежит ТОЛЬКО этому прогону.
+Pyroscope 2.2.0, pyroscope-go 1.4.1, otel-profiling-go 0.6.0,
+агент Pyroscope для Java 2.9.0, режим сэмплирования Java: ITIMER.
+Нагрузка: 6000 запросов, успешных 5391.
+
+Тип профиля, общий для обоих языков: process_cpu:cpu:nanoseconds:cpu:nanoseconds
+  Go отдаёт также process_cpu:samples:count:cpu:nanoseconds;
+  Java по этому типу возвращает 200, один фрейм и numTicks 0.
+
+Профили
+  сервисы с данными: go-frontend java-backend pyroscope
+  go-frontend:  фреймов 1376, CreateOrder 1
+  java-backend: фреймов 3761, InventoryController 1
+  в покое (20 с без нагрузки): фреймов 1, CreateOrder 0
+  ожидание доступности профиля: Go 4с, Java 4с
+  ЗАДЕРЖКА ДОСТУПНОСТИ: замерена отдельно, составляет МИНУТЫ. Прогон 4000
+  запросов, опрос окна [начало нагрузки .. сейчас] каждые 15 с дал
+  1 фрейм на +21 с, 41 на +129 с, 110 на +292 с, 142 на +438 с — при том
+  что Pyroscope профили принял и отказов не было. Данные оседают в
+  сегментах и становятся доступны после сброса и компакции.
+
+Связка со спаном
+  метки: __name__ __period_type__ __period_unit__ __profile_type__ __service_name__ __type__ __unit__ environment pyroscope_spy service_name span_name
+  значения span_name: POST
+  профиль по span_name="POST": фреймов 936, CreateOrder 1
+  профиль по вложенному спану create_order: фреймов 1
+
+Ожидание против работы
+  pg_sleep в CPU-профиле Java: 0 (ожидается 0)
+
+ИТОГ: ГОДЕН

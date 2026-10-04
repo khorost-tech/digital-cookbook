@@ -1,0 +1,56 @@
+Версии компонентов стенда, проверено 2026-08-06
+=================================================
+
+Каждый тег сверен с версией, которую сообщает сам бинарник: тег образа не
+обязан совпадать с версией проекта (на других стендах расхождение уже
+встречалось дважды). Здесь совпали все семь.
+
+КОМПОНЕНТ            ТЕГ ОБРАЗА                                       СООБЩАЕТ О СЕБЕ                       ДАТА СБОРКИ
+OTel Collector       otel/opentelemetry-collector-contrib:0.158.0      otelcol-contrib version 0.158.0        —
+Tempo                grafana/tempo:3.0.2                              tempo, version v3.0.2 (0c4b926d0)      —
+Loki                 grafana/loki:3.7.5                               loki, version 3.7.5 (release-3.7.x)    2026-08-05
+Prometheus           prom/prometheus:v3.13.2                          prometheus, version 3.13.2             2026-07-30
+Grafana              grafana/grafana:13.1.2                           Version 13.1.2 (7f247b37a4)            —
+PostgreSQL           postgres:18.4-alpine                             postgres (PostgreSQL) 18.4             —
+NATS                 nats:2.14.4-alpine                               nats-server: v2.14.4                   —
+
+SDK и агенты (не образы):
+OTel Go SDK          go.opentelemetry.io/otel v1.45.0                  выпущен 2026-08-03
+OTel Go contrib      .../instrumentation/net/http/otelhttp v0.70.0     выпущен 2026-08-04
+OTel Java agent      opentelemetry-javaagent.jar v2.30.0               выпущен 2026-07-22, 24 МБ
+
+Проверка версий (для повтора):
+  docker run --rm otel/opentelemetry-collector-contrib:0.158.0 --version
+  MSYS_NO_PATHCONV=1 docker run --rm --entrypoint /tempo grafana/tempo:3.0.2 --version
+  docker run --rm grafana/loki:3.7.5 --version
+  docker run --rm prom/prometheus:v3.13.2 --version
+  docker run --rm --entrypoint grafana grafana/grafana:13.1.2 server --version
+  docker run --rm postgres:18.4-alpine postgres --version
+  docker run --rm nats:2.14.4-alpine --version
+
+ВАЖНО про Tempo 3.0
+-------------------
+Взята линия 3.x, а не 2.x, хотя у Grafana параллельно поддерживаются обе
+(2.10.7 от 2026-06-12 и 2.9.4 от 2026-07-24 вышли ПОЗЖЕ, чем 3.0.2 от
+2026-06-09 — это ветки поддержки, а не более новые версии).
+
+Tempo 3.0 — мажорная смена архитектуры записи: legacy ingesters удалены,
+вместо них live-store и block-builder, компакция управляется
+backend-scheduler. Конфиг 2.x не заводится:
+
+  $ tempo -config.file=tempo.yaml -config.verify=true
+  failed parsing config: yaml: unmarshal errors:
+    line 19: field ingester not found in type app.Config
+    line 26: field compactor not found in type app.Config
+
+Для переноса своих конфигов в комплекте есть `tempo-cli migrate config`.
+Стенду секции не нужны вовсе: дефолты live-store в 3.0 уже подходящие
+(max_block_duration 30s, complete_block_timeout 20m), тогда как в 2.x их
+приходилось занижать вручную, иначе свежий трейс не находился поиском
+ещё полчаса после прогона.
+
+Инструменты сборки (машина автора)
+----------------------------------
+Go 1.26.3 в хосте (windows/amd64).
+WSL: дистрибутив Ubuntu-24.04 (не «khap» — так называется пользователь),
+  JDK 21 и 25 в ~/jdk*, java по умолчанию 17.0.19, Maven 3.9.16, cargo есть.

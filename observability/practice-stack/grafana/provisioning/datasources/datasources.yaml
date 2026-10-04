@@ -1,0 +1,72 @@
+# Источники данных задаются provisioning, а не руками в UI: ручная настройка не
+# воспроизводится читателем и не переживает пересоздание контейнера.
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    uid: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    jsonData:
+      # Прыжок из точки метрики в трейс (ст. 7). Работает только если exemplar
+      # дошёл до Prometheus, а для этого нужны ещё два условия помимо этой
+      # настройки: --enable-feature=exemplar-storage у Prometheus и
+      # enable_open_metrics у экспортёра Collector. Настройка здесь — последнее
+      # звено, а не единственное: без первых двух панель просто не покажет
+      # ромбиков exemplars, ничего не сообщив о причине.
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          datasourceUid: tempo
+
+  - name: Tempo
+    type: tempo
+    uid: tempo
+    access: proxy
+    url: http://tempo:3200
+    jsonData:
+      # Переход из трейса в логи того же запроса. Связка по trace_id, окно
+      # расширено на пять минут в обе стороны — иначе лог, записанный на границе
+      # спана, не попадает в выборку.
+      tracesToLogsV2:
+        datasourceUid: loki
+        spanStartTimeShift: -5m
+        spanEndTimeShift: 5m
+        filterByTraceID: true
+      # Переход из спана в профиль. Работает только если в профиле есть
+      # pprof-метки со span_id — их навешивает обёртка otelpyroscope в
+      # приложении. Без обёртки ссылка будет, а профиля по ней не окажется.
+      tracesToProfiles:
+        datasourceUid: pyroscope
+        profileTypeId: "process_cpu:cpu:nanoseconds:cpu:nanoseconds"
+        tags:
+          - key: service.name
+            value: service_name
+      serviceMap:
+        datasourceUid: prometheus
+
+  - name: Loki
+    type: loki
+    uid: loki
+    access: proxy
+    url: http://loki:3100
+    jsonData:
+      # Обратное направление: из строки лога в трейс. trace_id приходит из OTLP
+      # как structured metadata, поэтому matcherType: label, а не разбор тела
+      # регулярным выражением.
+      derivedFields:
+        - name: TraceID
+          matcherType: label
+          matcherRegex: trace_id
+          # $$ — экранирование для provisioning Grafana: одиночный $ она пытается
+          # раскрыть как переменную окружения.
+          url: "$${__value.raw}"
+          datasourceUid: tempo
+          urlDisplayLabel: Открыть трейс
+
+  - name: Pyroscope
+    type: grafana-pyroscope-datasource
+    uid: pyroscope
+    access: proxy
+    url: http://pyroscope:4040

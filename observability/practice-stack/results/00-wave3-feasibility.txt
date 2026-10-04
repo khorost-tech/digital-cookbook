@@ -1,0 +1,161 @@
+Выполнимость волны 3: span-метрики, exemplars, генератор Tempo
+================================================================
+Дата: 2026-08-19. Стенд поднят режимом `./scripts/up.sh all spanmetrics`,
+нагрузка 200 запросов, seed 42, concurrency 4.
+
+Задача проверки — узнать ДО написания статей, собирается ли цепочка exemplars
+и настраивается ли второй генератор span-метрик. Оба ответа влияли на состав
+статьи 7, поэтому проверка идёт первой.
+
+
+1. ВЕРСИИ: ТЕГ ОБРАЗА ПРОТИВ БИНАРНИКА
+---------------------------------------
+Сверка обязательна: расхождение тега и фактической версии в этом стенде уже
+встречалось.
+
+  otel/opentelemetry-collector-contrib:0.158.0 -> otelcol-contrib version 0.158.0
+  grafana/tempo:3.0.2                          -> tempo, version v3.0.2 (revision 0c4b926d0)
+  prom/prometheus:v3.13.2                      -> prometheus, version 3.13.2 (revision bb5dff00)
+
+Все три совпадают. Расхождений нет.
+
+
+2. КОННЕКТОРЫ НА МЕСТЕ
+-----------------------
+`otelcol components` в образе 0.158.0 отдаёт среди коннекторов: span_metrics,
+service_graph, exceptions, count, signal_to_metrics. Нужные два присутствуют.
+
+ВНИМАНИЕ на имя. В конфиге коннектор объявляется как `spanmetrics` (без
+подчёркивания), хотя в списке компонентов он называется `span_metrics`. Конфиг
+с `span_metrics:` валидатор не принимает.
+
+
+3. EXEMPLARS: ЦЕПОЧКА СОБИРАЕТСЯ — ГОДЕН
+-----------------------------------------
+Три условия, каждое из которых ломает цепочку МОЛЧА (метрики при этом
+исправны, и по ним отказ не виден):
+
+  1) prometheus, флаг            --enable-feature=exemplar-storage
+  2) exporters.prometheus        enable_open_metrics: true
+  3) connectors.spanmetrics      exemplars.enabled: true
+
+При всех трёх выполненных:
+
+  /api/v1/query_exemplars по traces_span_metrics_duration_milliseconds_bucket
+    серий с exemplars: 32
+    exemplars всего:   32
+    пример labels:     {'span_id': '9498cc6147b2c6c2',
+                        'trace_id': '6bafcccf084c9c2543a814f35a2e38c7'}
+    значение:          8.092924
+
+Второе звено — резолв trace_id в Tempo — тоже работает:
+
+  GET /api/traces/6bafcccf084c9c2543a814f35a2e38c7 -> HTTP 200, 9853 байта
+  сервисов в трейсе: go-frontend, java-backend
+  операций: POST /order, create_order, GET /inventory/{sku}, HTTP GET,
+            SELECT orders.inventory, INSERT orders.orders,
+            orders.created publish, orders.created process, orders
+
+То есть прыжок из точки метрики ведёт в осмысленный трейс, а не в пустой экран.
+
+ЛОВУШКА ОКРУЖЕНИЯ (стоила одного ложного вывода). `innet -o файл` пишет файл
+ВНУТРИ контейнера curl, на хосте его нет. И отдельно: $PYTHON_BIN — это python
+для Windows, для него пути вида /tmp/... не существуют. Оба следствия
+одинаковы: скрипт выглядит сломанным, хотя данные получены. Работать через
+stdout и stdin.
+
+
+4. ГЕНЕРАТОР МЕТРИК TEMPO: НАСТРАИВАЕТСЯ — ГОДЕН
+-------------------------------------------------
+Конфиг tempo/tempo-metrics-generator.yaml, включается переменной TEMPO_CONFIG
+из .env (тот же приём, что у конфигов Collector).
+
+Существенно: процессоры генератора включаются НЕ в блоке metrics_generator, а
+в overrides.defaults.metrics_generator.processors. Без этой секции генератор
+настроен, стартует без ошибок и НИЧЕГО НЕ ДЕЛАЕТ — молча.
+
+Приёмнику remote-write нужен флаг Prometheus --web.enable-remote-write-receiver.
+
+Метрики появились (лейбл source=tempo задан через registry.external_labels,
+иначе серии двух генераторов было бы не различить):
+
+  traces_spanmetrics_calls_total, traces_spanmetrics_latency_{sum,count,bucket},
+  traces_spanmetrics_size_total,
+  traces_service_graph_request_total, traces_service_graph_request_failed_total,
+  traces_service_graph_request_{client,server}_seconds_{sum,count,bucket}
+
+`-config.verify` у Tempo 3.0.2 НЕТ (флаг выводит справку и код 2). Конфиг
+проверяется только подъёмом.
+
+
+5. ГЛАВНАЯ НАХОДКА: ДВА ГЕНЕРАТОРА НЕСОВМЕСТИМЫ ПО ФОРМЕ
+---------------------------------------------------------
+Источник данных у путей один — те же спаны. Но результат отличается во всём,
+что нужно дашборду:
+
+  ЧТО              COLLECTOR                          TEMPO
+  имя              traces_span_metrics_calls_total    traces_spanmetrics_calls_total
+  латентность      ..._duration_milliseconds_*        ..._latency_*
+  единица          миллисекунды                       СЕКУНДЫ
+  границы бакетов  5,10,25,50,100,250,500,1000,2000   0.002,0.004,...,16.384
+                   (заданы явно в конфиге)            (дефолт, экспоненциальные)
+  имя сервиса      service_name                       service
+  число лейблов    33                                 7
+
+Практическое следствие: дашборд или алерт, написанный на одном пути, на другом
+НЕ РАБОТАЕТ. Не совпадает ни имя метрики, ни единица измерения, ни даже имя
+лейбла с сервисом. Это не деталь оформления: переключение пути генерации
+требует переписывания всего, что поверх.
+
+
+6. ВТОРАЯ НАХОДКА: КОНВЕНЦИЯ СОБЛЮДАЕТСЯ НЕРАВНОМЕРНО
+------------------------------------------------------
+В конфиг заданы размерности http.route и http.response.status_code. Доехали:
+
+  span_name=POST /order            http_route=ОТСУТСТВУЕТ  status=201
+  span_name=POST /order            http_route=ОТСУТСТВУЕТ  status=404
+  span_name=POST /order            http_route=ОТСУТСТВУЕТ  status=502
+  span_name=GET /inventory/{sku}   http_route=/inventory/{sku}  status=200
+
+У Java-сервиса (агент OTel) http.route проставлен, у Go-сервиса — нет.
+Соглашение существует и одинаково понимается обеими сторонами, но заполняет
+атрибут только одна. Дашборд «латентность по маршрутам» для Go-сервиса окажется
+пустым — при полностью исправной телеметрии.
+
+
+7. ТРЕТЬЯ НАХОДКА: МОСТИК К СТАТЬЕ 8
+-------------------------------------
+У метрик Collector 33 лейбла против 7 у Tempo. Причина — включённый
+resource_to_telemetry_conversion: КАЖДЫЙ ресурсный атрибут становится лейблом.
+Среди них:
+
+  container_id, host_name, os_description, os_version,
+  process_command_args, process_executable_path, process_pid,
+  service_instance_id, telemetry_distro_version, ...
+
+process_pid и service_instance_id меняются при каждом перезапуске процесса —
+то есть каждый рестарт сервиса порождает полный новый набор серий. Это ровно
+тот механизм, который в волне 1 измерен на лейблах Loki
+(results/05-instance-id-labels.txt), но здесь он работает на МЕТРИКАХ, где
+цена серии выше.
+
+
+8. ПАМЯТЬ
+----------
+  без генератора Tempo: 1340 МиБ на 11 контейнеров
+  с генератором:        1590 МиБ (+250, из них Tempo +260: 244 -> 504 МиБ)
+
+Серий в Prometheus после прогона 200 запросов: 4186 всего, из них
+span-метрики Collector 325, span-метрики Tempo 266, service graph 117.
+
+Запас есть, отдельный режим «без генератора» ради экономии не нужен.
+
+
+ВЕРДИКТ
+--------
+ГОДЕН по всем пунктам. Цепочка exemplars собирается полностью, оба генератора
+span-метрик работают одновременно на одном потоке спанов, памяти хватает.
+
+План статьи 7 не меняется, но усиливается: несовместимость двух генераторов по
+форме (п. 5) и неравномерность конвенций (п. 6) — материал, которого в каркасе
+не было, и он практичнее, чем «как включить коннектор».

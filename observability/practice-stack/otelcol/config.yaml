@@ -1,0 +1,85 @@
+# OTel Collector как единая точка приёма телеметрии стенда.
+#
+# Приложения не знают про Tempo, Loki и Prometheus: они говорят только OTLP в
+# Collector, а он разводит три сигнала по трём бэкендам. Это то самое разделение,
+# ради которого Collector и ставят (подробнее — в статье про Collector).
+receivers:
+  otlp:
+    protocols:
+      # Оба протокола подняты намеренно: в статье 1 сравниваем gRPC и HTTP.
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  # Порядок в пайплайне важен: memory_limiter первым, batch последним.
+  memory_limiter:
+    check_interval: 1s
+    limit_mib: 384
+    spike_limit_mib: 96
+
+  batch:
+    timeout: 1s
+    send_batch_size: 512
+
+exporters:
+  otlp/tempo:
+    endpoint: tempo:4317
+    tls:
+      insecure: true
+
+  # Loki 3.x принимает OTLP-логи на /otlp (эндпоинт, а не путь до v1/logs:
+  # otlphttp сам добавляет /v1/logs).
+  otlphttp/loki:
+    endpoint: http://loki:3100/otlp
+
+  # Метрики отдаём на скрейп Prometheus, а не пишем remote write: у pull-модели
+  # видно, что именно экспонируется, и не нужен приёмник на стороне Prometheus.
+  prometheus:
+    endpoint: 0.0.0.0:8889
+    resource_to_telemetry_conversion:
+      enabled: true
+    # Сколько экспортёр продолжает отдавать метрику ПОСЛЕ того, как перестал её
+    # получать. Задано ЯВНО, и это не косметика: от этого параметра напрямую
+    # зависит, через сколько заметен умерший сервис.
+    #
+    # Приложения пушат по OTLP, их никто не скрейпит, поэтому привычного `up` по
+    # таргету здесь нет. Признак жизни — сам факт наличия метрик рантайма. Пока
+    # экспортёр отдаёт последнее известное значение, мёртвый сервис выглядит
+    # живым, и алерт ServiceDown молчит.
+    #
+    # 2m вместо умолчания: на стенде важно, чтобы опыт «останови сервис и дождись
+    # алерта» укладывался в разумное время. В проде значение выбирают по
+    # обратному критерию — насколько долгую паузу в экспорте считать нормальной;
+    # слишком малое даёт ложные «сервис умер» при заминке отправки.
+    metric_expiration: 2m
+
+extensions:
+  health_check:
+    endpoint: 0.0.0.0:13133
+
+service:
+  extensions: [health_check]
+  telemetry:
+    # Формат 0.158: metrics.address удалён, вместо него readers.
+    metrics:
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: 0.0.0.0
+                port: 8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlp/tempo]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [otlphttp/loki]
+    metrics:
+      receivers: [otlp]
+      processors: [memory_limiter, batch]
+      exporters: [prometheus]
