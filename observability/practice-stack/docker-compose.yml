@@ -152,6 +152,10 @@ services:
       # -javaagent:/app/opentelemetry-javaagent.jar
       JAVA_TOOL_OPTIONS: "${JAVA_BACKEND_JAVA_TOOL_OPTIONS:-}"
       OTEL_SERVICE_NAME: java-backend
+      # Заголовок метки прогона — в атрибут серверного спана
+      # (http.request.header.x-load-run): по нему trace-probe.sh находит часть
+      # запроса на Java-стороне независимо от того, дошёл ли trace context.
+      OTEL_INSTRUMENTATION_HTTP_SERVER_CAPTURE_REQUEST_HEADERS: X-Load-Run
       OTEL_EXPORTER_OTLP_ENDPOINT: "${OTEL_HTTP_ENDPOINT:-http://otelcol:4318}"
       OTEL_RESOURCE_ATTRIBUTES: "service.version=1.0.0,deployment.environment=stand"
       # Агент Pyroscope настраивается только переменными; -javaagent для него

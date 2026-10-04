@@ -27,7 +27,7 @@ propagation.HeaderCarrier, для NATS пришлось написать три 
 Каждый опыт поднимается одной командой, поломка задаётся переменной.
 
   ./scripts/up.sh all otel http     PLAIN_HTTP_CLIENT=true
-  ./scripts/trace-probe.sh broken
+  ./scripts/trace-probe.sh http
 
   Из трейса с меткой прогона исчезли: исходящий HTTP-вызов, серверный спан Java,
   запрос SELECT. Java-часть уехала в СВОЙ трейс — без клиентского спана нет и
@@ -36,10 +36,15 @@ propagation.HeaderCarrier, для NATS пришлось написать три 
   механизмом и от HTTP не зависит.
 
   ./scripts/up.sh all otel nats     PLAIN_NATS_PUBLISH=true
-  ./scripts/trace-probe.sh broken
+  ./scripts/trace-probe.sh nats
 
   Из трейса исчезли: обработка события и INSERT. Теперь наоборот — HTTP-ветка
   цела, асинхронная уехала в отдельный трейс.
+
+  (Прогоны 2026-10-04 с проверкой по связке частей — в конце файла: оторванная
+  часть найдена независимо от trace context — Java-часть по X-Load-Run, часть
+  подписчика по order_id через лог в Loki — и лежит в своём трейсе с ровно
+  ожидаемыми участками. Раньше проба засчитывала любое отсутствие участка.)
 
 Вывод, который стоит запомнить: границы чинятся ПО ОТДЕЛЬНОСТИ. Работающий
 проброс через HTTP ничего не говорит о том, что трейс переживёт брокер.
@@ -340,4 +345,79 @@ fc5e7dd1460a7338 (16 hex) — span id родителя, 01 — флаги, мл�
 трейсов со спаном 'orders.created process' за окно: 20
 
 ИТОГ: трейс целый — 1 трейс, 10 спанов, 2 сервиса, все участки на месте.
+
+Проверка целостности трейса, режим whole, метка probe-1791116042, order_id ord-SKU-0004-1
+========================================================================
+исходных трейсов (по load.run):            1
+трейсов серверной части java (X-Load-Run): 1
+trace_id подписчика из Loki (по order_id): 1
+
+исходный: трейс 47ed076448e4e85a3dc923ec7cf74f78, спанов 8, сервисов 2
+  go-frontend    POST /order                        SPAN_KIND_SERVER        155.5 мс
+  go-frontend    create_order                       SPAN_KIND_INTERNAL      155.5 мс
+  go-frontend    HTTP GET                           SPAN_KIND_CLIENT        155.3 мс
+  java-backend   GET /inventory/{sku}               SPAN_KIND_SERVER        154.2 мс
+  java-backend   SELECT orders.inventory            SPAN_KIND_CLIENT        151.2 мс
+  java-backend   orders.created process             SPAN_KIND_CONSUMER       14.2 мс
+  java-backend   INSERT orders.orders               SPAN_KIND_CLIENT          0.6 мс
+  go-frontend    orders.created publish             SPAN_KIND_PRODUCER        0.0 мс
+
+РАСКЛАДКА
+  серверная часть java в исходном трейсе: да (ожидается да)
+  подписчик NATS в исходном трейсе:       да (ожидается да)
+  участки исходного трейса: ['бизнес-спан create_order', 'вход go-frontend', 'запись INSERT', 'запрос SELECT', 'исходящий HTTP-вызов', 'обработка события', 'публикация в NATS', 'серверный спан java']
+  ожидались ровно:          ['бизнес-спан create_order', 'вход go-frontend', 'запись INSERT', 'запрос SELECT', 'исходящий HTTP-вызов', 'обработка события', 'публикация в NATS', 'серверный спан java']
+
+ИТОГ: трейс целый — все участки запроса в одном трейсе.
+
+Проверка целостности трейса, режим nats, метка probe-1791116079, order_id ord-SKU-0004-1
+========================================================================
+исходных трейсов (по load.run):            1
+трейсов серверной части java (X-Load-Run): 1
+trace_id подписчика из Loki (по order_id): 1
+
+исходный: трейс 121c50e72d67552bc54228d02cc8c6e6, спанов 6, сервисов 2
+  go-frontend    POST /order                        SPAN_KIND_SERVER        155.4 мс
+  go-frontend    create_order                       SPAN_KIND_INTERNAL      155.3 мс
+  go-frontend    HTTP GET                           SPAN_KIND_CLIENT        155.2 мс
+  java-backend   GET /inventory/{sku}               SPAN_KIND_SERVER        153.9 мс
+  java-backend   SELECT orders.inventory            SPAN_KIND_CLIENT        151.5 мс
+  go-frontend    orders.created publish             SPAN_KIND_PRODUCER        0.0 мс
+
+подписчик NATS: трейс b86e322dcedc6c05a57c49c0e60094b5, спанов 2, сервисов 1
+  java-backend   orders.created process             SPAN_KIND_CONSUMER       14.3 мс
+  java-backend   INSERT orders.orders               SPAN_KIND_CLIENT          0.5 мс
+
+РАСКЛАДКА
+  серверная часть java в исходном трейсе: да (ожидается да)
+  подписчик NATS в исходном трейсе:       нет (ожидается нет)
+  участки исходного трейса: ['бизнес-спан create_order', 'вход go-frontend', 'запрос SELECT', 'исходящий HTTP-вызов', 'публикация в NATS', 'серверный спан java']
+  ожидались ровно:          ['бизнес-спан create_order', 'вход go-frontend', 'запрос SELECT', 'исходящий HTTP-вызов', 'публикация в NATS', 'серверный спан java']
+
+ИТОГ: разрыв на NATS доказан — подписчик найден по order_id в отдельном трейсе с ровно ожидаемыми участками.
+
+Проверка целостности трейса, режим http, метка probe-1791116132, order_id ord-SKU-0004-1
+========================================================================
+исходных трейсов (по load.run):            1
+трейсов серверной части java (X-Load-Run): 1
+trace_id подписчика из Loki (по order_id): 1
+
+исходный: трейс 59a7dd509d2f66ff8b2c9cb63c1f4284, спанов 5, сервисов 2
+  go-frontend    POST /order                        SPAN_KIND_SERVER        154.8 мс
+  go-frontend    create_order                       SPAN_KIND_INTERNAL      154.7 мс
+  java-backend   orders.created process             SPAN_KIND_CONSUMER       13.9 мс
+  java-backend   INSERT orders.orders               SPAN_KIND_CLIENT          0.5 мс
+  go-frontend    orders.created publish             SPAN_KIND_PRODUCER        0.0 мс
+
+серверная часть java: трейс 3f906d167258813189caadab36c2738f, спанов 2, сервисов 1
+  java-backend   GET /inventory/{sku}               SPAN_KIND_SERVER        153.3 мс
+  java-backend   SELECT orders.inventory            SPAN_KIND_CLIENT        150.7 мс
+
+РАСКЛАДКА
+  серверная часть java в исходном трейсе: нет (ожидается нет)
+  подписчик NATS в исходном трейсе:       да (ожидается да)
+  участки исходного трейса: ['бизнес-спан create_order', 'вход go-frontend', 'запись INSERT', 'обработка события', 'публикация в NATS']
+  ожидались ровно:          ['бизнес-спан create_order', 'вход go-frontend', 'запись INSERT', 'обработка события', 'публикация в NATS']
+
+ИТОГ: разрыв на HTTP-границе доказан — часть java найдена по X-Load-Run в отдельном трейсе с ровно ожидаемыми участками.
 

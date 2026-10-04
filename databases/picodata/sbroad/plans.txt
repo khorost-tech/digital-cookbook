@@ -1,0 +1,69 @@
+=== 1. точечный запрос по ключу шардирования ===
+projection ("products"."id"::int -> "id", "products"."title"::string -> "title")
+    selection "products"."id"::int = 42::int
+        scan "products"
+execution options:
+    sql_vdbe_opcode_max = 5000000
+    sql_motion_row_max = 5000
+buckets = [2426]
+
+=== 2. тот же запрос по обычной колонке ===
+projection ("products"."id"::int -> "id")
+    selection "products"."category"::string = 'tools'::string
+        scan "products"
+execution options:
+    sql_vdbe_opcode_max = 5000000
+    sql_motion_row_max = 5000
+buckets = [1-3000]
+
+=== 3. агрегация: две фазы и motion между ними ===
+projection ("gr_expr_1"::string -> "category", sum(("count_1"::int))::int -> "col_1")
+    group by ("gr_expr_1"::string) output: ("gr_expr_1"::string -> "gr_expr_1", "count_1"::int -> "count_1")
+        motion [policy: full, program: ReshardIfNeeded]
+            projection ("products"."category"::string -> "gr_expr_1", count((*::int))::int -> "count_1")
+                group by ("products"."category"::string) output: ("products"."id"::int -> "id", "products"."bucket_id"::int -> "bucket_id", "products"."sku"::string -> "sku", "products"."title"::string -> "title", "products"."price_cents"::int -> "price_cents", "products"."category"::string -> "category", "products"."views"::int -> "views")
+                    scan "products"
+execution options:
+    sql_vdbe_opcode_max = 5000000
+    sql_motion_row_max = 5000
+buckets = [1-3000]
+
+=== 4. соединение ПО ключу шардирования — коллокация, motion нет ===
+projection ("a"."id"::int -> "id")
+    selection "a"."id"::int < 10::int
+        join on "a"."id"::int = "b"."id"::int
+            scan "products" -> "a"
+            scan "products" -> "b"
+execution options:
+    sql_vdbe_opcode_max = 5000000
+    sql_motion_row_max = 5000
+buckets = [1-3000]
+
+=== 5. соединение по обычной колонке — motion full ===
+projection ("a"."id"::int -> "id")
+    selection "a"."id"::int < 10::int
+        join on "a"."category"::string = "b"."category"::string
+            scan "products" -> "a"
+            motion [policy: full, program: ReshardIfNeeded]
+                projection ("b"."id"::int -> "id", "b"."bucket_id"::int -> "bucket_id", "b"."sku"::string -> "sku", "b"."title"::string -> "title", "b"."price_cents"::int -> "price_cents", "b"."category"::string -> "category", "b"."views"::int -> "views")
+                    scan "products" -> "b"
+execution options:
+    sql_vdbe_opcode_max = 5000000
+    sql_motion_row_max = 5000
+buckets = [1-3000]
+
+=== 6. цена переноса: тот же запрос на объёме ===
+psql:<stdin>:1: ERROR:  sbroad: box error: ProcLua: {"code":32,"base_type":"ClientError","type":"ClientError","message":"Error on replicaset ec672d9d-c2b9-468b-9eb5-b2cbdd3eb09c: Failed to execute '.proc_sql_execute': sbroad: unexpected number of values: Exceeded maximum number of rows (5000) in virtual table: 99776","trace":[{"file":"vshard\/error.lua","line":284}]}
+ok: отказ, и причина — лимит переноса sql_motion_row_max (код 3)
+
+=== 7. тот же запрос с поднятым для него лимитом переноса ===
+psql:<stdin>:1: ERROR:  sbroad: box error: ProcLua: {"code":32,"base_type":"ClientError","type":"ClientError","message":"Error on replicaset ec672d9d-c2b9-468b-9eb5-b2cbdd3eb09c: Failed to execute '.proc_sql_execute': sbroad: Reached a limit on max executed vdbe opcodes. Limit: 5000000","trace":[{"file":"vshard\/error.lua","line":284}]}
+ok: лимит переноса снят, но запрос упёрся в следующий предел — sql_vdbe_opcode_max (код 3)
+    (эталон PostgreSQL для этого запроса: 66638543 строк в соединении — count(*) по ним)
+
+=== 8. три соединения на одном фильтре a.id < 10: что именно стоит дорого ===
+  по id (коллокация)           лимиты по умолчанию -> ok:9         (PostgreSQL: 9)
+  по sku (без коллокации, 1:1) лимиты по умолчанию -> motion       (PostgreSQL: 9)
+  по sku (без коллокации, 1:1) SQL_MOTION_ROW_MAX = 200000    -> ok:9         (PostgreSQL: 9)
+  по category (без коллокации) лимиты по умолчанию -> motion       (PostgreSQL: 301147)
+  по category (без коллокации) SQL_MOTION_ROW_MAX = 200000    -> vdbe         (PostgreSQL: 301147)

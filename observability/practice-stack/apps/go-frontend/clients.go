@@ -51,6 +51,12 @@ func (h *httpInventory) Lookup(ctx context.Context, sku string) (Item, error) {
 	if err != nil {
 		return Item{}, err
 	}
+	// Метка прогона уходит обычным бизнес-заголовком, а не trace context: по ней
+	// trace-probe.sh находит серверный спан Java и при разорванном трейсе, когда
+	// traceparent не передан. Разрыв она не маскирует — trace_id она не несёт.
+	if run, ok := ctx.Value(loadRunKey{}).(string); ok && run != "" {
+		req.Header.Set("X-Load-Run", run)
+	}
 
 	resp, err := h.client.Do(req)
 	if err != nil {
