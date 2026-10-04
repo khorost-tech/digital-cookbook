@@ -27,6 +27,12 @@ if [ "$VERSION" != "$CARGO_VERSION" ]; then
     exit 1
 fi
 
+# Образ сборщика собирается из builder/Dockerfile при первом запуске: в
+# реестрах его нет, и без этого шага docker run падает с «pull access denied».
+if ! docker image inspect picodata-plugin-build:8.10 >/dev/null 2>&1; then
+    docker build -t picodata-plugin-build:8.10 "${STAND_DIR_DOCKER}/builder"
+fi
+
 docker run --rm \
     -v "${STAND_DIR_DOCKER}/plugin:/src" \
     -v picodata-cargo-registry:/root/.cargo/registry \

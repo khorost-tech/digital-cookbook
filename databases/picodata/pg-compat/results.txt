@@ -1,0 +1,23 @@
+=== 1. совпадение результатов с PostgreSQL ===
+  count_all              совпало (1 строк)
+  count_tools            совпало (1 строк)
+  count_by_category      совпало (6 строк)
+  min_max_id             совпало (1 строк)
+  sum_price              совпало (1 строк)
+  distinct_categories    совпало (6 строк)
+  point_lookup           совпало (1 строк)
+  range_scan             совпало (11 строк)
+  like_prefix            совпало (1 строк)
+  top_by_views           совпало (10 строк)
+  case_expr              совпало (1 строк)
+
+=== 2. постусловия DML ===
+  после INSERT: строк ok (2)
+  после INSERT: значение ok (a)
+  после UPDATE: новое значение ok (z)
+  после UPDATE: соседняя строка ok (b)
+  после DELETE: строк ok (1)
+  после DELETE: строки нет ok (0)
+  после TRUNCATE: строк ok (0)
+
+ok: все запросы выполнились, результаты совпадают с PostgreSQL, постусловия DML выполняются

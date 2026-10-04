@@ -91,7 +91,7 @@ def main() -> None:
     print("смотрят только на факт отказа: «принято» здесь означает «не отвергнуто»,")
     print("а не «даёт тот же ответ, что PostgreSQL». Совпадение результатов и")
     print("постусловия DML проверяются отдельно — `results.sh`, вывод в")
-    print("`out/results.txt`.\n")
+    print("`results.txt`.\n")
     print("| Проба | Группа | " + " | ".join(names) + " |")
     print("|---|---|" + "---|" * len(names))
 

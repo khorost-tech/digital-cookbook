@@ -1,5 +1,5 @@
 # Прогон 04-index-gin.sql (PostgreSQL 18.4, 2026-07-22)
-# GiN → Bitmap Index Scan + Recheck Cond (индекс хранит ключи/лексемы, не строки).
+# GiN → Bitmap Index Scan под Bitmap Heap Scan; Recheck Cond печатается у любого Bitmap Heap Scan.
 
 === GiN полнотекст (search @@ to_tsquery('russian','ноутбук & игровой')) ===
  Bitmap Heap Scan on products  (cost=22.07..1240.72 rows=1534 width=42)
@@ -20,9 +20,11 @@
  Execution Time: 3.599 ms
 # Тот же тип узла (Bitmap Index Scan + Recheck), другой оператор (@>).
 
-=== почему Recheck: что лежит в индексе ===
+=== что лежит в индексе ===
       title      |        search
 -----------------+-----------------------
  ноутбук игровой | 'игров':2 'ноутбук':1
-# GiN индексирует лексемы с позициями, а не текст. Совпадение по ключам
-# перепроверяется на строке (Recheck Cond) — отсюда узел над Bitmap Heap Scan.
+# GiN индексирует лексемы, а не текст: 'игровой' → 'игров' (стемминг).
+# Recheck Cond — условие перепроверки на случай lossy-карты (work_mem) или
+# неточного ответа индекса (для tsvector — запросы с весами). К стеммингу
+# не относится: обычный & без весов GiN отвечает точно.

@@ -15,11 +15,11 @@
     ./run.sh sql/01-explain-basics.sql  # анатомия EXPLAIN(ANALYZE,BUFFERS)
     ./run.sh sql/02-scan-types.sql      # Seq / Index / Index Only / Bitmap scan
     ./run.sh sql/03-index-btree.sql     # btree в плане: Index Cond, порядок без Sort
-    ./run.sh sql/04-index-gin.sql       # GiN: Bitmap Index Scan + Recheck Cond
+    ./run.sh sql/04-index-gin.sql       # GiN: Bitmap Index Scan, что лежит в индексе
     ./run.sh sql/05-index-gist.sql      # GiST range (&&) и kNN (ORDER BY <->)
     ./run.sh sql/06-index-brin.sql      # BRIN: размер и узел в плане
     ./run.sh sql/07-stats-stale.sql     # устаревшая статистика ломает оценку
-    ./run.sh sql/08-antipatterns.sql    # как в плане видно, что индекс не работает
+    ./run.sh sql/08-antipatterns.sql    # индекс не работает → эквивалентное лечение + проверка EXCEPT ALL
     ./run.sh sql/09-pgss-heavy.sql      # pg_stat_statements: поиск тяжёлых запросов
 
 Каждый скрипт печатает реальный вывод планировщика — снимки в `fixtures/`.

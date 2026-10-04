@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # failure.sh — что происходит с кластером и с ответами на запросы, когда узлы
-# выходят из строя. Сохраняет всё в out/failure.txt.
+# выходят из строя. Сохраняет всё в failure.txt рядом со скриптом.
 #
 # Проверяются три состояния:
 #   1) исходное — все четыре инстанса Online, запрос возвращает полный набор;
@@ -30,7 +30,8 @@ export MSYS_NO_PATHCONV=1
 # в пайплайне тело блока исполняется в субшелле, и `exit 1` из него не
 # завершает скрипт — он продолжает работу и печатает финальное «ok» после
 # провала. Ровно это здесь и происходило.
-exec > >(tee "$DIR/out/failure.txt") 2>&1
+# Вывод — в отслеживаемый failure.txt рядом со скриптом (out/ в .gitignore).
+exec > >(tee "$DIR/failure.txt") 2>&1
 
 EXPECTED=200000
 fail=0
@@ -119,6 +120,7 @@ DSN_VIA() { echo "postgres://admin:Picodata1@$1:5432/picodata?sslmode=disable"; 
 
     echo
     echo "=== 0. распределение данных по узлам ==="
+    declare -A ROWS_OF=()
     for c in pd-1 pd-2 pd-3 pd-4; do
         n="$(docker exec -i "$c" picodata admin /var/lib/picodata/admin.sock <<'EOF' 2>/dev/null | grep -E "^- [0-9]+" | tr -d '[:space:]-'
 \lua
@@ -131,7 +133,18 @@ require('vshard').storage.info().bucket
 EOF
 )"
         printf "  %-6s строк: %-8s бакетов: %s\n" "$c" "$n" "$b"
+        ROWS_OF[$c]="$n"
     done
+    # Эталон для шага 3: сколько строк лежит на ВЫЖИВШЕМ репликасете. Сверять
+    # неполный ответ надо с ним, а не с «любым числом, кроме 200000»: иначе за
+    # «неполный ответ» сошло бы и 200001, и любое другое случайное число.
+    SURV_ROWS="${ROWS_OF[$survivor]}"
+    case "$SURV_ROWS" in
+        ''|*[!0-9]*)
+            echo "!!! не удалось измерить число строк на выжившем репликасете (${survivor}): '${SURV_ROWS}'" >&2
+            exit 1 ;;
+    esac
+    echo "  на выжившем репликасете (через ${survivor}): ${SURV_ROWS} строк — это эталон для шага 3"
     echo "  Числа выше — ИЗМЕРЕННЫЕ в этом прогоне, а не эталон: соотношение"
     echo "  строк между репликасетами непостоянно даже после барьера готовности."
     echo "  Наблюдавшиеся примеры при неизменных 1500 бакетах на репликасет:"
@@ -166,8 +179,21 @@ EOF
     docker stop "${victim[1]}" >/dev/null 2>&1
     sleep 15
     states "$SURV_DSN" | sed 's/^/  /'
+    # Состояние управляющей плоскости В МОМЕНТ запроса: два узла из четырёх
+    # остановлены, и кворум Raft мог быть потерян. Фиксируем, что видят выжившие.
+    echo "  Raft на выживших узлах:"
+    for c in pd-1 pd-2 pd-3 pd-4; do
+        docker ps --format '{{.Names}}' | grep -qx "$c" || continue
+        rs_line="$(docker exec -i "$c" picodata admin /var/lib/picodata/admin.sock <<'EOF' 2>/dev/null | grep -E '^\s*(term|leader_id|raft_state):' | tr -s ' ' | tr '\n' ' '
+\lua
+pico.raft_status()
+EOF
+)"
+        echo "    ${c}: ${rs_line}"
+    done
+    echo "  Raft-лидеров среди выживших: $(raft_leaders pd-1 pd-2 pd-3 pd-4)"
     got="$(q "$SURV_DSN" 'SELECT count(*) FROM products')"
-    echo "  count(*) = ${got}  (в целом кластере ${EXPECTED})"
+    echo "  count(*) = ${got}  (в целом кластере ${EXPECTED}, на выжившем репликасете ${SURV_ROWS})"
     case "$got" in
         "$EXPECTED")
             echo "  !!! НЕОЖИДАННО: ответ полный, хотя репликасет потерян." >&2
@@ -179,11 +205,15 @@ EOF
             echo "    ${got}" | head -3
             echo "  Это ИНОЕ поведение, чем описано в статье, — перепроверьте текст." >&2
             fail=1 ;;
-        *)
-            echo "  ГЛАВНОЕ: запрос НЕ упал, а вернул неполный результат."
+        "$SURV_ROWS")
+            echo "  ГЛАВНОЕ: запрос НЕ упал, а вернул ровно строки выжившего репликасета."
             echo "  Ни ошибки, ни предупреждения о недоступной части данных."
             echo "  агрегация по категориям на неполном кластере:"
             q "$SURV_DSN" 'SELECT category, count(*) FROM products GROUP BY category' | sed 's/^/    /' ;;
+        *)
+            echo "  !!! число ${got} не совпадает ни с полным набором (${EXPECTED}), ни с выжившим" >&2
+            echo "      репликасетом (${SURV_ROWS}). Это не тот «неполный ответ», что описан в статье." >&2
+            fail=1 ;;
     esac
 
     echo
