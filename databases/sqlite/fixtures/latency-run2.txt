@@ -1,0 +1,48 @@
+== латентность, n=20000 операций на прогон ==
+прогон: 2026-08-21T21:43:17Z
+seed: 4242 (порядок плеч ротируется по кругам, см. комментарий в run-latency.sh)
+-- круг 1 --
+порядок (полная долговечность): 1 2 0 [индексы sqlite=0 pg-uds=1 pg-tcp=2]
+порядок (ослабленная долговечность): 0 1 2 [индексы sqlite=0 pg-uds=1 pg-tcp=2]
+{"arm":"pg-uds","op":"read","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":210,"p95_us":322,"p99_us":975,"ops_per_sec":4104.455198092437}
+{"arm":"pg-tcp","op":"read","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":218,"p95_us":271,"p99_us":328,"ops_per_sec":4461.418962809048}
+{"arm":"sqlite","op":"read","durability":"sqlite synchronous=FULL","count":20000,"writers":1,"busy_errors":0,"p50_us":11,"p95_us":39,"p99_us":56,"ops_per_sec":62632.10677120717}
+{"arm":"sqlite","op":"read","durability":"sqlite synchronous=NORMAL","count":20000,"writers":1,"busy_errors":0,"p50_us":11,"p95_us":21,"p99_us":45,"ops_per_sec":69711.67130751786}
+{"arm":"pg-uds","op":"read","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":201,"p95_us":255,"p99_us":327,"ops_per_sec":4832.479396731945}
+{"arm":"pg-tcp","op":"read","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":196,"p95_us":244,"p99_us":295,"ops_per_sec":4946.094284152679}
+{"arm":"pg-uds","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":2026,"p95_us":2348,"p99_us":3234,"ops_per_sec":515.5209502063925}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":2033,"p95_us":2293,"p99_us":3161,"ops_per_sec":515.9921094041845}
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":1,"busy_errors":0,"p50_us":1930,"p95_us":3735,"p99_us":5002,"ops_per_sec":450.82503554024225}
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=NORMAL","count":20000,"writers":1,"busy_errors":0,"p50_us":22,"p95_us":55,"p99_us":92,"ops_per_sec":13630.634435978349}
+{"arm":"pg-uds","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":185,"p95_us":237,"p99_us":303,"ops_per_sec":5217.7775038212685}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":190,"p95_us":228,"p99_us":284,"ops_per_sec":5094.930457453643}
+-- круг 2 --
+порядок (полная долговечность): 2 0 1 [индексы sqlite=0 pg-uds=1 pg-tcp=2]
+порядок (ослабленная долговечность): 1 2 0 [индексы sqlite=0 pg-uds=1 pg-tcp=2]
+{"arm":"pg-tcp","op":"read","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":190,"p95_us":226,"p99_us":268,"ops_per_sec":5119.222610744399}
+{"arm":"sqlite","op":"read","durability":"sqlite synchronous=FULL","count":20000,"writers":1,"busy_errors":0,"p50_us":11,"p95_us":26,"p99_us":47,"ops_per_sec":67465.32341408674}
+{"arm":"pg-uds","op":"read","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":177,"p95_us":224,"p99_us":288,"ops_per_sec":5454.305573690478}
+{"arm":"pg-uds","op":"read","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":173,"p95_us":212,"p99_us":252,"ops_per_sec":5663.599880569177}
+{"arm":"pg-tcp","op":"read","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":200,"p95_us":250,"p99_us":357,"ops_per_sec":4789.922909601195}
+{"arm":"sqlite","op":"read","durability":"sqlite synchronous=NORMAL","count":20000,"writers":1,"busy_errors":0,"p50_us":14,"p95_us":35,"p99_us":74,"ops_per_sec":51077.0597889955}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":2021,"p95_us":2281,"p99_us":3049,"ops_per_sec":521.0445866003454}
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":1,"busy_errors":0,"p50_us":1968,"p95_us":3990,"p99_us":6151,"ops_per_sec":425.5375817142148}
+{"arm":"pg-uds","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":2037,"p95_us":3039,"p99_us":6076,"ops_per_sec":475.98419615414736}
+{"arm":"pg-uds","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":172,"p95_us":218,"p99_us":274,"ops_per_sec":5600.618044330972}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":195,"p95_us":235,"p99_us":298,"ops_per_sec":4974.556075913687}
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=NORMAL","count":20000,"writers":1,"busy_errors":0,"p50_us":20,"p95_us":46,"p99_us":85,"ops_per_sec":14615.90990668946}
+-- круг 3 --
+порядок (полная долговечность): 0 1 2 [индексы sqlite=0 pg-uds=1 pg-tcp=2]
+порядок (ослабленная долговечность): 2 0 1 [индексы sqlite=0 pg-uds=1 pg-tcp=2]
+{"arm":"sqlite","op":"read","durability":"sqlite synchronous=FULL","count":20000,"writers":1,"busy_errors":0,"p50_us":11,"p95_us":23,"p99_us":44,"ops_per_sec":68552.68047098968}
+{"arm":"pg-uds","op":"read","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":173,"p95_us":218,"p99_us":272,"ops_per_sec":5590.4521845607205}
+{"arm":"pg-tcp","op":"read","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":193,"p95_us":224,"p99_us":269,"ops_per_sec":5055.485700974635}
+{"arm":"pg-tcp","op":"read","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":189,"p95_us":225,"p99_us":282,"ops_per_sec":5136.569880793041}
+{"arm":"sqlite","op":"read","durability":"sqlite synchronous=NORMAL","count":20000,"writers":1,"busy_errors":0,"p50_us":11,"p95_us":22,"p99_us":40,"ops_per_sec":70611.31954670386}
+{"arm":"pg-uds","op":"read","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":177,"p95_us":224,"p99_us":282,"ops_per_sec":5468.505227997087}
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":1,"busy_errors":0,"p50_us":1910,"p95_us":3654,"p99_us":4745,"ops_per_sec":464.0212982178789}
+{"arm":"pg-uds","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":1974,"p95_us":2184,"p99_us":2821,"ops_per_sec":538.480562932192}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":1987,"p95_us":2184,"p99_us":2733,"ops_per_sec":536.3397532824129}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":191,"p95_us":237,"p99_us":314,"ops_per_sec":5044.351007241343}
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=NORMAL","count":20000,"writers":1,"busy_errors":0,"p50_us":19,"p95_us":43,"p99_us":85,"ops_per_sec":14948.069111162826}
+{"arm":"pg-uds","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":165,"p95_us":206,"p99_us":266,"ops_per_sec":5873.245606695849}

@@ -17,6 +17,7 @@
 | [`redis/client-resilience/`](redis/client-resilience/) | Клиенты Go/Java/Rust к Redis: Cluster/Sentinel, reconnect и failover | [статья](https://khorost.tech/databases/redis-clients-go-java-rust/) |
 | [`redis/deep-dive/`](redis/deep-dive/) | Redis/Valkey: глубокое погружение (кодировки, event loop, персистентность, Cluster/Sentinel, память, streams/Lua, эксплуатация) | [статья](https://khorost.tech/databases/) |
 | [`scylladb/`](scylladb/) | ScyllaDB: глубокое погружение (топология, компакция, LWT, драйверы) | [статья](https://khorost.tech/databases/) |
+| [`sqlite/`](sqlite/) | SQLite против Postgres: цена сетевого хопа, граница одного писателя, litestream и DuckDB | 🔜 скоро |
 | [`transactions/`](transactions/) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | [статья](https://khorost.tech/databases/transactions-brokers-rabbitmq-kafka/) |
 | [`wal/`](wal/) | WAL и его аналоги: PostgreSQL, MySQL, MongoDB, SQLite, Redis, CDC/Debezium | [статья](https://khorost.tech/databases/) |
 

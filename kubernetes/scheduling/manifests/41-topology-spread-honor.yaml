@@ -1,0 +1,59 @@
+# Демо 2в (продолжение): тот же spread; отличие в ПОВЕДЕНИИ задаёт одно поле —
+# nodeTaintsPolicy: Honor. Имя, лейбл demo и селекторы переименованы с topo-demo на
+# topo-honor-demo, чтобы два Deployment'а не пересекались по подам; всё остальное — реплики,
+# maxSkew, topologyKey, whenUnsatisfiable, образ и ресурсы — совпадает с 40-topology-spread.yaml.
+#
+# 40-topology-spread.yaml с maxSkew: 1 и четырьмя репликами на трёх воркерах НЕ размещает
+# четвёртый под: домены считаются по ВСЕМ шести узлам, потому что nodeTaintsPolicy по
+# умолчанию Ignore — тейнты при расчёте перекоса игнорируются. Три control-plane узла
+# попадают в расчёт как домены с нулём подов, глобальный минимум равен 0, и воркер с двумя
+# подами даёт перекос 2 при maxSkew 1. При этом сам под на control-plane узел не пустит
+# фильтр тейнтов: домен учитывается, а разместиться в нём нельзя.
+#
+# nodeTaintsPolicy: Honor исключает из расчёта узлы, тейнты которых под не терпит. Остаются
+# три воркера, минимум становится 1, и распределение 2+1+1 укладывается в maxSkew: 1.
+#
+# Умолчание Ignore документировано самим API кластера:
+#   kubectl explain pod.spec.topologySpreadConstraints.nodeTaintsPolicy
+#   → "If this value is nil, the behavior is equivalent to the Ignore policy."
+# На кластерах старых версий поля может не быть вовсе — проверять этой же командой.
+# Замер сделан на k8s 1.36.2.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: topo-honor-demo
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-scheduling
+    demo: topology-spread-honor
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: topo-honor-demo
+  template:
+    metadata:
+      labels:
+        app: topo-honor-demo
+        stand: cookbook-scheduling
+        demo: topology-spread-honor
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          nodeTaintsPolicy: Honor
+          labelSelector:
+            matchLabels:
+              app: topo-honor-demo
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi

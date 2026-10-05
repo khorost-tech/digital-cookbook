@@ -1,0 +1,198 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 00-scheduler
+# cmd: kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints,CPU:.status.allocatable.cpu,MEM:.status.allocatable.memory
+# ---
+NAME             TAINTS                                                               CPU     MEM
+k8s-volga-cp01   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]   1950m   3360936Ki
+k8s-volga-cp02   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]   1950m   3360936Ki
+k8s-volga-cp03   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]   1950m   3360936Ki
+k8s-volga-wk01   <none>                                                               3950m   7613952Ki
+k8s-volga-wk02   <none>                                                               3950m   7613960Ki
+k8s-volga-wk03   <none>                                                               3950m   7613956Ki
+--- топологические лейблы (зоны) ---
+# cmd: kubectl get nodes -o jsonpath='{range .items[*]}{.metadata.name}{" zone="}{.metadata.labels.topology\.kubernetes\.io/zone}{" hostname="}{.metadata.labels.kubernetes\.io/hostname}{"\n"}{end}'
+k8s-volga-cp01 zone= hostname=k8s-volga-cp01
+k8s-volga-cp02 zone= hostname=k8s-volga-cp02
+k8s-volga-cp03 zone= hostname=k8s-volga-cp03
+k8s-volga-wk01 zone= hostname=k8s-volga-wk01
+k8s-volga-wk02 zone= hostname=k8s-volga-wk02
+k8s-volga-wk03 zone= hostname=k8s-volga-wk03
+
+# проверка, что зоны не просто пустые, а таких ключей в объектах узлов нет вовсе:
+# cmd: kubectl get nodes -o json | grep -o '"[a-zA-Z0-9./_-]*\(topology\|zone\|region\)[a-zA-Z0-9./_-]*"' | sort -u | wc -l
+0
+# (0 — ни одного ключа с topology/zone/region ни в labels, ни в annotations узлов)
+
+--- запрошено: на что смотрит планировщик (узел k8s-volga-wk02) ---
+# cmd: kubectl describe node k8s-volga-wk02 | grep -A8 'Allocated resources'
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests      Limits
+  --------           --------      ------
+  cpu                830m (21%)    4500m (113%)
+  memory             1254Mi (16%)  6784Mi (91%)
+  ephemeral-storage  0 (0%)        0 (0%)
+  hugepages-2Mi      0 (0%)        0 (0%)
+Events:              <none>
+--- фактически используется ---
+# cmd: kubectl top node k8s-volga-wk02
+NAME             CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+k8s-volga-wk02   68m          1%       1224Mi          16%         
+--- сколько подов на узле и какова ёмкость по подам ---
+# cmd: kubectl describe node k8s-volga-wk02 | grep -E 'Non-terminated Pods'
+Non-terminated Pods:          (20 in total)
+# cmd: kubectl get node k8s-volga-wk02 -o jsonpath='cpu={.status.capacity.cpu} mem={.status.capacity.memory} pods={.status.capacity.pods} allocatable-pods={.status.allocatable.pods}'
+cpu=4 mem=8109576Ki pods=110 allocatable-pods=110
+
+--- то же по всем трём воркерам: requests против факта ---
+# cmd: kubectl describe node k8s-volga-wk01 | grep -E '^  (cpu|memory) ' 
+  cpu                780m (19%)    2300m (58%)
+  memory             1030Mi (13%)  3760Mi (50%)
+# cmd: kubectl describe node k8s-volga-wk02 | grep -E '^  (cpu|memory) ' 
+  cpu                830m (21%)    4500m (113%)
+  memory             1254Mi (16%)  6784Mi (91%)
+# cmd: kubectl describe node k8s-volga-wk03 | grep -E '^  (cpu|memory) ' 
+  cpu                630m (15%)   2900m (73%)
+  memory             754Mi (10%)  3292Mi (44%)
+# cmd: kubectl top nodes
+NAME             CPU(cores)   CPU(%)   MEMORY(bytes)   MEMORY(%)   
+k8s-volga-cp01   79m          4%       2079Mi          63%         
+k8s-volga-cp02   49m          2%       1752Mi          53%         
+k8s-volga-cp03   82m          4%       1880Mi          57%         
+k8s-volga-wk01   35m          0%       1321Mi          17%         
+k8s-volga-wk02   72m          1%       1224Mi          16%         
+k8s-volga-wk03   46m          1%       1299Mi          17%         
+
+--- откуда берётся 'факт': кто обслуживает metrics.k8s.io ---
+# cmd: kubectl get apiservice v1beta1.metrics.k8s.io -o jsonpath='{.spec.service.namespace}/{.spec.service.name} available={.status.conditions[0].status}'
+kube-system/metrics-server available=True
+
+# ПРИМЕЧАНИЕ О МОМЕНТАХ СЪЁМКИ. Блоки снимались подряд, но не одномоментно, и `kubectl top`
+# отдаёт скользящее среднее за последние секунды. Поэтому по k8s-volga-wk02 в файле два
+# разных значения факта: 68m в блоке «фактически используется» и 72m в общем `top nodes`
+# ниже — это дрейф живой нагрузки между двумя вызовами, а не расхождение методик.
+# Requests (830m) за то же время не менялись: они статичны, пока не создан/удалён под.
+
+--- версии (для таблицы версий в README) ---
+# cmd: kubectl version
+Client Version: v1.36.1
+Kustomize Version: v5.8.1
+Server Version: v1.36.2
+# cmd: kubectl get nodes -o custom-columns=NAME:.metadata.name,VERSION:.status.nodeInfo.kubeletVersion,OS:.status.nodeInfo.osImage,RUNTIME:.status.nodeInfo.containerRuntimeVersion
+NAME             VERSION   OS                RUNTIME
+k8s-volga-cp01   v1.36.2   Talos (v1.13.6)   containerd://2.2.5
+k8s-volga-cp02   v1.36.2   Talos (v1.13.6)   containerd://2.2.5
+k8s-volga-cp03   v1.36.2   Talos (v1.13.6)   containerd://2.2.5
+k8s-volga-wk01   v1.36.2   Talos (v1.13.6)   containerd://2.2.5
+k8s-volga-wk02   v1.36.2   Talos (v1.13.6)   containerd://2.2.5
+k8s-volga-wk03   v1.36.2   Talos (v1.13.6)   containerd://2.2.5
+
+--- ВТОРОЙ ЗАМЕР (тот же день, позже): сколько едят САМИ ПОДЫ на каждом воркере ---
+# Причина отдельного замера: 'Allocated resources' в describe node суммирует ТОЛЬКО requests
+# подов, а 'kubectl top node' показывает working set ВСЕГО узла (поды + kubelet + containerd
+# + Talos + ядро и page cache). Это ответы на разные вопросы, и в одну таблицу
+# 'запрошено / факт' их ставить нельзя. Сопоставимая с requests величина — сумма top pod.
+# 'kubectl top pods -A --field-selector spec.nodeName=…' сервер отвергает:
+#   Error from server (BadRequest): "spec.nodeName" is not a known field selector:
+#   only "metadata.name", "metadata.namespace"
+# поэтому список подов узла берётся из core API и джойнится с metrics API по ns/имя.
+
+--- поды узла k8s-volga-wk01: имя, CPU, память (полный список) ---
+# cmd: join -j 1 <(kubectl get pods -A --field-selector spec.nodeName=k8s-volga-wk01 -o custom-columns=NS:.metadata.namespace,N:.metadata.name --no-headers | awk '{print $1"/"$2}' | sort) <(kubectl top pod -A --no-headers | awk '{print $1"/"$2, $3, $4}' | sort)
+argocd/argocd-image-updater-controller-6bddcf4696-7f66b 1m 19Mi
+argocd/argocd-notifications-controller-697bb8cd89-l2wqn 1m 20Mi
+cookbook-k8s-noqos/besteffort 0m 0Mi
+cookbook-k8s/burstable 0m 0Mi
+cookbook-k8s/demo-0 0m 0Mi
+cookbook-k8s/external-secret-reader 0m 0Mi
+cookbook-k8s/greeter-operator-69d567c79d-qfzdt 0m 27Mi
+cookbook-k8s/secret-reader 0m 0Mi
+cookbook-net/server 0m 4Mi
+custom-metrics/prometheus-adapter-79b9d4d97b-njwtx 1m 23Mi
+external-secrets/external-secrets-webhook-fdcd75f69-5jz86 1m 25Mi
+kube-system/cilium-envoy-smkqq 1m 18Mi
+kube-system/cilium-tz9hq 9m 245Mi
+kube-system/coredns-6dc87b5c58-6rwqh 1m 14Mi
+kube-system/coredns-6dc87b5c58-lpzvj 1m 14Mi
+kube-system/csi-nfs-node-7dc5w 1m 19Mi
+kube-system/hubble-relay-758b8867dd-7lvmh 1m 17Mi
+kube-system/hubble-ui-677bcd7f96-gb42h 1m 14Mi
+logging/vector-wx76m 1m 16Mi
+vpa/vpa-updater-f64bdd7dc-rx997 1m 13Mi
+# cmd: <та же команда> | awk '{c+=$2+0; m+=$3+0; n++} END{print "pods="n, "sum_cpu="c"m", "sum_mem="m"Mi"}'
+pods=20 sum_cpu=21m sum_mem=488Mi
+
+--- поды узла k8s-volga-wk02: имя, CPU, память (полный список) ---
+# cmd: join -j 1 <(kubectl get pods -A --field-selector spec.nodeName=k8s-volga-wk02 -o custom-columns=NS:.metadata.namespace,N:.metadata.name --no-headers | awk '{print $1"/"$2}' | sort) <(kubectl top pod -A --no-headers | awk '{print $1"/"$2, $3, $4}' | sort)
+argocd/argocd-redis-c8886b48c-xrrgp 2m 5Mi
+argocd/argocd-server-5b8cbf6fcd-cgn86 1m 32Mi
+cert-manager/cert-manager-745fdfc9cf-7j2hs 1m 28Mi
+cookbook-k8s/demo-2 0m 0Mi
+cookbook-k8s/guaranteed 0m 0Mi
+cookbook-k8s/metricgen-54f444698c-mcvkb 1m 26Mi
+cookbook-k8s/trace-demo-58b97d487c-zczbk 0m 0Mi
+cookbook-k8s/vault-74f9b67d9b-flb7w 2m 32Mi
+external-secrets/external-secrets-cert-controller-65ccd6ccb9-xlml7 1m 28Mi
+keda/keda-operator-77d5fdbf9b-sfnsh 1m 26Mi
+keda/keda-operator-metrics-apiserver-5c797c75fd-2tdcm 2m 31Mi
+kube-system/cilium-envoy-jxgts 2m 17Mi
+kube-system/cilium-nldwf 14m 238Mi
+kube-system/csi-nfs-controller-5f6ff44f78-qz5xp 2m 47Mi
+kube-system/csi-nfs-node-j77b9 1m 19Mi
+kube-system/reloader-reloader-6cddbb9c84-f4d5b 1m 21Mi
+kube-system/sealed-secrets-6f5df5fdcc-fk965 1m 15Mi
+logging/vector-flrtx 1m 14Mi
+monitoring/kube-state-metrics-69889bdbfb-xwctd 1m 17Mi
+vpa/vpa-recommender-dfdcfdfdd-8q7vc 1m 14Mi
+# cmd: <та же команда> | awk '{c+=$2+0; m+=$3+0; n++} END{print "pods="n, "sum_cpu="c"m", "sum_mem="m"Mi"}'
+pods=20 sum_cpu=35m sum_mem=610Mi
+
+--- поды узла k8s-volga-wk03: имя, CPU, память (полный список) ---
+# cmd: join -j 1 <(kubectl get pods -A --field-selector spec.nodeName=k8s-volga-wk03 -o custom-columns=NS:.metadata.namespace,N:.metadata.name --no-headers | awk '{print $1"/"$2}' | sort) <(kubectl top pod -A --no-headers | awk '{print $1"/"$2, $3, $4}' | sort)
+argocd/argocd-application-controller-0 1m 27Mi
+argocd/argocd-applicationset-controller-5b86b54c9f-wx7p4 1m 24Mi
+argocd/argocd-repo-server-5bf9c59969-s7xl5 1m 27Mi
+cert-manager/cert-manager-cainjector-5b48d89794-5j6fk 1m 39Mi
+cert-manager/cert-manager-webhook-7dd58b695c-95zj4 1m 17Mi
+cert-manager/selectel-webhook-cert-manager-webhook-selectel-585945d57f-ffj86 1m 22Mi
+cookbook-k8s/demo-1 0m 0Mi
+cookbook-k8s/prometheus-647bbf7db8-6qd65 1m 24Mi
+cookbook-k8s/trace-demo-58b97d487c-4lj98 0m 0Mi
+cookbook-net/client-allowed 0m 0Mi
+cookbook-net/client-denied 0m 0Mi
+external-secrets/external-secrets-7b9bcdd86d-b9rzt 1m 29Mi
+keda/keda-admission-webhooks-865b64f5d6-68628 1m 11Mi
+kube-system/cilium-envoy-rvxmg 1m 16Mi
+kube-system/cilium-l449l 9m 237Mi
+kube-system/cilium-operator-8f46c58cb-bqwlw 2m 46Mi
+kube-system/csi-nfs-node-gzs9h 1m 20Mi
+kube-system/metrics-server-5ffb6b8554-7csj7 1m 25Mi
+logging/vector-cwsgl 1m 14Mi
+monitoring/vmagent-victoria-metrics-agent-7585c9bb4c-tvr77 9m 66Mi
+# cmd: <та же команда> | awk '{c+=$2+0; m+=$3+0; n++} END{print "pods="n, "sum_cpu="c"m", "sum_mem="m"Mi"}'
+pods=20 sum_cpu=33m sum_mem=644Mi
+
+--- requests тех же трёх узлов, снятые в ТОТ ЖЕ момент (для сопоставимости) ---
+# cmd: kubectl describe node k8s-volga-wk01 | grep -E '^  (cpu|memory) '
+  cpu                780m (19%)    2300m (58%)
+  memory             1030Mi (13%)  3760Mi (50%)
+# cmd: kubectl describe node k8s-volga-wk02 | grep -E '^  (cpu|memory) '
+  cpu                830m (21%)    4500m (113%)
+  memory             1254Mi (16%)  6784Mi (91%)
+# cmd: kubectl describe node k8s-volga-wk03 | grep -E '^  (cpu|memory) '
+  cpu                630m (15%)   2900m (73%)
+  memory             754Mi (10%)  3292Mi (44%)
+# cmd: kubectl top nodes --no-headers
+k8s-volga-cp01   83m   4%    2072Mi   63%   
+k8s-volga-cp02   50m   2%    1689Mi   51%   
+k8s-volga-cp03   83m   4%    1721Mi   52%   
+k8s-volga-wk01   31m   0%    1329Mi   17%   
+k8s-volga-wk02   68m   1%    1214Mi   16%   
+k8s-volga-wk03   49m   1%    1293Mi   17%   
+
+--- сколько подов на каждом воркере (нит: счётчик был снят только по wk02) ---
+# cmd: kubectl describe node k8s-volga-wk01 | grep -E 'Non-terminated Pods'
+Non-terminated Pods:          (20 in total)
+# cmd: kubectl describe node k8s-volga-wk02 | grep -E 'Non-terminated Pods'
+Non-terminated Pods:          (20 in total)
+# cmd: kubectl describe node k8s-volga-wk03 | grep -E 'Non-terminated Pods'
+Non-terminated Pods:          (20 in total)

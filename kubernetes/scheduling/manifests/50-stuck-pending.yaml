@@ -1,0 +1,50 @@
+# Демо 3: вечный Pending — жёсткое правило, которому не отвечает ни один узел.
+#
+# Самая частая причина «под висит в Pending и не двигается» — не нехватка ресурсов
+# (та рано или поздно рассасывается), а требование, выполнить которое в кластере
+# нельзя в принципе. Здесь это requiredDuringSchedulingIgnoredDuringExecution по метке
+# cookbook.khorost.tech/scheduling со значением `absent`: метка на кластере есть
+# (00-node-label.sh ставит её на один worker), но со значением `demo`. Значения `absent`
+# нет ни на одном узле, и появиться ему неоткуда.
+#
+# Отличие от Демо 1 (10-taint-toleration.yaml) — только в правиле, но НЕ в тексте события.
+# Там жёсткий nodeSelector на узел под тейнтом, здесь невыполнимое nodeAffinity, а строка
+# FailedScheduling у обоих подов совпала БАЙТ В БАЙТ (после нормализации возраста), включая
+# одну и ту же разбивку «3 + 3» — при том, что означает она в двух случаях разное. Сверка
+# строк — в конце fixtures/30-pending.txt, разбор того, что на самом деле считают эти
+# счётчики, — в README, раздел «Тот же текст, что в демо 1, — при совсем другой причине».
+#
+# Планировщик не ставит на такой под таймаут и не сдаётся: он возвращается к нему при
+# каждом изменении кластера. Под будет висеть Pending, пока правило не станет выполнимым
+# или пока под не удалят.
+#
+# Под крошечный (pause, 10m/16Mi) и удаляется сразу после снятия фикстуры: кластер боевой.
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: stuck-affinity
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-scheduling
+    demo: stuck-pending
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: cookbook.khorost.tech/scheduling
+                operator: In
+                values:
+                  - absent
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause:3.10
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi

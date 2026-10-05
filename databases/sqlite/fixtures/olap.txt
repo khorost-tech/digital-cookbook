@@ -1,0 +1,12 @@
+== SQLite vs DuckDB: агрегация и точечное чтение, rows=1000000 ==
+прогон: 2026-08-21T19:18:38Z
+== EXPLAIN QUERY PLAN: агрегация, план по умолчанию ==
+SCAN events USING INDEX idx_events_user
+== EXPLAIN QUERY PLAN: агрегация, NOT INDEXED (индекс запрещён явно) ==
+SCAN events
+USE TEMP B-TREE FOR GROUP BY
+{"engine":"sqlite","query":"aggregation","version":"3.53.4","rows":1000000,"count":10,"p50_us":1448910,"ops_per_sec":0.6793807188675343,"note":"p95/p99 не публикуются: при n=10 nearest-rank даёт один и тот же индекс (максимум выборки) для обоих перцентилей — недостаточная выборка, чтобы различать хвосты; p50 — оценка порядка величины, не точное число"}
+{"engine":"sqlite","query":"aggregation_noindex","version":"3.53.4","rows":1000000,"count":10,"p50_us":395264,"ops_per_sec":2.506691409047776,"note":"p95/p99 не публикуются: при n=10 nearest-rank даёт один и тот же индекс (максимум выборки) для обоих перцентилей — недостаточная выборка, чтобы различать хвосты; p50 — оценка порядка величины, не точное число"}
+{"engine":"sqlite","query":"point","version":"3.53.4","rows":1000000,"count":20000,"p50_us":8,"p95_us":16,"p99_us":32,"ops_per_sec":95362.5679110223}
+{"engine":"duckdb","query":"aggregation","version":"v1.4.1","rows":1000000,"count":10,"p50_us":2578,"ops_per_sec":382.37857291192717,"note":"p95/p99 не публикуются: при n=10 nearest-rank даёт один и тот же индекс (максимум выборки) для обоих перцентилей — недостаточная выборка, чтобы различать хвосты; p50 — оценка порядка величины, не точное число"}
+{"engine":"duckdb","query":"point","version":"v1.4.1","rows":1000000,"count":20000,"p50_us":636,"p95_us":745,"p99_us":860,"ops_per_sec":1544.6913863570012}

@@ -126,6 +126,9 @@
       "databases/scylladb-token-ring-tablets-multidc.md",
       "databases/scylladb-when-and-data-modeling.md"
     ],
+    "databases/sqlite": [
+      "databases/sqlite-embedded-databases.md"
+    ],
     "databases/transactions": [
       "databases/transactions-brokers-rabbitmq-kafka.md",
       "databases/transactions-isolation-levels-anomalies.md",
@@ -219,6 +222,9 @@
     "kubernetes/resources": [
       "kubernetes/k8s-resources-requests-limits-qos.md"
     ],
+    "kubernetes/scheduling": [
+      "kubernetes/k8s-pod-scheduling-affinity-taints.md"
+    ],
     "lang/brainfuck": [
       "lang/turing-completeness-and-expressiveness.md"
     ],
@@ -265,6 +271,7 @@
       "messaging/rabbitmq-streams-vs-kafka.md"
     ],
     "observability/practice-stack": [
+      "observability/distributed-tracing-tempo.md",
       "observability/otel-instrumentation-go-java.md"
     ],
     "observability/vector-pipeline": [

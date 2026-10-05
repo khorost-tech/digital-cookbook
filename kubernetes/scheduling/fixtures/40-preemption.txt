@@ -1,0 +1,214 @@
+--- разведка целевого узла перед вытеснением ---
+# cmd: kubectl describe node k8s-volga-wk01 | grep -A10 'Allocated resources'
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests      Limits
+  --------           --------      ------
+  cpu                780m (19%)    2300m (58%)
+  memory             1030Mi (13%)  3760Mi (50%)
+  ephemeral-storage  0 (0%)        0 (0%)
+  hugepages-2Mi      0 (0%)        0 (0%)
+Events:              <none>
+# cmd: kubectl get node k8s-volga-wk01 -o jsonpath='{.status.allocatable}'
+{"cpu":"3950m","ephemeral-storage":"55573269617","hugepages-2Mi":"0","memory":"7613952Ki","pods":"110"}
+# cmd: kubectl get quota -n cookbook-k8s -o jsonpath (hard/used)
+hard={"limits.cpu":"8","limits.memory":"8Gi","pods":"30","requests.cpu":"4","requests.memory":"4Gi"}
+used={"limits.cpu":"3","limits.memory":"2432Mi","pods":"13","requests.cpu":"950m","requests.memory":"992Mi"}
+# cmd: kubectl describe limitrange cookbook-limits -n cookbook-k8s   (ограничения на ephemeral-storage)
+Name:       cookbook-limits
+Namespace:  cookbook-k8s
+Type        Resource  Min  Max  Default Request  Default Limit  Max Limit/Request Ratio
+----        --------  ---  ---  ---------------  -------------  -----------------------
+Container   cpu       -    2    100m             200m           -
+Container   memory    -    2Gi  64Mi             128Mi          -
+# строки для ephemeral-storage нет вовсе: LimitRange эту ось не ограничивает ни сверху, ни снизу
+# то же самое из спека объекта (kubectl get limitrange -n cookbook-k8s -o yaml, аннотация last-applied):
+        {"apiVersion":"v1","kind":"LimitRange","metadata":{"annotations":{},"name":"cookbook-limits","namespace":"cookbook-k8s"},"spec":{"limits":[{"default":{"cpu":"200m","memory":"128Mi"},"defaultRequest":{"cpu":"100m","memory":"64Mi"},"max":{"cpu":"2","memory":"2Gi"},"type":"Container"}]}}
+# cmd: чьи поды на wk01 объявляют ephemeral-storage
+argocd/argocd-image-updater-controller-6bddcf4696-7f66b eph=
+argocd/argocd-notifications-controller-697bb8cd89-l2wqn eph=
+cookbook-k8s-noqos/besteffort eph=
+cookbook-k8s/burstable eph=
+cookbook-k8s/demo-0 eph=
+cookbook-k8s/external-secret-reader eph=
+cookbook-k8s/greeter-operator-69d567c79d-qfzdt eph=
+cookbook-k8s/secret-reader eph=
+cookbook-net/server eph=
+custom-metrics/prometheus-adapter-79b9d4d97b-njwtx eph=
+external-secrets/external-secrets-webhook-fdcd75f69-5jz86 eph=
+kube-system/cilium-envoy-smkqq eph=
+kube-system/cilium-tz9hq eph=
+kube-system/coredns-6dc87b5c58-6rwqh eph=
+kube-system/coredns-6dc87b5c58-lpzvj eph=
+kube-system/csi-nfs-node-7dc5w eph=
+kube-system/hubble-relay-758b8867dd-7lvmh eph=
+kube-system/hubble-ui-677bcd7f96-gb42h eph=
+logging/vector-wx76m eph=
+vpa/vpa-updater-f64bdd7dc-rx997 eph=
+--- БАЗА БЕЗОПАСНОСТИ: срез чужих подов на wk01 ДО демо (имя + время старта) ---
+# cmd: kubectl get pod -A --field-selector spec.nodeName=k8s-volga-wk01 -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{" started="}{.status.startTime}{"\n"}{end}' | sort
+# (снято ДО создания объектов демо: подов стенда на узле в этот момент нет ни одного)
+argocd/argocd-image-updater-controller-6bddcf4696-7f66b started=2026-07-19T09:08:42Z
+argocd/argocd-notifications-controller-697bb8cd89-l2wqn started=2026-07-19T09:08:18Z
+cookbook-k8s-noqos/besteffort started=2026-07-22T23:25:31Z
+cookbook-k8s/burstable started=2026-07-22T23:25:31Z
+cookbook-k8s/demo-0 started=2026-07-23T11:17:20Z
+cookbook-k8s/external-secret-reader started=2026-07-23T16:37:11Z
+cookbook-k8s/greeter-operator-69d567c79d-qfzdt started=2026-07-24T05:54:05Z
+cookbook-k8s/secret-reader started=2026-07-23T12:39:44Z
+cookbook-net/server started=2026-07-23T20:46:48Z
+custom-metrics/prometheus-adapter-79b9d4d97b-njwtx started=2026-07-23T05:45:04Z
+external-secrets/external-secrets-webhook-fdcd75f69-5jz86 started=2026-07-19T08:48:48Z
+kube-system/cilium-envoy-smkqq started=2026-07-19T07:48:40Z
+kube-system/cilium-tz9hq started=2026-07-19T07:48:40Z
+kube-system/coredns-6dc87b5c58-6rwqh started=2026-07-19T07:49:44Z
+kube-system/coredns-6dc87b5c58-lpzvj started=2026-07-19T07:49:44Z
+kube-system/csi-nfs-node-7dc5w started=2026-07-19T09:07:18Z
+kube-system/hubble-relay-758b8867dd-7lvmh started=2026-07-19T07:49:44Z
+kube-system/hubble-ui-677bcd7f96-gb42h started=2026-07-19T07:49:44Z
+logging/vector-wx76m started=2026-07-19T08:48:23Z
+vpa/vpa-updater-f64bdd7dc-rx997 started=2026-07-22T23:47:56Z
+# cmd: ... | wc -l  (число подов на wk01 ДО демо)
+20
+--- классы приоритета: наши два рядом с системными ---
+# cmd: kubectl get priorityclass -o custom-columns=NAME:.metadata.name,VALUE:.value,GLOBAL-DEFAULT:.globalDefault --no-headers
+cookbook-high             1000         <none>
+cookbook-low              -10          <none>
+system-cluster-critical   2000000000   <none>
+system-node-critical      2000001000   <none>
+# globalDefault пуст у всех четырёх: поле не сериализуется при значении false
+# cmd: kubectl get priorityclass -o jsonpath (имя=globalDefault, явным значением)
+cookbook-high=globalDefault:
+cookbook-low=globalDefault:
+system-cluster-critical=globalDefault:
+system-node-critical=globalDefault:
+# cmd: kubectl get priorityclass -o json | grep -c '"globalDefault": true'  (0 = ни одного класса по умолчанию в кластере, поды без класса имеют приоритет 0)
+0
+--- жертвы размещены (до вытеснения) ---
+# cmd: kubectl -n cookbook-k8s get pod -l app=victims -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,NODE:.spec.nodeName,PRIO:.spec.priority --no-headers
+victims-5d689d946d-bsj4p   Running   k8s-volga-wk01   -10
+victims-5d689d946d-mlxlt   Running   k8s-volga-wk01   -10
+victims-5d689d946d-n4jtb   Running   k8s-volga-wk01   -10
+victims-5d689d946d-vknnc   Running   k8s-volga-wk01   -10
+# cmd: kubectl describe node k8s-volga-wk01 | grep -A10 'Allocated resources'   (ephemeral-storage занят жертвами)
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests      Limits
+  --------           --------      ------
+  cpu                820m (20%)    2500m (63%)
+  memory             1094Mi (14%)  4016Mi (54%)
+  ephemeral-storage  48Gi (92%)    0 (0%)
+  hugepages-2Mi      0 (0%)        0 (0%)
+Events:              <none>
+--- хроника после создания preemptor ---
+# cmd: preemptor создан, далее каждые 5 с — kubectl -n cookbook-k8s get pod -l stand=cookbook-scheduling --no-headers (время UTC)
+11:41:07 создаём preemptor
+11:41:07 preemptor                  0/1   ContainerCreating   0     0s;victims-5d689d946d-bsj4p   1/1   Running             0     53s;victims-5d689d946d-mlxlt   1/1   Running             0     53s;victims-5d689d946d-n4jtb   1/1   Running             0     53s;victims-5d689d946d-t8nbq   0/1   Pending             0     0s;victims-5d689d946d-vknnc   0/1   Completed           0     53s;
+11:41:12 preemptor                  1/1   Running   0     5s;victims-5d689d946d-bsj4p   1/1   Running   0     58s;victims-5d689d946d-mlxlt   1/1   Running   0     58s;victims-5d689d946d-n4jtb   1/1   Running   0     58s;victims-5d689d946d-t8nbq   0/1   Pending   0     5s;
+11:41:17 preemptor                  1/1   Running   0     10s;victims-5d689d946d-bsj4p   1/1   Running   0     63s;victims-5d689d946d-mlxlt   1/1   Running   0     63s;victims-5d689d946d-n4jtb   1/1   Running   0     63s;victims-5d689d946d-t8nbq   0/1   Pending   0     10s;
+11:41:22 preemptor                  1/1   Running   0     16s;victims-5d689d946d-bsj4p   1/1   Running   0     69s;victims-5d689d946d-mlxlt   1/1   Running   0     69s;victims-5d689d946d-n4jtb   1/1   Running   0     69s;victims-5d689d946d-t8nbq   0/1   Pending   0     16s;
+11:41:28 preemptor                  1/1   Running   0     21s;victims-5d689d946d-bsj4p   1/1   Running   0     74s;victims-5d689d946d-mlxlt   1/1   Running   0     74s;victims-5d689d946d-n4jtb   1/1   Running   0     74s;victims-5d689d946d-t8nbq   0/1   Pending   0     21s;
+11:41:33 preemptor                  1/1   Running   0     26s;victims-5d689d946d-bsj4p   1/1   Running   0     79s;victims-5d689d946d-mlxlt   1/1   Running   0     79s;victims-5d689d946d-n4jtb   1/1   Running   0     79s;victims-5d689d946d-t8nbq   0/1   Pending   0     26s;
+11:41:38 preemptor                  1/1   Running   0     31s;victims-5d689d946d-bsj4p   1/1   Running   0     84s;victims-5d689d946d-mlxlt   1/1   Running   0     84s;victims-5d689d946d-n4jtb   1/1   Running   0     84s;victims-5d689d946d-t8nbq   0/1   Pending   0     31s;
+11:41:43 preemptor                  1/1   Running   0     37s;victims-5d689d946d-bsj4p   1/1   Running   0     90s;victims-5d689d946d-mlxlt   1/1   Running   0     90s;victims-5d689d946d-n4jtb   1/1   Running   0     90s;victims-5d689d946d-t8nbq   0/1   Pending   0     37s;
+11:41:49 preemptor                  1/1   Running   0     42s;victims-5d689d946d-bsj4p   1/1   Running   0     95s;victims-5d689d946d-mlxlt   1/1   Running   0     95s;victims-5d689d946d-n4jtb   1/1   Running   0     95s;victims-5d689d946d-t8nbq   0/1   Pending   0     42s;
+11:41:54 preemptor                  1/1   Running   0     47s;victims-5d689d946d-bsj4p   1/1   Running   0     100s;victims-5d689d946d-mlxlt   1/1   Running   0     100s;victims-5d689d946d-n4jtb   1/1   Running   0     100s;victims-5d689d946d-t8nbq   0/1   Pending   0     47s;
+11:41:59 preemptor                  1/1   Running   0     52s;victims-5d689d946d-bsj4p   1/1   Running   0     105s;victims-5d689d946d-mlxlt   1/1   Running   0     105s;victims-5d689d946d-n4jtb   1/1   Running   0     105s;victims-5d689d946d-t8nbq   0/1   Pending   0     52s;
+11:42:04 preemptor                  1/1   Running   0     57s;victims-5d689d946d-bsj4p   1/1   Running   0     110s;victims-5d689d946d-mlxlt   1/1   Running   0     110s;victims-5d689d946d-n4jtb   1/1   Running   0     110s;victims-5d689d946d-t8nbq   0/1   Pending   0     57s;
+--- события вытеснения ---
+# cmd: kubectl -n cookbook-k8s get events --sort-by=.metadata.creationTimestamp | grep -iE 'preempt'
+56m         Warning   FailedScheduling    pod/no-toleration                       0/6 nodes are available: 3 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling.
+33m         Warning   FailedScheduling    pod/spread-demo-5644ff5cbb-2skfx        0/6 nodes are available: 3 node(s) didn't match pod anti-affinity rules, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 3 No preemption victims found for incoming pod, 3 Preemption is not helpful for scheduling.
+32m         Warning   FailedScheduling    pod/topo-demo-55b79976d7-dpx4d          0/6 nodes are available: 3 node(s) didn't match pod topology spread constraints, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 3 No preemption victims found for incoming pod, 3 Preemption is not helpful for scheduling.
+6m46s       Warning   FailedScheduling    pod/stuck-affinity                      0/6 nodes are available: 3 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling.
+75s         Warning   FailedScheduling    pod/victims-5d689d946d-t8nbq            0/6 nodes are available: 1 Insufficient ephemeral-storage, 2 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 1 No preemption victims found for incoming pod, 5 Preemption is not helpful for scheduling.
+75s         Normal    Preempted           pod/victims-5d689d946d-vknnc            Preempted by pod 9b43a2d1-591a-4ebe-80b8-1cc6b618fa89 on node k8s-volga-wk01
+75s         Warning   FailedScheduling    pod/victims-5d689d946d-t8nbq            0/6 nodes are available: 1 Insufficient ephemeral-storage, 2 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 1 No preemption victims found for incoming pod, 5 Preemption is not helpful for scheduling.
+75s         Warning   FailedScheduling    pod/preemptor                           0/6 nodes are available: 1 Insufficient ephemeral-storage, 2 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint(s).
+75s         Normal    Scheduled           pod/preemptor                           Successfully assigned cookbook-k8s/preemptor to k8s-volga-wk01
+74s         Normal    Pulled              pod/preemptor                           Container image "registry.k8s.io/pause:3.10" already present on machine and can be accessed by the pod
+74s         Normal    Created             pod/preemptor                           Container created
+74s         Normal    Started             pod/preemptor                           Container started
+--- ★ ДОКАЗАТЕЛЬСТВО БЕЗОПАСНОСТИ: вытеснены ТОЛЬКО свои поды ---
+# (1) событие Preempted называет вытеснителя по UID, а не по имени — сверяем UID с нашим preemptor
+# cmd: kubectl -n cookbook-k8s get pod preemptor -o jsonpath='{.metadata.uid}'
+9b43a2d1-591a-4ebe-80b8-1cc6b618fa89
+# (2) все события Preempted во ВСЁМ кластере за время демо — кого именно вытеснили
+# cmd: kubectl get events -A --field-selector reason=Preempted -o custom-columns=NS:.metadata.namespace,POD:.involvedObject.name,MSG:.message --no-headers
+cookbook-k8s   victims-5d689d946d-vknnc   Preempted by pod 9b43a2d1-591a-4ebe-80b8-1cc6b618fa89 on node k8s-volga-wk01
+# cmd: kubectl get events -A --field-selector reason=Preempted --no-headers | wc -l   (всего вытеснено подов)
+1
+# (3) чужие поды на wk01: срез ДО демо против среза ПОСЛЕ вытеснения (поды стенда исключены)
+# cmd: kubectl get pod -A --field-selector spec.nodeName=k8s-volga-wk01 -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{" started="}{.status.startTime}{"\n"}{end}' | sort > /tmp/wk01-before.txt
+# (снято ДО применения манифестов демо, шаг 1 в README; на экран не печатает — всё ушло в файл)
+# cmd: kubectl get pod -A --field-selector spec.nodeName=k8s-volga-wk01 -o jsonpath='{range .items[*]}{.metadata.namespace}/{.metadata.name}{" started="}{.status.startTime}{"\n"}{end}' | sort | grep -v -E 'cookbook-k8s/(victims|preemptor)' > /tmp/wk01-after.txt
+# cmd: diff /tmp/wk01-before.txt /tmp/wk01-after.txt
+# ^^^ вывод ПУСТ — приведён дословно, ниже сразу следующий блок. Ни одной строки различий:
+#     срезы совпали целиком, включая startTime у каждого пода. Значит среди чужих подов ни один
+#     не удалён, ни один не добавлен и ни один не перезапускался.
+#     Сколько их — видно без отдельного счётчика: тот же список чужих подов поимённо идёт ниже
+#     в блоке (4), там 20 строк, и раз diff пуст — столько же было и до демо.
+# (4) перезапусков у чужих подов нет: суммарный RESTARTS по узлу без подов стенда
+# cmd: kubectl get pod -A --field-selector spec.nodeName=k8s-volga-wk01 -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name,RESTARTS:.status.containerStatuses[0].restartCount --no-headers | grep -v -E 'victims|preemptor'
+argocd               argocd-image-updater-controller-6bddcf4696-7f66b   0
+argocd               argocd-notifications-controller-697bb8cd89-l2wqn   0
+cookbook-k8s-noqos   besteffort                                         0
+cookbook-k8s         burstable                                          0
+cookbook-k8s         demo-0                                             0
+cookbook-k8s         external-secret-reader                             0
+cookbook-k8s         greeter-operator-69d567c79d-qfzdt                  0
+cookbook-k8s         secret-reader                                      0
+cookbook-net         server                                             0
+custom-metrics       prometheus-adapter-79b9d4d97b-njwtx                0
+external-secrets     external-secrets-webhook-fdcd75f69-5jz86           0
+kube-system          cilium-envoy-smkqq                                 0
+kube-system          cilium-tz9hq                                       0
+kube-system          coredns-6dc87b5c58-6rwqh                           0
+kube-system          coredns-6dc87b5c58-lpzvj                           0
+kube-system          csi-nfs-node-7dc5w                                 0
+kube-system          hubble-relay-758b8867dd-7lvmh                      0
+kube-system          hubble-ui-677bcd7f96-gb42h                         0
+logging              vector-wx76m                                       0
+vpa                  vpa-updater-f64bdd7dc-rx997                        0
+--- ★ что стало с вытесненной жертвой: Deployment пересоздал реплику, новая висит Pending ---
+# cmd: kubectl -n cookbook-k8s get pod -l stand=cookbook-scheduling -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,NODE:.spec.nodeName,PRIO:.spec.priority,EPH:.spec.containers[0].resources.requests.ephemeral-storage --no-headers
+preemptor                  Running   k8s-volga-wk01   1000   8Gi
+victims-5d689d946d-bsj4p   Running   k8s-volga-wk01   -10    12Gi
+victims-5d689d946d-mlxlt   Running   k8s-volga-wk01   -10    12Gi
+victims-5d689d946d-n4jtb   Running   k8s-volga-wk01   -10    12Gi
+victims-5d689d946d-t8nbq   Pending   <none>           -10    12Gi
+# вытеснена РОВНО ОДНА жертва из четырёх: три остались Running, четвёртая пересоздана и не размещается
+# cmd: kubectl -n cookbook-k8s describe pod victims-5d689d946d-t8nbq | awk '/^Events:/{f=1} f' | grep FailedScheduling | tail -1   (почему новая реплика не встаёт)
+  Warning  FailedScheduling  2m23s  default-scheduler  0/6 nodes are available: 1 Insufficient ephemeral-storage, 2 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 1 No preemption victims found for incoming pod, 5 Preemption is not helpful for scheduling.
+# у новой реплики приоритет -10, ниже неё в кластере нет никого — вытеснять некого: 'No preemption victims found'
+# cmd: kubectl describe node k8s-volga-wk01 | grep -A10 'Allocated resources'   (после вытеснения)
+Allocated resources:
+  (Total limits may be over 100 percent, i.e., overcommitted.)
+  Resource           Requests      Limits
+  --------           --------      ------
+  cpu                820m (20%)    2500m (63%)
+  memory             1094Mi (14%)  4016Mi (54%)
+  ephemeral-storage  44Gi (85%)    0 (0%)
+  hugepages-2Mi      0 (0%)        0 (0%)
+Events:              <none>
+--- итоговое состояние: ничего от стенда не осталось ---
+# cmd: kubectl -n cookbook-k8s get pod -l stand=cookbook-scheduling --no-headers
+No resources found in cookbook-k8s namespace.
+# cmd: kubectl get priorityclass --no-headers
+system-cluster-critical   2000000000   false   5d4h   PreemptLowerPriority
+system-node-critical      2000001000   false   5d4h   PreemptLowerPriority
+# cmd: kubectl get nodes -l cookbook.khorost.tech/scheduling -o name
+# cmd: kubectl describe quota -n cookbook-k8s | tail -8
+Namespace:       cookbook-k8s
+Resource         Used    Hard
+--------         ----    ----
+limits.cpu       3       8
+limits.memory    2432Mi  8Gi
+pods             13      30
+requests.cpu     950m    4
+requests.memory  992Mi   4Gi
+# cmd: kubectl describe node k8s-volga-wk01 | grep ephemeral-storage   (ось освобождена полностью)
+  ephemeral-storage  0 (0%)        0 (0%)
+# cmd: kubectl -n cookbook-k8s get pod -l app=trace-demo --no-headers   (стенды прошлых фаз целы)
+trace-demo-58b97d487c-4lj98         1/1   Running   0     3h16m
+trace-demo-58b97d487c-zczbk         1/1   Running   0     3h16m

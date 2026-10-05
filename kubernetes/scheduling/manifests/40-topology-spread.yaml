@@ -1,0 +1,56 @@
+# Демо 2в: topology spread — распределение выравнивается, а не запрещается.
+#
+# maxSkew: 1 по kubernetes.io/hostname: разница между самым загруженным и самым свободным
+# доменом не больше единицы.
+#
+# ФАКТИЧЕСКИЙ РЕЗУЛЬТАТ этого манифеста: четыре реплики на три воркера дают 1+1+1, а
+# четвёртая реплика ОСТАЁТСЯ Pending (fixtures/20-placement.txt) — ровно так же, как у
+# жёсткого pod anti-affinity из демо 2б, хотя правило здесь другое. Причина не в правиле, а
+# в подсчёте доменов: nodeTaintsPolicy по умолчанию Ignore, поэтому в расчёт перекоса входят
+# и три control-plane узла с нулём подов. Разбор — в README, разделы «Topology spread:
+# ожидание не сбылось» и «Почему: домены считаются по всем шести узлам, тейнты при этом
+# игнорируются». Проверка гипотезы одним полем — в 41-topology-spread-honor.yaml, где те же
+# четыре реплики укладываются в 2+1+1 и все Running.
+#
+# По ЗОНАМ этого показать нельзя: topology.kubernetes.io/zone пуст на всех шести узлах
+# кластера (fixtures/00-scheduler.txt) — ограничение кластера, не Kubernetes.
+#
+# Поды крошечные (pause, 10m/16Mi), Deployment удаляется сразу после снятия фикстуры.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: topo-demo
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-scheduling
+    demo: topology-spread
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: topo-demo
+  template:
+    metadata:
+      labels:
+        app: topo-demo
+        stand: cookbook-scheduling
+        demo: topology-spread
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: topo-demo
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi

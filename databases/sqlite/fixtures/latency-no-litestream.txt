@@ -1,0 +1,18 @@
+== контроль: litestream ОСТАНОВЛЕН, insert при полной долговечности, n=20000, ротация как в основном прогоне ==
+прогон: 2026-08-21T22:17:52Z
+seed: 777 (та же схема ротации — латинский квадрат — что и в run-latency.sh)
+-- круг 1 --
+порядок: 1 2 0 [индексы sqlite=0 pg-uds=1 pg-tcp=2]
+{"arm":"pg-uds","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":1966,"p95_us":2151,"p99_us":2690,"ops_per_sec":543.9354404104945}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":1970,"p95_us":2152,"p99_us":2633,"ops_per_sec":542.9991722719627}
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":1,"busy_errors":0,"p50_us":1885,"p95_us":3571,"p99_us":4292,"ops_per_sec":475.288140693477}
+-- круг 2 --
+порядок: 2 0 1 [индексы sqlite=0 pg-uds=1 pg-tcp=2]
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":1977,"p95_us":2186,"p99_us":2771,"ops_per_sec":537.7588809470731}
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":1,"busy_errors":0,"p50_us":1880,"p95_us":3554,"p99_us":4498,"ops_per_sec":474.82550840438904}
+{"arm":"pg-uds","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":2050,"p95_us":3156,"p99_us":6303,"ops_per_sec":466.3830064218712}
+-- круг 3 --
+порядок: 0 1 2 [индексы sqlite=0 pg-uds=1 pg-tcp=2]
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":1,"busy_errors":0,"p50_us":1905,"p95_us":3649,"p99_us":4860,"ops_per_sec":460.4857201893793}
+{"arm":"pg-uds","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":1968,"p95_us":2167,"p99_us":2468,"ops_per_sec":540.771568107556}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":1979,"p95_us":2163,"p99_us":2480,"ops_per_sec":540.547257541466}

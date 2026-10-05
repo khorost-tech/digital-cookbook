@@ -1,0 +1,47 @@
+# Демо 2б: pod anti-affinity — реплики разъезжаются по разным узлам.
+#
+# topologyKey: kubernetes.io/hostname означает «в одном домене (= на одном узле) не может
+# оказаться двух подов с меткой app: spread-demo». Форма жёсткая
+# (requiredDuringSchedulingIgnoredDuringExecution): если свободного узла без такого соседа
+# нет, под остаётся Pending — плата за жёсткость видна при масштабировании до 4 реплик
+# (воркеров три, четвёртой реплике места нет).
+#
+# Поды крошечные (pause, 10m/16Mi), Deployment удаляется сразу после снятия фикстуры.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spread-demo
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-scheduling
+    demo: pod-antiaffinity
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: spread-demo
+  template:
+    metadata:
+      labels:
+        app: spread-demo
+        stand: cookbook-scheduling
+        demo: pod-antiaffinity
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchLabels:
+                  app: spread-demo
+              topologyKey: kubernetes.io/hostname
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi

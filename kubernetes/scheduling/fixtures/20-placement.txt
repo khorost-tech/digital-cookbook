@@ -1,0 +1,121 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 20-placement
+# cmd: kubectl get nodes -l cookbook.khorost.tech/scheduling=demo -o custom-columns=NAME:.metadata.name,LABEL:.metadata.labels.cookbook\.khorost\.tech/scheduling
+# ---
+NAME             LABEL
+k8s-volga-wk01   demo
+--- node affinity: куда сел ---
+# cmd: kubectl -n cookbook-k8s get pod affinity-demo -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,NODE:.spec.nodeName --no-headers
+affinity-demo   Running   k8s-volga-wk01
+--- pod anti-affinity: три реплики по разным узлам ---
+# cmd: kubectl -n cookbook-k8s get pod -l app=spread-demo -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,NODE:.spec.nodeName --no-headers
+spread-demo-5644ff5cbb-4ps4w   Running   k8s-volga-wk02
+spread-demo-5644ff5cbb-m9kj8   Running   k8s-volga-wk03
+spread-demo-5644ff5cbb-z9p9x   Running   k8s-volga-wk01
+--- цена жёсткого правила: 4-я реплика при 3 воркерах ---
+# cmd: kubectl -n cookbook-k8s scale deploy spread-demo --replicas=4
+# cmd: kubectl -n cookbook-k8s get pod -l app=spread-demo -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,NODE:.spec.nodeName --no-headers
+spread-demo-5644ff5cbb-2skfx   Pending   <none>
+spread-demo-5644ff5cbb-4ps4w   Running   k8s-volga-wk02
+spread-demo-5644ff5cbb-m9kj8   Running   k8s-volga-wk03
+spread-demo-5644ff5cbb-z9p9x   Running   k8s-volga-wk01
+# cmd: kubectl -n cookbook-k8s describe pod spread-demo-5644ff5cbb-2skfx | awk '/^Events:/{f=1} f'
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  49s   default-scheduler  0/6 nodes are available: 3 node(s) didn't match pod anti-affinity rules, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 3 No preemption victims found for incoming pod, 3 Preemption is not helpful for scheduling.
+# cmd: kubectl -n cookbook-k8s scale deploy spread-demo --replicas=3 && kubectl -n cookbook-k8s get pod -l app=spread-demo -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,NODE:.spec.nodeName --no-headers
+spread-demo-5644ff5cbb-4ps4w   Running   k8s-volga-wk02
+spread-demo-5644ff5cbb-m9kj8   Running   k8s-volga-wk03
+spread-demo-5644ff5cbb-z9p9x   Running   k8s-volga-wk01
+--- topology spread по hostname, maxSkew=1, 4 реплики на 3 воркера ---
+# cmd: kubectl -n cookbook-k8s get pod -l app=topo-demo -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,NODE:.spec.nodeName --no-headers
+topo-demo-55b79976d7-6fm49   Running   k8s-volga-wk02
+topo-demo-55b79976d7-9kqrj   Running   k8s-volga-wk03
+topo-demo-55b79976d7-dpx4d   Pending   <none>
+topo-demo-55b79976d7-srk9l   Running   k8s-volga-wk01
+# ФАКТ: ожидалось 2+1+1 и четыре Running — четвёртая реплика ОСТАЛАСЬ Pending. Разбор ниже.
+# cmd: kubectl -n cookbook-k8s describe pod topo-demo-55b79976d7-dpx4d | awk '/^Events:/{f=1} f'
+Events:
+  Type     Reason            Age    From               Message
+  ----     ------            ----   ----               -------
+  Warning  FailedScheduling  2m37s  default-scheduler  0/6 nodes are available: 3 node(s) didn't match pod topology spread constraints, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 3 No preemption victims found for incoming pod, 3 Preemption is not helpful for scheduling.
+--- разбор: домены считаются по ВСЕМ узлам, тейнты по умолчанию игнорируются ---
+# cmd: kubectl -n cookbook-k8s get pod topo-demo-55b79976d7-dpx4d -o jsonpath='{.spec.topologySpreadConstraints}'
+[{"labelSelector":{"matchLabels":{"app":"topo-demo"}},"maxSkew":1,"topologyKey":"kubernetes.io/hostname","whenUnsatisfiable":"DoNotSchedule"}]
+# (поля nodeTaintsPolicy в объекте НЕТ — API-сервер его не дописывает, действует умолчание Ignore)
+# cmd: kubectl get nodes -o custom-columns=NAME:.metadata.name,HOSTNAME:.metadata.labels.kubernetes\.io/hostname,TAINTS:.spec.taints[*].key --no-headers
+k8s-volga-cp01   k8s-volga-cp01   node-role.kubernetes.io/control-plane
+k8s-volga-cp02   k8s-volga-cp02   node-role.kubernetes.io/control-plane
+k8s-volga-cp03   k8s-volga-cp03   node-role.kubernetes.io/control-plane
+k8s-volga-wk01   k8s-volga-wk01   <none>
+k8s-volga-wk02   k8s-volga-wk02   <none>
+k8s-volga-wk03   k8s-volga-wk03   <none>
+# (доменов kubernetes.io/hostname ШЕСТЬ, а разместиться под может только на трёх: минимум по домену = 0, перекос воркера с двумя подами = 2 > maxSkew 1)
+# cmd: kubectl explain pod.spec.topologySpreadConstraints.nodeTaintsPolicy
+KIND:       Pod
+VERSION:    v1
+
+FIELD: nodeTaintsPolicy <string>
+ENUM:
+    Honor
+    Ignore
+
+DESCRIPTION:
+    NodeTaintsPolicy indicates how we will treat node taints when calculating
+    pod topology spread skew. Options are: - Honor: nodes without taints, along
+    with tainted nodes for which the incoming pod has a toleration, are
+    included. - Ignore: node taints are ignored. All nodes are included.
+    
+    If this value is nil, the behavior is equivalent to the Ignore policy.
+    
+    Possible enum values:
+     - `"Honor"` means use this scheduling directive when calculating pod
+    topology spread skew.
+     - `"Ignore"` means ignore this scheduling directive when calculating pod
+    topology spread skew.
+    
+
+# (умолчание документировано самим API: "If this value is nil, the behavior is equivalent to the Ignore policy.")
+--- проверка гипотезы: тот же spread + nodeTaintsPolicy: Honor (manifests/41-topology-spread-honor.yaml) ---
+# cmd: kubectl -n cookbook-k8s get pod -l app=topo-honor-demo -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,NODE:.spec.nodeName --no-headers
+topo-honor-demo-84f74c99b5-6zmxw   Running   k8s-volga-wk02
+topo-honor-demo-84f74c99b5-qhw6m   Running   k8s-volga-wk03
+topo-honor-demo-84f74c99b5-s7xcs   Running   k8s-volga-wk01
+topo-honor-demo-84f74c99b5-t5h6g   Running   k8s-volga-wk02
+# (все ЧЕТЫРЕ Running, распределение 2+1+1 — отличие от topo-demo ровно в одном поле)
+# cmd: kubectl -n cookbook-k8s get pod -l app=topo-honor-demo -o custom-columns=NODE:.spec.nodeName --no-headers | sort | uniq -c
+      1 k8s-volga-wk01
+      2 k8s-volga-wk02
+      1 k8s-volga-wk03
+--- ограничение: по ЗОНАМ этого показать нельзя, зон в кластере нет ---
+# cmd: kubectl get nodes -o custom-columns=NAME:.metadata.name,ZONE:.metadata.labels.topology\.kubernetes\.io/zone,REGION:.metadata.labels.topology\.kubernetes\.io/region --no-headers
+k8s-volga-cp01   <none>   <none>
+k8s-volga-cp02   <none>   <none>
+k8s-volga-cp03   <none>   <none>
+k8s-volga-wk01   <none>   <none>
+k8s-volga-wk02   <none>   <none>
+k8s-volga-wk03   <none>   <none>
+# (у всех шести узлов зона и регион пусты — ограничение КЛАСТЕРА, а не Kubernetes; ср. fixtures/00-scheduler.txt. На кластере с зонами topologyKey: topology.kubernetes.io/zone даёт другой практический смысл: реплики разносятся по отказовым доменам, а не по хостам)
+--- после уборки: объектов демо нет, лейбл на узле остался (нужен K3) ---
+# cmd: kubectl -n cookbook-k8s get pod -l stand=cookbook-scheduling --no-headers
+No resources found in cookbook-k8s namespace.
+# cmd: kubectl -n cookbook-k8s get deploy -l stand=cookbook-scheduling --no-headers
+No resources found in cookbook-k8s namespace.
+# cmd: kubectl get nodes -l cookbook.khorost.tech/scheduling=demo -o name
+node/k8s-volga-wk01
+# cmd: kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints --no-headers
+k8s-volga-cp01   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]
+k8s-volga-cp02   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]
+k8s-volga-cp03   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]
+k8s-volga-wk01   <none>
+k8s-volga-wk02   <none>
+k8s-volga-wk03   <none>
+# cmd: kubectl describe quota -n cookbook-k8s | tail -8
+Namespace:       cookbook-k8s
+Resource         Used    Hard
+--------         ----    ----
+limits.cpu       3       8
+limits.memory    2432Mi  8Gi
+pods             13      30
+requests.cpu     950m    4
+requests.memory  992Mi   4Gi

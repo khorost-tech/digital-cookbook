@@ -1,0 +1,57 @@
+# Демо 1: тейнт — первый фильтр планировщика.
+#
+# Оба пода прибиты nodeSelector к ОДНОМУ И ТОМУ ЖЕ control-plane узлу k8s-volga-cp02.
+# Разница между ними ровно одна — toleration. Тейнт на узле уже существует штатно
+# (node-role.kubernetes.io/control-plane:NoSchedule, см. fixtures/00-scheduler.txt);
+# стенд своих тейнтов НЕ ставит и существующие НЕ снимает.
+#
+# Поды намеренно крошечные (pause, 10m/16Mi) и удаляются сразу после снятия фикстуры:
+# узел боевой, нагружать его нельзя.
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-toleration
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-scheduling
+    demo: taint-toleration
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: k8s-volga-cp02
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause:3.10
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-toleration
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-scheduling
+    demo: taint-toleration
+spec:
+  nodeSelector:
+    kubernetes.io/hostname: k8s-volga-cp02
+  tolerations:
+    - key: node-role.kubernetes.io/control-plane
+      operator: Exists
+      effect: NoSchedule
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause:3.10
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi

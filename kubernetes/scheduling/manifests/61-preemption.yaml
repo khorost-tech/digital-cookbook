@@ -1,0 +1,116 @@
+# Демо 4 (часть 2): вытеснение — что делает планировщик, когда места нет, а под важнее.
+#
+# ⚠️ ПРИМЕНЯТЬ В ДВА ПРИЁМА, а не одним `kubectl apply -f`. Вытесняющий под имеет приоритет
+# ВЫШЕ жертв, а очередь планировщика упорядочена по приоритету — при одновременном создании
+# preemptor был бы размещён ПЕРВЫМ, на пустой узел, и вытеснять стало бы некого. Сначала
+# жертвы занимают место, и только потом приходит вытесняющий:
+#
+#   sed '/^# ==== ДОКУМЕНТ 2/,$d' manifests/61-preemption.yaml | kubectl apply -f -
+#   kubectl -n cookbook-k8s rollout status deploy/victims --timeout=120s
+#   sed -n '/^# ==== ДОКУМЕНТ 2/,$p' manifests/61-preemption.yaml | kubectl apply -f -
+#
+# ---------------------------------------------------------------------------------------
+# ПОЧЕМУ ДЕМО ИДЁТ ПО ОСИ ephemeral-storage, А НЕ ПО CPU
+#
+# Вытеснение требует, чтобы вытесняющий под НЕ помещался на узел: victims + preemptor
+# должно быть БОЛЬШЕ, чем на узле свободно. По CPU это арифметически недостижимо, и мешает
+# этому не Kubernetes, а квота стенда (числа — из fixtures/40-preemption.txt):
+#
+#   квота cookbook-quota: requests.cpu лимит 4, использовано 950m  → стенду доступно 3050m
+#   узел k8s-volga-wk01:  allocatable cpu 3950m, запрошено 780m    → свободно      3170m
+#
+# Разрыв в 120m и решает дело: занять узел целиком квота не даёт, а значит и «не поместиться»
+# нашему поду не даст. По памяти разрыв ещё больше. Квота так и задумана — не позволить
+# стенду забрать общий узел.
+#
+# Ось ephemeral-storage свободна от этого ограничения:
+#   * квота её не ограничивает вовсе — в hard только cpu/memory/pods;
+#   * LimitRange cookbook-limits её не режет — max задан только для cpu и memory;
+#   * на wk01 запрошено ephemeral-storage 0 (0%) из 55573269617 байт (51,75 GiB) —
+#     ни один из 20 чужих подов на узле эту ось не объявляет.
+#
+# Поды — pause, они на диск не пишут ничего: резервируется только планировочный бюджет,
+# реального расхода диска нет. Механика вытеснения от выбора оси не зависит.
+#
+# ---------------------------------------------------------------------------------------
+# ЧЕМ ДЕМО БЕЗОПАСНО НА ОБЩЕМ КЛАСТЕРЕ (двойная страховка)
+#
+# 1) Приоритет жертв ОТРИЦАТЕЛЬНЫЙ (-10). Чужие поды класса не указывают, их приоритет 0 —
+#    ВЫШЕ наших жертв. Планировщик возвращает вытесненных «обратно» в порядке убывания
+#    приоритета, и наши -10 пробуются последними: в жертвы попадают именно они.
+#
+# 2) Ось выбрана так, что вытеснение чужого пода НИЧЕГО БЫ НЕ ДАЛО. Все чужие поды на узле
+#    запрашивают ephemeral-storage 0 — удаление любого из них освобождает 0 байт и не
+#    приближает preemptor к размещению. Такой под планировщик из набора жертв отбрасывает
+#    как бесполезный. Даже без первой страховки чужие поды тронуты не были бы.
+#
+# 3) Все участники приколоты nodeSelector'ом к одному узлу — тому, на который стенд сам
+#    поставил метку. Тейнты не ставятся, drain/cordon не выполняются.
+#
+# ---------------------------------------------------------------------------------------
+# РАСЧЁТ (сверен с разведкой шага 2)
+#   allocatable ephemeral-storage wk01 = 55573269617 B = 51,75 GiB, запрошено 0
+#   4 жертвы × 12Gi = 48Gi                 → помещаются (48 < 51,75), остаётся ≈ 3,75 GiB
+#   preemptor 8Gi > 3,75 GiB               → без вытеснения не помещается
+#   вытеснение ОДНОЙ жертвы освобождает 12Gi → 15,75 GiB ≥ 8Gi, хватает
+# Ожидание: планировщик вытеснит минимально необходимое число жертв, то есть одну.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: victims
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-scheduling
+    demo: preemption
+spec:
+  replicas: 4
+  selector:
+    matchLabels:
+      app: victims
+  template:
+    metadata:
+      labels:
+        app: victims
+        stand: cookbook-scheduling
+        demo: preemption
+    spec:
+      priorityClassName: cookbook-low
+      nodeSelector:
+        cookbook.khorost.tech/scheduling: demo
+      containers:
+        - name: pause
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+              ephemeral-storage: 12Gi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+# ==== ДОКУМЕНТ 2: вытесняющий под — применять ТОЛЬКО после того, как все 4 жертвы Running ====
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: preemptor
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-scheduling
+    demo: preemption
+spec:
+  priorityClassName: cookbook-high
+  nodeSelector:
+    cookbook.khorost.tech/scheduling: demo
+  containers:
+    - name: pause
+      image: registry.k8s.io/pause:3.10
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+          ephemeral-storage: 8Gi
+        limits:
+          cpu: 50m
+          memory: 64Mi

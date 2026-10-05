@@ -1,0 +1,37 @@
+== конкурентная запись, всего 20000 вставок на прогон ==
+прогон: 2026-08-21T18:07:12Z
+-- писателей: 1, ослабленная пара (sqlite NORMAL / pg off) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=NORMAL","count":20000,"writers":1,"busy_errors":0,"p50_us":19,"p95_us":49,"p99_us":225,"ops_per_sec":14645.141070390457}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":1,"busy_errors":0,"p50_us":186,"p95_us":238,"p99_us":332,"ops_per_sec":5175.86431294275}
+-- писателей: 1, полная пара (sqlite FULL / pg on) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":1,"busy_errors":0,"p50_us":1831,"p95_us":3583,"p99_us":4074,"ops_per_sec":480.2831429426949}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":1,"busy_errors":0,"p50_us":1868,"p95_us":2151,"p99_us":2336,"ops_per_sec":553.8592232503156}
+-- писателей: 2, ослабленная пара (sqlite NORMAL / pg off) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=NORMAL","count":20000,"writers":2,"busy_errors":0,"p50_us":35,"p95_us":109,"p99_us":1372,"ops_per_sec":17017.69187326336}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":2,"busy_errors":0,"p50_us":181,"p95_us":242,"p99_us":310,"ops_per_sec":10607.31831338227}
+-- писателей: 2, полная пара (sqlite FULL / pg on) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":2,"busy_errors":3,"p50_us":1850,"p95_us":3563,"p99_us":4138,"ops_per_sec":473.8400249340667}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":2,"busy_errors":0,"p50_us":3282,"p95_us":3458,"p99_us":4319,"ops_per_sec":611.5797252654501}
+-- писателей: 4, ослабленная пара (sqlite NORMAL / pg off) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=NORMAL","count":20000,"writers":4,"busy_errors":0,"p50_us":33,"p95_us":100,"p99_us":4022,"ops_per_sec":17297.73112813404}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":4,"busy_errors":0,"p50_us":196,"p95_us":272,"p99_us":353,"ops_per_sec":19423.170582912804}
+-- писателей: 4, полная пара (sqlite FULL / pg on) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":4,"busy_errors":6,"p50_us":1895,"p95_us":3602,"p99_us":5366,"ops_per_sec":458.5980285303807}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":4,"busy_errors":0,"p50_us":3308,"p95_us":3512,"p99_us":4694,"ops_per_sec":1208.3376950824982}
+-- писателей: 8, ослабленная пара (sqlite NORMAL / pg off) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=NORMAL","count":20000,"writers":8,"busy_errors":0,"p50_us":34,"p95_us":106,"p99_us":4035,"ops_per_sec":16574.32078046017}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":8,"busy_errors":0,"p50_us":228,"p95_us":395,"p99_us":543,"ops_per_sec":31983.510223253983}
+-- писателей: 8, полная пара (sqlite FULL / pg on) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":8,"busy_errors":28,"p50_us":1895,"p95_us":3662,"p99_us":7167,"ops_per_sec":437.70006301195326}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":8,"busy_errors":0,"p50_us":3307,"p95_us":3508,"p99_us":4218,"ops_per_sec":2397.5899719067406}
+-- писателей: 16, ослабленная пара (sqlite NORMAL / pg off) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=NORMAL","count":20000,"writers":16,"busy_errors":0,"p50_us":34,"p95_us":195,"p99_us":4595,"ops_per_sec":13744.32970376396}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=off","count":20000,"writers":16,"busy_errors":0,"p50_us":304,"p95_us":744,"p99_us":1218,"ops_per_sec":42955.75740193905}
+-- писателей: 16, полная пара (sqlite FULL / pg on) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=FULL","count":20000,"writers":16,"busy_errors":56,"p50_us":1923,"p95_us":3706,"p99_us":58165,"ops_per_sec":418.88267751542645}
+{"arm":"pg-tcp","op":"insert","durability":"postgres synchronous_commit=on","count":20000,"writers":16,"busy_errors":0,"p50_us":3396,"p95_us":3658,"p99_us":4585,"ops_per_sec":4645.760537203191}
+== контрольная проверка: busy_timeout не артефакт ================
+-- writers=8, -busy-timeout 5000 (по умолчанию, для сравнения) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=NORMAL","count":20000,"writers":8,"busy_errors":0,"p50_us":35,"p95_us":187,"p99_us":4099,"ops_per_sec":14456.749068681045}
+-- writers=8, -busy-timeout 0 (BusyErrors обязан вырасти) --
+{"arm":"sqlite","op":"insert","durability":"sqlite synchronous=NORMAL","count":20000,"writers":8,"busy_errors":18171,"p50_us":9,"p95_us":177,"p99_us":334,"ops_per_sec":121091.80292895157}

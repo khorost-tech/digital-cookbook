@@ -1,0 +1,70 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 10-taint
+# cmd: kubectl get pod -n cookbook-k8s no-toleration with-toleration -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,NODE:.spec.nodeName,SCHEDULED:.status.conditions[0].type
+# ---
+NAME              PHASE     NODE             SCHEDULED
+no-toleration     Pending   <none>           PodScheduled
+with-toleration   Running   k8s-volga-cp02   PodReadyToStartContainers
+--- почему no-toleration не размещён ---
+# cmd: kubectl -n cookbook-k8s describe pod no-toleration | awk '/^Events:/{f=1} f'
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  58s   default-scheduler  0/6 nodes are available: 3 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling.
+--- что с with-toleration ---
+# cmd: kubectl -n cookbook-k8s describe pod with-toleration | awk '/^Events:/{f=1} f'
+Events:
+  Type    Reason     Age   From               Message
+  ----    ------     ----  ----               -------
+  Normal  Scheduled  58s   default-scheduler  Successfully assigned cookbook-k8s/with-toleration to k8s-volga-cp02
+  Normal  Pulling    58s   kubelet            spec.containers{pause}: Pulling image "registry.k8s.io/pause:3.10"
+  Normal  Pulled     58s   kubelet            spec.containers{pause}: Successfully pulled image "registry.k8s.io/pause:3.10" in 634ms (634ms including waiting). Image size: 320368 bytes.
+  Normal  Created    58s   kubelet            spec.containers{pause}: Container created
+  Normal  Started    58s   kubelet            spec.containers{pause}: Container started
+--- итоговый список толераций with-toleration: своя одна, в объекте три ---
+# cmd: kubectl -n cookbook-k8s get pod with-toleration -o jsonpath (tolerations пода)
+node-role.kubernetes.io/control-plane op=Exists effect=NoSchedule tolerationSeconds=
+node.kubernetes.io/not-ready op=Exists effect=NoExecute tolerationSeconds=300
+node.kubernetes.io/unreachable op=Exists effect=NoExecute tolerationSeconds=300
+--- после уборки: на control-plane узле наших подов нет ---
+# cmd: kubectl get pod -A --field-selector spec.nodeName=k8s-volga-cp02 --no-headers | grep -c cookbook
+0
+# (0 — ни одного пода стенда на k8s-volga-cp02; grep -c печатает 0 и выходит с кодом 1)
+--- узлы после демо: тейнты не менялись, своих не добавлено ---
+# cmd: kubectl get nodes -o custom-columns=NAME:.metadata.name,TAINTS:.spec.taints
+NAME             TAINTS
+k8s-volga-cp01   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]
+k8s-volga-cp02   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]
+k8s-volga-cp03   [map[effect:NoSchedule key:node-role.kubernetes.io/control-plane]]
+k8s-volga-wk01   <none>
+k8s-volga-wk02   <none>
+k8s-volga-wk03   <none>
+--- поды стенда в namespace после уборки ---
+# cmd: kubectl get pod -n cookbook-k8s -l stand=cookbook-scheduling
+No resources found in cookbook-k8s namespace.
+--- контроль: те же две автоматические толерации есть у соседнего пода, где их никто не писал ---
+# cmd: kubectl -n cookbook-k8s get pod demo-0 -o jsonpath='{.spec.tolerations}'
+[{"effect":"NoExecute","key":"node.kubernetes.io/not-ready","operator":"Exists","tolerationSeconds":300},{"effect":"NoExecute","key":"node.kubernetes.io/unreachable","operator":"Exists","tolerationSeconds":300}]
+--- контрпример: DaemonSet-под сам терпит те же ключи — плагин пару с 300s НЕ дописал ---
+# cmd: kubectl -n kube-system get pod cilium-99lgh -o jsonpath='{.spec.tolerations}'
+[{"operator":"Exists"},{"effect":"NoExecute","key":"node.kubernetes.io/not-ready","operator":"Exists"},{"effect":"NoExecute","key":"node.kubernetes.io/unreachable","operator":"Exists"},{"effect":"NoSchedule","key":"node.kubernetes.io/disk-pressure","operator":"Exists"},{"effect":"NoSchedule","key":"node.kubernetes.io/memory-pressure","operator":"Exists"},{"effect":"NoSchedule","key":"node.kubernetes.io/pid-pressure","operator":"Exists"},{"effect":"NoSchedule","key":"node.kubernetes.io/unschedulable","operator":"Exists"},{"effect":"NoSchedule","key":"node.kubernetes.io/network-unavailable","operator":"Exists"}]
+# (ключи not-ready и unreachable есть, но БЕЗ tolerationSeconds — терпит бессрочно)
+--- сколько подов кластера остались без tolerationSeconds ---
+# cmd: kubectl get pod -A --no-headers -o custom-columns=NS:.metadata.namespace,NAME:.metadata.name,SEC:.spec.tolerations[*].tolerationSeconds
+# (подсчёт по этому же выводу: всего строк / строк со значением 300 / строк с <none>)
+total: 82
+with 300: 58
+without 300: 24
+# без 300: kube-system/cilium-* (6), kube-system/cilium-envoy-* (6), kube-system/csi-nfs-node-* (6),
+#           logging/vector-* (6) — все четыре набора DaemonSet
+--- LimitRange namespace: верхняя граница есть, нижней нет ---
+# cmd: kubectl get limitrange -n cookbook-k8s -o custom-columns=NAME:.metadata.name,TYPE:.spec.limits[0].type,MAX-CPU:.spec.limits[0].max.cpu,MAX-MEM:.spec.limits[0].max.memory,MIN:.spec.limits[0].min
+NAME              TYPE        MAX-CPU   MAX-MEM   MIN
+cookbook-limits   Container   2         2Gi       <none>
+--- дословный warning PodSecurity (server dry-run, объекты НЕ создаются) ---
+# cmd: kubectl apply --dry-run=server -f manifests/10-taint-toleration.yaml
+Warning: would violate PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "pause" must set securityContext.allowPrivilegeEscalation=false), unrestricted capabilities (container "pause" must set securityContext.capabilities.drop=["ALL"]), runAsNonRoot != true (pod or container "pause" must set securityContext.runAsNonRoot=true), seccompProfile (pod or container "pause" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+pod/no-toleration created (server dry run)
+pod/with-toleration created (server dry run)
+--- контроль после dry-run: ничего не создано ---
+# cmd: kubectl get pod -n cookbook-k8s -l stand=cookbook-scheduling
+No resources found in cookbook-k8s namespace.

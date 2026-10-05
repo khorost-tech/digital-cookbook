@@ -1,0 +1,23 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 30-pending
+# cmd: kubectl get pod -n cookbook-k8s stuck-affinity -o custom-columns=NAME:.metadata.name,PHASE:.status.phase,NODE:.spec.nodeName --no-headers
+# ---
+stuck-affinity   Pending   <none>
+--- почему Pending навсегда ---
+# cmd: kubectl -n cookbook-k8s describe pod stuck-affinity | awk '/^Events:/{f=1} f'
+Events:
+  Type     Reason            Age   From               Message
+  ----     ------            ----  ----               -------
+  Warning  FailedScheduling  47s   default-scheduler  0/6 nodes are available: 3 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling.
+--- почему правило невыполнимо: значения метки на всех узлах ---
+# cmd: kubectl get nodes -o custom-columns=NODE:.metadata.name,SCHEDULING_LABEL:.metadata.labels.cookbook\.khorost\.tech/scheduling,TAINTS:.spec.taints[*].key --no-headers
+k8s-volga-cp01   <none>   node-role.kubernetes.io/control-plane
+k8s-volga-cp02   <none>   node-role.kubernetes.io/control-plane
+k8s-volga-cp03   <none>   node-role.kubernetes.io/control-plane
+k8s-volga-wk01   demo     <none>
+k8s-volga-wk02   <none>   <none>
+k8s-volga-wk03   <none>   <none>
+--- тот же самый текст отказа был в Демо 1 (fixtures/10-taint.txt) при СОВСЕМ другой причине ---
+# cmd: grep -h FailedScheduling fixtures/10-taint.txt fixtures/30-pending.txt | grep -v '^#' | sed 's/[0-9][0-9]*s /<age> /' | sort -u
+# (grep -v '^#' отбрасывает строки '# cmd:', иначе команда нашла бы саму себя)
+  Warning  FailedScheduling  <age>   default-scheduler  0/6 nodes are available: 3 node(s) didn't match Pod's node affinity/selector, 3 node(s) had untolerated taint(s). no new claims to deallocate, preemption: 0/6 nodes are available: 6 Preemption is not helpful for scheduling.
+# два разных пода, две разные причины — одна и та же строка после нормализации возраста
