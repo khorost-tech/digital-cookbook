@@ -130,7 +130,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`kubernetes/architecture`](kubernetes/architecture) | Архитектура Kubernetes на живом кластере: из чего состоит control plane, кто ведущий, что происходит между kubectl apply и запущенным контейнером | [статья](https://khorost.tech/kubernetes/k8s-architecture-control-plane/) |
-| [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | 🔜 скоро |
+| [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
 | [`kubernetes/scheduling`](kubernetes/scheduling) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | 🔜 скоро |
 
 ## Security

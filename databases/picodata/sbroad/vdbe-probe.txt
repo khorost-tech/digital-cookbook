@@ -1,0 +1,5 @@
+=== JOIN по category, a.id < 10, перенос до 200000, опкоды до 2000000000 ===
+SELECT count(*) FROM products a JOIN products b ON a.category = b.category WHERE a.id < 10 OPTION (SQL_MOTION_ROW_MAX = 200000, SQL_VDBE_OPCODE_MAX = 2000000000)
+psql:<stdin>:1: ERROR:  sbroad: box error: ProcLua: {"code":32,"base_type":"ClientError","type":"ClientError","message":"Error on replicaset 0dde1ef8-6a90-43ac-8416-08677d9a3bce: Failed to execute '.proc_sql_execute': sbroad: Reached a limit on max executed vdbe opcodes. Limit: 2000000000","trace":[{"file":"vshard\/error.lua","line":284}]}
+код завершения: 3, время: 16759 мс
+ok: отказ по опкодам и на лимите 2000000000

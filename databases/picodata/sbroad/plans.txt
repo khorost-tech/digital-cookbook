@@ -53,17 +53,17 @@ execution options:
 buckets = [1-3000]
 
 === 6. цена переноса: тот же запрос на объёме ===
-psql:<stdin>:1: ERROR:  sbroad: box error: ProcLua: {"code":32,"base_type":"ClientError","type":"ClientError","message":"Error on replicaset ec672d9d-c2b9-468b-9eb5-b2cbdd3eb09c: Failed to execute '.proc_sql_execute': sbroad: unexpected number of values: Exceeded maximum number of rows (5000) in virtual table: 99776","trace":[{"file":"vshard\/error.lua","line":284}]}
+psql:<stdin>:1: ERROR:  sbroad: box error: ProcLua: {"code":32,"base_type":"ClientError","type":"ClientError","message":"Error on replicaset 0dde1ef8-6a90-43ac-8416-08677d9a3bce: Failed to execute '.proc_sql_execute': sbroad: unexpected number of values: Exceeded maximum number of rows (5000) in virtual table: 100224","trace":[{"file":"vshard\/error.lua","line":284}]}
 ok: отказ, и причина — лимит переноса sql_motion_row_max (код 3)
 
 === 7. тот же запрос с поднятым для него лимитом переноса ===
-psql:<stdin>:1: ERROR:  sbroad: box error: ProcLua: {"code":32,"base_type":"ClientError","type":"ClientError","message":"Error on replicaset ec672d9d-c2b9-468b-9eb5-b2cbdd3eb09c: Failed to execute '.proc_sql_execute': sbroad: Reached a limit on max executed vdbe opcodes. Limit: 5000000","trace":[{"file":"vshard\/error.lua","line":284}]}
+psql:<stdin>:1: ERROR:  sbroad: box error: ProcLua: {"code":32,"base_type":"ClientError","type":"ClientError","message":"Error on replicaset 0dde1ef8-6a90-43ac-8416-08677d9a3bce: Failed to execute '.proc_sql_execute': sbroad: Reached a limit on max executed vdbe opcodes. Limit: 5000000","trace":[{"file":"vshard\/error.lua","line":284}]}
 ok: лимит переноса снят, но запрос упёрся в следующий предел — sql_vdbe_opcode_max (код 3)
     (эталон PostgreSQL для этого запроса: 66638543 строк в соединении — count(*) по ним)
 
 === 8. три соединения на одном фильтре a.id < 10: что именно стоит дорого ===
-  по id (коллокация)           лимиты по умолчанию -> ok:9         (PostgreSQL: 9)
-  по sku (без коллокации, 1:1) лимиты по умолчанию -> motion       (PostgreSQL: 9)
-  по sku (без коллокации, 1:1) SQL_MOTION_ROW_MAX = 200000    -> ok:9         (PostgreSQL: 9)
-  по category (без коллокации) лимиты по умолчанию -> motion       (PostgreSQL: 301147)
-  по category (без коллокации) SQL_MOTION_ROW_MAX = 200000    -> vdbe         (PostgreSQL: 301147)
+  по id (коллокация)           лимиты по умолчанию -> ok:9             44 мс  (PostgreSQL: 9)
+  по sku (без коллокации, 1:1) лимиты по умолчанию -> motion           56 мс  (PostgreSQL: 9)
+  по sku (без коллокации, 1:1) SQL_MOTION_ROW_MAX = 200000    -> ok:9            259 мс  (PostgreSQL: 9)
+  по category (без коллокации) лимиты по умолчанию -> motion           66 мс  (PostgreSQL: 301147)
+  по category (без коллокации) SQL_MOTION_ROW_MAX = 200000    -> vdbe            247 мс  (PostgreSQL: 301147)

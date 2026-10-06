@@ -95,6 +95,7 @@
     ],
     "databases/picodata": [
       "databases/picodata-architecture-fork-vs-product.md",
+      "databases/picodata-distributed-sql-sbroad.md",
       "databases/picodata-postgres-protocol.md",
       "performance/inmemory-tarantool-picodata-compute-near-data.md"
     ],
@@ -272,6 +273,7 @@
     ],
     "observability/practice-stack": [
       "observability/distributed-tracing-tempo.md",
+      "observability/logs-correlation-loki.md",
       "observability/otel-instrumentation-go-java.md"
     ],
     "observability/vector-pipeline": [

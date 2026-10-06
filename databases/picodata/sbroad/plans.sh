@@ -107,14 +107,19 @@ check_join() { # <подпись> <ON для Picodata> <ON для PostgreSQL> <O
     local q="SELECT count(*) FROM products a JOIN products b ON $2 WHERE a.id < 10"
     local o out rc want
     [ -n "$4" ] && o=" OPTION ($4)" || o=""
+    local t0 ms
+    t0=$(date +%s%N)
     out="$(run p8 "$q$o")"; rc=$?
+    ms=$(( ($(date +%s%N) - t0) / 1000000 ))
     want="$(run_origin "SELECT count(*) FROM products a JOIN products b ON $3 WHERE a.id < 10")"
     local got
     if [ "$rc" -eq 0 ]; then got="ok:$out"
     elif printf '%s' "$out" | grep -q 'Exceeded maximum number of rows'; then got="motion"
     elif printf '%s' "$out" | grep -q 'max executed vdbe opcodes'; then got="vdbe"
     else got="другая ошибка"; fi
-    printf "  %-40s %-30s -> %-12s (PostgreSQL: %s)\n" "$1" "${4:-лимиты по умолчанию}" "$got" "$want"
+    # Время — от клиента, включая docker exec и psql: для сравнения вариантов
+    # между собой в одном прогоне, а не как абсолютная латентность Picodata.
+    printf "  %-40s %-30s -> %-12s %6s мс  (PostgreSQL: %s)\n" "$1" "${4:-лимиты по умолчанию}" "$got" "$ms" "$want"
     case "$5" in
         ok)  [ "$got" = "ok:$want" ] || { echo "  !!! ожидался успех с результатом $want" >&2; fail=1; } ;;
         *)   [ "$got" = "$5" ]       || { echo "  !!! ожидался отказ по $5" >&2; fail=1; } ;;
