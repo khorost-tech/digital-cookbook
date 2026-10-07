@@ -1,0 +1,21 @@
+# goose-pg
+# снято: 2026-10-05 08:09 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- apply1: первая миграция (CREATE TABLE probe) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/migrations:/mig" smig-goose -dir /mig postgres 'postgres://postgres:smig@pg:5432/t_goose?sslmode=disable' up-to 1
+2026/10/05 08:09:28 OK   00001_create_probe.sql (1.71ms)
+2026/10/05 08:09:28 goose: successfully migrated database to version: 1
+# код возврата: 0
+
+# журнал версий goose_db_version существует: да
+--- apply2: вторая миграция (ADD COLUMN note) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/migrations:/mig" smig-goose -dir /mig postgres 'postgres://postgres:smig@pg:5432/t_goose?sslmode=disable' up
+2026/10/05 08:09:28 OK   00002_add_note.sql (1.03ms)
+2026/10/05 08:09:28 goose: successfully migrated database to version: 2
+# код возврата: 0
+
+--- rollback: откат второй миграции ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/migrations:/mig" smig-goose -dir /mig postgres 'postgres://postgres:smig@pg:5432/t_goose?sslmode=disable' down
+2026/10/05 08:09:29 OK   00002_add_note.sql (980.92µs)
+# код возврата: 0
+

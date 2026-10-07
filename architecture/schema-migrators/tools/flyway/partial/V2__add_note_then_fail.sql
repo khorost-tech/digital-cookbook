@@ -1,0 +1,2 @@
+ALTER TABLE probe ADD COLUMN note TEXT;
+INSERT INTO missing_table VALUES (1);

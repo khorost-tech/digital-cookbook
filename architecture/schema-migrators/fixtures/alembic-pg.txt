@@ -1,0 +1,24 @@
+# alembic-pg
+# снято: 2026-10-05 08:09 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- apply1: первая миграция (CREATE TABLE probe) ---
+# cmd: docker run --rm --network smig -e SMIG_URL='postgresql+psycopg://postgres:smig@pg:5432/t_alembic?sslmode=disable' -v "$PWD/tools/alembic:/w" smig-alembic upgrade 0001
+
+# код возврата: 0
+
+# журнал версий alembic_version существует: да
+--- apply2: вторая миграция (ADD COLUMN note) ---
+# cmd: docker run --rm --network smig -e SMIG_URL='postgresql+psycopg://postgres:smig@pg:5432/t_alembic?sslmode=disable' -v "$PWD/tools/alembic:/w" smig-alembic upgrade head
+
+# код возврата: 0
+
+--- introspect: сверка схемы базы с ожидаемой ---
+# cmd: docker run --rm --network smig -e SMIG_URL='postgresql+psycopg://postgres:smig@pg:5432/t_alembic?sslmode=disable' -v "$PWD/tools/alembic:/w" smig-alembic check
+No new upgrade operations detected.
+# код возврата: 0
+
+--- rollback: откат второй миграции ---
+# cmd: docker run --rm --network smig -e SMIG_URL='postgresql+psycopg://postgres:smig@pg:5432/t_alembic?sslmode=disable' -v "$PWD/tools/alembic:/w" smig-alembic downgrade -1
+
+# код возврата: 0
+

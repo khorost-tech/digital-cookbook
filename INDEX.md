@@ -18,6 +18,7 @@
 | [`architecture/serialization-formats`](architecture/serialization-formats) | JSON, Avro, Protobuf и JSON Schema на одних и тех же записях: размер и сжатие, эволюция схемы (девять изменений, тихая порча против явного отказа), что нужно иметь под рукой для чтения (реестр схем), и перекрёстное чтение байтов между независимыми Go- и Java-реализациями | [статья](https://khorost.tech/architecture/serialization-formats-json-avro-protobuf/) |
 | [`architecture/temporal`](architecture/temporal) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
 | [`architecture/testing`](architecture/testing) | Тестирование: распределённые системы (Testcontainers), TDD/BDD, flaky-тесты | [статья](https://khorost.tech/architecture/flaky-tests-diagnose-and-fix/) |
+| [`architecture/schema-migrators`](architecture/schema-migrators) | goose, Flyway, Liquibase, Atlas и Alembic против PostgreSQL, CockroachDB и Picodata: журнал версий, применение, интроспекция и откат с проверкой состояния базы SQL-запросом; обходные пути для CockroachDB | 🔜 скоро |
 
 ## Databases
 
@@ -115,7 +116,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`observability/practice-stack`](observability/practice-stack) | Четыре сигнала на одном стенде: OTel-инструментирование Go и Java, распределённый трейсинг, корреляция логов, метрики RED/USE с правилами записи, SLO с multi-window burn-rate алертами и Alertmanager, непрерывное профилирование в Pyroscope — девять самопроверок с точными критериями | 🔜 скоро |
+| [`observability/practice-stack`](observability/practice-stack) | Четыре сигнала на одном стенде: OTel-инструментирование Go и Java, распределённый трейсинг, корреляция логов, метрики RED/USE с правилами записи, SLO с multi-window burn-rate алертами и Alertmanager, непрерывное профилирование в Pyroscope — девять самопроверок с точными критериями | [статья](https://khorost.tech/observability/otel-instrumentation-go-java/) |
 | [`observability/vector-pipeline`](observability/vector-pipeline) | Сквозной контур логов на Vector 0.57: file source с checkpoints, VRL-парсинг и фильтрация, транспорт NATS/Kafka, доставка в OpenSearch 3.5.0, дисковые буферы и подтверждения; семь замеров со скриптами | [статья](https://khorost.tech/observability/vector-data-pipeline/) |
 | [`observability/vector-vs-collector`](observability/vector-vs-collector) | Vector, OpenTelemetry Collector и Fluent Bit на одном потоке логов: конфигурация, поведение под нагрузкой, сравнение | [статья](https://khorost.tech/observability/vector-vs-otel-collector/) |
 

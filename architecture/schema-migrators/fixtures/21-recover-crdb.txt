@@ -1,0 +1,214 @@
+# 21-recover-crdb
+# снято: 2026-10-05 10:45 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- Liquibase: сбой на середине второго changeset ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://crdb:26257/t_liquibase?sslmode=disable' --username=root --password='' --search-path=/liquibase/changelog --changelog-file=partial.sql update
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 10:45:16 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+Running Changeset: partial.sql::1::smig
+Running Changeset: partial.sql::2::smig
+waiting for job(s) to complete: 1216108024273436673
+If the statement is canceled, jobs will continue in the background.
+
+UPDATE SUMMARY
+Run:                          1
+Previously run:               0
+Filtered out:                 0
+-------------------------------
+Total change sets:            2
+
+ERROR: Exception Details
+ERROR: Exception Primary Class:  PSQLException
+ERROR: Exception Primary Reason:  ERROR: relation "missing_table" does not exist
+ERROR: Exception Primary Source:  PostgreSQL 13.0.0
+
+Unexpected error running Liquibase: Migration failed for changeset partial.sql::2::smig:
+     Reason: liquibase.exception.DatabaseException: ERROR: relation "missing_table" does not exist [Failed SQL: (0) INSERT INTO missing_table VALUES (1)]
+
+For more information, please use the --log-level flag
+# код возврата: 1
+
+--- Liquibase: схема и журнал после сбоя ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_liquibase?sslmode=disable' -tAc "SELECT (SELECT count(*) FROM information_schema.columns WHERE table_name = 'probe' AND column_name = 'note') AS note_column, (SELECT string_agg(id, ' ' ORDER BY orderexecuted) FROM databasechangelog) AS journal"
+1|1
+# код возврата: 0
+
+--- Liquibase: доводим changeset до полного результата руками ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_liquibase?sslmode=disable' -tAc "CREATE TABLE missing_table (id INT PRIMARY KEY); INSERT INTO missing_table VALUES (1)"
+CREATE TABLE
+INSERT 0 1
+# код возврата: 0
+
+--- Liquibase: проверка схемы перед отметкой в журнале ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_liquibase?sslmode=disable' -tAc "SELECT (SELECT count(*) FROM information_schema.columns WHERE table_name = 'probe' AND column_name = 'note') AS note_column, (SELECT count(*) FROM missing_table WHERE id = 1) AS inserted_row"
+1|1
+# код возврата: 0
+
+--- Liquibase: mark-next-changeset-ran ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://crdb:26257/t_liquibase?sslmode=disable' --username=root --password='' --search-path=/liquibase/changelog --changelog-file=partial.sql mark-next-changeset-ran
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 10:45:17 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+Liquibase command 'mark-next-changeset-ran' was executed successfully.
+# код возврата: 0
+
+--- Liquibase: журнал после отметки ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_liquibase?sslmode=disable' -tAc "SELECT string_agg(id || ':' || exectype, ' ' ORDER BY orderexecuted) FROM databasechangelog"
+1:EXECUTED 2:EXECUTED
+# код возврата: 0
+
+--- Liquibase: update после восстановления ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://crdb:26257/t_liquibase?sslmode=disable' --username=root --password='' --search-path=/liquibase/changelog --changelog-file=partial.sql update
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 10:45:18 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+Database is up to date, no changesets to execute
+
+UPDATE SUMMARY
+Run:                          0
+Previously run:               2
+Filtered out:                 0
+-------------------------------
+Total change sets:            2
+
+Liquibase command 'update' was executed successfully.
+# код возврата: 0
+
+--- Flyway: сбой на середине второй миграции ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/partial:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://crdb:26257/t_flyway?sslmode=disable' -user=root -password='' migrate
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 13.0)
+WARNING: Using CockroachDB 26.2 which is newer than the version Flyway has been verified with. The latest verified version of CockroachDB is 26.1.
+Schema history table "public"."flyway_schema_history" does not exist yet
+Successfully validated 2 migrations (execution time 00:00.011s)
+Creating Schema History table "public"."flyway_schema_history" ...
+DB: waiting for job(s) to complete: 1216108035334275073
+If the statement is canceled, jobs will continue in the background.
+Current version of schema "public": << Empty Schema >>
+Migrating schema "public" to version "1 - create probe" [non-transactional]
+Migrating schema "public" to version "2 - add note then fail" [non-transactional]
+DB: waiting for job(s) to complete: 1216108036466638849
+If the statement is canceled, jobs will continue in the background.
+ERROR: Migration of schema "public" to version "2 - add note then fail" [non-transactional] failed! Please restore backups and roll back database and code!
+ERROR: Failed to execute script V2__add_note_then_fail.sql
+---------------------------------------------------
+SQL State  : 42P01
+Error Code : 0
+Message    : ERROR: relation "missing_table" does not exist
+Location   : /flyway/sql/V2__add_note_then_fail.sql (/flyway/sql/V2__add_note_then_fail.sql)
+Line       : 2
+Statement  : Run Flyway with -X option to see the actual statement causing the problem
+
+Caused by: Failed to execute script V2__add_note_then_fail.sql
+---------------------------------------------------
+SQL State  : 42P01
+Error Code : 0
+Message    : ERROR: relation "missing_table" does not exist
+Location   : /flyway/sql/V2__add_note_then_fail.sql (/flyway/sql/V2__add_note_then_fail.sql)
+Line       : 2
+Statement  : Run Flyway with -X option to see the actual statement causing the problem
+
+Caused by: org.postgresql.util.PSQLException: ERROR: relation "missing_table" does not exist
+# код возврата: 1
+
+--- Flyway: схема и журнал после сбоя ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_flyway?sslmode=disable' -tAc "SELECT (SELECT count(*) FROM information_schema.columns WHERE table_name = 'probe' AND column_name = 'note') AS note_column, (SELECT string_agg(version || ':' || success, ' ' ORDER BY installed_rank) FROM flyway_schema_history) AS journal"
+1|1:true 2:false
+# код возврата: 0
+
+--- Flyway: откатываем применённую половину руками ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_flyway?sslmode=disable' -tAc "ALTER TABLE probe DROP COLUMN note"
+NOTICE:  waiting for job(s) to complete: 1216108038946652161
+If the statement is canceled, jobs will continue in the background.
+ALTER TABLE
+# код возврата: 0
+
+--- Flyway: проверка схемы перед repair ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_flyway?sslmode=disable' -tAc "SELECT count(*) AS note_column FROM information_schema.columns WHERE table_name = 'probe' AND column_name = 'note'"
+0
+# код возврата: 0
+
+--- Flyway: repair ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/partial-fixed:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://crdb:26257/t_flyway?sslmode=disable' -user=root -password='' repair
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 13.0)
+WARNING: Using CockroachDB 26.2 which is newer than the version Flyway has been verified with. The latest verified version of CockroachDB is 26.1.
+Successfully repaired schema history table "public"."flyway_schema_history" (execution time 00:00.022s).
+Manual cleanup of the remaining effects of the failed migration may still be required.
+# код возврата: 0
+
+--- Flyway: журнал после repair ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_flyway?sslmode=disable' -tAc "SELECT string_agg(version || ':' || success, ' ' ORDER BY installed_rank) FROM flyway_schema_history"
+1:true
+# код возврата: 0
+
+--- Flyway: migrate исправленной миграции ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/partial-fixed:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://crdb:26257/t_flyway?sslmode=disable' -user=root -password='' migrate
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 13.0)
+WARNING: Using CockroachDB 26.2 which is newer than the version Flyway has been verified with. The latest verified version of CockroachDB is 26.1.
+Successfully validated 2 migrations (execution time 00:00.009s)
+Current version of schema "public": 1
+Migrating schema "public" to version "2 - add note then fail" [non-transactional]
+DB: waiting for job(s) to complete: 1216108045532823553
+If the statement is canceled, jobs will continue in the background.
+Successfully applied 1 migration to schema "public", now at version v2 (execution time 00:00.080s)
+# код возврата: 0
+
+--- Flyway: схема и журнал после восстановления ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_flyway?sslmode=disable' -tAc "SELECT (SELECT count(*) FROM information_schema.columns WHERE table_name = 'probe' AND column_name = 'note') AS note_column, (SELECT string_agg(version || ':' || success, ' ' ORDER BY installed_rank) FROM flyway_schema_history) AS journal"
+1|1:true 2:true
+# код возврата: 0
+

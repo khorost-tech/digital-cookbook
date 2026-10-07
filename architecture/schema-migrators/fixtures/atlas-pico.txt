@@ -1,0 +1,48 @@
+# atlas-pico
+# снято: 2026-10-05 08:10 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- apply1: первая миграция (CREATE TABLE probe) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community migrate apply --url 'postgres://admin:Picodata1@pico:5432/picodata?sslmode=disable&search_path=public' --dir file:///mig 1
+Error: postgres: scanning system variables: pq: sbroad: SQL function current_setting not found (XX000)
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+# журнал версий atlas_schema_revisions существует: нет
+--- apply2: вторая миграция (ADD COLUMN note) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community migrate apply --url 'postgres://admin:Picodata1@pico:5432/picodata?sslmode=disable&search_path=public' --dir file:///mig
+Error: postgres: scanning system variables: pq: sbroad: SQL function current_setting not found (XX000)
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+--- introspect: сверка схемы базы с ожидаемой ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community schema inspect --url 'postgres://admin:Picodata1@pico:5432/picodata?sslmode=disable&search_path=public'
+Error: postgres: scanning system variables: pq: sbroad: SQL function current_setting not found (XX000)
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+--- rollback: откат второй миграции ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community migrate down --url 'postgres://admin:Picodata1@pico:5432/picodata?sslmode=disable&search_path=public' --dir file:///mig --dev-url 'postgres://admin:Picodata1@pico:5432/picodata?sslmode=disable&search_path=public'
+Error: unknown flag: --url
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+

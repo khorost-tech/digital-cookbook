@@ -1,0 +1,17 @@
+# CockroachDB одним узлом: журнал версий, DDL и системные каталоги от числа
+# узлов не зависят. start-single-node к тому же не требует лицензионного ключа.
+name: smig-crdb
+services:
+  crdb:
+    image: cockroachdb/cockroach:v26.2.5
+    container_name: smig-crdb
+    hostname: crdb
+    command: start-single-node --insecure --cache=256MiB --max-sql-memory=256MiB
+    healthcheck:
+      test: ["CMD", "cockroach", "sql", "--insecure", "-e", "select 1"]
+      interval: 3s
+      retries: 40
+networks:
+  default:
+    name: smig
+    external: true

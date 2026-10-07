@@ -1,0 +1,255 @@
+# 00-control
+# снято: 2026-10-05 08:09 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- goose: невалидная миграция ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/invalid:/mig" smig-goose -dir /mig postgres 'postgres://postgres:smig@pg:5432/t_ctl_goose?sslmode=disable' up
+2026/10/05 08:09:21 goose run: ERROR 00001_broken.sql: failed to run SQL migration: failed to execute SQL query "CREATE TABLE broken (id INT PRIMARY KEY,, name TEXT);": ERROR: syntax error at or near "," (SQLSTATE 42601)
+# код возврата: 1
+
+# goose: отказ распознан — код 1, таблицы broken нет
+--- flyway: невалидная миграция ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/invalid:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://pg:5432/t_ctl_flyway' -user=postgres -password='smig' migrate
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 18.4)
+Schema history table "public"."flyway_schema_history" does not exist yet
+Successfully validated 1 migration (execution time 00:00.009s)
+Creating Schema History table "public"."flyway_schema_history" ...
+Current version of schema "public": << Empty Schema >>
+Migrating schema "public" to version "1 - broken"
+ERROR: Migration of schema "public" to version "1 - broken" failed! Changes successfully rolled back.
+ERROR: Failed to execute script V1__broken.sql
+---------------------------------------
+SQL State  : 42601
+Error Code : 0
+Message    : ERROR: syntax error at or near ","
+  Position: 41
+Location   : /flyway/sql/V1__broken.sql (/flyway/sql/V1__broken.sql)
+Line       : 1
+Statement  : Run Flyway with -X option to see the actual statement causing the problem
+
+Caused by: Failed to execute script V1__broken.sql
+---------------------------------------
+SQL State  : 42601
+Error Code : 0
+Message    : ERROR: syntax error at or near ","
+  Position: 41
+Location   : /flyway/sql/V1__broken.sql (/flyway/sql/V1__broken.sql)
+Line       : 1
+Statement  : Run Flyway with -X option to see the actual statement causing the problem
+
+Caused by: org.postgresql.util.PSQLException: ERROR: syntax error at or near ","
+  Position: 41
+# код возврата: 1
+
+# flyway: отказ распознан — код 1, таблицы broken нет
+--- liquibase: невалидная миграция ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://pg:5432/t_ctl_liquibase' --username=postgres --password='smig' --search-path=/liquibase/changelog --changelog-file=invalid.sql update
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 08:09:24 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+Running Changeset: invalid.sql::1::smig
+
+UPDATE SUMMARY
+Run:                          0
+Previously run:               0
+Filtered out:                 0
+-------------------------------
+Total change sets:            1
+
+ERROR: Exception Details
+ERROR: Exception Primary Class:  PSQLException
+ERROR: Exception Primary Reason:  ERROR: syntax error at or near ","
+  Position: 41
+ERROR: Exception Primary Source:  PostgreSQL 18.4 (Debian 18.4-1.pgdg13+1)
+
+Unexpected error running Liquibase: Migration failed for changeset invalid.sql::1::smig:
+     Reason: liquibase.exception.DatabaseException: ERROR: syntax error at or near ","
+  Position: 41 [Failed SQL: (0) CREATE TABLE broken (id INT PRIMARY KEY,, name TEXT)]
+
+For more information, please use the --log-level flag
+# код возврата: 1
+
+# liquibase: отказ распознан — код 1, таблицы broken нет
+--- atlas: невалидная миграция ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/invalid:/mig" arigaio/atlas:1.3.3-community migrate apply --url 'postgres://postgres:smig@pg:5432/t_ctl_atlas?sslmode=disable&search_path=public' --dir file:///mig
+Migrating to version 20261005000001 (1 migrations in total):
+
+  -- migrating version 20261005000001
+    -> CREATE TABLE broken (id INT PRIMARY KEY,, name TEXT);
+    pq: syntax error at or near "," at column 41 (42601)
+
+  -------------------------
+  -- 9.044708ms
+  -- 1 migration with errors
+  -- 1 sql statement with errors
+Error: sql/migrate: executing statement "CREATE TABLE broken (id INT PRIMARY KEY,, name TEXT);" from version "20261005000001": pq: syntax error at or near "," at column 41 (42601)
+sql/migrate: write revision: pq: current transaction is aborted, commands ignored until end of transaction block (25P02)
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+# atlas: отказ распознан — код 1, таблицы broken нет
+--- alembic: невалидная миграция ---
+# cmd: docker run --rm --network smig -e SMIG_URL='postgresql+psycopg://postgres:smig@pg:5432/t_ctl_alembic?sslmode=disable' -v "$PWD/tools/alembic:/w" -v "$PWD/tools/alembic/invalid:/w/versions" smig-alembic upgrade head
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1943, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 1192, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.SyntaxError: syntax error at or near ","
+LINE 1: CREATE TABLE broken (id INT PRIMARY KEY,, name TEXT)
+                                                ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/bin/alembic", line 6, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/config.py", line 1039, in main
+    CommandLine(prog=prog).main(argv=argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/config.py", line 1029, in main
+    self.run_cmd(cfg, options)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/config.py", line 963, in run_cmd
+    fn(
+    ~~^
+        config,
+        ^^^^^^^
+        *[getattr(options, k, None) for k in positional],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        **{k: getattr(options, k, None) for k in kwarg},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/alembic/command.py", line 487, in upgrade
+    script.run_env()
+    ~~~~~~~~~~~~~~^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/script/base.py", line 550, in run_env
+    util.load_python_file(self.dir, "env.py")
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/util/pyfiles.py", line 114, in load_python_file
+    module = load_module_py(module_id, path)
+  File "/usr/local/lib/python3.13/site-packages/alembic/util/pyfiles.py", line 132, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 1027, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/w/env.py", line 15, in <module>
+    context.run_migrations()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 8, in run_migrations
+  File "/usr/local/lib/python3.13/site-packages/alembic/runtime/environment.py", line 970, in run_migrations
+    self.get_context().run_migrations(**kw)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/runtime/migration.py", line 616, in run_migrations
+    step.migration_fn(**kw)
+    ~~~~~~~~~~~~~~~~~^^^^^^
+  File "/w/versions/0001_broken.py", line 9, in upgrade
+    op.execute("CREATE TABLE broken (id INT PRIMARY KEY,, name TEXT)")
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 8, in execute
+  File "<string>", line 3, in execute
+  File "/usr/local/lib/python3.13/site-packages/alembic/operations/ops.py", line 2645, in execute
+    return operations.invoke(op)
+           ~~~~~~~~~~~~~~~~~^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/operations/base.py", line 448, in invoke
+    return fn(self, operation)
+  File "/usr/local/lib/python3.13/site-packages/alembic/operations/toimpl.py", line 256, in execute_sql
+    operations.migration_context.impl.execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        operation.sqltext, execution_options=operation.execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/alembic/ddl/impl.py", line 259, in execute
+    self._exec(sql, execution_options)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/ddl/impl.py", line 252, in _exec
+    return conn.execute(construct, params)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1448, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 533, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1668, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<9 lines>...
+        param_dict=param_dict,
+    )
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1822, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1962, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2332, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1943, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 1192, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+sqlalchemy.exc.ProgrammingError: (psycopg.errors.SyntaxError) syntax error at or near ","
+LINE 1: CREATE TABLE broken (id INT PRIMARY KEY,, name TEXT)
+                                                ^
+[SQL: CREATE TABLE broken (id INT PRIMARY KEY,, name TEXT)]
+(Background on this error at: https://sqlalche.me/e/21/f405)
+# код возврата: 1
+
+# alembic: отказ распознан — код 1, таблицы broken нет

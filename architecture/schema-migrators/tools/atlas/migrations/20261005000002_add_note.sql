@@ -1,0 +1,1 @@
+ALTER TABLE probe ADD COLUMN note TEXT;

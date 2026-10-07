@@ -1,0 +1,137 @@
+# atlas-crdb
+# снято: 2026-10-05 08:09 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- apply1: первая миграция (CREATE TABLE probe) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community migrate apply --url 'postgres://root@crdb:26257/t_atlas?sslmode=disable&search_path=public' --dir file:///mig 1
+Error: pq: unexpected transaction status idle
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+# журнал версий atlas_schema_revisions существует: да
+--- apply2: вторая миграция (ADD COLUMN note) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community migrate apply --url 'postgres://root@crdb:26257/t_atlas?sslmode=disable&search_path=public' --dir file:///mig
+Migrating to version 20261005000002 (2 migrations in total):
+
+  -- migrating version 20261005000001
+    -> CREATE TABLE probe (id INT PRIMARY KEY, name TEXT);
+  -- ok (-2562047h47m16.854775808s)
+
+  -------------------------
+  -- -2562047h47m16.854775808s
+  -- 1 migration
+  -- 1 sql statement
+Error: pq: unexpected transaction status idle
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+--- introspect: сверка схемы базы с ожидаемой ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community schema inspect --url 'postgres://root@crdb:26257/t_atlas?sslmode=disable&search_path=public'
+Notice: This Atlas edition lacks support for features such as checkpoints,
+testing, down migrations, and more. Additionally, advanced database objects such as views,
+triggers, and stored procedures are not supported. To read more: https://atlasgo.io/community-edition
+
+To install the non-community version of Atlas, use the following command:
+
+	curl -sSf https://atlasgo.sh | sh
+
+Or, visit the website to see all installation options:
+
+	https://atlasgo.io/docs#installation
+
+table "atlas_schema_revisions" {
+  schema = schema.public
+  column "version" {
+    null = false
+    type = character_varying
+  }
+  column "description" {
+    null = false
+    type = character_varying
+  }
+  column "type" {
+    null    = false
+    type    = bigint
+    default = 2
+  }
+  column "applied" {
+    null    = false
+    type    = bigint
+    default = 0
+  }
+  column "total" {
+    null    = false
+    type    = bigint
+    default = 0
+  }
+  column "executed_at" {
+    null = false
+    type = timestamptz
+  }
+  column "execution_time" {
+    null = false
+    type = bigint
+  }
+  column "error" {
+    null = true
+    type = text
+  }
+  column "error_stmt" {
+    null = true
+    type = text
+  }
+  column "hash" {
+    null = false
+    type = character_varying
+  }
+  column "partial_hashes" {
+    null = true
+    type = jsonb
+  }
+  column "operator_version" {
+    null = false
+    type = character_varying
+  }
+  primary_key {
+    columns = [column.version]
+  }
+}
+table "probe" {
+  schema = schema.public
+  column "id" {
+    null = false
+    type = bigint
+  }
+  column "name" {
+    null = true
+    type = text
+  }
+  primary_key {
+    columns = [column.id]
+  }
+}
+schema "public" {
+  comment = "Identifies the minimum selected value."
+}
+# код возврата: 0
+
+--- rollback: откат второй миграции ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community migrate down --url 'postgres://root@crdb:26257/t_atlas?sslmode=disable&search_path=public' --dir file:///mig --dev-url 'postgres://root@crdb:26257/atlas_dev?sslmode=disable&search_path=public'
+Error: unknown flag: --url
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+

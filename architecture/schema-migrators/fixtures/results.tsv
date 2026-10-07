@@ -1,0 +1,76 @@
+tool	engine	step	exit	state	verdict	message
+goose	pg	apply1	0	1	ok	
+goose	pg	journal	-	1	ok	таблица goose_db_version
+goose	pg	apply2	0	1	ok	
+goose	pg	introspect	-	-	n/a	
+goose	pg	rollback	0	1	ok	
+flyway	pg	apply1	0	1	ok	
+flyway	pg	journal	-	1	ok	таблица flyway_schema_history
+flyway	pg	apply2	0	1	ok	
+flyway	pg	introspect	-	-	n/a	
+flyway	pg	rollback	35	0	edition	ERROR: Flyway Redgate Edition Required: undo is not supported by OSS Edition
+liquibase	pg	apply1	0	1	ok	
+liquibase	pg	journal	-	1	ok	таблица databasechangelog
+liquibase	pg	apply2	0	1	ok	
+liquibase	pg	introspect	-	-	n/a	
+liquibase	pg	rollback	0	1	ok	
+atlas	pg	apply1	0	1	ok	
+atlas	pg	journal	-	1	ok	таблица atlas_schema_revisions
+atlas	pg	apply2	0	1	ok	
+atlas	pg	introspect	0	1	ok	triggers, and stored procedures are not supported. To read more: https://atlasgo.io/community-edition
+atlas	pg	rollback	1	0	edition	Error: unknown flag: --url
+alembic	pg	apply1	0	1	ok	
+alembic	pg	journal	-	1	ok	таблица alembic_version
+alembic	pg	apply2	0	1	ok	
+alembic	pg	introspect	0	1	ok	
+alembic	pg	rollback	0	1	ok	
+goose	crdb	apply1	0	1	ok	
+goose	crdb	journal	-	1	ok	таблица goose_db_version
+goose	crdb	apply2	0	1	ok	
+goose	crdb	introspect	-	-	n/a	
+goose	crdb	rollback	0	1	ok	
+flyway	crdb	apply1	0	1	ok	
+flyway	crdb	journal	-	1	ok	таблица flyway_schema_history
+flyway	crdb	apply2	0	1	ok	
+flyway	crdb	introspect	-	-	n/a	
+flyway	crdb	rollback	35	0	edition	ERROR: Flyway Redgate Edition Required: undo is not supported by OSS Edition
+liquibase	crdb	apply1	0	1	ok	
+liquibase	crdb	journal	-	1	ok	таблица databasechangelog
+liquibase	crdb	apply2	0	1	ok	
+liquibase	crdb	introspect	-	-	n/a	
+liquibase	crdb	rollback	0	1	ok	
+atlas	crdb	apply1	1	0	fail	Error: pq: unexpected transaction status idle
+atlas	crdb	journal	-	1	ok	таблица atlas_schema_revisions
+atlas	crdb	apply2	1	0	fail	Error: pq: unexpected transaction status idle
+atlas	crdb	introspect	0	-	no-pre	triggers, and stored procedures are not supported. To read more: https://atlasgo.io/community-edition
+atlas	crdb	rollback	1	-	no-pre	Error: unknown flag: --url
+alembic	crdb	apply1	1	0	fail	AssertionError: Could not determine version from string 'CockroachDB CCL v26.2.5 (aarch64-unknown-linux-gnu, built 2026/07/28 18:55:27, go1.25.5)'
+alembic	crdb	journal	-	0	fail	таблица alembic_version
+alembic	crdb	apply2	1	0	fail	AssertionError: Could not determine version from string 'CockroachDB CCL v26.2.5 (aarch64-unknown-linux-gnu, built 2026/07/28 18:55:27, go1.25.5)'
+alembic	crdb	introspect	1	-	no-pre	AssertionError: Could not determine version from string 'CockroachDB CCL v26.2.5 (aarch64-unknown-linux-gnu, built 2026/07/28 18:55:27, go1.25.5)'
+alembic	crdb	rollback	1	-	no-pre	AssertionError: Could not determine version from string 'CockroachDB CCL v26.2.5 (aarch64-unknown-linux-gnu, built 2026/07/28 18:55:27, go1.25.5)'
+goose	pico	apply1	1	0	fail	2026/10/05 08:10:12 goose run: ERROR: sbroad: table with name "goose_db_version" not found (SQLSTATE XX000); ERROR: sbroad: rule parsing error:  --> 2:14
+goose	pico	journal	-	0	fail	таблица goose_db_version
+goose	pico	apply2	1	0	fail	2026/10/05 08:10:13 goose run: ERROR: sbroad: table with name "goose_db_version" not found (SQLSTATE XX000); ERROR: sbroad: rule parsing error:  --> 2:14
+goose	pico	introspect	-	-	n/a	
+goose	pico	rollback	1	-	no-pre	2026/10/05 08:10:13 goose run: ERROR: sbroad: table with name "goose_db_version" not found (SQLSTATE XX000); ERROR: sbroad: rule parsing error:  --> 2:14
+flyway	pico	apply1	1	0	fail	ERROR: Unable to determine the original schema for the connection
+flyway	pico	journal	-	0	fail	таблица flyway_schema_history
+flyway	pico	apply2	1	0	fail	ERROR: Unable to determine the original schema for the connection
+flyway	pico	introspect	-	-	n/a	
+flyway	pico	rollback	35	-	no-pre	ERROR: Flyway Redgate Edition Required: undo is not supported by OSS Edition
+liquibase	pico	apply1	1	0	fail	ERROR: Exception Primary Reason:  ERROR: sbroad: rule parsing error:  --> 1:114
+liquibase	pico	journal	-	0	fail	таблица databasechangelog
+liquibase	pico	apply2	1	0	fail	ERROR: Exception Primary Reason:  ERROR: sbroad: rule parsing error:  --> 1:114
+liquibase	pico	introspect	-	-	n/a	
+liquibase	pico	rollback	1	-	no-pre	ERROR: Exception Primary Reason:  ERROR: sbroad: rule parsing error:  --> 1:114
+atlas	pico	apply1	1	0	fail	Error: postgres: scanning system variables: pq: sbroad: SQL function current_setting not found (XX000)
+atlas	pico	journal	-	0	fail	таблица atlas_schema_revisions
+atlas	pico	apply2	1	0	fail	Error: postgres: scanning system variables: pq: sbroad: SQL function current_setting not found (XX000)
+atlas	pico	introspect	1	-	no-pre	Error: postgres: scanning system variables: pq: sbroad: SQL function current_setting not found (XX000)
+atlas	pico	rollback	1	-	no-pre	Error: unknown flag: --url
+alembic	pico	apply1	1	0	fail	sqlalchemy.exc.InternalError: (psycopg.errors.InternalError_) sbroad: rule parsing error:  --> 1:26
+alembic	pico	journal	-	0	fail	таблица alembic_version
+alembic	pico	apply2	1	0	fail	sqlalchemy.exc.InternalError: (psycopg.errors.InternalError_) sbroad: rule parsing error:  --> 1:26
+alembic	pico	introspect	1	-	no-pre	sqlalchemy.exc.InternalError: (psycopg.errors.InternalError_) sbroad: rule parsing error:  --> 1:26
+alembic	pico	rollback	1	-	no-pre	sqlalchemy.exc.InternalError: (psycopg.errors.InternalError_) sbroad: rule parsing error:  --> 1:26

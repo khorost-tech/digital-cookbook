@@ -1,0 +1,18 @@
+# Контроль: ванильный PostgreSQL. Здесь всё обязано работать — иначе неверен
+# сам стенд, а не инструмент.
+name: smig-pg
+services:
+  pg:
+    image: postgres:18.4
+    container_name: smig-pg
+    hostname: pg
+    environment:
+      POSTGRES_PASSWORD: smig
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 30
+networks:
+  default:
+    name: smig
+    external: true

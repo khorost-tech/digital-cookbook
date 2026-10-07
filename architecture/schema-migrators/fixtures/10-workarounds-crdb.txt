@@ -1,0 +1,115 @@
+# 10-workarounds-crdb
+# снято: 2026-10-05 08:11 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- DDL новой таблицы: schema_locked по умолчанию ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_lock?sslmode=disable' -tAc "CREATE TABLE probe (id INT PRIMARY KEY, name TEXT); SHOW CREATE TABLE probe"
+CREATE TABLE
+probe|CREATE TABLE public.probe (
+	id INT8 NOT NULL,
+	name STRING NULL,
+	CONSTRAINT probe_pkey PRIMARY KEY (id ASC)
+) WITH (schema_locked = true);
+# код возврата: 0
+
+--- сессионная переменная, которая это включает ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_lock?sslmode=disable' -tAc "SHOW create_table_with_schema_locked"
+on
+# код возврата: 0
+
+--- Atlas: autocommit_before_ddl=off ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community migrate apply --url 'postgres://root@crdb:26257/t_atlas_w?sslmode=disable&search_path=public&options=-c%20autocommit_before_ddl%3Doff' --dir file:///mig
+Migrating to version 20261005000002 (2 migrations in total):
+
+  -- migrating version 20261005000001
+    -> CREATE TABLE probe (id INT PRIMARY KEY, name TEXT);
+  -- ok (16.846834ms)
+
+  -- migrating version 20261005000002
+    -> ALTER TABLE probe ADD COLUMN note TEXT;
+    pq: this schema change is disallowed because table "probe" is locked and this operation cannot automatically unlock the table (57000)
+
+  -------------------------
+  -- 97.965791ms
+  -- 1 migration ok, 1 with errors
+  -- 1 sql statement ok, 1 with errors
+Error: sql/migrate: executing statement "ALTER TABLE probe ADD COLUMN note TEXT;" from version "20261005000002": pq: this schema change is disallowed because table "probe" is locked and this operation cannot automatically unlock the table (57000)
+sql/migrate: write revision: pq: current transaction is aborted, commands ignored until end of transaction block (25P02)
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+--- Atlas: что осталось в базе ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_atlas_w?sslmode=disable' -tAc "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' ORDER BY 1"
+atlas_schema_revisions
+probe
+# код возврата: 0
+
+--- Atlas: autocommit_before_ddl=off и --tx-mode file ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community migrate apply --url 'postgres://root@crdb:26257/t_atlas_w2?sslmode=disable&search_path=public&options=-c%20autocommit_before_ddl%3Doff' --dir file:///mig --tx-mode file
+Migrating to version 20261005000002 (2 migrations in total):
+
+  -- migrating version 20261005000001
+    -> CREATE TABLE probe (id INT PRIMARY KEY, name TEXT);
+  -- ok (16.447708ms)
+
+  -- migrating version 20261005000002
+    -> ALTER TABLE probe ADD COLUMN note TEXT;
+    pq: this schema change is disallowed because table "probe" is locked and this operation cannot automatically unlock the table (57000)
+
+  -------------------------
+  -- 96.599417ms
+  -- 1 migration ok, 1 with errors
+  -- 1 sql statement ok, 1 with errors
+Error: sql/migrate: executing statement "ALTER TABLE probe ADD COLUMN note TEXT;" from version "20261005000002": pq: this schema change is disallowed because table "probe" is locked and this operation cannot automatically unlock the table (57000)
+sql/migrate: write revision: pq: current transaction is aborted, commands ignored until end of transaction block (25P02)
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+--- Atlas: --tx-mode none ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/migrations:/mig" arigaio/atlas:1.3.3-community migrate apply --url 'postgres://root@crdb:26257/t_atlas_w3?sslmode=disable&search_path=public' --dir file:///mig --tx-mode none
+Error: pq: unexpected transaction status idle
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+--- Alembic + sqlalchemy-cockroachdb: upgrade head ---
+# cmd: docker run --rm --network smig -e SMIG_URL='cockroachdb+psycopg://root@crdb:26257/t_alembic_w?sslmode=disable' -v "$PWD/tools/alembic:/w" smig-alembic-crdb upgrade head
+
+# код возврата: 0
+
+--- колонки после upgrade ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_alembic_w?sslmode=disable' -tAc "SELECT column_name, data_type FROM information_schema.columns WHERE table_name = 'probe' ORDER BY ordinal_position"
+id|bigint
+name|text
+note|text
+# код возврата: 0
+
+--- Alembic + sqlalchemy-cockroachdb: check (интроспекция) ---
+# cmd: docker run --rm --network smig -e SMIG_URL='cockroachdb+psycopg://root@crdb:26257/t_alembic_w?sslmode=disable' -v "$PWD/tools/alembic:/w" smig-alembic-crdb check
+FAILED: New upgrade operations detected: [[('modify_type', None, 'probe', 'name', {'existing_nullable': True, 'existing_server_default': False, 'existing_comment': None}, VARCHAR(), Text())], [('modify_type', None, 'probe', 'note', {'existing_nullable': True, 'existing_server_default': False, 'existing_comment': None}, VARCHAR(), Text())]]
+# код возврата: 255
+
+--- Alembic + sqlalchemy-cockroachdb: downgrade -1 ---
+# cmd: docker run --rm --network smig -e SMIG_URL='cockroachdb+psycopg://root@crdb:26257/t_alembic_w?sslmode=disable' -v "$PWD/tools/alembic:/w" smig-alembic-crdb downgrade -1
+
+# код возврата: 0
+
+--- колонки после downgrade ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_alembic_w?sslmode=disable' -tAc "SELECT column_name FROM information_schema.columns WHERE table_name = 'probe' ORDER BY ordinal_position"
+id
+name
+# код возврата: 0
+

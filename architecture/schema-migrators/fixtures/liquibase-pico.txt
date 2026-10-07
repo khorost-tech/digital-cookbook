@@ -1,0 +1,121 @@
+# liquibase-pico
+# снято: 2026-10-05 08:10 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- apply1: первая миграция (CREATE TABLE probe) ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://pico:5432/picodata?sslmode=disable' --username=admin --password='Picodata1' --search-path=/liquibase/changelog --changelog-file=changelog.sql update-count --count=1
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 08:10:23 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+ERROR: Exception Details
+ERROR: Exception Primary Class:  PSQLException
+ERROR: Exception Primary Reason:  ERROR: sbroad: rule parsing error:  --> 1:114
+  |
+1 | SELECT current_database() AS "TABLE_CAT", n.nspname AS "TABLE_SCHEM", c.relname AS "TABLE_NAME",  CASE n.nspname ~ '^pg_' OR n.nspname = 'information_schema'  WHEN true THEN CASE  WHEN n.nspname = 'pg_catalog' OR n.nspname = 'information_schema' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TABLE'   WHEN 'v' THEN 'SYSTEM VIEW'   WHEN 'i' THEN 'SYSTEM INDEX'   ELSE NULL   END  WHEN n.nspname = 'pg_toast' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TOAST TABLE'   WHEN 'i' THEN 'SYSTEM TOAST INDEX'   ELSE NULL   END  ELSE CASE c.relkind   WHEN 'r' THEN 'TEMPORARY TABLE'   WHEN 'p' THEN 'TEMPORARY TABLE'   WHEN 'i' THEN 'TEMPORARY INDEX'   WHEN 'S' THEN 'TEMPORARY SEQUENCE'   WHEN 'v' THEN 'TEMPORARY VIEW'   ELSE NULL   END  END  WHEN false THEN CASE c.relkind  WHEN 'r' THEN 'TABLE'  WHEN 'p' THEN 'PARTITIONED TABLE'  WHEN 'i' THEN 'INDEX'  WHEN 'P' then 'PARTITIONED INDEX'  WHEN 'S' THEN 'SEQUENCE'  WHEN 'v' THEN 'VIEW'  WHEN 'c' THEN 'TYPE'  WHEN 'f' THEN 'FOREIGN TABLE'  WHEN 'm' THEN 'MATERIALIZED VIEW'  ELSE NULL  END  ELSE NULL  END  AS "TABLE_TYPE", d.description AS "REMARKS",  '' as "TYPE_CAT", '' as "TYPE_SCHEM", '' as "TYPE_NAME", '' AS "SELF_REFERENCING_COL_NAME", '' AS "REF_GENERATION"  FROM pg_catalog.pg_namespace n, pg_catalog.pg_class c  LEFT JOIN pg_catalog.pg_description d ON (c.oid = d.objoid AND d.objsubid = 0  and d.classoid = 'pg_class'::regclass)  WHERE c.relnamespace = n.oid  AND c.relname LIKE $1 AND (false  OR ( c.relkind = 'r' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' )  OR ( c.relkind = 'p' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' ) )  ORDER BY "TABLE_TYPE","TABLE_SCHEM","TABLE_NAME" 
+  |                                                                                                                  ^---
+  |
+  = expected Like, Similar, Escape, And, Or, ConcatInfixOp, Add, Subtract, Modulo, Multiply, Divide, Eq, Gt, GtEq, Lt, LtEq, NotEq, IsPostfix, CaseWhenBlock, or NotFlag
+ERROR: Exception Primary Source:  PostgreSQL 15.0
+
+Unexpected error running Liquibase: ERROR: sbroad: rule parsing error:  --> 1:114
+  |
+1 | SELECT current_database() AS "TABLE_CAT", n.nspname AS "TABLE_SCHEM", c.relname AS "TABLE_NAME",  CASE n.nspname ~ '^pg_' OR n.nspname = 'information_schema'  WHEN true THEN CASE  WHEN n.nspname = 'pg_catalog' OR n.nspname = 'information_schema' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TABLE'   WHEN 'v' THEN 'SYSTEM VIEW'   WHEN 'i' THEN 'SYSTEM INDEX'   ELSE NULL   END  WHEN n.nspname = 'pg_toast' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TOAST TABLE'   WHEN 'i' THEN 'SYSTEM TOAST INDEX'   ELSE NULL   END  ELSE CASE c.relkind   WHEN 'r' THEN 'TEMPORARY TABLE'   WHEN 'p' THEN 'TEMPORARY TABLE'   WHEN 'i' THEN 'TEMPORARY INDEX'   WHEN 'S' THEN 'TEMPORARY SEQUENCE'   WHEN 'v' THEN 'TEMPORARY VIEW'   ELSE NULL   END  END  WHEN false THEN CASE c.relkind  WHEN 'r' THEN 'TABLE'  WHEN 'p' THEN 'PARTITIONED TABLE'  WHEN 'i' THEN 'INDEX'  WHEN 'P' then 'PARTITIONED INDEX'  WHEN 'S' THEN 'SEQUENCE'  WHEN 'v' THEN 'VIEW'  WHEN 'c' THEN 'TYPE'  WHEN 'f' THEN 'FOREIGN TABLE'  WHEN 'm' THEN 'MATERIALIZED VIEW'  ELSE NULL  END  ELSE NULL  END  AS "TABLE_TYPE", d.description AS "REMARKS",  '' as "TYPE_CAT", '' as "TYPE_SCHEM", '' as "TYPE_NAME", '' AS "SELF_REFERENCING_COL_NAME", '' AS "REF_GENERATION"  FROM pg_catalog.pg_namespace n, pg_catalog.pg_class c  LEFT JOIN pg_catalog.pg_description d ON (c.oid = d.objoid AND d.objsubid = 0  and d.classoid = 'pg_class'::regclass)  WHERE c.relnamespace = n.oid  AND c.relname LIKE $1 AND (false  OR ( c.relkind = 'r' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' )  OR ( c.relkind = 'p' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' ) )  ORDER BY "TABLE_TYPE","TABLE_SCHEM","TABLE_NAME" 
+  |                                                                                                                  ^---
+  |
+  = expected Like, Similar, Escape, And, Or, ConcatInfixOp, Add, Subtract, Modulo, Multiply, Divide, Eq, Gt, GtEq, Lt, LtEq, NotEq, IsPostfix, CaseWhenBlock, or NotFlag
+
+For more information, please use the --log-level flag
+# код возврата: 1
+
+# журнал версий databasechangelog существует: нет
+--- apply2: вторая миграция (ADD COLUMN note) ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://pico:5432/picodata?sslmode=disable' --username=admin --password='Picodata1' --search-path=/liquibase/changelog --changelog-file=changelog.sql update
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 08:10:27 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+ERROR: Exception Details
+ERROR: Exception Primary Class:  PSQLException
+ERROR: Exception Primary Reason:  ERROR: sbroad: rule parsing error:  --> 1:114
+  |
+1 | SELECT current_database() AS "TABLE_CAT", n.nspname AS "TABLE_SCHEM", c.relname AS "TABLE_NAME",  CASE n.nspname ~ '^pg_' OR n.nspname = 'information_schema'  WHEN true THEN CASE  WHEN n.nspname = 'pg_catalog' OR n.nspname = 'information_schema' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TABLE'   WHEN 'v' THEN 'SYSTEM VIEW'   WHEN 'i' THEN 'SYSTEM INDEX'   ELSE NULL   END  WHEN n.nspname = 'pg_toast' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TOAST TABLE'   WHEN 'i' THEN 'SYSTEM TOAST INDEX'   ELSE NULL   END  ELSE CASE c.relkind   WHEN 'r' THEN 'TEMPORARY TABLE'   WHEN 'p' THEN 'TEMPORARY TABLE'   WHEN 'i' THEN 'TEMPORARY INDEX'   WHEN 'S' THEN 'TEMPORARY SEQUENCE'   WHEN 'v' THEN 'TEMPORARY VIEW'   ELSE NULL   END  END  WHEN false THEN CASE c.relkind  WHEN 'r' THEN 'TABLE'  WHEN 'p' THEN 'PARTITIONED TABLE'  WHEN 'i' THEN 'INDEX'  WHEN 'P' then 'PARTITIONED INDEX'  WHEN 'S' THEN 'SEQUENCE'  WHEN 'v' THEN 'VIEW'  WHEN 'c' THEN 'TYPE'  WHEN 'f' THEN 'FOREIGN TABLE'  WHEN 'm' THEN 'MATERIALIZED VIEW'  ELSE NULL  END  ELSE NULL  END  AS "TABLE_TYPE", d.description AS "REMARKS",  '' as "TYPE_CAT", '' as "TYPE_SCHEM", '' as "TYPE_NAME", '' AS "SELF_REFERENCING_COL_NAME", '' AS "REF_GENERATION"  FROM pg_catalog.pg_namespace n, pg_catalog.pg_class c  LEFT JOIN pg_catalog.pg_description d ON (c.oid = d.objoid AND d.objsubid = 0  and d.classoid = 'pg_class'::regclass)  WHERE c.relnamespace = n.oid  AND c.relname LIKE $1 AND (false  OR ( c.relkind = 'r' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' )  OR ( c.relkind = 'p' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' ) )  ORDER BY "TABLE_TYPE","TABLE_SCHEM","TABLE_NAME" 
+  |                                                                                                                  ^---
+  |
+  = expected Like, Similar, Escape, And, Or, ConcatInfixOp, Add, Subtract, Modulo, Multiply, Divide, Eq, Gt, GtEq, Lt, LtEq, NotEq, IsPostfix, CaseWhenBlock, or NotFlag
+ERROR: Exception Primary Source:  PostgreSQL 15.0
+
+Unexpected error running Liquibase: ERROR: sbroad: rule parsing error:  --> 1:114
+  |
+1 | SELECT current_database() AS "TABLE_CAT", n.nspname AS "TABLE_SCHEM", c.relname AS "TABLE_NAME",  CASE n.nspname ~ '^pg_' OR n.nspname = 'information_schema'  WHEN true THEN CASE  WHEN n.nspname = 'pg_catalog' OR n.nspname = 'information_schema' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TABLE'   WHEN 'v' THEN 'SYSTEM VIEW'   WHEN 'i' THEN 'SYSTEM INDEX'   ELSE NULL   END  WHEN n.nspname = 'pg_toast' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TOAST TABLE'   WHEN 'i' THEN 'SYSTEM TOAST INDEX'   ELSE NULL   END  ELSE CASE c.relkind   WHEN 'r' THEN 'TEMPORARY TABLE'   WHEN 'p' THEN 'TEMPORARY TABLE'   WHEN 'i' THEN 'TEMPORARY INDEX'   WHEN 'S' THEN 'TEMPORARY SEQUENCE'   WHEN 'v' THEN 'TEMPORARY VIEW'   ELSE NULL   END  END  WHEN false THEN CASE c.relkind  WHEN 'r' THEN 'TABLE'  WHEN 'p' THEN 'PARTITIONED TABLE'  WHEN 'i' THEN 'INDEX'  WHEN 'P' then 'PARTITIONED INDEX'  WHEN 'S' THEN 'SEQUENCE'  WHEN 'v' THEN 'VIEW'  WHEN 'c' THEN 'TYPE'  WHEN 'f' THEN 'FOREIGN TABLE'  WHEN 'm' THEN 'MATERIALIZED VIEW'  ELSE NULL  END  ELSE NULL  END  AS "TABLE_TYPE", d.description AS "REMARKS",  '' as "TYPE_CAT", '' as "TYPE_SCHEM", '' as "TYPE_NAME", '' AS "SELF_REFERENCING_COL_NAME", '' AS "REF_GENERATION"  FROM pg_catalog.pg_namespace n, pg_catalog.pg_class c  LEFT JOIN pg_catalog.pg_description d ON (c.oid = d.objoid AND d.objsubid = 0  and d.classoid = 'pg_class'::regclass)  WHERE c.relnamespace = n.oid  AND c.relname LIKE $1 AND (false  OR ( c.relkind = 'r' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' )  OR ( c.relkind = 'p' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' ) )  ORDER BY "TABLE_TYPE","TABLE_SCHEM","TABLE_NAME" 
+  |                                                                                                                  ^---
+  |
+  = expected Like, Similar, Escape, And, Or, ConcatInfixOp, Add, Subtract, Modulo, Multiply, Divide, Eq, Gt, GtEq, Lt, LtEq, NotEq, IsPostfix, CaseWhenBlock, or NotFlag
+
+For more information, please use the --log-level flag
+# код возврата: 1
+
+--- rollback: откат второй миграции ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://pico:5432/picodata?sslmode=disable' --username=admin --password='Picodata1' --search-path=/liquibase/changelog --changelog-file=changelog.sql rollback-count --count=1
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 08:10:28 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+ERROR: Exception Details
+ERROR: Exception Primary Class:  PSQLException
+ERROR: Exception Primary Reason:  ERROR: sbroad: rule parsing error:  --> 1:114
+  |
+1 | SELECT current_database() AS "TABLE_CAT", n.nspname AS "TABLE_SCHEM", c.relname AS "TABLE_NAME",  CASE n.nspname ~ '^pg_' OR n.nspname = 'information_schema'  WHEN true THEN CASE  WHEN n.nspname = 'pg_catalog' OR n.nspname = 'information_schema' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TABLE'   WHEN 'v' THEN 'SYSTEM VIEW'   WHEN 'i' THEN 'SYSTEM INDEX'   ELSE NULL   END  WHEN n.nspname = 'pg_toast' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TOAST TABLE'   WHEN 'i' THEN 'SYSTEM TOAST INDEX'   ELSE NULL   END  ELSE CASE c.relkind   WHEN 'r' THEN 'TEMPORARY TABLE'   WHEN 'p' THEN 'TEMPORARY TABLE'   WHEN 'i' THEN 'TEMPORARY INDEX'   WHEN 'S' THEN 'TEMPORARY SEQUENCE'   WHEN 'v' THEN 'TEMPORARY VIEW'   ELSE NULL   END  END  WHEN false THEN CASE c.relkind  WHEN 'r' THEN 'TABLE'  WHEN 'p' THEN 'PARTITIONED TABLE'  WHEN 'i' THEN 'INDEX'  WHEN 'P' then 'PARTITIONED INDEX'  WHEN 'S' THEN 'SEQUENCE'  WHEN 'v' THEN 'VIEW'  WHEN 'c' THEN 'TYPE'  WHEN 'f' THEN 'FOREIGN TABLE'  WHEN 'm' THEN 'MATERIALIZED VIEW'  ELSE NULL  END  ELSE NULL  END  AS "TABLE_TYPE", d.description AS "REMARKS",  '' as "TYPE_CAT", '' as "TYPE_SCHEM", '' as "TYPE_NAME", '' AS "SELF_REFERENCING_COL_NAME", '' AS "REF_GENERATION"  FROM pg_catalog.pg_namespace n, pg_catalog.pg_class c  LEFT JOIN pg_catalog.pg_description d ON (c.oid = d.objoid AND d.objsubid = 0  and d.classoid = 'pg_class'::regclass)  WHERE c.relnamespace = n.oid  AND c.relname LIKE $1 AND (false  OR ( c.relkind = 'r' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' )  OR ( c.relkind = 'p' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' ) )  ORDER BY "TABLE_TYPE","TABLE_SCHEM","TABLE_NAME" 
+  |                                                                                                                  ^---
+  |
+  = expected Like, Similar, Escape, And, Or, ConcatInfixOp, Add, Subtract, Modulo, Multiply, Divide, Eq, Gt, GtEq, Lt, LtEq, NotEq, IsPostfix, CaseWhenBlock, or NotFlag
+ERROR: Exception Primary Source:  PostgreSQL 15.0
+
+Unexpected error running Liquibase: ERROR: sbroad: rule parsing error:  --> 1:114
+  |
+1 | SELECT current_database() AS "TABLE_CAT", n.nspname AS "TABLE_SCHEM", c.relname AS "TABLE_NAME",  CASE n.nspname ~ '^pg_' OR n.nspname = 'information_schema'  WHEN true THEN CASE  WHEN n.nspname = 'pg_catalog' OR n.nspname = 'information_schema' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TABLE'   WHEN 'v' THEN 'SYSTEM VIEW'   WHEN 'i' THEN 'SYSTEM INDEX'   ELSE NULL   END  WHEN n.nspname = 'pg_toast' THEN CASE c.relkind   WHEN 'r' THEN 'SYSTEM TOAST TABLE'   WHEN 'i' THEN 'SYSTEM TOAST INDEX'   ELSE NULL   END  ELSE CASE c.relkind   WHEN 'r' THEN 'TEMPORARY TABLE'   WHEN 'p' THEN 'TEMPORARY TABLE'   WHEN 'i' THEN 'TEMPORARY INDEX'   WHEN 'S' THEN 'TEMPORARY SEQUENCE'   WHEN 'v' THEN 'TEMPORARY VIEW'   ELSE NULL   END  END  WHEN false THEN CASE c.relkind  WHEN 'r' THEN 'TABLE'  WHEN 'p' THEN 'PARTITIONED TABLE'  WHEN 'i' THEN 'INDEX'  WHEN 'P' then 'PARTITIONED INDEX'  WHEN 'S' THEN 'SEQUENCE'  WHEN 'v' THEN 'VIEW'  WHEN 'c' THEN 'TYPE'  WHEN 'f' THEN 'FOREIGN TABLE'  WHEN 'm' THEN 'MATERIALIZED VIEW'  ELSE NULL  END  ELSE NULL  END  AS "TABLE_TYPE", d.description AS "REMARKS",  '' as "TYPE_CAT", '' as "TYPE_SCHEM", '' as "TYPE_NAME", '' AS "SELF_REFERENCING_COL_NAME", '' AS "REF_GENERATION"  FROM pg_catalog.pg_namespace n, pg_catalog.pg_class c  LEFT JOIN pg_catalog.pg_description d ON (c.oid = d.objoid AND d.objsubid = 0  and d.classoid = 'pg_class'::regclass)  WHERE c.relnamespace = n.oid  AND c.relname LIKE $1 AND (false  OR ( c.relkind = 'r' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' )  OR ( c.relkind = 'p' AND n.nspname !~ '^pg_' AND n.nspname <> 'information_schema' ) )  ORDER BY "TABLE_TYPE","TABLE_SCHEM","TABLE_NAME" 
+  |                                                                                                                  ^---
+  |
+  = expected Like, Similar, Escape, And, Or, ConcatInfixOp, Add, Subtract, Modulo, Multiply, Divide, Eq, Gt, GtEq, Lt, LtEq, NotEq, IsPostfix, CaseWhenBlock, or NotFlag
+
+For more information, please use the --log-level flag
+# код возврата: 1
+

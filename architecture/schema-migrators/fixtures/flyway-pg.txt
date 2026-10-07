@@ -1,0 +1,46 @@
+# flyway-pg
+# снято: 2026-10-05 08:09 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- apply1: первая миграция (CREATE TABLE probe) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/migrations:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://pg:5432/t_flyway' -user=postgres -password='smig' migrate -target=1
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 18.4)
+1 SQL migrations were detected but not run because they did not follow the filename convention.
+Set 'validateMigrationNaming' to true to fail fast and see a list of the invalid file names.
+Schema history table "public"."flyway_schema_history" does not exist yet
+Successfully validated 2 migrations (execution time 00:00.005s)
+Creating Schema History table "public"."flyway_schema_history" ...
+Current version of schema "public": << Empty Schema >>
+Migrating schema "public" to version "1 - create probe"
+Successfully applied 1 migration to schema "public", now at version v1 (execution time 00:00.002s)
+# код возврата: 0
+
+# журнал версий flyway_schema_history существует: да
+--- apply2: вторая миграция (ADD COLUMN note) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/migrations:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://pg:5432/t_flyway' -user=postgres -password='smig' migrate
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 18.4)
+1 SQL migrations were detected but not run because they did not follow the filename convention.
+Set 'validateMigrationNaming' to true to fail fast and see a list of the invalid file names.
+Successfully validated 2 migrations (execution time 00:00.009s)
+Current version of schema "public": 1
+Migrating schema "public" to version "2 - add note"
+Successfully applied 1 migration to schema "public", now at version v2 (execution time 00:00.003s)
+# код возврата: 0
+
+--- rollback: откат второй миграции ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/migrations:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://pg:5432/t_flyway' -user=postgres -password='smig' undo
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+ERROR: Flyway Redgate Edition Required: undo is not supported by OSS Edition
+Download Redgate Edition for free: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=redgate-edition-download
+# код возврата: 35
+

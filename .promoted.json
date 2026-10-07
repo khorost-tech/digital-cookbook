@@ -34,6 +34,9 @@
     "architecture/saga": [
       "architecture/saga-in-practice.md"
     ],
+    "architecture/schema-migrators": [
+      "architecture/schema-migrators-across-databases.md"
+    ],
     "architecture/serialization-formats": [
       "architecture/schema-evolution-avro-protobuf-traps.md",
       "architecture/serialization-formats-json-avro-protobuf.md"

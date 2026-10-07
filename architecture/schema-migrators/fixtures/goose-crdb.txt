@@ -1,0 +1,21 @@
+# goose-crdb
+# снято: 2026-10-05 08:09 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- apply1: первая миграция (CREATE TABLE probe) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/migrations:/mig" smig-goose -dir /mig postgres 'postgres://root@crdb:26257/t_goose?sslmode=disable' up-to 1
+2026/10/05 08:09:49 OK   00001_create_probe.sql (5.96ms)
+2026/10/05 08:09:49 goose: successfully migrated database to version: 1
+# код возврата: 0
+
+# журнал версий goose_db_version существует: да
+--- apply2: вторая миграция (ADD COLUMN note) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/migrations:/mig" smig-goose -dir /mig postgres 'postgres://root@crdb:26257/t_goose?sslmode=disable' up
+2026/10/05 08:09:49 OK   00002_add_note.sql (85.45ms)
+2026/10/05 08:09:49 goose: successfully migrated database to version: 2
+# код возврата: 0
+
+--- rollback: откат второй миграции ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/migrations:/mig" smig-goose -dir /mig postgres 'postgres://root@crdb:26257/t_goose?sslmode=disable' down
+2026/10/05 08:09:50 OK   00002_add_note.sql (175.18ms)
+# код возврата: 0
+

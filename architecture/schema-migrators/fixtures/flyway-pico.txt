@@ -1,0 +1,70 @@
+# flyway-pico
+# снято: 2026-10-05 08:10 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- apply1: первая миграция (CREATE TABLE probe) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/migrations:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://pico:5432/picodata?sslmode=disable' -user=admin -password='Picodata1' migrate -target=1
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 15.0)
+1 SQL migrations were detected but not run because they did not follow the filename convention.
+Set 'validateMigrationNaming' to true to fail fast and see a list of the invalid file names.
+ERROR: Unable to determine the original schema for the connection
+----------------------------------------------------------
+SQL State  : XX000
+Error Code : 0
+Message    : ERROR: sbroad: rule parsing error:  --> 1:1
+  |
+1 | SHOW search_path
+  | ^---
+  |
+  = expected EOI, AnonymousBlock, CreatePlugin, DropPlugin, AlterPlugin, CreateUser, AlterUser, DropUser, CreateRole, DropRole, GrantPrivilege, RevokePrivilege, AuditPolicy, Backup, CreatePartition, CreateTable, DropTable, TruncateTable, AlterTable, CreateProc, DropProc, RenameProc, CreateIndex, DropIndex, RenameIndex, CreateSchema, DropSchema, SetParam, SetTransaction, AlterSystem, CallProc, Explain, Query, Deallocate, Begin, Commit, Rollback, or End
+
+Caused by: org.postgresql.util.PSQLException: ERROR: sbroad: rule parsing error:  --> 1:1
+  |
+1 | SHOW search_path
+  | ^---
+  |
+  = expected EOI, AnonymousBlock, CreatePlugin, DropPlugin, AlterPlugin, CreateUser, AlterUser, DropUser, CreateRole, DropRole, GrantPrivilege, RevokePrivilege, AuditPolicy, Backup, CreatePartition, CreateTable, DropTable, TruncateTable, AlterTable, CreateProc, DropProc, RenameProc, CreateIndex, DropIndex, RenameIndex, CreateSchema, DropSchema, SetParam, SetTransaction, AlterSystem, CallProc, Explain, Query, Deallocate, Begin, Commit, Rollback, or End
+# код возврата: 1
+
+# журнал версий flyway_schema_history существует: нет
+--- apply2: вторая миграция (ADD COLUMN note) ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/migrations:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://pico:5432/picodata?sslmode=disable' -user=admin -password='Picodata1' migrate
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 15.0)
+1 SQL migrations were detected but not run because they did not follow the filename convention.
+Set 'validateMigrationNaming' to true to fail fast and see a list of the invalid file names.
+ERROR: Unable to determine the original schema for the connection
+----------------------------------------------------------
+SQL State  : XX000
+Error Code : 0
+Message    : ERROR: sbroad: rule parsing error:  --> 1:1
+  |
+1 | SHOW search_path
+  | ^---
+  |
+  = expected EOI, AnonymousBlock, CreatePlugin, DropPlugin, AlterPlugin, CreateUser, AlterUser, DropUser, CreateRole, DropRole, GrantPrivilege, RevokePrivilege, AuditPolicy, Backup, CreatePartition, CreateTable, DropTable, TruncateTable, AlterTable, CreateProc, DropProc, RenameProc, CreateIndex, DropIndex, RenameIndex, CreateSchema, DropSchema, SetParam, SetTransaction, AlterSystem, CallProc, Explain, Query, Deallocate, Begin, Commit, Rollback, or End
+
+Caused by: org.postgresql.util.PSQLException: ERROR: sbroad: rule parsing error:  --> 1:1
+  |
+1 | SHOW search_path
+  | ^---
+  |
+  = expected EOI, AnonymousBlock, CreatePlugin, DropPlugin, AlterPlugin, CreateUser, AlterUser, DropUser, CreateRole, DropRole, GrantPrivilege, RevokePrivilege, AuditPolicy, Backup, CreatePartition, CreateTable, DropTable, TruncateTable, AlterTable, CreateProc, DropProc, RenameProc, CreateIndex, DropIndex, RenameIndex, CreateSchema, DropSchema, SetParam, SetTransaction, AlterSystem, CallProc, Explain, Query, Deallocate, Begin, Commit, Rollback, or End
+# код возврата: 1
+
+--- rollback: откат второй миграции ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/migrations:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://pico:5432/picodata?sslmode=disable' -user=admin -password='Picodata1' undo
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+ERROR: Flyway Redgate Edition Required: undo is not supported by OSS Edition
+Download Redgate Edition for free: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=redgate-edition-download
+# код возврата: 35
+

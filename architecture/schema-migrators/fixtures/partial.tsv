@@ -1,0 +1,17 @@
+tool	engine	run	exit	probe_table	note_column	journal	message
+goose	pg	1	1	есть	нет	1:true	2026/10/05 08:45:41 goose run: ERROR 00002_add_note_then_fail.sql: failed to run SQL migration: failed to execute SQL query "INSERT INTO missing_table VALUES (1);": ERROR: relation "missing_table" does not exist (SQLSTAT
+goose	pg	2	1	есть	нет	1:true	2026/10/05 08:45:42 goose run: ERROR 00002_add_note_then_fail.sql: failed to run SQL migration: failed to execute SQL query "INSERT INTO missing_table VALUES (1);": ERROR: relation "missing_table" does not exist (SQLSTAT
+flyway	pg	1	1	есть	нет	1:true	ERROR: Migration of schema "public" to version "2 - add note then fail" failed! Changes successfully rolled back.
+flyway	pg	2	1	есть	нет	1:true	ERROR: Migration of schema "public" to version "2 - add note then fail" failed! Changes successfully rolled back.
+liquibase	pg	1	1	есть	нет	1	ERROR: Exception Primary Reason:  ERROR: relation "missing_table" does not exist
+liquibase	pg	2	1	есть	нет	1	ERROR: Exception Primary Reason:  ERROR: relation "missing_table" does not exist
+atlas	pg	1	1	есть	нет	20261005000001:1/1	Error: sql/migrate: executing statement "INSERT INTO missing_table VALUES (1);" from version "20261005000002": pq: relation "missing_table" does not exist at column 13 (42P01)
+atlas	pg	2	1	есть	нет	20261005000001:1/1	Error: sql/migrate: executing statement "INSERT INTO missing_table VALUES (1);" from version "20261005000002": pq: relation "missing_table" does not exist at column 13 (42P01)
+alembic	pg	1	1	нет	нет	таблицы журнала нет	sqlalchemy.exc.ProgrammingError: (psycopg.errors.UndefinedTable) relation "missing_table" does not exist
+alembic	pg	2	1	нет	нет	таблицы журнала нет	sqlalchemy.exc.ProgrammingError: (psycopg.errors.UndefinedTable) relation "missing_table" does not exist
+goose	crdb	1	1	есть	есть	1:true	2026/10/05 08:45:58 goose run: ERROR 00002_add_note_then_fail.sql: failed to run SQL migration: failed to execute SQL query "INSERT INTO missing_table VALUES (1);": ERROR: relation "missing_table" does not exist (SQLSTAT
+goose	crdb	2	1	есть	есть	1:true	2026/10/05 08:45:59 goose run: ERROR 00002_add_note_then_fail.sql: failed to run SQL migration: failed to execute SQL query "ALTER TABLE probe ADD COLUMN note TEXT;": ERROR: column "note" of relation "probe" already exis
+flyway	crdb	1	1	есть	есть	1:true 2:false	ERROR: Migration of schema "public" to version "2 - add note then fail" [non-transactional] failed! Please restore backups and roll back database and code!
+flyway	crdb	2	1	есть	есть	1:true 2:false	ERROR: Validate failed: Migrations have failed validation
+liquibase	crdb	1	1	есть	есть	1	ERROR: Exception Primary Reason:  ERROR: relation "missing_table" does not exist
+liquibase	crdb	2	1	есть	есть	1	ERROR: Exception Primary Reason:  ERROR: column "note" of relation "probe" already exists

@@ -1,0 +1,1 @@
+CREATE TABLE broken (id INT PRIMARY KEY,, name TEXT);

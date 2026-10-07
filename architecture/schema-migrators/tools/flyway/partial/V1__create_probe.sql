@@ -1,0 +1,1 @@
+CREATE TABLE probe (id INT PRIMARY KEY, name TEXT);

@@ -1,0 +1,750 @@
+# 20-partial
+# снято: 2026-10-05 08:45 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- goose × pg: прогон 1 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/partial:/mig" smig-goose -dir /mig postgres 'postgres://postgres:smig@pg:5432/t_goose?sslmode=disable' up
+2026/10/05 08:45:41 OK   00001_create_probe.sql (832.63µs)
+2026/10/05 08:45:41 goose run: ERROR 00002_add_note_then_fail.sql: failed to run SQL migration: failed to execute SQL query "INSERT INTO missing_table VALUES (1);": ERROR: relation "missing_table" does not exist (SQLSTATE 42P01)
+# код возврата: 1
+
+--- goose × pg: журнал после прогона 1 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://postgres:smig@pg:5432/t_goose?sslmode=disable' -tAc "SELECT string_agg(version_id || ':' || is_applied, ' ' ORDER BY id) FROM goose_db_version WHERE version_id > 0"
+1:true
+# код возврата: 0
+
+# goose × pg, прогон 1: код 1, таблица probe — есть, колонка note — нет, журнал — 1:true
+--- goose × pg: прогон 2 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/partial:/mig" smig-goose -dir /mig postgres 'postgres://postgres:smig@pg:5432/t_goose?sslmode=disable' up
+2026/10/05 08:45:42 goose run: ERROR 00002_add_note_then_fail.sql: failed to run SQL migration: failed to execute SQL query "INSERT INTO missing_table VALUES (1);": ERROR: relation "missing_table" does not exist (SQLSTATE 42P01)
+# код возврата: 1
+
+--- goose × pg: журнал после прогона 2 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://postgres:smig@pg:5432/t_goose?sslmode=disable' -tAc "SELECT string_agg(version_id || ':' || is_applied, ' ' ORDER BY id) FROM goose_db_version WHERE version_id > 0"
+1:true
+# код возврата: 0
+
+# goose × pg, прогон 2: код 1, таблица probe — есть, колонка note — нет, журнал — 1:true
+--- flyway × pg: прогон 1 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/partial:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://pg:5432/t_flyway' -user=postgres -password='smig' migrate
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 18.4)
+Schema history table "public"."flyway_schema_history" does not exist yet
+Successfully validated 2 migrations (execution time 00:00.007s)
+Creating Schema History table "public"."flyway_schema_history" ...
+Current version of schema "public": << Empty Schema >>
+Migrating schema "public" to version "1 - create probe"
+Migrating schema "public" to version "2 - add note then fail"
+ERROR: Migration of schema "public" to version "2 - add note then fail" failed! Changes successfully rolled back.
+ERROR: Failed to execute script V2__add_note_then_fail.sql
+---------------------------------------------------
+SQL State  : 42P01
+Error Code : 0
+Message    : ERROR: relation "missing_table" does not exist
+  Position: 13
+Location   : /flyway/sql/V2__add_note_then_fail.sql (/flyway/sql/V2__add_note_then_fail.sql)
+Line       : 2
+Statement  : Run Flyway with -X option to see the actual statement causing the problem
+
+Caused by: Failed to execute script V2__add_note_then_fail.sql
+---------------------------------------------------
+SQL State  : 42P01
+Error Code : 0
+Message    : ERROR: relation "missing_table" does not exist
+  Position: 13
+Location   : /flyway/sql/V2__add_note_then_fail.sql (/flyway/sql/V2__add_note_then_fail.sql)
+Line       : 2
+Statement  : Run Flyway with -X option to see the actual statement causing the problem
+
+Caused by: org.postgresql.util.PSQLException: ERROR: relation "missing_table" does not exist
+  Position: 13
+# код возврата: 1
+
+--- flyway × pg: журнал после прогона 1 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://postgres:smig@pg:5432/t_flyway?sslmode=disable' -tAc "SELECT string_agg(version || ':' || success, ' ' ORDER BY installed_rank) FROM flyway_schema_history"
+1:true
+# код возврата: 0
+
+# flyway × pg, прогон 1: код 1, таблица probe — есть, колонка note — нет, журнал — 1:true
+--- flyway × pg: прогон 2 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/partial:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://pg:5432/t_flyway' -user=postgres -password='smig' migrate
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 18.4)
+Successfully validated 2 migrations (execution time 00:00.009s)
+Current version of schema "public": 1
+Migrating schema "public" to version "2 - add note then fail"
+ERROR: Migration of schema "public" to version "2 - add note then fail" failed! Changes successfully rolled back.
+ERROR: Failed to execute script V2__add_note_then_fail.sql
+---------------------------------------------------
+SQL State  : 42P01
+Error Code : 0
+Message    : ERROR: relation "missing_table" does not exist
+  Position: 13
+Location   : /flyway/sql/V2__add_note_then_fail.sql (/flyway/sql/V2__add_note_then_fail.sql)
+Line       : 2
+Statement  : Run Flyway with -X option to see the actual statement causing the problem
+
+Caused by: Failed to execute script V2__add_note_then_fail.sql
+---------------------------------------------------
+SQL State  : 42P01
+Error Code : 0
+Message    : ERROR: relation "missing_table" does not exist
+  Position: 13
+Location   : /flyway/sql/V2__add_note_then_fail.sql (/flyway/sql/V2__add_note_then_fail.sql)
+Line       : 2
+Statement  : Run Flyway with -X option to see the actual statement causing the problem
+
+Caused by: org.postgresql.util.PSQLException: ERROR: relation "missing_table" does not exist
+  Position: 13
+# код возврата: 1
+
+--- flyway × pg: журнал после прогона 2 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://postgres:smig@pg:5432/t_flyway?sslmode=disable' -tAc "SELECT string_agg(version || ':' || success, ' ' ORDER BY installed_rank) FROM flyway_schema_history"
+1:true
+# код возврата: 0
+
+# flyway × pg, прогон 2: код 1, таблица probe — есть, колонка note — нет, журнал — 1:true
+--- liquibase × pg: прогон 1 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://pg:5432/t_liquibase' --username=postgres --password='smig' --search-path=/liquibase/changelog --changelog-file=partial.sql update
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 08:45:47 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+Running Changeset: partial.sql::1::smig
+Running Changeset: partial.sql::2::smig
+
+UPDATE SUMMARY
+Run:                          1
+Previously run:               0
+Filtered out:                 0
+-------------------------------
+Total change sets:            2
+
+ERROR: Exception Details
+ERROR: Exception Primary Class:  PSQLException
+ERROR: Exception Primary Reason:  ERROR: relation "missing_table" does not exist
+  Position: 13
+ERROR: Exception Primary Source:  PostgreSQL 18.4 (Debian 18.4-1.pgdg13+1)
+
+Unexpected error running Liquibase: Migration failed for changeset partial.sql::2::smig:
+     Reason: liquibase.exception.DatabaseException: ERROR: relation "missing_table" does not exist
+  Position: 13 [Failed SQL: (0) INSERT INTO missing_table VALUES (1)]
+
+For more information, please use the --log-level flag
+# код возврата: 1
+
+--- liquibase × pg: журнал после прогона 1 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://postgres:smig@pg:5432/t_liquibase?sslmode=disable' -tAc "SELECT string_agg(id, ' ' ORDER BY orderexecuted) FROM databasechangelog"
+1
+# код возврата: 0
+
+# liquibase × pg, прогон 1: код 1, таблица probe — есть, колонка note — нет, журнал — 1
+--- liquibase × pg: прогон 2 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://pg:5432/t_liquibase' --username=postgres --password='smig' --search-path=/liquibase/changelog --changelog-file=partial.sql update
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 08:45:48 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+Running Changeset: partial.sql::2::smig
+
+UPDATE SUMMARY
+Run:                          0
+Previously run:               1
+Filtered out:                 0
+-------------------------------
+Total change sets:            2
+
+ERROR: Exception Details
+ERROR: Exception Primary Class:  PSQLException
+ERROR: Exception Primary Reason:  ERROR: relation "missing_table" does not exist
+  Position: 13
+ERROR: Exception Primary Source:  PostgreSQL 18.4 (Debian 18.4-1.pgdg13+1)
+
+Unexpected error running Liquibase: Migration failed for changeset partial.sql::2::smig:
+     Reason: liquibase.exception.DatabaseException: ERROR: relation "missing_table" does not exist
+  Position: 13 [Failed SQL: (0) INSERT INTO missing_table VALUES (1)]
+
+For more information, please use the --log-level flag
+# код возврата: 1
+
+--- liquibase × pg: журнал после прогона 2 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://postgres:smig@pg:5432/t_liquibase?sslmode=disable' -tAc "SELECT string_agg(id, ' ' ORDER BY orderexecuted) FROM databasechangelog"
+1
+# код возврата: 0
+
+# liquibase × pg, прогон 2: код 1, таблица probe — есть, колонка note — нет, журнал — 1
+--- atlas × pg: прогон 1 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/partial:/mig" arigaio/atlas:1.3.3-community migrate apply --url 'postgres://postgres:smig@pg:5432/t_atlas?sslmode=disable&search_path=public' --dir file:///mig
+Migrating to version 20261005000002 (2 migrations in total):
+
+  -- migrating version 20261005000001
+    -> CREATE TABLE probe (id INT PRIMARY KEY, name TEXT);
+  -- ok (2.884542ms)
+
+  -- migrating version 20261005000002
+    -> ALTER TABLE probe ADD COLUMN note TEXT;
+    -> INSERT INTO missing_table VALUES (1);
+    pq: relation "missing_table" does not exist at column 13 (42P01)
+
+  -------------------------
+  -- 14.131583ms
+  -- 1 migration ok, 1 with errors
+  -- 2 sql statements ok, 1 with errors
+Error: sql/migrate: executing statement "INSERT INTO missing_table VALUES (1);" from version "20261005000002": pq: relation "missing_table" does not exist at column 13 (42P01)
+sql/migrate: write revision: pq: current transaction is aborted, commands ignored until end of transaction block (25P02)
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+--- atlas × pg: журнал после прогона 1 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://postgres:smig@pg:5432/t_atlas?sslmode=disable' -tAc "SELECT string_agg(version || ':' || applied || '/' || total, ' ' ORDER BY version) FROM atlas_schema_revisions"
+20261005000001:1/1
+# код возврата: 0
+
+# atlas × pg, прогон 1: код 1, таблица probe — есть, колонка note — нет, журнал — 20261005000001:1/1
+--- atlas × pg: прогон 2 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/atlas/partial:/mig" arigaio/atlas:1.3.3-community migrate apply --url 'postgres://postgres:smig@pg:5432/t_atlas?sslmode=disable&search_path=public' --dir file:///mig
+Migrating to version 20261005000002 from 20261005000001 (1 migrations in total):
+
+  -- migrating version 20261005000002
+    -> ALTER TABLE probe ADD COLUMN note TEXT;
+    -> INSERT INTO missing_table VALUES (1);
+    pq: relation "missing_table" does not exist at column 13 (42P01)
+
+  -------------------------
+  -- 2.621167ms
+  -- 1 migration with errors
+  -- 1 sql statement ok, 1 with errors
+Error: sql/migrate: executing statement "INSERT INTO missing_table VALUES (1);" from version "20261005000002": pq: relation "missing_table" does not exist at column 13 (42P01)
+sql/migrate: write revision: pq: current transaction is aborted, commands ignored until end of transaction block (25P02)
+You're running the community build of Atlas, which differs from the official version.
+If this error persists, try installing the official version as a troubleshooting step:
+
+  curl -sSf https://atlasgo.sh | sh
+
+More installation options: https://atlasgo.io/docs#installation
+# код возврата: 1
+
+--- atlas × pg: журнал после прогона 2 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://postgres:smig@pg:5432/t_atlas?sslmode=disable' -tAc "SELECT string_agg(version || ':' || applied || '/' || total, ' ' ORDER BY version) FROM atlas_schema_revisions"
+20261005000001:1/1
+# код возврата: 0
+
+# atlas × pg, прогон 2: код 1, таблица probe — есть, колонка note — нет, журнал — 20261005000001:1/1
+--- alembic × pg: прогон 1 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -e SMIG_URL='postgresql+psycopg://postgres:smig@pg:5432/t_alembic?sslmode=disable' -v "$PWD/tools/alembic:/w" -v "$PWD/tools/alembic/partial:/w/versions" smig-alembic upgrade head
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1943, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 1192, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "missing_table" does not exist
+LINE 1: INSERT INTO missing_table VALUES (1)
+                    ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/bin/alembic", line 6, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/config.py", line 1039, in main
+    CommandLine(prog=prog).main(argv=argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/config.py", line 1029, in main
+    self.run_cmd(cfg, options)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/config.py", line 963, in run_cmd
+    fn(
+    ~~^
+        config,
+        ^^^^^^^
+        *[getattr(options, k, None) for k in positional],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        **{k: getattr(options, k, None) for k in kwarg},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/alembic/command.py", line 487, in upgrade
+    script.run_env()
+    ~~~~~~~~~~~~~~^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/script/base.py", line 550, in run_env
+    util.load_python_file(self.dir, "env.py")
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/util/pyfiles.py", line 114, in load_python_file
+    module = load_module_py(module_id, path)
+  File "/usr/local/lib/python3.13/site-packages/alembic/util/pyfiles.py", line 132, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 1027, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/w/env.py", line 15, in <module>
+    context.run_migrations()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 8, in run_migrations
+  File "/usr/local/lib/python3.13/site-packages/alembic/runtime/environment.py", line 970, in run_migrations
+    self.get_context().run_migrations(**kw)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/runtime/migration.py", line 616, in run_migrations
+    step.migration_fn(**kw)
+    ~~~~~~~~~~~~~~~~~^^^^^^
+  File "/w/versions/0002_add_note_then_fail.py", line 11, in upgrade
+    op.execute("INSERT INTO missing_table VALUES (1)")
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 8, in execute
+  File "<string>", line 3, in execute
+  File "/usr/local/lib/python3.13/site-packages/alembic/operations/ops.py", line 2645, in execute
+    return operations.invoke(op)
+           ~~~~~~~~~~~~~~~~~^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/operations/base.py", line 448, in invoke
+    return fn(self, operation)
+  File "/usr/local/lib/python3.13/site-packages/alembic/operations/toimpl.py", line 256, in execute_sql
+    operations.migration_context.impl.execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        operation.sqltext, execution_options=operation.execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/alembic/ddl/impl.py", line 259, in execute
+    self._exec(sql, execution_options)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/ddl/impl.py", line 252, in _exec
+    return conn.execute(construct, params)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1448, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 533, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1668, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<9 lines>...
+        param_dict=param_dict,
+    )
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1822, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1962, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2332, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1943, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 1192, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+sqlalchemy.exc.ProgrammingError: (psycopg.errors.UndefinedTable) relation "missing_table" does not exist
+LINE 1: INSERT INTO missing_table VALUES (1)
+                    ^
+[SQL: INSERT INTO missing_table VALUES (1)]
+(Background on this error at: https://sqlalche.me/e/21/f405)
+# код возврата: 1
+
+--- alembic × pg: журнал после прогона 1 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://postgres:smig@pg:5432/t_alembic?sslmode=disable' -tAc "SELECT string_agg(version_num, ' ') FROM alembic_version"
+ERROR:  relation "alembic_version" does not exist
+LINE 1: SELECT string_agg(version_num, ' ') FROM alembic_version
+                                                 ^
+# код возврата: 1
+
+# alembic × pg, прогон 1: код 1, таблица probe — нет, колонка note — нет, журнал — таблицы журнала нет
+--- alembic × pg: прогон 2 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -e SMIG_URL='postgresql+psycopg://postgres:smig@pg:5432/t_alembic?sslmode=disable' -v "$PWD/tools/alembic:/w" -v "$PWD/tools/alembic/partial:/w/versions" smig-alembic upgrade head
+Traceback (most recent call last):
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1943, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 1192, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+psycopg.errors.UndefinedTable: relation "missing_table" does not exist
+LINE 1: INSERT INTO missing_table VALUES (1)
+                    ^
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/usr/local/bin/alembic", line 6, in <module>
+    sys.exit(main())
+             ~~~~^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/config.py", line 1039, in main
+    CommandLine(prog=prog).main(argv=argv)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/config.py", line 1029, in main
+    self.run_cmd(cfg, options)
+    ~~~~~~~~~~~~^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/config.py", line 963, in run_cmd
+    fn(
+    ~~^
+        config,
+        ^^^^^^^
+        *[getattr(options, k, None) for k in positional],
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        **{k: getattr(options, k, None) for k in kwarg},
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/alembic/command.py", line 487, in upgrade
+    script.run_env()
+    ~~~~~~~~~~~~~~^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/script/base.py", line 550, in run_env
+    util.load_python_file(self.dir, "env.py")
+    ~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/util/pyfiles.py", line 114, in load_python_file
+    module = load_module_py(module_id, path)
+  File "/usr/local/lib/python3.13/site-packages/alembic/util/pyfiles.py", line 132, in load_module_py
+    spec.loader.exec_module(module)  # type: ignore
+    ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^
+  File "<frozen importlib._bootstrap_external>", line 1027, in exec_module
+  File "<frozen importlib._bootstrap>", line 488, in _call_with_frames_removed
+  File "/w/env.py", line 15, in <module>
+    context.run_migrations()
+    ~~~~~~~~~~~~~~~~~~~~~~^^
+  File "<string>", line 8, in run_migrations
+  File "/usr/local/lib/python3.13/site-packages/alembic/runtime/environment.py", line 970, in run_migrations
+    self.get_context().run_migrations(**kw)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/runtime/migration.py", line 616, in run_migrations
+    step.migration_fn(**kw)
+    ~~~~~~~~~~~~~~~~~^^^^^^
+  File "/w/versions/0002_add_note_then_fail.py", line 11, in upgrade
+    op.execute("INSERT INTO missing_table VALUES (1)")
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "<string>", line 8, in execute
+  File "<string>", line 3, in execute
+  File "/usr/local/lib/python3.13/site-packages/alembic/operations/ops.py", line 2645, in execute
+    return operations.invoke(op)
+           ~~~~~~~~~~~~~~~~~^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/operations/base.py", line 448, in invoke
+    return fn(self, operation)
+  File "/usr/local/lib/python3.13/site-packages/alembic/operations/toimpl.py", line 256, in execute_sql
+    operations.migration_context.impl.execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        operation.sqltext, execution_options=operation.execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/alembic/ddl/impl.py", line 259, in execute
+    self._exec(sql, execution_options)
+    ~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/alembic/ddl/impl.py", line 252, in _exec
+    return conn.execute(construct, params)
+           ~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1448, in execute
+    return meth(
+        self,
+        distilled_parameters,
+        execution_options or NO_OPTIONS,
+    )
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/sql/elements.py", line 533, in _execute_on_connection
+    return connection._execute_clauseelement(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        self, distilled_params, execution_options
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1668, in _execute_clauseelement
+    ret = self._execute_context(
+        dialect,
+    ...<9 lines>...
+        param_dict=param_dict,
+    )
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1822, in _execute_context
+    return self._exec_single_context(
+           ~~~~~~~~~~~~~~~~~~~~~~~~~^
+        dialect, context, statement, parameters
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1962, in _exec_single_context
+    self._handle_dbapi_exception(
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~^
+        e, str_statement, effective_parameters, cursor, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 2332, in _handle_dbapi_exception
+    raise sqlalchemy_exception.with_traceback(exc_info[2]) from e
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/base.py", line 1943, in _exec_single_context
+    self.dialect.do_execute(
+    ~~~~~~~~~~~~~~~~~~~~~~~^
+        cursor, str_statement, effective_parameters, context
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    )
+    ^
+  File "/usr/local/lib/python3.13/site-packages/sqlalchemy/engine/default.py", line 1192, in do_execute
+    cursor.execute(statement, parameters)
+    ~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.13/site-packages/psycopg/cursor.py", line 117, in execute
+    raise ex.with_traceback(None)
+sqlalchemy.exc.ProgrammingError: (psycopg.errors.UndefinedTable) relation "missing_table" does not exist
+LINE 1: INSERT INTO missing_table VALUES (1)
+                    ^
+[SQL: INSERT INTO missing_table VALUES (1)]
+(Background on this error at: https://sqlalche.me/e/21/f405)
+# код возврата: 1
+
+--- alembic × pg: журнал после прогона 2 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://postgres:smig@pg:5432/t_alembic?sslmode=disable' -tAc "SELECT string_agg(version_num, ' ') FROM alembic_version"
+ERROR:  relation "alembic_version" does not exist
+LINE 1: SELECT string_agg(version_num, ' ') FROM alembic_version
+                                                 ^
+# код возврата: 1
+
+# alembic × pg, прогон 2: код 1, таблица probe — нет, колонка note — нет, журнал — таблицы журнала нет
+--- goose × crdb: прогон 1 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/partial:/mig" smig-goose -dir /mig postgres 'postgres://root@crdb:26257/t_goose?sslmode=disable' up
+2026/10/05 08:45:58 OK   00001_create_probe.sql (5.72ms)
+2026/10/05 08:45:58 goose run: ERROR 00002_add_note_then_fail.sql: failed to run SQL migration: failed to execute SQL query "INSERT INTO missing_table VALUES (1);": ERROR: relation "missing_table" does not exist (SQLSTATE 42P01)
+# код возврата: 1
+
+--- goose × crdb: журнал после прогона 1 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_goose?sslmode=disable' -tAc "SELECT string_agg(version_id || ':' || is_applied, ' ' ORDER BY id) FROM goose_db_version WHERE version_id > 0"
+1:true
+# код возврата: 0
+
+# goose × crdb, прогон 1: код 1, таблица probe — есть, колонка note — есть, журнал — 1:true
+--- goose × crdb: прогон 2 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/goose/partial:/mig" smig-goose -dir /mig postgres 'postgres://root@crdb:26257/t_goose?sslmode=disable' up
+2026/10/05 08:45:59 goose run: ERROR 00002_add_note_then_fail.sql: failed to run SQL migration: failed to execute SQL query "ALTER TABLE probe ADD COLUMN note TEXT;": ERROR: column "note" of relation "probe" already exists (SQLSTATE 42701)
+# код возврата: 1
+
+--- goose × crdb: журнал после прогона 2 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_goose?sslmode=disable' -tAc "SELECT string_agg(version_id || ':' || is_applied, ' ' ORDER BY id) FROM goose_db_version WHERE version_id > 0"
+1:true
+# код возврата: 0
+
+# goose × crdb, прогон 2: код 1, таблица probe — есть, колонка note — есть, журнал — 1:true
+--- flyway × crdb: прогон 1 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/partial:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://crdb:26257/t_flyway?sslmode=disable' -user=root -password='' migrate
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 13.0)
+WARNING: Using CockroachDB 26.2 which is newer than the version Flyway has been verified with. The latest verified version of CockroachDB is 26.1.
+Schema history table "public"."flyway_schema_history" does not exist yet
+Successfully validated 2 migrations (execution time 00:00.009s)
+Creating Schema History table "public"."flyway_schema_history" ...
+DB: waiting for job(s) to complete: 1216084577435516929
+If the statement is canceled, jobs will continue in the background.
+Current version of schema "public": << Empty Schema >>
+Migrating schema "public" to version "1 - create probe" [non-transactional]
+Migrating schema "public" to version "2 - add note then fail" [non-transactional]
+DB: waiting for job(s) to complete: 1216084578037661697
+If the statement is canceled, jobs will continue in the background.
+ERROR: Migration of schema "public" to version "2 - add note then fail" [non-transactional] failed! Please restore backups and roll back database and code!
+ERROR: Failed to execute script V2__add_note_then_fail.sql
+---------------------------------------------------
+SQL State  : 42P01
+Error Code : 0
+Message    : ERROR: relation "missing_table" does not exist
+Location   : /flyway/sql/V2__add_note_then_fail.sql (/flyway/sql/V2__add_note_then_fail.sql)
+Line       : 2
+Statement  : Run Flyway with -X option to see the actual statement causing the problem
+
+Caused by: Failed to execute script V2__add_note_then_fail.sql
+---------------------------------------------------
+SQL State  : 42P01
+Error Code : 0
+Message    : ERROR: relation "missing_table" does not exist
+Location   : /flyway/sql/V2__add_note_then_fail.sql (/flyway/sql/V2__add_note_then_fail.sql)
+Line       : 2
+Statement  : Run Flyway with -X option to see the actual statement causing the problem
+
+Caused by: org.postgresql.util.PSQLException: ERROR: relation "missing_table" does not exist
+# код возврата: 1
+
+--- flyway × crdb: журнал после прогона 1 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_flyway?sslmode=disable' -tAc "SELECT string_agg(version || ':' || success, ' ' ORDER BY installed_rank) FROM flyway_schema_history"
+1:true 2:false
+# код возврата: 0
+
+# flyway × crdb, прогон 1: код 1, таблица probe — есть, колонка note — есть, журнал — 1:true 2:false
+--- flyway × crdb: прогон 2 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -v "$PWD/tools/flyway/partial:/flyway/sql" flyway/flyway:13.9.0 -url='jdbc:postgresql://crdb:26257/t_flyway?sslmode=disable' -user=root -password='' migrate
+WARNING: Storing migrations in 'sql' is not recommended and default scanning of this location may be deprecated in a future release
+Flyway OSS Edition 13.9.0 by Redgate
+
+See release notes here: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=release-notes-and-older-versions/release-notes-for-flyway-engine
+Database: jdbc:postgresql:******** (PostgreSQL 13.0)
+WARNING: Using CockroachDB 26.2 which is newer than the version Flyway has been verified with. The latest verified version of CockroachDB is 26.1.
+ERROR: Validate failed: Migrations have failed validation
+Detected failed migration to version 2 (add note then fail).
+Please remove any half-completed changes then run repair to fix the schema history.
+Need more flexibility with validation rules? Learn more: https://help.red-gate.com/help/flyway-cli13/help_9.aspx?topic=flyway-blog/older-posts/customize-validation-rules-with-ignoremigrationpatterns
+# код возврата: 1
+
+--- flyway × crdb: журнал после прогона 2 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_flyway?sslmode=disable' -tAc "SELECT string_agg(version || ':' || success, ' ' ORDER BY installed_rank) FROM flyway_schema_history"
+1:true 2:false
+# код возврата: 0
+
+# flyway × crdb, прогон 2: код 1, таблица probe — есть, колонка note — есть, журнал — 1:true 2:false
+--- liquibase × crdb: прогон 1 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://crdb:26257/t_liquibase?sslmode=disable' --username=root --password='' --search-path=/liquibase/changelog --changelog-file=partial.sql update
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 08:46:04 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+Running Changeset: partial.sql::1::smig
+Running Changeset: partial.sql::2::smig
+waiting for job(s) to complete: 1216084590199209985
+If the statement is canceled, jobs will continue in the background.
+
+UPDATE SUMMARY
+Run:                          1
+Previously run:               0
+Filtered out:                 0
+-------------------------------
+Total change sets:            2
+
+ERROR: Exception Details
+ERROR: Exception Primary Class:  PSQLException
+ERROR: Exception Primary Reason:  ERROR: relation "missing_table" does not exist
+ERROR: Exception Primary Source:  PostgreSQL 13.0.0
+
+Unexpected error running Liquibase: Migration failed for changeset partial.sql::2::smig:
+     Reason: liquibase.exception.DatabaseException: ERROR: relation "missing_table" does not exist [Failed SQL: (0) INSERT INTO missing_table VALUES (1)]
+
+For more information, please use the --log-level flag
+# код возврата: 1
+
+--- liquibase × crdb: журнал после прогона 1 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_liquibase?sslmode=disable' -tAc "SELECT string_agg(id, ' ' ORDER BY orderexecuted) FROM databasechangelog"
+1
+# код возврата: 0
+
+# liquibase × crdb, прогон 1: код 1, таблица probe — есть, колонка note — есть, журнал — 1
+--- liquibase × crdb: прогон 2 — обе миграции, вторая падает на середине ---
+# cmd: docker run --rm --network smig -e LIQUIBASE_ANALYTICS_ENABLED=false -v "$PWD/tools/liquibase:/liquibase/changelog" smig-liquibase --url='jdbc:postgresql://crdb:26257/t_liquibase?sslmode=disable' --username=root --password='' --search-path=/liquibase/changelog --changelog-file=partial.sql update
+####################################################
+##   _     _             _ _                      ##
+##  | |   (_)           (_) |                     ##
+##  | |    _  __ _ _   _ _| |__   __ _ ___  ___   ##
+##  | |   | |/ _` | | | | | '_ \ / _` / __|/ _ \  ##
+##  | |___| | (_| | |_| | | |_) | (_| \__ \  __/  ##
+##  \_____/_|\__, |\__,_|_|_.__/ \__,_|___/\___|  ##
+##              | |                               ##
+##              |_|                               ##
+##                                                ## 
+##  Taking Liquibase to production?               ##
+##  liquibase.com/liquibase-secure                ## 
+##                                                ##
+####################################################
+Starting Liquibase at 08:46:05 using Java 21.0.11 (version 5.0.4 #11282 built at 2026-08-18 12:10:05 UTC)
+Liquibase Version: 5.0.4
+
+Running Changeset: partial.sql::2::smig
+
+UPDATE SUMMARY
+Run:                          0
+Previously run:               1
+Filtered out:                 0
+-------------------------------
+Total change sets:            2
+
+ERROR: Exception Details
+ERROR: Exception Primary Class:  PSQLException
+ERROR: Exception Primary Reason:  ERROR: column "note" of relation "probe" already exists
+ERROR: Exception Primary Source:  PostgreSQL 13.0.0
+
+Unexpected error running Liquibase: Migration failed for changeset partial.sql::2::smig:
+     Reason: liquibase.exception.DatabaseException: ERROR: column "note" of relation "probe" already exists [Failed SQL: (0) ALTER TABLE probe ADD COLUMN note TEXT]
+
+For more information, please use the --log-level flag
+# код возврата: 1
+
+--- liquibase × crdb: журнал после прогона 2 ---
+# cmd: docker run --rm --network smig postgres:18.4 psql 'postgres://root@crdb:26257/t_liquibase?sslmode=disable' -tAc "SELECT string_agg(id, ' ' ORDER BY orderexecuted) FROM databasechangelog"
+1
+# код возврата: 0
+
+# liquibase × crdb, прогон 2: код 1, таблица probe — есть, колонка note — есть, журнал — 1
