@@ -37,7 +37,8 @@
 | [`databases/redis/client-resilience`](databases/redis/client-resilience) | Клиенты Go/Java/Rust к Redis: Cluster/Sentinel, reconnect и failover | [статья](https://khorost.tech/databases/redis-clients-go-java-rust/) |
 | [`databases/redis/deep-dive`](databases/redis/deep-dive) | Redis/Valkey: глубокое погружение (кодировки, event loop, персистентность, Cluster/Sentinel, память, streams/Lua, эксплуатация) | [статья](https://khorost.tech/databases/) |
 | [`databases/scylladb`](databases/scylladb) | ScyllaDB: глубокое погружение (топология, компакция, LWT, драйверы) | [статья](https://khorost.tech/databases/) |
-| [`databases/sqlite`](databases/sqlite) | SQLite против Postgres: цена сетевого хопа, граница одного писателя, litestream и DuckDB | 🔜 скоро |
+| [`databases/sqlite`](databases/sqlite) | SQLite против Postgres: цена сетевого хопа, граница одного писателя, litestream и DuckDB | [статья](https://khorost.tech/databases/sqlite-embedded-databases/) |
+| [`databases/timeseries`](databases/timeseries) | TimescaleDB, Prometheus и VictoriaMetrics на одних рядах: отсечение чанков, continuous aggregate на свежих, опоздавших и удалённых данных, байт на точку, память на ряд, increase() в двух системах, бесплатные сборки | 🔜 скоро |
 | [`databases/transactions`](databases/transactions) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | [статья](https://khorost.tech/databases/transactions-brokers-rabbitmq-kafka/) |
 | [`databases/wal`](databases/wal) | WAL и его аналоги: PostgreSQL, MySQL, MongoDB, SQLite, Redis, CDC/Debezium | [статья](https://khorost.tech/databases/) |
 
@@ -132,7 +133,7 @@
 |---|---|---|
 | [`kubernetes/architecture`](kubernetes/architecture) | Архитектура Kubernetes на живом кластере: из чего состоит control plane, кто ведущий, что происходит между kubectl apply и запущенным контейнером | [статья](https://khorost.tech/kubernetes/k8s-architecture-control-plane/) |
 | [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
-| [`kubernetes/scheduling`](kubernetes/scheduling) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | 🔜 скоро |
+| [`kubernetes/scheduling`](kubernetes/scheduling) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | [статья](https://khorost.tech/kubernetes/k8s-pod-scheduling-affinity-taints/) |
 
 ## Security
 

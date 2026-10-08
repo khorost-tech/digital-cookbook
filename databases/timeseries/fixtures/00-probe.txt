@@ -1,0 +1,39 @@
+# 00-probe
+# снято: 2026-10-05 11:40 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- PostgreSQL и TimescaleDB ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT version()" -c "SELECT extversion FROM pg_extension WHERE extname = 'timescaledb'"
+                                            version                                            
+-----------------------------------------------------------------------------------------------
+ PostgreSQL 18.6 on aarch64-unknown-linux-musl, compiled by gcc (Alpine 15.2.0) 15.2.0, 64-bit
+(1 row)
+
+ extversion 
+------------
+ 2.30.2
+(1 row)
+# код возврата: 0
+
+--- Prometheus ---
+# cmd: docker exec tsdb-prom prometheus --version
+prometheus, version 3.15.0 (branch: HEAD, revision: 5241a27fe3c6983549fccc32f6e65917408c63cd)
+  build user:       root@4635dd007a60
+  build date:       20260925-07:36:49
+  go version:       go1.27.1
+  platform:         linux/arm64
+  tags:             netgo,builtinassets
+# код возврата: 0
+
+--- VictoriaMetrics ---
+# cmd: docker exec tsdb-vm /victoria-metrics-prod -version
+victoria-metrics-20260925-135025-tags-v1.153.0-0-g3acd30be34
+# код возврата: 0
+
+--- генератор: Go и зависимости ---
+# cmd: grep -E '^go |pgx|snappy|protobuf' gen/go.mod
+go 1.25.0
+	github.com/golang/snappy v1.0.0
+	github.com/jackc/pgx/v5 v5.11.0
+	google.golang.org/protobuf v1.36.12
+# код возврата: 0
+

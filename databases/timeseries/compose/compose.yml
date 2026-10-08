@@ -1,0 +1,67 @@
+# Стенд timeseries: TimescaleDB, Prometheus и VictoriaMetrics, по одному узлу.
+#
+# Сценарии поднимают только нужные сервисы (scripts/up.sh <сервис…>): память
+# VM Docker на маке — 7,7 ГБ, и три базы под нагрузкой разом в неё не влезают.
+# Порты хоста не публикуются — всё ходит внутри сети tsdb.
+name: tsdb
+
+services:
+  ts:
+    image: timescale/timescaledb:2.30.2-pg18
+    container_name: tsdb-ts
+    environment:
+      POSTGRES_PASSWORD: ts
+      POSTGRES_DB: ts
+      NO_TS_TUNE: "true"     # без автотюнинга: настройки — явные, ниже
+    command: >
+      postgres -c shared_buffers=512MB -c max_wal_size=4GB
+      -c timescaledb.max_background_workers=8 -c max_worker_processes=16
+      -c timescaledb.telemetry_level=off
+    mem_limit: 2g
+    shm_size: 1g
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "ts"]
+      interval: 2s
+      retries: 60
+
+  # Та же версия в Apache-2.0-сборке — только для проверки редакций (06).
+  ts-oss:
+    image: timescale/timescaledb:2.30.2-pg18-oss
+    container_name: tsdb-ts-oss
+    profiles: ["oss"]
+    environment:
+      POSTGRES_PASSWORD: ts
+      POSTGRES_DB: ts
+      NO_TS_TUNE: "true"
+    command: postgres -c timescaledb.telemetry_level=off
+    mem_limit: 1g
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "ts"]
+      interval: 2s
+      retries: 60
+
+  prom:
+    image: prom/prometheus:v3.15.0
+    container_name: tsdb-prom
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=100y
+      - --web.enable-remote-write-receiver
+      - --web.enable-admin-api
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    mem_limit: 3g
+
+  vm:
+    image: victoriametrics/victoria-metrics:v1.153.0
+    container_name: tsdb-vm
+    command:
+      - -storageDataPath=/storage
+      - -retentionPeriod=100y
+      - -search.disableCache   # ответы на запросы — всегда из хранилища
+    mem_limit: 2g
+
+networks:
+  default:
+    name: tsdb

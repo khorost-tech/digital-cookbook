@@ -1,0 +1,166 @@
+# 01-chunks
+# снято: 2026-10-05 11:40 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- схема: гипертаблица и обычная таблица ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "
+CREATE TABLE metrics (time timestamptz NOT NULL, series_id int NOT NULL, value double precision NOT NULL);
+SELECT create_hypertable('metrics', by_range('time', INTERVAL '1 day'));
+CREATE INDEX ON metrics (series_id, time DESC);
+CREATE TABLE metrics_plain (LIKE metrics);
+CREATE INDEX ON metrics_plain (time DESC);
+CREATE INDEX ON metrics_plain (series_id, time DESC);"
+CREATE TABLE
+ create_hypertable 
+-------------------
+ (1,t)
+(1 row)
+
+CREATE INDEX
+CREATE TABLE
+CREATE INDEX
+CREATE INDEX
+# код возврата: 0
+
+--- загрузка: metrics, 30 суток × 200 рядов × 1/мин ---
+# cmd: docker run --rm --network tsdb tsdb-gen ts -table metrics -shape gauge2 -series 200 -span 720h -step 1m -end 2026-10-05T11:40:00Z
+ts: metrics: 8640000 строк за 13.403s
+# код возврата: 0
+
+--- загрузка: metrics_plain, 30 суток × 200 рядов × 1/мин ---
+# cmd: docker run --rm --network tsdb tsdb-gen ts -table metrics_plain -shape gauge2 -series 200 -span 720h -step 1m -end 2026-10-05T11:40:00Z
+ts: metrics_plain: 8640000 строк за 13.723s
+# код возврата: 0
+
+--- чанки гипертаблицы ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT count(*) AS chunks, min(range_start) AS first, max(range_end) AS last FROM timescaledb_information.chunks WHERE hypertable_name = 'metrics'"
+ chunks |         first          |          last          
+--------+------------------------+------------------------
+     31 | 2026-09-05 00:00:00+00 | 2026-10-06 00:00:00+00
+(1 row)
+# код возврата: 0
+
+--- последний час: план ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF) SELECT avg(value) FROM metrics WHERE time > now() - INTERVAL '1 hour'"
+                                                QUERY PLAN                                                
+----------------------------------------------------------------------------------------------------------
+ Aggregate (actual rows=1.00 loops=1)
+   Buffers: shared hit=15 read=272 dirtied=272
+   ->  Custom Scan (ChunkAppend) on metrics (actual rows=11600.00 loops=1)
+         Chunks excluded during startup: 0
+         Buffers: shared hit=15 read=272 dirtied=272
+         ->  Bitmap Heap Scan on _hyper_1_31_chunk (actual rows=11600.00 loops=1)
+               Recheck Cond: ("time" > (now() - '01:00:00'::interval))
+               Heap Blocks: exact=272
+               Buffers: shared hit=15 read=272 dirtied=272
+               ->  Bitmap Index Scan on _hyper_1_31_chunk_metrics_time_idx (actual rows=11600.00 loops=1)
+                     Index Cond: ("time" > (now() - '01:00:00'::interval))
+                     Index Searches: 1
+                     Buffers: shared hit=15
+ Planning:
+   Buffers: shared hit=732 read=15 dirtied=4
+(15 rows)
+# код возврата: 0
+
+--- последний час: сколько чанков сканируется ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF) SELECT avg(value) FROM metrics WHERE time > now() - INTERVAL '1 hour'" | grep -E 'Chunks excluded|_hyper_'
+         Chunks excluded during startup: 0
+         ->  Bitmap Heap Scan on _hyper_1_31_chunk (actual rows=11600.00 loops=1)
+               ->  Bitmap Index Scan on _hyper_1_31_chunk_metrics_time_idx (actual rows=11600.00 loops=1)
+# код возврата: 0
+
+--- вчерашние сутки (Q2): число чанков в плане ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF) SELECT avg(value) FROM metrics WHERE time >= date_trunc('day', now()) - INTERVAL '1 day' AND time < date_trunc('day', now())" | grep -E 'Chunks excluded|Seq Scan|Index Scan' | sed -E 's/_hyper_[0-9]+_[0-9]+_chunk/_hyper_N_chunk/' | sort | uniq -c
+   1                      ->  Bitmap Index Scan on _hyper_N_chunk_metrics_time_idx (actual rows=288000.00 loops=1)
+   1          Chunks excluded during startup: 30
+# код возврата: 0
+
+--- вчерашние сутки (Q3): число чанков в плане ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF) SELECT avg(value) FROM metrics WHERE date_trunc('day', time) = date_trunc('day', now()) - INTERVAL '1 day'" | grep -E 'Chunks excluded|Seq Scan|Index Scan' | sed -E 's/_hyper_[0-9]+_[0-9]+_chunk/_hyper_N_chunk/' | sort | uniq -c
+  28                      ->  Parallel Seq Scan on _hyper_N_chunk (actual rows=0.00 loops=1)
+   1                      ->  Parallel Seq Scan on _hyper_N_chunk (actual rows=0.00 loops=2)
+   1                      ->  Parallel Seq Scan on _hyper_N_chunk (actual rows=0.00 loops=3)
+   1                      ->  Parallel Seq Scan on _hyper_N_chunk (actual rows=288000.00 loops=1)
+   1                Chunks excluded during startup: 0
+# код возврата: 0
+
+--- вчерашние сутки (Q4): число чанков в плане ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "EXPLAIN (ANALYZE, COSTS OFF, TIMING OFF, SUMMARY OFF) SELECT avg(value) FROM metrics WHERE time::date = current_date - 1" | grep -E 'Chunks excluded|Seq Scan|Index Scan' | sed -E 's/_hyper_[0-9]+_[0-9]+_chunk/_hyper_N_chunk/' | sort | uniq -c
+  28                      ->  Parallel Seq Scan on _hyper_N_chunk (actual rows=0.00 loops=1)
+   1                      ->  Parallel Seq Scan on _hyper_N_chunk (actual rows=0.00 loops=2)
+   1                      ->  Parallel Seq Scan on _hyper_N_chunk (actual rows=0.00 loops=3)
+   1                      ->  Parallel Seq Scan on _hyper_N_chunk (actual rows=288000.00 loops=1)
+   1                Chunks excluded during startup: 0
+# код возврата: 0
+
+--- вчерашние сутки (Q2): время запроса ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c '\timing on' -c "SELECT avg(value) FROM metrics WHERE time >= date_trunc('day', now()) - INTERVAL '1 day' AND time < date_trunc('day', now())"
+Timing is on.
+       avg        
+------------------
+ 49.7613698958342
+(1 row)
+
+Time: 30.476 ms
+# код возврата: 0
+
+--- вчерашние сутки (Q3): время запроса ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c '\timing on' -c "SELECT avg(value) FROM metrics WHERE date_trunc('day', time) = date_trunc('day', now()) - INTERVAL '1 day'"
+Timing is on.
+       avg        
+------------------
+ 49.7613698958342
+(1 row)
+
+Time: 445.104 ms
+# код возврата: 0
+
+--- размер до ретеншна ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT pg_size_pretty(hypertable_size('metrics')) AS hypertable, pg_size_pretty(pg_total_relation_size('metrics_plain')) AS plain"
+ hypertable | plain  
+------------+--------
+ 938 MB     | 971 MB
+(1 row)
+# код возврата: 0
+
+--- ретеншн: DELETE из обычной таблицы ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c '\timing on' -c "DELETE FROM metrics_plain WHERE time < date_trunc('day', (SELECT h FROM anchor)) - INTERVAL '29 days'"
+Timing is on.
+DELETE 148000
+Time: 45.549 ms
+# код возврата: 0
+
+--- ретеншн: drop_chunks у гипертаблицы ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c '\timing on' -c "SELECT count(*) FROM drop_chunks('metrics', older_than => date_trunc('day', (SELECT h FROM anchor)) - INTERVAL '29 days')"
+Timing is on.
+ count 
+-------
+     1
+(1 row)
+
+Time: 9.039 ms
+# код возврата: 0
+
+--- размер после ретеншна ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT pg_size_pretty(hypertable_size('metrics')) AS hypertable, pg_size_pretty(pg_total_relation_size('metrics_plain')) AS plain"
+ hypertable | plain  
+------------+--------
+ 921 MB     | 971 MB
+(1 row)
+# код возврата: 0
+
+--- мёртвые строки после DELETE ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT relname, n_live_tup, n_dead_tup FROM pg_stat_user_tables WHERE relname = 'metrics_plain'"
+    relname    | n_live_tup | n_dead_tup 
+---------------+------------+------------
+ metrics_plain |    8492000 |     148000
+(1 row)
+# код возврата: 0
+
+--- строк осталось ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT count(*) FROM metrics) AS hypertable, (SELECT count(*) FROM metrics_plain) AS plain"
+ hypertable |  plain  
+------------+---------
+    8492000 | 8492000
+(1 row)
+# код возврата: 0
+

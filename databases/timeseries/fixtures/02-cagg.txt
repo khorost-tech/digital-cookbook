@@ -1,0 +1,184 @@
+# 02-cagg
+# снято: 2026-10-05 11:45 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- схема ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "
+CREATE TABLE cpu (time timestamptz NOT NULL, series_id int NOT NULL, value double precision NOT NULL);
+SELECT create_hypertable('cpu', by_range('time', INTERVAL '1 day'));"
+CREATE TABLE
+ create_hypertable 
+-------------------
+ (1,t)
+(1 row)
+# код возврата: 0
+
+--- загрузка: 14 суток × 50 рядов, конец — h минус 2 часа ---
+# cmd: docker run --rm --network tsdb tsdb-gen ts -table cpu -shape gauge2 -series 50 -span 336h -step 1m -end 2026-10-05T09:00:00Z
+ts: cpu: 1008000 строк за 749ms
+# код возврата: 0
+
+--- continuous aggregate по часам ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "
+CREATE MATERIALIZED VIEW cpu_hourly WITH (timescaledb.continuous) AS
+SELECT time_bucket('1 hour', time) AS bucket, series_id, avg(value) AS avg, count(*) AS n
+FROM cpu GROUP BY bucket, series_id WITH NO DATA;"
+CREATE MATERIALIZED VIEW
+# код возврата: 0
+
+--- materialized_only по умолчанию ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT view_name, materialized_only FROM timescaledb_information.continuous_aggregates"
+ view_name  | materialized_only 
+------------+-------------------
+ cpu_hourly | t
+(1 row)
+# код возврата: 0
+
+--- refresh до h минус 2 часа ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "CALL refresh_continuous_aggregate('cpu_hourly', NULL, '2026-10-05 09:00:00+00')"
+CALL
+# код возврата: 0
+
+--- свежий час после refresh ---
+# cmd: docker run --rm --network tsdb tsdb-gen ts -table cpu -shape gauge2 -series 50 -span 1h -step 1m -end 2026-10-05T10:00:00Z
+ts: cpu: 3000 строк за 6ms
+# код возврата: 0
+
+--- агрегат: последний час (materialized_only = true) ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT max(bucket) AS last_bucket, count(*) AS rows FROM cpu_hourly"
+      last_bucket       | rows  
+------------------------+-------
+ 2026-10-05 08:00:00+00 | 16800
+(1 row)
+# код возврата: 0
+
+--- сырые данные: последний час ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT max(time_bucket('1 hour', time)) AS last_bucket_raw FROM cpu"
+    last_bucket_raw     
+------------------------
+ 2026-10-05 09:00:00+00
+(1 row)
+# код возврата: 0
+
+--- real-time aggregation: materialized_only = false ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "ALTER MATERIALIZED VIEW cpu_hourly SET (timescaledb.materialized_only = false)"
+ALTER MATERIALIZED VIEW
+# код возврата: 0
+
+--- агрегат: последний час (materialized_only = false) ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT max(bucket) AS last_bucket, count(*) AS rows FROM cpu_hourly"
+      last_bucket       | rows  
+------------------------+-------
+ 2026-10-05 09:00:00+00 | 16850
+(1 row)
+# код возврата: 0
+
+--- опоздавшие данные в материализованный час ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "INSERT INTO cpu SELECT (SELECT h FROM anchor) - INTERVAL '3 days' + i * INTERVAL '1 minute' + INTERVAL '30 seconds', 0, 1000 FROM generate_series(0, 59) i"
+INSERT 0 60
+# код возврата: 0
+
+--- час h-3 суток: агрегат против сырых данных ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT round(avg::numeric, 2) FROM cpu_hourly WHERE series_id = 0 AND bucket = (SELECT h FROM anchor) - INTERVAL '3 days') AS in_aggregate, (SELECT round(avg(value)::numeric, 2) FROM cpu WHERE series_id = 0 AND time >= (SELECT h FROM anchor) - INTERVAL '3 days' AND time < (SELECT h FROM anchor) - INTERVAL '3 days' + INTERVAL '1 hour') AS from_raw"
+ in_aggregate | from_raw 
+--------------+----------
+        39.51 |   519.76
+(1 row)
+# код возврата: 0
+
+--- политика обновления: окно 2 суток ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT add_continuous_aggregate_policy('cpu_hourly', start_offset => INTERVAL '2 days', end_offset => INTERVAL '1 hour', schedule_interval => INTERVAL '1 hour') AS job_id"
+ job_id 
+--------
+   1000
+(1 row)
+# код возврата: 0
+
+--- прогон политики ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "CALL run_job(1000)"
+CALL
+# код возврата: 0
+
+--- час h-3 суток после прогона политики ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT round(avg::numeric, 2) FROM cpu_hourly WHERE series_id = 0 AND bucket = (SELECT h FROM anchor) - INTERVAL '3 days') AS in_aggregate, (SELECT round(avg(value)::numeric, 2) FROM cpu WHERE series_id = 0 AND time >= (SELECT h FROM anchor) - INTERVAL '3 days' AND time < (SELECT h FROM anchor) - INTERVAL '3 days' + INTERVAL '1 hour') AS from_raw"
+ in_aggregate | from_raw 
+--------------+----------
+        39.51 |   519.76
+(1 row)
+# код возврата: 0
+
+--- ручной refresh этого часа ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "CALL refresh_continuous_aggregate('cpu_hourly', '2026-10-02 11:00:00+00', '2026-10-02 12:00:00+00')"
+CALL
+# код возврата: 0
+
+--- час h-3 суток после ручного refresh ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT round(avg::numeric, 2) FROM cpu_hourly WHERE series_id = 0 AND bucket = (SELECT h FROM anchor) - INTERVAL '3 days') AS in_aggregate, (SELECT round(avg(value)::numeric, 2) FROM cpu WHERE series_id = 0 AND time >= (SELECT h FROM anchor) - INTERVAL '3 days' AND time < (SELECT h FROM anchor) - INTERVAL '3 days' + INTERVAL '1 hour') AS from_raw"
+ in_aggregate | from_raw 
+--------------+----------
+       519.76 |   519.76
+(1 row)
+# код возврата: 0
+
+--- агрегат: строки старше 10 суток до drop_chunks ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT count(*) AS aggregate_rows FROM cpu_hourly WHERE bucket < date_trunc('day', (SELECT h FROM anchor)) - INTERVAL '10 days'"
+ aggregate_rows 
+----------------
+           4350
+(1 row)
+# код возврата: 0
+
+--- drop_chunks сырых данных старше 10 суток ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT count(*) AS dropped FROM drop_chunks('cpu', older_than => date_trunc('day', (SELECT h FROM anchor)) - INTERVAL '10 days')"
+ dropped 
+---------
+       4
+(1 row)
+# код возврата: 0
+
+--- агрегат: строки старше 10 суток после drop_chunks ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT count(*) AS aggregate_rows FROM cpu_hourly WHERE bucket < date_trunc('day', (SELECT h FROM anchor)) - INTERVAL '10 days'"
+ aggregate_rows 
+----------------
+           4350
+(1 row)
+# код возврата: 0
+
+--- refresh по всему диапазону ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "CALL refresh_continuous_aggregate('cpu_hourly', NULL, '2026-10-05 10:00:00+00')"
+CALL
+# код возврата: 0
+
+--- агрегат: строки старше 10 суток после refresh ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT count(*) AS aggregate_rows FROM cpu_hourly WHERE bucket < date_trunc('day', (SELECT h FROM anchor)) - INTERVAL '10 days'"
+ aggregate_rows 
+----------------
+              0
+(1 row)
+# код возврата: 0
+
+--- второй агрегат: WITH NO DATA и только политика ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "
+CREATE MATERIALIZED VIEW cpu_hourly_policy WITH (timescaledb.continuous) AS
+SELECT time_bucket('1 hour', time) AS bucket, series_id, avg(value) AS avg
+FROM cpu GROUP BY bucket, series_id WITH NO DATA;
+SELECT add_continuous_aggregate_policy('cpu_hourly_policy', start_offset => INTERVAL '2 days', end_offset => INTERVAL '1 hour', schedule_interval => INTERVAL '1 hour') AS job_id;"
+CREATE MATERIALIZED VIEW
+ job_id 
+--------
+   1001
+(1 row)
+# код возврата: 0
+
+--- прогон политики второго агрегата ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "CALL run_job(1001)"
+CALL
+# код возврата: 0
+
+--- второй агрегат против сырых данных: глубина истории ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT min(bucket) FROM cpu_hourly_policy) AS aggregate_from, (SELECT count(DISTINCT bucket) FROM cpu_hourly_policy) AS aggregate_hours, (SELECT min(time_bucket('1 hour', time)) FROM cpu) AS raw_from, (SELECT count(DISTINCT time_bucket('1 hour', time)) FROM cpu) AS raw_hours"
+     aggregate_from     | aggregate_hours |        raw_from        | raw_hours 
+------------------------+-----------------+------------------------+-----------
+ 2026-10-03 12:00:00+00 |              46 | 2026-09-25 00:00:00+00 |       250
+(1 row)
+# код возврата: 0
+

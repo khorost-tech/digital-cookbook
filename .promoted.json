@@ -133,6 +133,9 @@
     "databases/sqlite": [
       "databases/sqlite-embedded-databases.md"
     ],
+    "databases/timeseries": [
+      "databases/timeseries-databases.md"
+    ],
     "databases/transactions": [
       "databases/transactions-brokers-rabbitmq-kafka.md",
       "databases/transactions-isolation-levels-anomalies.md",

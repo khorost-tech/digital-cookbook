@@ -1,0 +1,123 @@
+# 04-cardinality
+# снято: 2026-10-05 11:42 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- Prometheus: 0 рядов ---
+# cmd: docker exec tsdb-prom wget -qO- http://127.0.0.1:9090/metrics | grep -E '^(prometheus_tsdb_head_series|process_resident_memory_bytes|go_memstats_heap_inuse_bytes) '
+go_memstats_heap_inuse_bytes 3.0892032e+07
+process_resident_memory_bytes 1.01322752e+08
+prometheus_tsdb_head_series 0
+# код возврата: 0
+
+--- VictoriaMetrics: 0 рядов ---
+# cmd: docker exec tsdb-vm wget -qO- http://127.0.0.1:8428/metrics | grep -E '^(vm_new_timeseries_created_total|process_resident_memory_bytes|go_memstats_heap_inuse_bytes) '
+vm_new_timeseries_created_total 0
+go_memstats_heap_inuse_bytes 4915200
+process_resident_memory_bytes 29241344
+# код возврата: 0
+
+--- запись: ряды 0..9999 → prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen card -url http://prom:9090/api/v1/write -series 10000 -offset 0
+card: ряды 0..9999 записаны
+# код возврата: 0
+
+--- запись: ряды 0..9999 → vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen card -url http://vm:8428/api/v1/write -series 10000 -offset 0
+card: ряды 0..9999 записаны
+# код возврата: 0
+
+--- Prometheus: 10000 рядов ---
+# cmd: docker exec tsdb-prom wget -qO- http://127.0.0.1:9090/metrics | grep -E '^(prometheus_tsdb_head_series|process_resident_memory_bytes|go_memstats_heap_inuse_bytes) '
+go_memstats_heap_inuse_bytes 3.391488e+07
+process_resident_memory_bytes 1.02600704e+08
+prometheus_tsdb_head_series 10000
+# код возврата: 0
+
+--- VictoriaMetrics: 10000 рядов ---
+# cmd: docker exec tsdb-vm wget -qO- http://127.0.0.1:8428/metrics | grep -E '^(vm_new_timeseries_created_total|process_resident_memory_bytes|go_memstats_heap_inuse_bytes) '
+vm_new_timeseries_created_total 10000
+go_memstats_heap_inuse_bytes 41861120
+process_resident_memory_bytes 93589504
+# код возврата: 0
+
+--- запись: ряды 10000..99999 → prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen card -url http://prom:9090/api/v1/write -series 90000 -offset 10000
+card: ряды 10000..99999 записаны
+# код возврата: 0
+
+--- запись: ряды 10000..99999 → vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen card -url http://vm:8428/api/v1/write -series 90000 -offset 10000
+card: ряды 10000..99999 записаны
+# код возврата: 0
+
+--- Prometheus: 100000 рядов ---
+# cmd: docker exec tsdb-prom wget -qO- http://127.0.0.1:9090/metrics | grep -E '^(prometheus_tsdb_head_series|process_resident_memory_bytes|go_memstats_heap_inuse_bytes) '
+go_memstats_heap_inuse_bytes 1.01072896e+08
+process_resident_memory_bytes 1.93114112e+08
+prometheus_tsdb_head_series 100000
+# код возврата: 0
+
+--- VictoriaMetrics: 100000 рядов ---
+# cmd: docker exec tsdb-vm wget -qO- http://127.0.0.1:8428/metrics | grep -E '^(vm_new_timeseries_created_total|process_resident_memory_bytes|go_memstats_heap_inuse_bytes) '
+vm_new_timeseries_created_total 100000
+go_memstats_heap_inuse_bytes 130342912
+process_resident_memory_bytes 176304128
+# код возврата: 0
+
+--- запись: ряды 100000..299999 → prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen card -url http://prom:9090/api/v1/write -series 200000 -offset 100000
+card: ряды 100000..299999 записаны
+# код возврата: 0
+
+--- запись: ряды 100000..299999 → vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen card -url http://vm:8428/api/v1/write -series 200000 -offset 100000
+card: ряды 100000..299999 записаны
+# код возврата: 0
+
+--- Prometheus: 300000 рядов ---
+# cmd: docker exec tsdb-prom wget -qO- http://127.0.0.1:9090/metrics | grep -E '^(prometheus_tsdb_head_series|process_resident_memory_bytes|go_memstats_heap_inuse_bytes) '
+go_memstats_heap_inuse_bytes 3.34012416e+08
+process_resident_memory_bytes 4.04353024e+08
+prometheus_tsdb_head_series 300000
+# код возврата: 0
+
+--- VictoriaMetrics: 300000 рядов ---
+# cmd: docker exec tsdb-vm wget -qO- http://127.0.0.1:8428/metrics | grep -E '^(vm_new_timeseries_created_total|process_resident_memory_bytes|go_memstats_heap_inuse_bytes) '
+vm_new_timeseries_created_total 300000
+go_memstats_heap_inuse_bytes 149995520
+process_resident_memory_bytes 269471744
+# код возврата: 0
+
+--- запись: ряды 300000..999999 → prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen card -url http://prom:9090/api/v1/write -series 700000 -offset 300000
+card: ряды 300000..999999 записаны
+# код возврата: 0
+
+--- запись: ряды 300000..999999 → vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen card -url http://vm:8428/api/v1/write -series 700000 -offset 300000
+card: ряды 300000..999999 записаны
+# код возврата: 0
+
+--- Prometheus: 1000000 рядов ---
+# cmd: docker exec tsdb-prom wget -qO- http://127.0.0.1:9090/metrics | grep -E '^(prometheus_tsdb_head_series|process_resident_memory_bytes|go_memstats_heap_inuse_bytes) '
+go_memstats_heap_inuse_bytes 8.87816192e+08
+process_resident_memory_bytes 1.09852672e+09
+prometheus_tsdb_head_series 1e+06
+# код возврата: 0
+
+--- VictoriaMetrics: 1000000 рядов ---
+# cmd: docker exec tsdb-vm wget -qO- http://127.0.0.1:8428/metrics | grep -E '^(vm_new_timeseries_created_total|process_resident_memory_bytes|go_memstats_heap_inuse_bytes) '
+vm_new_timeseries_created_total 1000000
+go_memstats_heap_inuse_bytes 212631552
+process_resident_memory_bytes 347119616
+# код возврата: 0
+
+--- count(demo_requests) → http://127.0.0.1:9090 ---
+# cmd: docker exec tsdb-prom promtool query instant http://127.0.0.1:9090 'count(demo_requests)'
+{} => 1000000 @[1791200677.375]
+# код возврата: 0
+
+--- count(demo_requests) → http://vm:8428 ---
+# cmd: docker exec tsdb-prom promtool query instant http://vm:8428 'count(demo_requests)'
+{} => 1000000 @[1791200678.001]
+# код возврата: 0
+

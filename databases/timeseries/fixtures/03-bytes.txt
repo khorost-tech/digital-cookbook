@@ -1,0 +1,351 @@
+# 03-bytes
+# снято: 2026-10-05 11:41 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- counter: OpenMetrics-файл ---
+# cmd: docker run --rm -v "$PWD/work:/work" tsdb-gen om -shape counter -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z -out /work/counter.om
+om: /work/counter.om: 1152000 точек
+# код возврата: 0
+
+--- counter: Prometheus, блоки из файла ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb create-blocks-from openmetrics -q /work/counter.om /work/prom-counter
+
+# код возврата: 0
+
+--- counter: Prometheus, блоки ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb list /work/prom-counter
+BLOCK ULID                  MIN TIME       MAX TIME       DURATION      NUM SAMPLES  NUM CHUNKS   NUM SERIES   SIZE
+01M45XWFYKZ24D4K8NZ5XVZDTJ  1791111600000  1791115185001  59m45.001s    48000        400          200          108316
+01M45XWG64JSVWPYYXP3XKM08S  1791115200000  1791122385001  1h59m45.001s  96000        800          200          196105
+01M45XWGGG08FC7NGGTH01PDW8  1791122400000  1791129585001  1h59m45.001s  96000        800          200          199981
+01M45XWGR57Y6XC8W6WQ5PSVJJ  1791129600000  1791136785001  1h59m45.001s  96000        800          200          195467
+01M45XWH24K0TBRX7KRC7Q7TQY  1791136800000  1791143985001  1h59m45.001s  96000        800          200          199007
+01M45XWH9KAS9G5K2TE0RV67VJ  1791144000000  1791151185001  1h59m45.001s  96000        800          200          197778
+01M45XWHKGQE8RBCXTH83DN9JG  1791151200000  1791158385001  1h59m45.001s  96000        800          200          196918
+01M45XWHTYGNCCF5SPJMMYTN43  1791158400000  1791165585001  1h59m45.001s  96000        800          200          197950
+01M45XWJ4STNCMR6WJW8AX5ZAG  1791165600000  1791172785001  1h59m45.001s  96000        800          200          196595
+01M45XWJCAMGN30QNDYHDGQFS9  1791172800000  1791179985001  1h59m45.001s  96000        800          200          198363
+01M45XWJP8QJN9XS6HMR2G7FEJ  1791180000000  1791187185001  1h59m45.001s  96000        800          200          197167
+01M45XWJXMCNSR2BF0EVQT4T2X  1791187200000  1791194385001  1h59m45.001s  96000        800          200          198430
+01M45XWK70RVKM8BASJ3A08ZKP  1791194400000  1791197985001  59m45.001s    48000        400          200          107792
+# код возврата: 0
+
+--- counter: Prometheus, итог по блокам ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb list /work/prom-counter | awk 'NR > 1 { n += $5; b += $8 } END { printf "samples=%d bytes=%d bytes/sample=%.2f\n", n, b, b / n }'
+samples=1152000 bytes=2389869 bytes/sample=2.07
+# код возврата: 0
+
+--- counter: VictoriaMetrics, импорт ---
+# cmd: docker run --rm --network tsdb tsdb-gen vm -url http://vm:8428 -shape counter -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z
+vm: 1152000 точек
+# код возврата: 0
+
+--- counter: VictoriaMetrics, размер хранилища ---
+# cmd: docker exec tsdb-vm wget -qO- http://127.0.0.1:8428/metrics | grep -E '^vm_(rows|data_size_bytes)\{type="(storage|indexdb)/' | grep -v ' 0$'
+vm_data_size_bytes{type="storage/small"} 745924
+vm_data_size_bytes{type="storage/metaindex"} 56
+vm_data_size_bytes{type="indexdb/inmemory"} 28672
+vm_data_size_bytes{type="indexdb/metaindex"} 80
+vm_rows{type="storage/small"} 1152000
+vm_rows{type="indexdb/inmemory"} 2509
+# код возврата: 0
+
+--- counter: TimescaleDB, гипертаблица ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "CREATE TABLE b_counter (time timestamptz NOT NULL, series_id int NOT NULL, value double precision NOT NULL); SELECT create_hypertable('b_counter', by_range('time', INTERVAL '1 day'));"
+CREATE TABLE
+ create_hypertable 
+-------------------
+ (1,t)
+(1 row)
+# код возврата: 0
+
+--- counter: TimescaleDB, загрузка ---
+# cmd: docker run --rm --network tsdb tsdb-gen ts -table b_counter -shape counter -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z
+ts: b_counter: 1152000 строк за 825ms
+# код возврата: 0
+
+--- counter: TimescaleDB, без сжатия ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT count(*) FROM b_counter) AS samples, hypertable_size('b_counter') AS bytes, round(hypertable_size('b_counter')::numeric / (SELECT count(*) FROM b_counter), 2) AS bytes_per_sample"
+ samples |  bytes   | bytes_per_sample 
+---------+----------+------------------
+ 1152000 | 70967296 |            61.60
+(1 row)
+# код возврата: 0
+
+--- counter: TimescaleDB, сжатие ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "ALTER TABLE b_counter SET (timescaledb.compress, timescaledb.compress_segmentby = 'series_id', timescaledb.compress_orderby = 'time'); SELECT count(compress_chunk(c)) AS compressed_chunks FROM show_chunks('b_counter') c;"
+ALTER TABLE
+ compressed_chunks 
+-------------------
+                 2
+(1 row)
+# код возврата: 0
+
+--- counter: TimescaleDB, после сжатия ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT count(*) FROM b_counter) AS samples, hypertable_size('b_counter') AS bytes, round(hypertable_size('b_counter')::numeric / (SELECT count(*) FROM b_counter), 2) AS bytes_per_sample"
+ samples |  bytes  | bytes_per_sample 
+---------+---------+------------------
+ 1152000 | 3342336 |             2.90
+(1 row)
+# код возврата: 0
+
+--- gauge2: OpenMetrics-файл ---
+# cmd: docker run --rm -v "$PWD/work:/work" tsdb-gen om -shape gauge2 -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z -out /work/gauge2.om
+om: /work/gauge2.om: 1152000 точек
+# код возврата: 0
+
+--- gauge2: Prometheus, блоки из файла ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb create-blocks-from openmetrics -q /work/gauge2.om /work/prom-gauge2
+
+# код возврата: 0
+
+--- gauge2: Prometheus, блоки ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb list /work/prom-gauge2
+BLOCK ULID                  MIN TIME       MAX TIME       DURATION      NUM SAMPLES  NUM CHUNKS   NUM SERIES   SIZE
+01M45XWTV4EKW24FGM2RVDR68N  1791111600000  1791115185001  59m45.001s    48000        400          200          357910
+01M45XWV2PTSV34Q7161BBXTCF  1791115200000  1791122385001  1h59m45.001s  96000        800          200          698958
+01M45XWVCHGEZDABMZVX7SAZZS  1791122400000  1791129585001  1h59m45.001s  96000        800          200          699010
+01M45XWVM09PSMKJW81HCXH83Q  1791129600000  1791136785001  1h59m45.001s  96000        800          200          695989
+01M45XWVXXVZJDMZJBH084PPVB  1791136800000  1791143985001  1h59m45.001s  96000        800          200          698232
+01M45XWW5BF9E7SJ0HBTCZ7CRY  1791144000000  1791151185001  1h59m45.001s  96000        800          200          699503
+01M45XWWF64CM7HNY3P2EK3BJW  1791151200000  1791158385001  1h59m45.001s  96000        800          200          696055
+01M45XWWPJ46JK24KWH9JY7G87  1791158400000  1791165585001  1h59m45.001s  96000        800          200          698223
+01M45XWX0APB6622MSRSJVE350  1791165600000  1791172785001  1h59m45.001s  96000        800          200          699824
+01M45XWX7PXF4V2NGXK5BNPJC3  1791172800000  1791179985001  1h59m45.001s  96000        800          200          696838
+01M45XWXF7W8Q10Q65F9Z8TM29  1791180000000  1791187185001  1h59m45.001s  96000        800          200          697078
+01M45XWXPM7VY09M1R12HY2B7H  1791187200000  1791194385001  1h59m45.001s  96000        800          200          700137
+01M45XWXXQFX6PKWTACVXM4418  1791194400000  1791197985001  59m45.001s    48000        400          200          358504
+# код возврата: 0
+
+--- gauge2: Prometheus, итог по блокам ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb list /work/prom-gauge2 | awk 'NR > 1 { n += $5; b += $8 } END { printf "samples=%d bytes=%d bytes/sample=%.2f\n", n, b, b / n }'
+samples=1152000 bytes=8396261 bytes/sample=7.29
+# код возврата: 0
+
+--- gauge2: VictoriaMetrics, импорт ---
+# cmd: docker run --rm --network tsdb tsdb-gen vm -url http://vm:8428 -shape gauge2 -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z
+vm: 1152000 точек
+# код возврата: 0
+
+--- gauge2: VictoriaMetrics, размер хранилища ---
+# cmd: docker exec tsdb-vm wget -qO- http://127.0.0.1:8428/metrics | grep -E '^vm_(rows|data_size_bytes)\{type="(storage|indexdb)/' | grep -v ' 0$'
+vm_data_size_bytes{type="storage/small"} 1742114
+vm_data_size_bytes{type="storage/metaindex"} 56
+vm_data_size_bytes{type="indexdb/inmemory"} 28672
+vm_data_size_bytes{type="indexdb/metaindex"} 72
+vm_rows{type="storage/small"} 1152000
+vm_rows{type="indexdb/inmemory"} 2534
+# код возврата: 0
+
+--- gauge2: TimescaleDB, гипертаблица ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "CREATE TABLE b_gauge2 (time timestamptz NOT NULL, series_id int NOT NULL, value double precision NOT NULL); SELECT create_hypertable('b_gauge2', by_range('time', INTERVAL '1 day'));"
+CREATE TABLE
+ create_hypertable 
+-------------------
+ (2,t)
+(1 row)
+# код возврата: 0
+
+--- gauge2: TimescaleDB, загрузка ---
+# cmd: docker run --rm --network tsdb tsdb-gen ts -table b_gauge2 -shape gauge2 -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z
+ts: b_gauge2: 1152000 строк за 842ms
+# код возврата: 0
+
+--- gauge2: TimescaleDB, без сжатия ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT count(*) FROM b_gauge2) AS samples, hypertable_size('b_gauge2') AS bytes, round(hypertable_size('b_gauge2')::numeric / (SELECT count(*) FROM b_gauge2), 2) AS bytes_per_sample"
+ samples |  bytes   | bytes_per_sample 
+---------+----------+------------------
+ 1152000 | 70967296 |            61.60
+(1 row)
+# код возврата: 0
+
+--- gauge2: TimescaleDB, сжатие ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "ALTER TABLE b_gauge2 SET (timescaledb.compress, timescaledb.compress_segmentby = 'series_id', timescaledb.compress_orderby = 'time'); SELECT count(compress_chunk(c)) AS compressed_chunks FROM show_chunks('b_gauge2') c;"
+ALTER TABLE
+ compressed_chunks 
+-------------------
+                 2
+(1 row)
+# код возврата: 0
+
+--- gauge2: TimescaleDB, после сжатия ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT count(*) FROM b_gauge2) AS samples, hypertable_size('b_gauge2') AS bytes, round(hypertable_size('b_gauge2')::numeric / (SELECT count(*) FROM b_gauge2), 2) AS bytes_per_sample"
+ samples |  bytes   | bytes_per_sample 
+---------+----------+------------------
+ 1152000 | 10297344 |             8.94
+(1 row)
+# код возврата: 0
+
+--- gauge: OpenMetrics-файл ---
+# cmd: docker run --rm -v "$PWD/work:/work" tsdb-gen om -shape gauge -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z -out /work/gauge.om
+om: /work/gauge.om: 1152000 точек
+# код возврата: 0
+
+--- gauge: Prometheus, блоки из файла ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb create-blocks-from openmetrics -q /work/gauge.om /work/prom-gauge
+
+# код возврата: 0
+
+--- gauge: Prometheus, блоки ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb list /work/prom-gauge
+BLOCK ULID                  MIN TIME       MAX TIME       DURATION      NUM SAMPLES  NUM CHUNKS   NUM SERIES   SIZE
+01M45XX5RMXX4KG3R5GQ4R8NZZ  1791111600000  1791115185001  59m45.001s    48000        400          200          358643
+01M45XX617RP7QTZVP8Y6AJ2HF  1791115200000  1791122385001  1h59m45.001s  96000        800          200          700466
+01M45XX6C68C7ZZJ16TA6YJRSE  1791122400000  1791129585001  1h59m45.001s  96000        800          200          700311
+01M45XX6MEZPF8ZHA5M04KS4K6  1791129600000  1791136785001  1h59m45.001s  96000        800          200          697545
+01M45XX6Z4ZBGV1KH5CAT4G5DH  1791136800000  1791143985001  1h59m45.001s  96000        800          200          699930
+01M45XX77GDGDG6ZRJWHZD9M14  1791144000000  1791151185001  1h59m45.001s  96000        800          200          700943
+01M45XX7FYJT1KXCPK3PDA9TFB  1791151200000  1791158385001  1h59m45.001s  96000        800          200          697533
+01M45XX7TQNG3VWVKVW5MS72P6  1791158400000  1791165585001  1h59m45.001s  96000        800          200          699509
+01M45XX833QX1MC8WART24PWM2  1791165600000  1791172785001  1h59m45.001s  96000        800          200          701346
+01M45XX8DQXGP4JFGZ2AM3FCNZ  1791172800000  1791179985001  1h59m45.001s  96000        800          200          698180
+01M45XX8P4XNWAVYRMX4BK4NA8  1791180000000  1791187185001  1h59m45.001s  96000        800          200          698776
+01M45XX90XFP3FHNXXB0MKERB8  1791187200000  1791194385001  1h59m45.001s  96000        800          200          701529
+01M45XX98ZY0KAMY1GT920YVQT  1791194400000  1791197985001  59m45.001s    48000        400          200          359110
+# код возврата: 0
+
+--- gauge: Prometheus, итог по блокам ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb list /work/prom-gauge | awk 'NR > 1 { n += $5; b += $8 } END { printf "samples=%d bytes=%d bytes/sample=%.2f\n", n, b, b / n }'
+samples=1152000 bytes=8413821 bytes/sample=7.30
+# код возврата: 0
+
+--- gauge: VictoriaMetrics, импорт ---
+# cmd: docker run --rm --network tsdb tsdb-gen vm -url http://vm:8428 -shape gauge -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z
+vm: 1152000 точек
+# код возврата: 0
+
+--- gauge: VictoriaMetrics, размер хранилища ---
+# cmd: docker exec tsdb-vm wget -qO- http://127.0.0.1:8428/metrics | grep -E '^vm_(rows|data_size_bytes)\{type="(storage|indexdb)/' | grep -v ' 0$'
+vm_data_size_bytes{type="storage/small"} 7414124
+vm_data_size_bytes{type="storage/metaindex"} 56
+vm_data_size_bytes{type="indexdb/inmemory"} 28672
+vm_data_size_bytes{type="indexdb/metaindex"} 72
+vm_rows{type="storage/small"} 1152000
+vm_rows{type="indexdb/inmemory"} 2551
+# код возврата: 0
+
+--- gauge: TimescaleDB, гипертаблица ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "CREATE TABLE b_gauge (time timestamptz NOT NULL, series_id int NOT NULL, value double precision NOT NULL); SELECT create_hypertable('b_gauge', by_range('time', INTERVAL '1 day'));"
+CREATE TABLE
+ create_hypertable 
+-------------------
+ (3,t)
+(1 row)
+# код возврата: 0
+
+--- gauge: TimescaleDB, загрузка ---
+# cmd: docker run --rm --network tsdb tsdb-gen ts -table b_gauge -shape gauge -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z
+ts: b_gauge: 1152000 строк за 825ms
+# код возврата: 0
+
+--- gauge: TimescaleDB, без сжатия ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT count(*) FROM b_gauge) AS samples, hypertable_size('b_gauge') AS bytes, round(hypertable_size('b_gauge')::numeric / (SELECT count(*) FROM b_gauge), 2) AS bytes_per_sample"
+ samples |  bytes   | bytes_per_sample 
+---------+----------+------------------
+ 1152000 | 70967296 |            61.60
+(1 row)
+# код возврата: 0
+
+--- gauge: TimescaleDB, сжатие ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "ALTER TABLE b_gauge SET (timescaledb.compress, timescaledb.compress_segmentby = 'series_id', timescaledb.compress_orderby = 'time'); SELECT count(compress_chunk(c)) AS compressed_chunks FROM show_chunks('b_gauge') c;"
+ALTER TABLE
+ compressed_chunks 
+-------------------
+                 2
+(1 row)
+# код возврата: 0
+
+--- gauge: TimescaleDB, после сжатия ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT count(*) FROM b_gauge) AS samples, hypertable_size('b_gauge') AS bytes, round(hypertable_size('b_gauge')::numeric / (SELECT count(*) FROM b_gauge), 2) AS bytes_per_sample"
+ samples |  bytes   | bytes_per_sample 
+---------+----------+------------------
+ 1152000 | 10297344 |             8.94
+(1 row)
+# код возврата: 0
+
+--- const: OpenMetrics-файл ---
+# cmd: docker run --rm -v "$PWD/work:/work" tsdb-gen om -shape const -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z -out /work/const.om
+om: /work/const.om: 1152000 точек
+# код возврата: 0
+
+--- const: Prometheus, блоки из файла ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb create-blocks-from openmetrics -q /work/const.om /work/prom-const
+
+# код возврата: 0
+
+--- const: Prometheus, блоки ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb list /work/prom-const
+BLOCK ULID                  MIN TIME       MAX TIME       DURATION      NUM SAMPLES  NUM CHUNKS   NUM SERIES   SIZE
+01M45XXH0J0H12YAJQEJQAJS8V  1791111600000  1791115185001  59m45.001s    48000        400          200          38495
+01M45XXH757YVS1AAT1N1SQ7ZB  1791115200000  1791122385001  1h59m45.001s  96000        800          200          62996
+01M45XXHGABHD621YKGWRF6S81  1791122400000  1791129585001  1h59m45.001s  96000        800          200          62996
+01M45XXHPVCKT315VP6TZKM6P9  1791129600000  1791136785001  1h59m45.001s  96000        800          200          62996
+01M45XXJ00CCGQ02N3YCKWR7MR  1791136800000  1791143985001  1h59m45.001s  96000        800          200          62996
+01M45XXJ6MAGDJ6FK1DB2XDRQZ  1791144000000  1791151185001  1h59m45.001s  96000        800          200          62996
+01M45XXJEH1D1C6R2DFZZG9C5S  1791151200000  1791158385001  1h59m45.001s  96000        800          200          62996
+01M45XXJN3PX766BVFJNHYSDW4  1791158400000  1791165585001  1h59m45.001s  96000        800          200          62996
+01M45XXJYFDMQSNRCF3R1DDBGW  1791165600000  1791172785001  1h59m45.001s  96000        800          200          62996
+01M45XXK4ZHY6C5385D7PGVMYM  1791172800000  1791179985001  1h59m45.001s  96000        800          200          62996
+01M45XXKE61S79T8FQYW4WXKRZ  1791180000000  1791187185001  1h59m45.001s  96000        800          200          62996
+01M45XXKMSNCBXX9TR3B28WPT9  1791187200000  1791194385001  1h59m45.001s  96000        800          200          62996
+01M45XXKXG9KKP9RY7DJ83M11J  1791194400000  1791197985001  59m45.001s    48000        400          200          38495
+# код возврата: 0
+
+--- const: Prometheus, итог по блокам ---
+# cmd: docker run --rm -v "$PWD/work:/work" --entrypoint promtool prom/prometheus:v3.15.0 tsdb list /work/prom-const | awk 'NR > 1 { n += $5; b += $8 } END { printf "samples=%d bytes=%d bytes/sample=%.2f\n", n, b, b / n }'
+samples=1152000 bytes=769946 bytes/sample=0.67
+# код возврата: 0
+
+--- const: VictoriaMetrics, импорт ---
+# cmd: docker run --rm --network tsdb tsdb-gen vm -url http://vm:8428 -shape const -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z
+vm: 1152000 точек
+# код возврата: 0
+
+--- const: VictoriaMetrics, размер хранилища ---
+# cmd: docker exec tsdb-vm wget -qO- http://127.0.0.1:8428/metrics | grep -E '^vm_(rows|data_size_bytes)\{type="(storage|indexdb)/' | grep -v ' 0$'
+vm_data_size_bytes{type="storage/small"} 2686
+vm_data_size_bytes{type="storage/metaindex"} 56
+vm_data_size_bytes{type="indexdb/inmemory"} 28672
+vm_data_size_bytes{type="indexdb/metaindex"} 72
+vm_rows{type="storage/small"} 1152000
+vm_rows{type="indexdb/inmemory"} 2502
+# код возврата: 0
+
+--- const: TimescaleDB, гипертаблица ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "CREATE TABLE b_const (time timestamptz NOT NULL, series_id int NOT NULL, value double precision NOT NULL); SELECT create_hypertable('b_const', by_range('time', INTERVAL '1 day'));"
+CREATE TABLE
+ create_hypertable 
+-------------------
+ (4,t)
+(1 row)
+# код возврата: 0
+
+--- const: TimescaleDB, загрузка ---
+# cmd: docker run --rm --network tsdb tsdb-gen ts -table b_const -shape const -series 200 -span 24h -step 15s -end 2026-10-05T11:00:00Z
+ts: b_const: 1152000 строк за 855ms
+# код возврата: 0
+
+--- const: TimescaleDB, без сжатия ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT count(*) FROM b_const) AS samples, hypertable_size('b_const') AS bytes, round(hypertable_size('b_const')::numeric / (SELECT count(*) FROM b_const), 2) AS bytes_per_sample"
+ samples |  bytes   | bytes_per_sample 
+---------+----------+------------------
+ 1152000 | 70967296 |            61.60
+(1 row)
+# код возврата: 0
+
+--- const: TimescaleDB, сжатие ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "ALTER TABLE b_const SET (timescaledb.compress, timescaledb.compress_segmentby = 'series_id', timescaledb.compress_orderby = 'time'); SELECT count(compress_chunk(c)) AS compressed_chunks FROM show_chunks('b_const') c;"
+ALTER TABLE
+ compressed_chunks 
+-------------------
+                 2
+(1 row)
+# код возврата: 0
+
+--- const: TimescaleDB, после сжатия ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c "SELECT (SELECT count(*) FROM b_const) AS samples, hypertable_size('b_const') AS bytes, round(hypertable_size('b_const')::numeric / (SELECT count(*) FROM b_const), 2) AS bytes_per_sample"
+ samples | bytes  | bytes_per_sample 
+---------+--------+------------------
+ 1152000 | 720896 |             0.63
+(1 row)
+# код возврата: 0
+

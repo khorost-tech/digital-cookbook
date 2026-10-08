@@ -1,0 +1,69 @@
+# 07-precision
+# снято: 2026-10-05 12:30 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- gauge: запись → prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen rw -url http://prom:9090/api/v1/write -shape gauge -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+rw: 200 рядов, 40000 точек
+# код возврата: 0
+
+--- gauge: запись → vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen rw -url http://vm:8428/api/v1/write -shape gauge -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+rw: 200 рядов, 40000 точек
+# код возврата: 0
+
+--- gauge2: запись → prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen rw -url http://prom:9090/api/v1/write -shape gauge2 -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+rw: 200 рядов, 40000 точек
+# код возврата: 0
+
+--- gauge2: запись → vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen rw -url http://vm:8428/api/v1/write -shape gauge2 -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+rw: 200 рядов, 40000 точек
+# код возврата: 0
+
+--- counter: запись → prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen rw -url http://prom:9090/api/v1/write -shape counter -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+rw: 200 рядов, 40000 точек
+# код возврата: 0
+
+--- counter: запись → vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen rw -url http://vm:8428/api/v1/write -shape counter -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+rw: 200 рядов, 40000 точек
+# код возврата: 0
+
+--- gauge: чтение и сверка ← prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen check -url http://prom:9090 -shape gauge -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+check: записано 40000, получено 40000, сопоставлено 40000, пропусков 0, лишних 0, дубликатов 0
+check: совпали побитно 40000 из 40000, max |ошибка| 0, max относительная 0
+# код возврата: 0
+
+--- gauge: чтение и сверка ← vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen check -url http://vm:8428 -shape gauge -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+check: записано 40000, получено 40000, сопоставлено 40000, пропусков 0, лишних 0, дубликатов 0
+check: совпали побитно 20 из 40000, max |ошибка| 7.57e-11, max относительная 1e-12
+# код возврата: 0
+
+--- gauge2: чтение и сверка ← prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen check -url http://prom:9090 -shape gauge2 -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+check: записано 40000, получено 40000, сопоставлено 40000, пропусков 0, лишних 0, дубликатов 0
+check: совпали побитно 40000 из 40000, max |ошибка| 0, max относительная 0
+# код возврата: 0
+
+--- gauge2: чтение и сверка ← vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen check -url http://vm:8428 -shape gauge2 -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+check: записано 40000, получено 40000, сопоставлено 40000, пропусков 0, лишних 0, дубликатов 0
+check: совпали побитно 40000 из 40000, max |ошибка| 0, max относительная 0
+# код возврата: 0
+
+--- counter: чтение и сверка ← prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen check -url http://prom:9090 -shape counter -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+check: записано 40000, получено 40000, сопоставлено 40000, пропусков 0, лишних 0, дубликатов 0
+check: совпали побитно 40000 из 40000, max |ошибка| 0, max относительная 0
+# код возврата: 0
+
+--- counter: чтение и сверка ← vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen check -url http://vm:8428 -shape counter -series 200 -span 50m -step 15s -end 2026-10-05T12:29:00Z
+check: записано 40000, получено 40000, сопоставлено 40000, пропусков 0, лишних 0, дубликатов 0
+check: совпали побитно 40000 из 40000, max |ошибка| 0, max относительная 0
+# код возврата: 0
+

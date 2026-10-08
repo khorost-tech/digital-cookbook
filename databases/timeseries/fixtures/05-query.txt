@@ -1,0 +1,78 @@
+# 05-query
+# снято: 2026-10-05 11:44 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- запись: час истории счётчика → prom ---
+# cmd: docker run --rm --network tsdb tsdb-gen rw -url http://prom:9090/api/v1/write -shape counter -series 1 -span 1h -step 15s -end 2026-10-05T11:00:00Z
+rw: 1 рядов, 240 точек
+# код возврата: 0
+
+--- запись: час истории счётчика → vm ---
+# cmd: docker run --rm --network tsdb tsdb-gen rw -url http://vm:8428/api/v1/write -shape counter -series 1 -span 1h -step 15s -end 2026-10-05T11:00:00Z
+rw: 1 рядов, 240 точек
+# код возврата: 0
+
+--- demo_counter_total → http://127.0.0.1:9090 ---
+# cmd: docker exec tsdb-prom promtool query instant --time=1791197407 http://127.0.0.1:9090 'demo_counter_total'
+demo_counter_total{dc="dc1", host="h-000"} => 1908 @[1791197407]
+# код возврата: 0
+
+--- demo_counter_total offset 5m → http://127.0.0.1:9090 ---
+# cmd: docker exec tsdb-prom promtool query instant --time=1791197407 http://127.0.0.1:9090 'demo_counter_total offset 5m'
+demo_counter_total{dc="dc1", host="h-000"} => 1736 @[1791197407]
+# код возврата: 0
+
+--- increase(demo_counter_total[5m]) → http://127.0.0.1:9090 ---
+# cmd: docker exec tsdb-prom promtool query instant --time=1791197407 http://127.0.0.1:9090 'increase(demo_counter_total[5m])'
+{dc="dc1", host="h-000"} => 162.10526315789474 @[1791197407]
+# код возврата: 0
+
+--- rate(demo_counter_total[5m]) → http://127.0.0.1:9090 ---
+# cmd: docker exec tsdb-prom promtool query instant --time=1791197407 http://127.0.0.1:9090 'rate(demo_counter_total[5m])'
+{dc="dc1", host="h-000"} => 0.5403508771929824 @[1791197407]
+# код возврата: 0
+
+--- demo_counter_total → http://vm:8428 ---
+# cmd: docker exec tsdb-prom promtool query instant --time=1791197407 http://vm:8428 'demo_counter_total'
+demo_counter_total{dc="dc1", host="h-000"} => 1908 @[1791197407]
+# код возврата: 0
+
+--- demo_counter_total offset 5m → http://vm:8428 ---
+# cmd: docker exec tsdb-prom promtool query instant --time=1791197407 http://vm:8428 'demo_counter_total offset 5m'
+demo_counter_total{dc="dc1", host="h-000"} => 1736 @[1791197407]
+# код возврата: 0
+
+--- increase(demo_counter_total[5m]) → http://vm:8428 ---
+# cmd: docker exec tsdb-prom promtool query instant --time=1791197407 http://vm:8428 'increase(demo_counter_total[5m])'
+{dc="dc1", host="h-000"} => 172 @[1791197407]
+# код возврата: 0
+
+--- rate(demo_counter_total[5m]) → http://vm:8428 ---
+# cmd: docker exec tsdb-prom promtool query instant --time=1791197407 http://vm:8428 'rate(demo_counter_total[5m])'
+{dc="dc1", host="h-000"} => 0.5733333333333334 @[1791197407]
+# код возврата: 0
+
+--- точки в окне (T-5m, T] → Prometheus ---
+# cmd: docker exec tsdb-prom promtool query instant --time=1791197407 http://127.0.0.1:9090 'demo_counter_total[5m]'
+demo_counter_total{dc="dc1", host="h-000"} =>
+1754 @[1791197115]
+1764 @[1791197130]
+1773 @[1791197145]
+1773 @[1791197160]
+1775 @[1791197175]
+1783 @[1791197190]
+1801 @[1791197205]
+1810 @[1791197220]
+1814 @[1791197235]
+1819 @[1791197250]
+1831 @[1791197265]
+1844 @[1791197280]
+1853 @[1791197295]
+1867 @[1791197310]
+1869 @[1791197325]
+1881 @[1791197340]
+1898 @[1791197355]
+1904 @[1791197370]
+1906 @[1791197385]
+1908 @[1791197400]
+# код возврата: 0
+

@@ -1,0 +1,94 @@
+# 06-editions
+# снято: 2026-10-05 11:44 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- tsdb-ts: лицензия сборки ---
+# cmd: docker exec tsdb-ts psql -U postgres -d ts -c 'SHOW timescaledb.license'
+ timescaledb.license 
+---------------------
+ timescale
+(1 row)
+# код возврата: 0
+
+--- tsdb-ts-oss: лицензия сборки ---
+# cmd: docker exec tsdb-ts-oss psql -U postgres -d ts -c 'SHOW timescaledb.license'
+ timescaledb.license 
+---------------------
+ apache
+(1 row)
+# код возврата: 0
+
+--- oss: гипертаблица ---
+# cmd: docker exec tsdb-ts-oss psql -U postgres -d ts -c "CREATE TABLE cpu (time timestamptz NOT NULL, series_id int NOT NULL, value double precision NOT NULL); SELECT create_hypertable('cpu', by_range('time', INTERVAL '1 day'));"
+CREATE TABLE
+ create_hypertable 
+-------------------
+ (1,t)
+(1 row)
+# код возврата: 0
+
+--- oss: данные за 3 суток ---
+# cmd: docker exec tsdb-ts-oss psql -U postgres -d ts -c "INSERT INTO cpu SELECT t, 1, random() FROM generate_series(now() - INTERVAL '3 days', now(), INTERVAL '1 minute') t"
+INSERT 0 4321
+# код возврата: 0
+
+--- oss: drop_chunks ---
+# cmd: docker exec tsdb-ts-oss psql -U postgres -d ts -c "SELECT count(*) FROM drop_chunks('cpu', older_than => now() - INTERVAL '2 days')"
+ count 
+-------
+     1
+(1 row)
+# код возврата: 0
+
+--- oss: continuous aggregate ---
+# cmd: docker exec tsdb-ts-oss psql -U postgres -d ts -c "CREATE MATERIALIZED VIEW cpu_hourly WITH (timescaledb.continuous) AS SELECT time_bucket('1 hour', time) AS bucket, avg(value) FROM cpu GROUP BY bucket WITH NO DATA"
+ERROR:  functionality not supported under the current "apache" license. Learn more at https://tsdb.co/pdbir1r3
+HINT:  To access all features and the best time-series experience, try out Timescale Cloud.
+# код возврата: 1
+
+--- oss: сжатие ---
+# cmd: docker exec tsdb-ts-oss psql -U postgres -d ts -c "ALTER TABLE cpu SET (timescaledb.compress, timescaledb.compress_segmentby = 'series_id')"
+ERROR:  functionality not supported under the current "apache" license. Learn more at https://tsdb.co/pdbir1r3
+HINT:  To access all features and the best time-series experience, try out Timescale Cloud.
+# код возврата: 1
+
+--- oss: политика ретеншна ---
+# cmd: docker exec tsdb-ts-oss psql -U postgres -d ts -c "SELECT add_retention_policy('cpu', INTERVAL '30 days')"
+ERROR:  function "add_retention_policy" is not supported under the current "apache" license
+HINT:  Upgrade your license to 'timescale' to use this free community feature.
+# код возврата: 1
+
+--- oss: time_bucket ---
+# cmd: docker exec tsdb-ts-oss psql -U postgres -d ts -c "SELECT count(DISTINCT time_bucket('1 hour', time)) FROM cpu"
+ count 
+-------
+    60
+(1 row)
+# код возврата: 0
+
+--- VictoriaMetrics: даунсэмплинг ---
+# cmd: docker run --rm victoriametrics/victoria-metrics:v1.153.0 -downsampling.period=30d:5m
+flag provided but not defined: -downsampling.period
+
+victoria-metrics is a time series database and monitoring solution.
+
+See the docs at https://docs.victoriametrics.com/victoriametrics/
+
+Run "/victoria-metrics-prod -help" in order to see the description for all the available flags
+# код возврата: 2
+
+--- VictoriaMetrics: ретеншн-фильтр ---
+# cmd: docker run --rm victoriametrics/victoria-metrics:v1.153.0 -retentionFilter='{env="dev"}:7d'
+flag provided but not defined: -retentionFilter
+
+victoria-metrics is a time series database and monitoring solution.
+
+See the docs at https://docs.victoriametrics.com/victoriametrics/
+
+Run "/victoria-metrics-prod -help" in order to see the description for all the available flags
+# код возврата: 2
+
+--- Prometheus: флаги про даунсэмплинг ---
+# cmd: docker run --rm prom/prometheus:v3.15.0 --help 2>&1 | grep -ci downsampl
+0
+# код возврата: 1
+
