@@ -1,0 +1,44 @@
+# 03-isolation-ob — движок: ob
+# снято: 2026-10-04 17:01 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- write skew: default ---
+# cmd: docker run --rm --network dsql dsql-bench skew -engine ob -iso default
+T1  START TRANSACTION                                    -> ok
+T2  START TRANSACTION                                    -> ok
+T1  SELECT @@transaction_isolation                       -> READ-COMMITTED
+T1  SELECT count(*) FROM oncall WHERE on_call = 1        -> 2
+T2  SELECT count(*) FROM oncall WHERE on_call = 1        -> 2
+T1  UPDATE oncall SET on_call = 0 WHERE id = 1           -> ok
+T2  UPDATE oncall SET on_call = 0 WHERE id = 2           -> ok
+T1  COMMIT                                               -> ok
+T2  COMMIT                                               -> ok
+итог: на дежурстве 0 — АНОМАЛИЯ write skew: на дежурстве никого
+
+--- write skew: serializable ---
+# cmd: docker run --rm --network dsql dsql-bench skew -engine ob -iso serializable
+T1  START TRANSACTION                                    -> ok
+T2  START TRANSACTION                                    -> ok
+T1  SELECT @@transaction_isolation                       -> SERIALIZABLE
+T1  SELECT count(*) FROM oncall WHERE on_call = 1        -> 2
+T2  SELECT count(*) FROM oncall WHERE on_call = 1        -> 2
+T1  UPDATE oncall SET on_call = 0 WHERE id = 1           -> ok
+T2  UPDATE oncall SET on_call = 0 WHERE id = 2           -> ok
+T1  COMMIT                                               -> ok
+T2  COMMIT                                               -> ok
+итог: на дежурстве 0 — АНОМАЛИЯ write skew: на дежурстве никого
+
+--- write skew: for-update ---
+# cmd: docker run --rm --network dsql dsql-bench skew -engine ob -iso for-update
+T1  START TRANSACTION                                    -> ok
+T2  START TRANSACTION                                    -> ok
+T1  SELECT @@transaction_isolation                       -> READ-COMMITTED
+T1  SELECT id FROM oncall WHERE on_call = 1 FOR UPDATE   -> 2 строк(и) под блокировкой
+T2  SELECT id FROM oncall WHERE on_call = 1 FOR UPDATE   -> ждёт блокировку, идём дальше
+T1  UPDATE oncall SET on_call = 0 WHERE id = 1           -> ok
+T2  UPDATE oncall SET on_call = 0 WHERE id = 2           -> в очереди: предыдущий шаг этой транзакции ещё ждёт
+T1  COMMIT                                               -> ok
+T2  (ранее ждавший шаг)                                  -> 1 строк(и) под блокировкой
+T2  (ранее ждавший шаг)                                  -> не выполняется: транзакция видит дежурных 1, уходить нельзя
+T2  COMMIT                                               -> ok
+итог: на дежурстве 1 — инвариант цел
+

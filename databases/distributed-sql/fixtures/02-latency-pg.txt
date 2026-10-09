@@ -1,0 +1,13 @@
+# 02-latency-pg — движок: pg
+# снято: 2026-10-04 17:01 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- замер при RTT 0 мс ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine pg -n 300
+engine=pg  n=300 на вид, одно соединение, последовательно
+read     n=300  p50=   0.04 p95=   0.09 p99=   0.16 ms  retries=0
+write1   n=300  p50=   0.12 p95=   0.28 p99=   0.43 ms  retries=0
+txn1x2   n=300  p50=   0.23 p95=   0.50 p99=   0.67 ms  retries=0
+txn2     n=300  p50=   0.24 p95=   0.48 p99=   0.64 ms  retries=0
+txn1x4   n=300  p50=   0.32 p95=   0.72 p99=   1.07 ms  retries=0
+txn4     n=300  p50=   0.32 p95=   0.66 p99=   0.99 ms  retries=0
+

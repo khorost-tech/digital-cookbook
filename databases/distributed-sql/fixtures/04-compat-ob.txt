@@ -1,0 +1,23 @@
+# 04-compat-ob — движок: ob
+# снято: 2026-10-04 17:01 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- совместимость ---
+# cmd: docker run --rm --network dsql dsql-bench compat -engine ob
+engine=ob  проверок: 16
+AUTO_INCREMENT: какие id выдаёт              | 1,2,3
+FK: строка без родителя                      | соблюдается — ERROR 1452: Cannot add or update a child row: a foreign key constraint (compat.c_child_OBFK_1791133264275330) fails
+CHECK: нарушающая строка                     | соблюдается — ERROR 3819: check constraint violated
+JSON + функциональный индекс                 | ok
+генерируемая колонка STORED                  | ok
+триггер BEFORE INSERT                        | 7
+процедура + CALL                             | ok
+FULLTEXT-индекс                              | ok
+SPATIAL-индекс                               | ok
+CREATE EVENT                                 | ok
+GET_LOCK                                     | 1
+FOR UPDATE SKIP LOCKED                       | ok
+SAVEPOINT / ROLLBACK TO                      | 0
+XA-транзакция                                | ok
+INSERT перед DDL откатывается                | нет, строка закоммичена
+SERIALIZABLE → фактический уровень           | SERIALIZABLE
+

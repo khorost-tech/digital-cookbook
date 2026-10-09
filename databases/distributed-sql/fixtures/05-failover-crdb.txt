@@ -1,0 +1,53 @@
+# 05-failover-crdb — движок: crdb
+# снято: 2026-10-04 19:08 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- кого гасим ---
+# cmd: echo 'ключ 1, лидер его диапазона на crdb2, клиент подключён к crdb1'
+ключ 1, лидер его диапазона на crdb2, клиент подключён к crdb1
+
+--- запись под отказом лидера ---
+# cmd: docker run -d --name dsql-failover --network dsql dsql-bench failover -engine crdb -key 1 -duration 40s >/dev/null; sleep 10; docker kill crdb2 >/dev/null; docker wait dsql-failover >/dev/null; docker logs dsql-failover; docker rm dsql-failover >/dev/null
+engine=crdb  ключ=1  длительность=40s  таймаут попытки=30s
+t= 0s  ok=688   err=0
+t= 1s  ok=690   err=0
+t= 2s  ok=672   err=0
+t= 3s  ok=617   err=0
+t= 4s  ok=707   err=0
+t= 5s  ok=679   err=0
+t= 6s  ok=695   err=0
+t= 7s  ok=722   err=0
+t= 8s  ok=601   err=0
+t= 9s  ok=687   err=0
+t=10s  ok=19    err=0
+t=13s  ok=400   err=1
+t=14s  ok=1538  err=0
+t=15s  ok=1163  err=0
+t=16s  ok=786   err=0
+t=17s  ok=921   err=0
+t=18s  ok=959   err=0
+t=19s  ok=905   err=0
+t=20s  ok=908   err=0
+t=21s  ok=1026  err=0
+t=22s  ok=880   err=0
+t=23s  ok=518   err=0
+t=24s  ok=515   err=0
+t=25s  ok=529   err=0
+t=26s  ok=706   err=0
+t=27s  ok=871   err=0
+t=28s  ok=1053  err=0
+t=29s  ok=1660  err=0
+t=30s  ok=1571  err=0
+t=31s  ok=1665  err=0
+t=32s  ok=1602  err=0
+t=33s  ok=1398  err=0
+t=34s  ok=1618  err=0
+t=35s  ok=1443  err=0
+t=36s  ok=1293  err=0
+t=37s  ok=1467  err=0
+t=38s  ok=1536  err=0
+t=39s  ok=1567  err=0
+t=40s  ok=1     err=0
+самая длинная пауза между коммитами: 3.71 с (началась на 10.0 с)
+ошибка x1: SQLSTATE 40003: result is ambiguous: error=ba: Put [/Table/104/1/1/0], EndTxn(parallel commit) [/Table/104/1/1/0], [txn: 01346916], [protect-ambiguous-replay] RPC error: EOF...
+сохранность: подтверждено 37276, исход неизвестен 1, прирост v 37277 — сходится: подтверждённые записи на месте
+

@@ -1,0 +1,26 @@
+# 00-probe-pg — движок: pg
+# снято: 2026-10-04 17:01 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- образы ---
+# cmd: docker inspect -f '{{.Name}} {{.Config.Image}}' pg
+/pg postgres:17
+
+--- версия ---
+# cmd: docker exec pg psql -U postgres -d bench -c "SELECT version();"
+                                                          version                                                           
+----------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 17.11 (Debian 17.11-1.pgdg13+2) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+(1 row)
+
+--- изоляция и synchronous_commit ---
+# cmd: docker exec pg psql -U postgres -d bench -c "SHOW default_transaction_isolation; SHOW synchronous_commit;"
+ default_transaction_isolation 
+-------------------------------
+ read committed
+(1 row)
+
+ synchronous_commit 
+--------------------
+ on
+(1 row)
+

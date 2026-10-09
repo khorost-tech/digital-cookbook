@@ -1,0 +1,49 @@
+# 01-distribution-crdb — движок: crdb
+# снято: 2026-10-04 19:07 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- создание и предразбиение kv ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine crdb -setup -n 0
+-- CREATE TABLE kv (k INT8 PRIMARY KEY, v INT8 NOT NULL DEFAULT 0)
+-- ALTER TABLE kv SPLIT AT VALUES (1000000), (2000000), (3000000)
+-- ALTER TABLE kv SCATTER
+-- загружено 4000 строк в 4 диапазонов
+
+--- перенос лидеров: диапазоны 0 и 2 → узел 2, 1 и 3 → узел 3 ---
+# cmd: bash scripts/place-leaders.sh crdb
+# диапазон 0 (ключ 1): range 93 → crdb2 (node_id 2)
+$ docker exec crdb1 cockroach sql --insecure --host=localhost:26257 -e 'ALTER RANGE 93 RELOCATE LEASE TO 2'
+  range_id	pretty	result
+  93	/Table/104	ok
+# диапазон 1 (ключ 1000001): range 83 → crdb3 (node_id 3)
+$ docker exec crdb1 cockroach sql --insecure --host=localhost:26257 -e 'ALTER RANGE 83 RELOCATE LEASE TO 3'
+  range_id	pretty	result
+  83	/Table/104/1/1000000	ok
+# диапазон 2 (ключ 2000001): range 84 → crdb2 (node_id 2)
+$ docker exec crdb1 cockroach sql --insecure --host=localhost:26257 -e 'ALTER RANGE 84 RELOCATE LEASE TO 2'
+  range_id	pretty	result
+  84	/Table/104/1/2000000	ok
+# диапазон 3 (ключ 3000001): range 85 → crdb3 (node_id 3)
+$ docker exec crdb1 cockroach sql --insecure --host=localhost:26257 -e 'ALTER RANGE 85 RELOCATE LEASE TO 3'
+  range_id	pretty	result
+  85	/Table/104/1/3000000	ok
+
+--- диапазоны kv: реплики и leaseholder ---
+# cmd: docker exec crdb1 cockroach sql --insecure --host=localhost:26257 -e "SELECT range_id, start_key, end_key, lease_holder, replicas FROM [SHOW RANGES FROM TABLE kv WITH DETAILS] ORDER BY start_key;"
+range_id	start_key	end_key	lease_holder	replicas
+83	…/1/1000000	…/1/2000000	3	{1,2,3}
+84	…/1/2000000	…/1/3000000	2	{1,2,3}
+85	…/1/3000000	<after:/Max>	3	{1,2,3}
+93	…/<TableMin>	…/1/1000000	2	{1,2,3}
+
+--- узел → контейнер ---
+# cmd: docker exec crdb1 cockroach node status --insecure --host=localhost:26257 --format=tsv | cut -f1,2
+id	address
+1	crdb1:26257
+2	crdb2:26257
+3	crdb3:26257
+
+--- всего диапазонов в кластере ---
+# cmd: docker exec crdb1 cockroach sql --insecure --host=localhost:26257 -e "SELECT count(*) AS ranges FROM [SHOW CLUSTER RANGES];"
+ranges
+86
+

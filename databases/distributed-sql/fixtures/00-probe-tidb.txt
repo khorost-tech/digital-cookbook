@@ -1,0 +1,50 @@
+# 00-probe-tidb — движок: tidb
+# снято: 2026-10-04 16:59 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- образы ---
+# cmd: docker inspect -f '{{.Name}} {{.Config.Image}}' pd1 tikv1 tikv2 tikv3 tidb
+/pd1 pingcap/pd:v8.5.8
+/tikv1 pingcap/tikv:v8.5.8
+/tikv2 pingcap/tikv:v8.5.8
+/tikv3 pingcap/tikv:v8.5.8
+/tidb pingcap/tidb:v8.5.8
+
+--- версия ---
+# cmd: docker run --rm --network dsql mysql:8.4 mysql -h tidb -P 4000 -u root -D test -t -e "SELECT tidb_version()\G"
+*************************** 1. row ***************************
+tidb_version(): Release Version: v8.5.8
+Edition: Community
+Git Commit Hash: 8b857efa20363d50a8fa2ea7dd9809a85a61b115
+Git Branch: HEAD
+UTC Build Time: 2026-08-27 07:22:26
+GoVersion: go1.25.12
+Race Enabled: false
+Check Table Before Drop: false
+Store: tikv
+
+--- TiKV-хранилища ---
+# cmd: docker run --rm --network dsql mysql:8.4 mysql -h tidb -P 4000 -u root -D test -t -e "SELECT store_id, address, store_state_name, leader_count, region_count, version FROM information_schema.tikv_store_status ORDER BY store_id;"
++----------+-------------+------------------+--------------+--------------+---------+
+| store_id | address     | store_state_name | leader_count | region_count | version |
++----------+-------------+------------------+--------------+--------------+---------+
+|        1 | tikv1:20160 | Up               |           30 |           94 | 8.5.8   |
+|        4 | tikv2:20160 | Up               |           33 |           94 | 8.5.8   |
+|        5 | tikv3:20160 | Up               |           31 |           94 | 8.5.8   |
++----------+-------------+------------------+--------------+--------------+---------+
+
+--- изоляция и режим транзакций ---
+# cmd: docker run --rm --network dsql mysql:8.4 mysql -h tidb -P 4000 -u root -D test -t -e "SELECT @@transaction_isolation, @@tidb_txn_mode;"
++-------------------------+-----------------+
+| @@transaction_isolation | @@tidb_txn_mode |
++-------------------------+-----------------+
+| REPEATABLE-READ         | pessimistic     |
++-------------------------+-----------------+
+
+--- фактор репликации ---
+# cmd: docker run --rm --network dsql mysql:8.4 mysql -h tidb -P 4000 -u root -D test -t -e "SHOW CONFIG WHERE name = 'replication.max-replicas';"
++------+----------+--------------------------+-------+
+| Type | Instance | Name                     | Value |
++------+----------+--------------------------+-------+
+| pd   | pd1:2379 | replication.max-replicas | 3     |
++------+----------+--------------------------+-------+
+

@@ -1,0 +1,59 @@
+# TiDB: три типа процессов. PD (placement driver, он же TSO) — один: для стенда
+# этого хватает, в проде их три, иначе PD — единая точка отказа. TiKV — три
+# узла, Raft-группы регионов живут на них. TiDB-сервер — один, он stateless.
+name: dsql-tidb
+
+x-tikv: &tikv
+  image: pingcap/tikv:v8.5.8
+  # TiKV 8.5 даже на пустой базе выходит на плато 1,8–2,3 ГБ на узел, несмотря
+  # на зажатые в tikv.toml кэши и буферы. С лимитами 1,2/1,5/2 ГБ узлы падали
+  # по OOM на старте. Три узла — ~6 ГБ, впритык к памяти VM Docker Desktop.
+  mem_limit: 2600m
+  ulimits:
+    nofile: { soft: 1048576, hard: 1048576 }
+  volumes: ["./tikv.toml:/tikv.toml:ro"]
+  depends_on: [pd1]
+
+services:
+  pd1:
+    image: pingcap/pd:v8.5.8
+    container_name: pd1
+    hostname: pd1
+    mem_limit: 512m
+    command: >
+      --name=pd1 --data-dir=/data/pd1
+      --client-urls=http://0.0.0.0:2379 --advertise-client-urls=http://pd1:2379
+      --peer-urls=http://0.0.0.0:2380 --advertise-peer-urls=http://pd1:2380
+      --initial-cluster=pd1=http://pd1:2380
+
+  tikv1:
+    <<: *tikv
+    container_name: tikv1
+    hostname: tikv1
+    command: --addr=0.0.0.0:20160 --advertise-addr=tikv1:20160 --status-addr=0.0.0.0:20180 --advertise-status-addr=tikv1:20180 --data-dir=/data/tikv1 --pd=pd1:2379 --config=/tikv.toml
+  tikv2:
+    <<: *tikv
+    container_name: tikv2
+    hostname: tikv2
+    command: --addr=0.0.0.0:20160 --advertise-addr=tikv2:20160 --status-addr=0.0.0.0:20180 --advertise-status-addr=tikv2:20180 --data-dir=/data/tikv2 --pd=pd1:2379 --config=/tikv.toml
+  tikv3:
+    <<: *tikv
+    container_name: tikv3
+    hostname: tikv3
+    command: --addr=0.0.0.0:20160 --advertise-addr=tikv3:20160 --status-addr=0.0.0.0:20180 --advertise-status-addr=tikv3:20180 --data-dir=/data/tikv3 --pd=pd1:2379 --config=/tikv.toml
+
+  tidb:
+    image: pingcap/tidb:v8.5.8
+    container_name: tidb
+    hostname: tidb
+    mem_limit: 1g
+    command: --store=tikv --path=pd1:2379 --advertise-address=tidb
+    ports: ["16400:4000"]
+    depends_on: [tikv1, tikv2, tikv3]
+
+# Общая сеть всех профилей: bench подключается к ней же и ходит к узлам по
+# именам контейнеров. Создаётся в up.sh.
+networks:
+  default:
+    name: dsql
+    external: true

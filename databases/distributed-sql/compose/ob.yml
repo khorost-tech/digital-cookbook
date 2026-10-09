@@ -1,0 +1,20 @@
+# OceanBase: ОДИН observer в режиме mini. Распределённость на нём не
+# показывается — только MySQL-wire, совместимость и уровень изоляции.
+# Кластер из трёх observer в 7,7 ГБ памяти Docker не помещается.
+name: dsql-ob
+
+services:
+  ob:
+    image: oceanbase/oceanbase-ce:4.4.2-lts
+    container_name: ob
+    hostname: ob
+    environment:
+      MODE: mini
+    ports: ["16881:2881"]
+
+# Общая сеть всех профилей: bench подключается к ней же и ходит к узлам по
+# именам контейнеров. Создаётся в up.sh.
+networks:
+  default:
+    name: dsql
+    external: true

@@ -1,0 +1,35 @@
+# 01-distribution-yb — движок: yb
+# снято: 2026-10-04 19:10 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- создание и предразбиение kv ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine yb -setup -n 0
+-- CREATE TABLE kv (k BIGINT, v BIGINT NOT NULL DEFAULT 0, PRIMARY KEY (k ASC)) SPLIT AT VALUES ((1000000), (2000000), (3000000))
+-- загружено 4000 строк в 4 диапазонов
+
+--- перенос лидеров: диапазоны 0 и 2 → узел 2, 1 и 3 → узел 3 ---
+# cmd: bash scripts/place-leaders.sh yb
+$ docker exec yb1 bin/yb-admin --master_addresses yb1:7100,yb2:7100,yb3:7100 set_preferred_zones local.r1.z2 local.r1.z3
+# диапазон 0 (ключ 1): таблетка b07497395987410bbf6471949b5be333, лидер на yb1 → yb2
+$ docker exec yb1 bin/yb-admin --master_addresses yb1:7100,yb2:7100,yb3:7100 leader_stepdown b07497395987410bbf6471949b5be333 749836c719dd4ab3a39a693281fea466
+# диапазон 1 (ключ 1000001): таблетка 58fdde3d12884977b0d6e97d5e5a45dd, лидер на yb3 → yb3
+  уже там
+# диапазон 2 (ключ 2000001): таблетка f6b2982993e54ebb92b9930d372a03c0, лидер на yb3 → yb2
+$ docker exec yb1 bin/yb-admin --master_addresses yb1:7100,yb2:7100,yb3:7100 leader_stepdown f6b2982993e54ebb92b9930d372a03c0 749836c719dd4ab3a39a693281fea466
+# диапазон 3 (ключ 3000001): таблетка 942278928dbd415c90f04ac8ba67b386, лидер на yb2 → yb3
+$ docker exec yb1 bin/yb-admin --master_addresses yb1:7100,yb2:7100,yb3:7100 leader_stepdown 942278928dbd415c90f04ac8ba67b386 aa117b78332141efb99760f029375472
+
+--- таблетки kv: границы и лидер ---
+# cmd: docker exec yb1 bin/yb-admin --master_addresses yb1:7100,yb2:7100,yb3:7100 list_tablets ysql.yugabyte kv
+Tablet-UUID                      	Range                                                    	Leader-IP       	Leader-UUID
+b07497395987410bbf6471949b5be333 	range: [<start>, DocKey([], [1000000]))                  	yb2:9100        	749836c719dd4ab3a39a693281fea466
+58fdde3d12884977b0d6e97d5e5a45dd 	range: [DocKey([], [1000000]), DocKey([], [2000000]))    	yb3:9100        	aa117b78332141efb99760f029375472
+f6b2982993e54ebb92b9930d372a03c0 	range: [DocKey([], [2000000]), DocKey([], [3000000]))    	yb2:9100        	749836c719dd4ab3a39a693281fea466
+942278928dbd415c90f04ac8ba67b386 	range: [DocKey([], [3000000]), <end>)                    	yb3:9100        	aa117b78332141efb99760f029375472
+
+--- границы разбиения ---
+# cmd: docker exec yb1 bin/ysqlsh -h yb1 -c "SELECT yb_get_range_split_clause('kv'::regclass);"
+             yb_get_range_split_clause             
+---------------------------------------------------
+ SPLIT AT VALUES ((1000000), (2000000), (3000000))
+(1 row)
+

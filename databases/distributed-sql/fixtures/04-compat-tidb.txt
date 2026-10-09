@@ -1,0 +1,23 @@
+# 04-compat-tidb — движок: tidb
+# снято: 2026-10-04 16:59 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- совместимость ---
+# cmd: docker run --rm --network dsql dsql-bench compat -engine tidb
+engine=tidb  проверок: 16
+AUTO_INCREMENT: какие id выдаёт              | 1,2,3
+FK: строка без родителя                      | соблюдается — ERROR 1452: Cannot add or update a child row: a foreign key constraint fails (`compat`.`c_child`, CONSTRAINT `fk_1` FOREIGN KEY (`p`) REFERENCES `c_parent` (`id`) ON DEL...
+CHECK: нарушающая строка                     | НЕ соблюдается: нарушающая строка вставлена молча [предупреждение — Warning 1105: tidb_enable_check_constraint is off]
+JSON + функциональный индекс                 | ok
+генерируемая колонка STORED                  | ok
+триггер BEFORE INSERT                        | ОШИБКА — ERROR 1064: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 14 near "TRIGGER c_trg...
+процедура + CALL                             | ОШИБКА — ERROR 8108: Unsupported type *resolve.NodeW
+FULLTEXT-индекс                              | ok [предупреждение — Warning 1214: The used table type doesn't support FULLTEXT indexes]
+SPATIAL-индекс                               | ОШИБКА — ERROR 1064: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 46 near "POINT NOT NUL...
+CREATE EVENT                                 | ОШИБКА — ERROR 1064: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 12 near "EVENT c_ev ON...
+GET_LOCK                                     | 1
+FOR UPDATE SKIP LOCKED                       | ok
+SAVEPOINT / ROLLBACK TO                      | 0
+XA-транзакция                                | ОШИБКА — ERROR 1064: You have an error in your SQL syntax; check the manual that corresponds to your TiDB version for the right syntax to use line 1 column 2 near "XA START 'c1'" 
+INSERT перед DDL откатывается                | нет, строка закоммичена
+SERIALIZABLE → фактический уровень           | ОШИБКА — ERROR 8048: The isolation level 'SERIALIZABLE' is not supported. Set tidb_skip_isolation_level_check=1 to skip this error
+

@@ -1,0 +1,33 @@
+# TiKV рассчитан на выделенную машину: block cache по умолчанию берёт ~45%
+# памяти, а у RocksDB по 128 МиБ × 5 буферов записи на каждое семейство
+# колонок. Три узла на одной VM с такими настройками падают по OOM, поэтому
+# всё зажато явно. На латентность одиночных операций стенда это не влияет:
+# датасет — 4000 строк.
+memory-usage-limit = "1GiB"
+
+[memory]
+# Отдельная арена jemalloc на каждый из ~170 потоков — сотни мегабайт на холостом ходу.
+enable-thread-exclusive-arena = false
+
+[storage]
+reserve-space = "0MiB"
+# Кеш статусов транзакций по умолчанию на 5,12 млн записей и выделяется сразу.
+txn-status-cache-capacity = 10000
+
+[storage.block-cache]
+capacity = "256MiB"
+
+[rocksdb.defaultcf]
+write-buffer-size = "32MiB"
+max-write-buffer-number = 2
+
+[rocksdb.writecf]
+write-buffer-size = "32MiB"
+max-write-buffer-number = 2
+
+[rocksdb.lockcf]
+write-buffer-size = "16MiB"
+max-write-buffer-number = 2
+
+[raft-engine]
+memory-limit = "64MiB"

@@ -1,0 +1,44 @@
+# 03-isolation-crdb — движок: crdb
+# снято: 2026-10-04 17:07 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- write skew: default ---
+# cmd: docker run --rm --network dsql dsql-bench skew -engine crdb -iso default
+T1  BEGIN                                                -> ok
+T2  BEGIN                                                -> ok
+T1  SHOW transaction_isolation                           -> serializable
+T1  SELECT count(*) FROM oncall WHERE on_call = 1        -> 2
+T2  SELECT count(*) FROM oncall WHERE on_call = 1        -> 2
+T1  UPDATE oncall SET on_call = 0 WHERE id = 1           -> ok
+T2  UPDATE oncall SET on_call = 0 WHERE id = 2           -> ok
+T1  COMMIT                                               -> SQLSTATE 40001: restart transaction: TransactionRetryWithProtoRefreshError: TransactionRetryError: retry txn (RETRY_SERIALIZABLE): "sql txn" meta={id=a16e0f19 key=/Table/105...
+T2  COMMIT                                               -> ok
+итог: на дежурстве 1 — инвариант цел
+
+--- write skew: serializable ---
+# cmd: docker run --rm --network dsql dsql-bench skew -engine crdb -iso serializable
+T1  BEGIN ISOLATION LEVEL SERIALIZABLE                   -> ok
+T2  BEGIN ISOLATION LEVEL SERIALIZABLE                   -> ok
+T1  SHOW transaction_isolation                           -> serializable
+T1  SELECT count(*) FROM oncall WHERE on_call = 1        -> 2
+T2  SELECT count(*) FROM oncall WHERE on_call = 1        -> 2
+T1  UPDATE oncall SET on_call = 0 WHERE id = 1           -> ok
+T2  UPDATE oncall SET on_call = 0 WHERE id = 2           -> ok
+T1  COMMIT                                               -> SQLSTATE 40001: restart transaction: TransactionRetryWithProtoRefreshError: TransactionRetryError: retry txn (RETRY_SERIALIZABLE): "sql txn" meta={id=820d26f8 key=/Table/106...
+T2  COMMIT                                               -> ok
+итог: на дежурстве 1 — инвариант цел
+
+--- write skew: for-update ---
+# cmd: docker run --rm --network dsql dsql-bench skew -engine crdb -iso for-update
+T1  BEGIN                                                -> ok
+T2  BEGIN                                                -> ok
+T1  SHOW transaction_isolation                           -> serializable
+T1  SELECT id FROM oncall WHERE on_call = 1 FOR UPDATE   -> 2 строк(и) под блокировкой
+T2  SELECT id FROM oncall WHERE on_call = 1 FOR UPDATE   -> ждёт блокировку, идём дальше
+T1  UPDATE oncall SET on_call = 0 WHERE id = 1           -> ok
+T2  UPDATE oncall SET on_call = 0 WHERE id = 2           -> в очереди: предыдущий шаг этой транзакции ещё ждёт
+T1  COMMIT                                               -> ok
+T2  (ранее ждавший шаг)                                  -> 1 строк(и) под блокировкой
+T2  (ранее ждавший шаг)                                  -> не выполняется: транзакция видит дежурных 1, уходить нельзя
+T2  COMMIT                                               -> ok
+итог: на дежурстве 1 — инвариант цел
+

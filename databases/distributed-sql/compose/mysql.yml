@@ -1,0 +1,23 @@
+# Эталон для MySQL-wire: что работает в оригинале, с тем и сравниваем
+# TiDB и OceanBase в 04-compat.
+name: dsql-mysql
+
+services:
+  mysql:
+    image: mysql:8.4
+    container_name: mysql
+    hostname: mysql
+    mem_limit: 1g
+    environment:
+      MYSQL_ROOT_PASSWORD: bench
+      MYSQL_DATABASE: bench
+    ports: ["16306:3306"]
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-uroot", "-pbench"]
+      interval: 2s
+      retries: 60
+
+networks:
+  default:
+    name: dsql
+    external: true

@@ -6,6 +6,7 @@
 |---|---|---|
 | [`citus/`](citus/) | Шардирование PostgreSQL через Citus: scatter-gather, колокация против репартиции, референсные таблицы, пагинация, ребаланс | [статья](https://khorost.tech/databases/sharding-in-production/) |
 | [`clickhouse/`](clickhouse/) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | [статья](https://khorost.tech/databases/clickhouse-when-olap/) |
+| [`distributed-sql/`](distributed-sql/) | CockroachDB, YugabyteDB, TiDB и OceanBase под одними замерами: цена операции в раунд-трипах при назначенном RTT между узлами, write skew под уровнем по умолчанию и SERIALIZABLE, совместимость штатным драйвером, отказ узла с лидером | 🔜 скоро |
 | [`db-indexes/`](db-indexes/) | Индексы в БД: PostgreSQL, MongoDB, Tarantool | [статья](https://khorost.tech/databases/) |
 | [`graph/`](graph/) | Графовые БД и Go: один и тот же граф платформы в трёх углах (Neo4j, Apache AGE, baseline на PostgreSQL) и одинаковые графовые запросы к каждому | [статья](https://khorost.tech/databases/graph-databases-and-go/) |
 | [`identifiers/`](identifiers/) | Идентификаторы: локальность и bloat UUIDv4/UUIDv7/bigint в PostgreSQL, распределение в Mongo/Scylla, генерация в Go/Java/Rust | [статья](https://khorost.tech/databases/identifiers-index-locality-bloat/) |

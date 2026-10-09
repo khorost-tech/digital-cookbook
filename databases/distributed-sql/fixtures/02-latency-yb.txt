@@ -1,0 +1,59 @@
+# 02-latency-yb — движок: yb
+# снято: 2026-10-04 17:09 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- RTT между узлами: 0 мс ---
+# cmd: bash scripts/netem.sh yb 0
+[netem] назначен RTT 0 мс между: yb1 yb2 yb3
+yb1 -> yb2: rtt min/avg/max/mdev = 0.061/0.096/0.149/0.030 ms
+клиент -> yb1: rtt min/avg/max/mdev = 0.095/0.132/0.187/0.032 ms
+
+--- замер при RTT 0 мс ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine yb -n 300
+engine=yb  n=300 на вид, одно соединение, последовательно
+read     n=300  p50=   0.44 p95=   0.66 p99=   0.77 ms  retries=0
+write1   n=300  p50=   0.92 p95=   1.31 p99=   1.47 ms  retries=0
+txn1x2   n=300  p50=   1.67 p95=   2.20 p99=   2.71 ms  retries=0
+txn2     n=300  p50=   1.75 p95=   2.29 p99=   2.67 ms  retries=0
+txn1x4   n=300  p50=   3.01 p95=   3.88 p99=   4.36 ms  retries=0
+txn4     n=300  p50=   3.04 p95=   4.02 p99=   4.87 ms  retries=0
+
+--- RTT между узлами: 2 мс ---
+# cmd: bash scripts/netem.sh yb 2
+[netem] назначен RTT 2 мс между: yb1 yb2 yb3
+yb1 -> yb2: rtt min/avg/max/mdev = 2.111/2.448/2.652/0.203 ms
+клиент -> yb1: rtt min/avg/max/mdev = 0.034/0.126/0.205/0.068 ms
+
+--- замер при RTT 2 мс ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine yb -n 300
+engine=yb  n=300 на вид, одно соединение, последовательно
+read     n=300  p50=   2.77 p95=   3.53 p99=   4.19 ms  retries=0
+write1   n=300  p50=   8.48 p95=  10.10 p99=  10.51 ms  retries=0
+txn1x2   n=300  p50=  18.88 p95=  21.99 p99=  23.65 ms  retries=0
+txn2     n=300  p50=  18.78 p95=  22.30 p99=  24.36 ms  retries=0
+txn1x4   n=300  p50=  35.18 p95=  43.08 p99=  45.10 ms  retries=0
+txn4     n=300  p50=  35.30 p95=  42.28 p99=  43.72 ms  retries=0
+
+--- RTT между узлами: 30 мс ---
+# cmd: bash scripts/netem.sh yb 30
+[netem] назначен RTT 30 мс между: yb1 yb2 yb3
+yb1 -> yb2: rtt min/avg/max/mdev = 30.150/30.942/31.436/0.453 ms
+клиент -> yb1: rtt min/avg/max/mdev = 0.048/0.088/0.121/0.028 ms
+
+--- замер при RTT 30 мс ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine yb -n 300
+engine=yb  n=300 на вид, одно соединение, последовательно
+read     n=300  p50=  31.88 p95=  33.03 p99=  34.09 ms  retries=0
+write1   n=300  p50= 154.33 p95= 164.39 p99= 185.07 ms  retries=0
+txn1x2   n=300  p50= 252.13 p95= 257.08 p99= 267.67 ms  retries=0
+txn2     n=300  p50= 251.94 p95= 256.90 p99= 261.92 ms  retries=0
+txn1x4   n=300  p50= 441.44 p95= 450.27 p99= 460.96 ms  retries=0
+txn4     n=300  p50= 445.06 p95= 454.27 p99= 466.68 ms  retries=0
+
+--- лидеры после замера ---
+# cmd: docker exec yb1 bin/yb-admin --master_addresses yb1:7100,yb2:7100,yb3:7100 list_tablets ysql.yugabyte kv
+Tablet-UUID                      	Range                                                    	Leader-IP       	Leader-UUID
+8e3cbbbf76d8489e97bb449acf044b4a 	range: [<start>, DocKey([], [1000000]))                  	yb2:9100        	51b2d07bf4624101bf4f92127026670b
+21026b5506284ba78249809c742ff4e9 	range: [DocKey([], [1000000]), DocKey([], [2000000]))    	yb3:9100        	33c375913be844bfb1fd069895166772
+1a6d15bc8f8a47408a09f1ea9c0d45d5 	range: [DocKey([], [2000000]), DocKey([], [3000000]))    	yb2:9100        	51b2d07bf4624101bf4f92127026670b
+db6fee2b6ea546b785db1fb5bdcb3f86 	range: [DocKey([], [3000000]), <end>)                    	yb3:9100        	33c375913be844bfb1fd069895166772
+

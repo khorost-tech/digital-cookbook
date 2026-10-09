@@ -1,0 +1,39 @@
+# 00-probe-crdb — движок: crdb
+# снято: 2026-10-04 17:01 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- образы ---
+# cmd: docker inspect -f '{{.Name}} {{.Config.Image}}' crdb1 crdb2 crdb3
+/crdb1 cockroachdb/cockroach:v26.2.5
+/crdb2 cockroachdb/cockroach:v26.2.5
+/crdb3 cockroachdb/cockroach:v26.2.5
+
+--- версия ---
+# cmd: docker exec crdb1 cockroach sql --insecure --host=localhost:26257 -e "SELECT version();"
+version
+CockroachDB CCL v26.2.5 (aarch64-unknown-linux-gnu, built 2026/07/28 18:55:27, go1.25.5)
+
+--- узлы ---
+# cmd: docker exec crdb1 cockroach node status --insecure --host=localhost:26257 --format=table
+  id |   address   | sql_address |  build  |              started_at              |              updated_at              | locality | attrs | is_available | is_live
+-----+-------------+-------------+---------+--------------------------------------+--------------------------------------+----------+-------+--------------+----------
+   1 | crdb1:26257 | crdb1:26257 | v26.2.5 | 2026-10-04 17:01:31.209739 +0000 UTC | 2026-10-04 17:01:34.222752 +0000 UTC |          | []    | true         | true
+   2 | crdb3:26257 | crdb3:26257 | v26.2.5 | 2026-10-04 17:01:32.170854 +0000 UTC | 2026-10-04 17:01:32.18512 +0000 UTC  |          | []    | true         | true
+   3 | crdb2:26257 | crdb2:26257 | v26.2.5 | 2026-10-04 17:01:32.18922 +0000 UTC  | 2026-10-04 17:01:32.20201 +0000 UTC  |          | []    | true         | true
+(3 rows)
+
+--- изоляция по умолчанию ---
+# cmd: docker exec crdb1 cockroach sql --insecure --host=localhost:26257 -e "SHOW default_transaction_isolation;"
+default_transaction_isolation
+serializable
+
+--- фактор репликации по умолчанию ---
+# cmd: docker exec crdb1 cockroach sql --insecure --host=localhost:26257 -e "SHOW ZONE CONFIGURATION FROM RANGE default;"
+target	raw_config_sql
+RANGE default	"ALTER RANGE default CONFIGURE ZONE USING
+	range_min_bytes = 134217728,
+	range_max_bytes = 536870912,
+	gc.ttlseconds = 14400,
+	num_replicas = 3,
+	constraints = '[]',
+	lease_preferences = '[]'"
+

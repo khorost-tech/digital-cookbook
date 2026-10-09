@@ -1,0 +1,40 @@
+# 05-failover-yb — движок: yb
+# снято: 2026-10-04 19:10 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- кого гасим ---
+# cmd: echo 'ключ 1, лидер его диапазона на yb2, клиент подключён к yb1'
+ключ 1, лидер его диапазона на yb2, клиент подключён к yb1
+
+--- запись под отказом лидера ---
+# cmd: docker run -d --name dsql-failover --network dsql dsql-bench failover -engine yb -key 1 -duration 40s >/dev/null; sleep 10; docker kill yb2 >/dev/null; docker wait dsql-failover >/dev/null; docker logs dsql-failover; docker rm dsql-failover >/dev/null
+engine=yb  ключ=1  длительность=40s  таймаут попытки=30s
+t= 0s  ok=1041  err=0
+t= 1s  ok=1043  err=0
+t= 2s  ok=813   err=0
+t= 3s  ok=632   err=0
+t= 4s  ok=1030  err=0
+t= 5s  ok=1034  err=0
+t= 6s  ok=1039  err=0
+t= 7s  ok=1034  err=0
+t= 8s  ok=1045  err=0
+t= 9s  ok=1040  err=0
+t=10s  ok=4     err=0
+t=25s  ok=222   err=0
+t=26s  ok=208   err=0
+t=27s  ok=251   err=0
+t=28s  ok=337   err=0
+t=29s  ok=35    err=0
+t=30s  ok=73    err=0
+t=31s  ok=482   err=0
+t=32s  ok=63    err=0
+t=33s  ok=26    err=0
+t=34s  ok=500   err=0
+t=35s  ok=149   err=0
+t=36s  ok=170   err=0
+t=37s  ok=114   err=0
+t=38s  ok=299   err=0
+t=39s  ok=102   err=0
+t=40s  ok=1     err=0
+самая длинная пауза между коммитами: 15.11 с (началась на 10.0 с)
+сохранность: подтверждено 12787, исход неизвестен 0, прирост v 12787 — сходится: подтверждённые записи на месте
+

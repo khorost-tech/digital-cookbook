@@ -1,0 +1,25 @@
+# Базовая линия: одиночный PostgreSQL, synchronous_commit=on (по умолчанию).
+# Без реплик: сравнивается цена одной операции, а не отказоустойчивость.
+name: dsql-pg
+
+services:
+  pg:
+    image: postgres:17
+    container_name: pg
+    hostname: pg
+    mem_limit: 1g
+    environment:
+      POSTGRES_PASSWORD: bench
+      POSTGRES_DB: bench
+    ports: ["16432:5432"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 30
+
+# Общая сеть всех профилей: bench подключается к ней же и ходит к узлам по
+# именам контейнеров. Создаётся в up.sh.
+networks:
+  default:
+    name: dsql
+    external: true

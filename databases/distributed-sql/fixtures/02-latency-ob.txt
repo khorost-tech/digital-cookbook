@@ -1,0 +1,13 @@
+# 02-latency-ob — движок: ob
+# снято: 2026-10-04 17:00 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- замер при RTT 0 мс ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine ob -n 300
+engine=ob  n=300 на вид, одно соединение, последовательно
+read     n=300  p50=   0.13 p95=   0.30 p99=   0.59 ms  retries=0
+write1   n=300  p50=   0.54 p95=   1.28 p99=   1.73 ms  retries=0
+txn1x2   n=300  p50=   0.83 p95=   1.84 p99=   2.69 ms  retries=0
+txn2     n=300  p50=   0.83 p95=   1.74 p99=   2.31 ms  retries=0
+txn1x4   n=300  p50=   1.15 p95=   2.24 p99=   3.44 ms  retries=0
+txn4     n=300  p50=   1.14 p95=   2.17 p99=   4.24 ms  retries=0
+

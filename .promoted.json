@@ -71,6 +71,9 @@
       "databases/db-indexes-patterns-antipatterns.md",
       "databases/db-indexes-types-and-internals.md"
     ],
+    "databases/distributed-sql": [
+      "databases/distributed-sql-newsql.md"
+    ],
     "databases/graph": [
       "databases/graph-databases-and-go.md"
     ],
@@ -100,6 +103,7 @@
       "databases/picodata-architecture-fork-vs-product.md",
       "databases/picodata-distributed-sql-sbroad.md",
       "databases/picodata-postgres-protocol.md",
+      "databases/picodata-rust-plugins.md",
       "performance/inmemory-tarantool-picodata-compute-near-data.md"
     ],
     "databases/postgres": [
@@ -280,6 +284,7 @@
     "observability/practice-stack": [
       "observability/distributed-tracing-tempo.md",
       "observability/logs-correlation-loki.md",
+      "observability/metrics-prometheus-red-use.md",
       "observability/otel-instrumentation-go-java.md"
     ],
     "observability/vector-pipeline": [

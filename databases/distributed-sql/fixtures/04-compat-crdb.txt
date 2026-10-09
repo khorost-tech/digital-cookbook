@@ -1,0 +1,28 @@
+# 04-compat-crdb — движок: crdb
+# снято: 2026-10-04 17:07 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- совместимость ---
+# cmd: docker run --rm --network dsql dsql-bench compat -engine crdb
+engine=crdb  проверок: 21
+serial: какие id выдаёт                      | 1215900039717781505,1215900039717814273,1215900039717847041
+sequence: nextval                            | 1,2
+gen_random_uuid()                            | 36
+JSONB + GIN-индекс                           | ok
+частичный индекс                             | ok
+генерируемая колонка STORED                  | ok
+FK: строка без родителя                      | соблюдается — SQLSTATE 23503: insert on table "c_child" violates foreign key constraint "c_child_p_fkey"
+CHECK: нарушающая строка                     | соблюдается — SQLSTATE 23514: failed to satisfy CHECK constraint (x > 0:::INT8)
+функция PL/pgSQL                             | 2
+триггер BEFORE INSERT                        | true
+процедура + CALL                             | ok
+CREATE EXTENSION pg_trgm                     | ok
+LISTEN / NOTIFY                              | ОШИБКА — SQLSTATE 42601: at or near "listen": syntax error
+pg_advisory_lock                             | ОШИБКА — SQLSTATE 42883: unknown function: pg_advisory_lock()
+FOR UPDATE SKIP LOCKED                       | ok
+EXCLUDE USING gist                           | ОШИБКА — SQLSTATE 0A000: at or near "gist": syntax error: unimplemented: this syntax
+CREATE INDEX CONCURRENTLY                    | ok
+DDL откатывается вместе с транзакцией        | нет, таблица осталась
+INSERT перед DDL откатывается                | нет, строка закоммичена
+BEGIN READ COMMITTED → фактический уровень   | read committed
+BEGIN REPEATABLE READ → фактический уровень  | serializable
+

@@ -1,0 +1,48 @@
+# 00-probe-yb — движок: yb
+# снято: 2026-10-04 16:21 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- образы ---
+# cmd: docker inspect -f '{{.Name}} {{.Config.Image}}' yb1 yb2 yb3
+/yb1 yugabytedb/yugabyte:2026.1.2.0-b137
+/yb2 yugabytedb/yugabyte:2026.1.2.0-b137
+/yb3 yugabytedb/yugabyte:2026.1.2.0-b137
+
+--- версия ---
+# cmd: docker exec yb1 bin/ysqlsh -h yb1 -c "SELECT version();"
+                                                                                             version                                                                                              
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ PostgreSQL 15.12-YB-2026.1.2.0-b0 on aarch64-unknown-linux-gnu, compiled by clang version 21.1.1 (https://github.com/yugabyte/llvm-project.git efca861cc42178cc4c555d605b36c79d7d121cc1), 64-bit
+(1 row)
+
+--- tablet-серверы ---
+# cmd: docker exec yb1 bin/yb-admin --master_addresses yb1:7100,yb2:7100,yb3:7100 list_all_tablet_servers
+Tablet Server UUID               RPC Host/Port Heartbeat delay Status   Reads/s  Writes/s Uptime   SST total size  SST uncomp size SST #files      Memory   Broadcast Host/Port 
+2d600a9ebe8b47afba906396699dea2e yb1:9100 0.80s           ALIVE    6.80     0.20     10       0 B             0 B             0               54.17 MB yb1:9100
+2d54c8c94422426691cbab01cf39ef2a yb2:9100 0.01s           ALIVE    0.00     0.00     10       0 B             0 B             0               29.28 MB yb2:9100
+701ccee17d95423a82d9fff37a375a12 yb3:9100 0.99s           ALIVE    0.00     0.00     5        0 B             0 B             0               27.67 MB yb3:9100
+
+--- мастера ---
+# cmd: docker exec yb1 bin/yb-admin --master_addresses yb1:7100,yb2:7100,yb3:7100 list_all_masters
+Master UUID                      	RPC Host/Port        	State    	Role 	Broadcast Host/Port 
+d7e1d4f16642468ca7d22edfe34a3744 	yb1:7100             	ALIVE    	LEADER 	yb1:7100            
+fa42af0e8783465a870851c4c387944c 	yb2:7100             	ALIVE    	FOLLOWER 	yb2:7100            
+cccbe513ab084d818584aec2bce59704 	yb3:7100             	ALIVE    	FOLLOWER 	yb3:7100            
+
+--- фактор репликации ---
+# cmd: docker exec yb1 bin/yb-admin --master_addresses yb1:7100,yb2:7100,yb3:7100 get_universe_config
+{"version":3,"replicationInfo":{"liveReplicas":{"numReplicas":3,"placementBlocks":[{"cloudInfo":{"placementCloud":"local","placementRegion":"r1","placementZone":"z3"},"minNumReplicas":1},{"cloudInfo":{"placementCloud":"local","placementRegion":"r1","placementZone":"z2"},"minNumReplicas":1},{"cloudInfo":{"placementCloud":"local","placementRegion":"r1","placementZone":"z1"},"minNumReplicas":1}],"placementUuid":"M2Y5NTlkMzAtM2M3NS00ODA4LTg3YWMtZmIxOWViZWI1MGVk"}},"clusterUuid":"e036e88e-8ee8-4f5c-908b-1b5612a50adf","universeUuid":"2d699dee-109c-408c-b645-62489c39ce68"}
+
+--- изоляция по умолчанию ---
+# cmd: docker exec yb1 bin/ysqlsh -h yb1 -c "SHOW default_transaction_isolation;"
+ default_transaction_isolation 
+-------------------------------
+ read committed
+(1 row)
+
+--- READ COMMITTED включён? ---
+# cmd: docker exec yb1 bin/ysqlsh -h yb1 -c "SHOW yb_effective_transaction_isolation_level;"
+ yb_effective_transaction_isolation_level 
+------------------------------------------
+ read committed
+(1 row)
+

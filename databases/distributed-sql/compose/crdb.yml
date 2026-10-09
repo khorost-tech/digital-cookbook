@@ -1,0 +1,52 @@
+# CockroachDB: три узла — минимум для Raft-кворума.
+#
+# Память задана фиксированными величинами, а не долями: доля считается от
+# всей памяти VM Docker, и три узла по 25% съели бы её почти целиком.
+name: dsql-crdb
+
+x-node: &node
+  image: cockroachdb/cockroach:v26.2.5
+  mem_limit: 1200m
+  healthcheck:
+    test: ["CMD", "cockroach", "node", "status", "--insecure", "--host=localhost:26257"]
+    interval: 5s
+    timeout: 5s
+    retries: 30
+    start_period: 15s
+  stop_grace_period: 30s
+
+services:
+  crdb1:
+    <<: *node
+    container_name: crdb1
+    hostname: crdb1
+    command: >
+      start --insecure --join=crdb1:26257,crdb2:26257,crdb3:26257
+      --advertise-addr=crdb1:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --cache=256MiB --max-sql-memory=256MiB
+    ports: ["16257:26257"]
+
+  crdb2:
+    <<: *node
+    container_name: crdb2
+    hostname: crdb2
+    command: >
+      start --insecure --join=crdb1:26257,crdb2:26257,crdb3:26257
+      --advertise-addr=crdb2:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --cache=256MiB --max-sql-memory=256MiB
+
+  crdb3:
+    <<: *node
+    container_name: crdb3
+    hostname: crdb3
+    command: >
+      start --insecure --join=crdb1:26257,crdb2:26257,crdb3:26257
+      --advertise-addr=crdb3:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --cache=256MiB --max-sql-memory=256MiB
+
+# Общая сеть всех профилей: bench подключается к ней же и ходит к узлам по
+# именам контейнеров. Создаётся в up.sh.
+networks:
+  default:
+    name: dsql
+    external: true

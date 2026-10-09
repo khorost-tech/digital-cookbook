@@ -1,0 +1,59 @@
+# 02-latency-crdb — движок: crdb
+# снято: 2026-10-04 17:01 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- RTT между узлами: 0 мс ---
+# cmd: bash scripts/netem.sh crdb 0
+[netem] назначен RTT 0 мс между: crdb1 crdb2 crdb3
+crdb1 -> crdb2: rtt min/avg/max/mdev = 0.051/0.094/0.133/0.032 ms
+клиент -> crdb1: rtt min/avg/max/mdev = 0.043/0.096/0.160/0.039 ms
+
+--- замер при RTT 0 мс ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine crdb -n 300
+engine=crdb  n=300 на вид, одно соединение, последовательно
+read     n=300  p50=   0.27 p95=   0.50 p99=   0.84 ms  retries=0
+write1   n=300  p50=   2.04 p95=   3.49 p99=   4.55 ms  retries=0
+txn1x2   n=300  p50=   1.78 p95=   3.33 p99=   4.24 ms  retries=0
+txn2     n=300  p50=   2.21 p95=   3.96 p99=   4.63 ms  retries=0
+txn1x4   n=300  p50=   3.05 p95=   4.50 p99=   5.97 ms  retries=0
+txn4     n=300  p50=   2.92 p95=   4.70 p99=   7.33 ms  retries=0
+
+--- RTT между узлами: 2 мс ---
+# cmd: bash scripts/netem.sh crdb 2
+[netem] назначен RTT 2 мс между: crdb1 crdb2 crdb3
+crdb1 -> crdb2: rtt min/avg/max/mdev = 2.086/2.298/2.437/0.121 ms
+клиент -> crdb1: rtt min/avg/max/mdev = 0.055/0.122/0.223/0.065 ms
+
+--- замер при RTT 2 мс ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine crdb -n 300
+engine=crdb  n=300 на вид, одно соединение, последовательно
+read     n=300  p50=   2.35 p95=   2.83 p99=   3.17 ms  retries=0
+write1   n=300  p50=   7.42 p95=   9.45 p99=  12.08 ms  retries=0
+txn1x2   n=300  p50=   9.94 p95=  11.94 p99=  13.82 ms  retries=0
+txn2     n=300  p50=  10.12 p95=  12.45 p99=  16.75 ms  retries=0
+txn1x4   n=300  p50=  14.70 p95=  17.37 p99=  20.03 ms  retries=0
+txn4     n=300  p50=  15.38 p95=  17.90 p99=  22.36 ms  retries=0
+
+--- RTT между узлами: 30 мс ---
+# cmd: bash scripts/netem.sh crdb 30
+[netem] назначен RTT 30 мс между: crdb1 crdb2 crdb3
+crdb1 -> crdb2: rtt min/avg/max/mdev = 30.189/30.408/30.834/0.228 ms
+клиент -> crdb1: rtt min/avg/max/mdev = 0.076/0.136/0.215/0.045 ms
+
+--- замер при RTT 30 мс ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine crdb -n 300
+engine=crdb  n=300 на вид, одно соединение, последовательно
+read     n=300  p50=  31.67 p95=  32.95 p99=  34.02 ms  retries=0
+write1   n=300  p50=  94.90 p95=  98.67 p99= 100.42 ms  retries=0
+txn1x2   n=300  p50= 128.03 p95= 132.83 p99= 135.11 ms  retries=0
+txn2     n=300  p50= 128.03 p95= 133.53 p99= 162.35 ms  retries=0
+txn1x4   n=300  p50= 191.91 p95= 198.84 p99= 203.59 ms  retries=0
+txn4     n=300  p50= 193.15 p95= 199.88 p99= 209.27 ms  retries=0
+
+--- лидеры после замера ---
+# cmd: docker exec crdb1 cockroach sql --insecure --host=localhost:26257 -e "SELECT range_id, start_key, end_key, lease_holder, replicas FROM [SHOW RANGES FROM TABLE kv WITH DETAILS] ORDER BY start_key;"
+range_id	start_key	end_key	lease_holder	replicas
+83	…/1/1000000	…/1/2000000	2	{1,2,3}
+84	…/1/2000000	…/1/3000000	3	{1,2,3}
+85	…/1/3000000	<after:/Max>	2	{1,2,3}
+86	…/<TableMin>	…/1/1000000	3	{1,2,3}
+

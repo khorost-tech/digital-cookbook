@@ -1,0 +1,13 @@
+# 02-latency-mysql — движок: mysql
+# снято: 2026-10-04 17:01 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- замер при RTT 0 мс ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine mysql -n 300
+engine=mysql  n=300 на вид, одно соединение, последовательно
+read     n=300  p50=   0.07 p95=   0.14 p99=   0.23 ms  retries=0
+write1   n=300  p50=   0.48 p95=   1.48 p99=   1.75 ms  retries=0
+txn1x2   n=300  p50=   0.62 p95=   1.55 p99=   2.25 ms  retries=0
+txn2     n=300  p50=   0.62 p95=   1.55 p99=   1.88 ms  retries=0
+txn1x4   n=300  p50=   0.79 p95=   1.82 p99=   2.37 ms  retries=0
+txn4     n=300  p50=   0.79 p95=   1.80 p99=   2.05 ms  retries=0
+

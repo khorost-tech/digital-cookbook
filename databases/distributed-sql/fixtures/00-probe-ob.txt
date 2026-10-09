@@ -1,0 +1,46 @@
+# 00-probe-ob — движок: ob
+# снято: 2026-10-04 17:00 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- образы ---
+# cmd: docker inspect -f '{{.Name}} {{.Config.Image}}' ob
+/ob oceanbase/oceanbase-ce:4.4.2-lts
+
+--- версия ---
+# cmd: docker exec ob obclient -h127.0.0.1 -P2881 -uroot@test -A -t -e "SELECT version(); SELECT @@version_comment;"
++------------------------------+
+| version()                    |
++------------------------------+
+| 5.7.25-OceanBase_CE-v4.4.2.1 |
++------------------------------+
++------------------------------------------------------------------------------------------------------------------+
+| @@version_comment                                                                                                |
++------------------------------------------------------------------------------------------------------------------+
+| OceanBase_CE 4.4.2.1 (r101000022026050611-8cf64ed50606966fd5c29f47265cf557d97ea776) (Built May  6 2026 12:29:53) |
++------------------------------------------------------------------------------------------------------------------+
+
+--- observer-ы ---
+# cmd: docker exec ob obclient -h127.0.0.1 -P2881 -uroot@sys -A -t -e 'SELECT svr_ip, zone, status, with_rootserver FROM oceanbase.DBA_OB_SERVERS;'
++------------+-------+--------+-----------------+
+| svr_ip     | zone  | status | with_rootserver |
++------------+-------+--------+-----------------+
+| 172.18.0.2 | zone1 | ACTIVE | YES             |
++------------+-------+--------+-----------------+
+
+--- тенанты ---
+# cmd: docker exec ob obclient -h127.0.0.1 -P2881 -uroot@sys -A -t -e 'SELECT tenant_name, tenant_type, compatibility_mode, primary_zone, locality FROM oceanbase.DBA_OB_TENANTS;'
++-------------+-------------+--------------------+--------------+---------------+
+| tenant_name | tenant_type | compatibility_mode | primary_zone | locality      |
++-------------+-------------+--------------------+--------------+---------------+
+| sys         | SYS         | MYSQL              | RANDOM       | FULL{1}@zone1 |
+| META$1002   | META        | MYSQL              | RANDOM       | FULL{1}@zone1 |
+| test        | USER        | MYSQL              | RANDOM       | FULL{1}@zone1 |
++-------------+-------------+--------------------+--------------+---------------+
+
+--- изоляция по умолчанию ---
+# cmd: docker exec ob obclient -h127.0.0.1 -P2881 -uroot@test -A -t -e "SELECT @@transaction_isolation;"
++-------------------------+
+| @@transaction_isolation |
++-------------------------+
+| READ-COMMITTED          |
++-------------------------+
+

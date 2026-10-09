@@ -1,0 +1,15 @@
+# 00-probe-mysql — движок: mysql
+# снято: 2026-10-04 17:01 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- образы ---
+# cmd: docker inspect -f '{{.Name}} {{.Config.Image}}' mysql
+/mysql mysql:8.4
+
+--- версия и изоляция ---
+# cmd: docker exec mysql mysql -uroot -pbench bench -t -e "SELECT version(), @@transaction_isolation;"
++-----------+-------------------------+
+| version() | @@transaction_isolation |
++-----------+-------------------------+
+| 8.4.11    | REPEATABLE-READ         |
++-----------+-------------------------+
+

@@ -1,0 +1,19 @@
+# 01-distribution-ob — движок: ob
+# снято: 2026-10-04 17:00 UTC, хост: Darwin arm64, Docker 29.8.0
+
+--- создание и предразбиение kv ---
+# cmd: docker run --rm --network dsql dsql-bench latency -engine ob -setup -n 0
+-- CREATE TABLE kv (k BIGINT PRIMARY KEY, v BIGINT NOT NULL DEFAULT 0) PARTITION BY RANGE (k) (PARTITION p0 VALUES LESS THAN (1000000), PARTITION p1 VALUES LESS THAN (2000000), PARTITION p2 VALUES LESS THAN (3000000), PARTITION p3 VALUES LESS THAN MAXVALUE)
+-- загружено 4000 строк в 4 диапазонов
+
+--- партиции kv: таблетки, лог-стримы, роль реплики ---
+# cmd: docker exec ob obclient -h127.0.0.1 -P2881 -uroot@test -A -t -e "SELECT partition_name, tablet_id, ls_id, svr_ip, role FROM oceanbase.DBA_OB_TABLE_LOCATIONS WHERE table_name = 'kv' ORDER BY partition_name;"
++----------------+-----------+-------+------------+--------+
+| partition_name | tablet_id | ls_id | svr_ip     | role   |
++----------------+-----------+-------+------------+--------+
+| p0             |    200005 |  1001 | 172.18.0.2 | LEADER |
+| p1             |    200006 |  1001 | 172.18.0.2 | LEADER |
+| p2             |    200007 |  1001 | 172.18.0.2 | LEADER |
+| p3             |    200008 |  1001 | 172.18.0.2 | LEADER |
++----------------+-----------+-------+------------+--------+
+

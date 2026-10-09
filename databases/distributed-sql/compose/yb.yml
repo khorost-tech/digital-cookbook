@@ -1,0 +1,56 @@
+# YugabyteDB: три узла через yugabyted. Каждый узел — пара процессов
+# yb-master (метаданные, своя Raft-группа) + yb-tserver (YSQL и DocDB-таблетки).
+# Зоны разные, чтобы после `configure data_placement` получился RF=3 с
+# репликами по одной на узел.
+name: dsql-yb
+
+x-node: &node
+  image: yugabytedb/yugabyte:2026.1.2.0-b137
+  mem_limit: 1500m
+  healthcheck:
+    test: ["CMD-SHELL", "bin/ysqlsh -h $$(hostname) -c 'select 1' >/dev/null"]
+    interval: 5s
+    timeout: 5s
+    retries: 60
+    start_period: 20s
+
+services:
+  yb1:
+    <<: *node
+    container_name: yb1
+    hostname: yb1
+    command: >
+      bin/yugabyted start --background=false --advertise_address=yb1
+      --cloud_location=local.r1.z1
+      --master_flags=memory_limit_hard_bytes=314572800
+      --tserver_flags=memory_limit_hard_bytes=943718400
+    ports: ["16433:5433"]
+
+  yb2:
+    <<: *node
+    container_name: yb2
+    hostname: yb2
+    command: >
+      bash -c "until bin/ysqlsh -h yb1 -c 'select 1' >/dev/null 2>&1; do sleep 2; done;
+      exec bin/yugabyted start --background=false --advertise_address=yb2 --join=yb1
+      --cloud_location=local.r1.z2
+      --master_flags=memory_limit_hard_bytes=314572800
+      --tserver_flags=memory_limit_hard_bytes=943718400"
+
+  yb3:
+    <<: *node
+    container_name: yb3
+    hostname: yb3
+    command: >
+      bash -c "until bin/ysqlsh -h yb2 -c 'select 1' >/dev/null 2>&1; do sleep 2; done;
+      exec bin/yugabyted start --background=false --advertise_address=yb3 --join=yb1
+      --cloud_location=local.r1.z3
+      --master_flags=memory_limit_hard_bytes=314572800
+      --tserver_flags=memory_limit_hard_bytes=943718400"
+
+# Общая сеть всех профилей: bench подключается к ней же и ходит к узлам по
+# именам контейнеров. Создаётся в up.sh.
+networks:
+  default:
+    name: dsql
+    external: true
