@@ -1,0 +1,22 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 20-metricgen
+# cmd: kubectl get deploy,svc -n cookbook-k8s -l app=metricgen
+# ---
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/metricgen   1/1     1            1           2m39s
+
+NAME                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)    AGE
+service/metricgen   ClusterIP   10.96.163.204   <none>        8080/TCP   2m39s
+
+# --- доп. проверка: GET /metrics живьём (после /push?n=7) ---
+# cmd: curl -s http://localhost:18081/metrics (port-forward svc/metricgen)
+# HELP demo_queue_depth Искусственная глубина очереди для демонстрации автоскейлинга
+# TYPE demo_queue_depth gauge
+demo_queue_depth 7
+
+# --- доп. проверка: метрика подтверждена в VictoriaMetrics (реальный бэкенд наблюдаемости кластера) ---
+# в кластере k8s-volga нет Prometheus/kube-prometheus-stack (см. README) — vmagent
+# remote-write'ит в VictoriaMetrics vmsingle на 192.168.71.83:8428 (тот же хост, что и
+# сам vmagent-прокси 192.168.71.83:8429); запрос ниже — прямой Prometheus-совместимый
+# HTTP API этого vmsingle.
+# cmd: curl -s --get --data-urlencode 'query=demo_queue_depth' http://192.168.71.83:8428/api/v1/query
+{"status":"success","data":{"resultType":"vector","result":[{"metric":{"__name__":"demo_queue_depth","cluster":"k8s-volga","instance":"10.244.4.132:8080","job":"kubernetes-pods"},"value":[1784765873,"7"]}]},"stats":{"seriesFetched": "1","executionTimeMsec":1}}

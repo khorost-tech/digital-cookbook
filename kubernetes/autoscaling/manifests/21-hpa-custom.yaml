@@ -1,0 +1,69 @@
+# HPA по кастомной метрике demo_queue_depth — задача B2, "autoscaling".
+#
+# Масштабируем ОТДЕЛЬНЫЙ Deployment consumer, а не metricgen. demo_queue_depth
+# — состояние в памяти процесса metricgen (см. cmd/metricgen/main.go): если
+# бы HPA масштабировал сам metricgen, новые реплики стартовали бы с нулевым
+# значением метрики, среднее по подам падало бы, и HPA флаппил. metricgen
+# остаётся источником метрики в 1 реплике; consumer — дешёвый под без
+# полезной нагрузки (busybox sleep infinity), которым управляет HPA.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: consumer
+  namespace: cookbook-k8s
+  labels:
+    app: consumer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: consumer
+  template:
+    metadata:
+      labels:
+        app: consumer
+    spec:
+      containers:
+        - name: consumer
+          image: busybox:1.37
+          command: ["sleep", "infinity"]
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 100m
+              memory: 64Mi
+---
+# Object-метрика: HPA читает demo_queue_depth, ассоциированную с k8s-ресурсом
+# Service metricgen (custom.metrics.k8s.io/v1beta1/namespaces/cookbook-k8s/
+# services/metricgen/demo_queue_depth — зарегистрирован Prometheus Adapter'ом,
+# см. manifests/prometheus-adapter-values.yaml), но масштабирует consumer.
+# target AverageValue "5" => desiredReplicas = ceil(demo_queue_depth / 5):
+# при 40 -> 8 реплик (упор в maxReplicas), при 0 -> 1.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: consumer
+  namespace: cookbook-k8s
+  labels:
+    app: consumer
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: consumer
+  minReplicas: 1
+  maxReplicas: 8
+  metrics:
+    - type: Object
+      object:
+        describedObject:
+          apiVersion: v1
+          kind: Service
+          name: metricgen
+        metric:
+          name: demo_queue_depth
+        target:
+          type: AverageValue
+          averageValue: "5"

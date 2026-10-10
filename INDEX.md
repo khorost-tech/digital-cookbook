@@ -18,7 +18,7 @@
 | [`architecture/serialization-formats`](architecture/serialization-formats) | JSON, Avro, Protobuf и JSON Schema на одних и тех же записях: размер и сжатие, эволюция схемы (девять изменений, тихая порча против явного отказа), что нужно иметь под рукой для чтения (реестр схем), и перекрёстное чтение байтов между независимыми Go- и Java-реализациями | [статья](https://khorost.tech/architecture/serialization-formats-json-avro-protobuf/) |
 | [`architecture/temporal`](architecture/temporal) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
 | [`architecture/testing`](architecture/testing) | Тестирование: распределённые системы (Testcontainers), TDD/BDD, flaky-тесты | [статья](https://khorost.tech/architecture/flaky-tests-diagnose-and-fix/) |
-| [`architecture/schema-migrators`](architecture/schema-migrators) | goose, Flyway, Liquibase, Atlas и Alembic против PostgreSQL, CockroachDB и Picodata: журнал версий, применение, интроспекция и откат с проверкой состояния базы SQL-запросом; обходные пути для CockroachDB | 🔜 скоро |
+| [`architecture/schema-migrators`](architecture/schema-migrators) | goose, Flyway, Liquibase, Atlas и Alembic против PostgreSQL, CockroachDB и Picodata: журнал версий, применение, интроспекция и откат с проверкой состояния базы SQL-запросом; обходные пути для CockroachDB | [статья](https://khorost.tech/architecture/schema-migrators-across-databases/) |
 
 ## Databases
 
@@ -133,6 +133,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`kubernetes/architecture`](kubernetes/architecture) | Архитектура Kubernetes на живом кластере: из чего состоит control plane, кто ведущий, что происходит между kubectl apply и запущенным контейнером | [статья](https://khorost.tech/kubernetes/k8s-architecture-control-plane/) |
+| [`kubernetes/autoscaling`](kubernetes/autoscaling) | Автоскейлинг: HPA, VPA и KEDA на управляемой бизнес-метрике — от источника метрики до решения о масштабировании | 🔜 скоро |
 | [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
 | [`kubernetes/scheduling`](kubernetes/scheduling) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | [статья](https://khorost.tech/kubernetes/k8s-pod-scheduling-affinity-taints/) |
 

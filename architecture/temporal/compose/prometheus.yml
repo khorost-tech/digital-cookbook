@@ -1,0 +1,26 @@
+# Скрейп двух РАЗНЫХ семейств метрик. Путать их нельзя: имена похожи,
+# а смысл разный. Метрики сервиса снимаются с ролей Temporal; метрики
+# SDK (temporal_activity_schedule_to_start_latency и прочие) отдаёт наш
+# собственный воркер профиля 06.
+global:
+  scrape_interval: 5s
+  evaluation_interval: 5s
+
+scrape_configs:
+  - job_name: temporal-service
+    static_configs:
+      - targets:
+          - temporal-frontend:8000
+          - temporal-history:8000
+          - temporal-matching:8000
+          - temporal-worker:8000
+
+  # Воркеры профилей поднимаются скриптами и отдают метрики SDK на 8077.
+  # Имя цели — ИМЯ КОНТЕЙНЕРА воркера: иначе цель не резолвится и ряда
+  # в Prometheus просто не будет. Пока воркер не запущен, цель числится
+  # down — это ожидаемо.
+  - job_name: temporal-sdk-worker
+    static_configs:
+      - targets:
+          - i1-worker:8077     # профиль 01-internals, sticky-кэш
+          - ops-worker:8077    # профиль 06-operations, schedule-to-start

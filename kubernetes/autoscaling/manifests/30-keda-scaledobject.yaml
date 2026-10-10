@@ -1,0 +1,59 @@
+# KEDA ScaledObject по demo_queue_depth — задача B3, "autoscaling".
+#
+# Поверх HPA от B2 (см. manifests/21-hpa-custom.yaml, ScaledObject его заменяет —
+# сам HPA от B2 уже удалён) KEDA добавляет главное: minReplicaCount: 0.
+# Обычный HPA (autoscaling/v2) минимум 1 реплику держать обязан — уйти в ноль
+# не может в принципе. KEDA создаёт HPA "под капотом" (см. `kubectl get hpa
+# keda-hpa-consumer -n cookbook-k8s` после apply) и отвечает external-метрикой
+# сам, а когда триггер показывает 0 — снимает Deployment consumer до нуля реплик
+# и возвращает kubectl scale не через HPA-метрики, а через свой контроллер.
+#
+# КЛЮЧЕВОЕ: масштабируемый объект (consumer) и источник метрики (metricgen)
+# — РАЗНЫЕ поды. metricgen остаётся в 1 реплике всегда. Если бы demo_queue_depth
+# отдавал сам consumer, то на 0 реплик метрика исчезла бы вместе с подом:
+# у Prometheus не осталось бы вообще никакого ряда demo_queue_depth, PromQL-запрос
+# вернул бы пустой результат, и KEDA не смог бы решить, что пора поднимать
+# реплики обратно — не с чего мерить. Развязка источника и потребителя —
+# обязательное условие работающего scale-to-zero.
+#
+# serverAddress указывает на наш собственный Prometheus в cookbook-k8s
+# (manifests/15-prometheus.yaml), а не на Prometheus Adapter из custom-metrics —
+# KEDA сам ходит в Prometheus по PromQL и публикует external-метрику,
+# минуя custom.metrics.k8s.io. Поэтому conflict со слотом Adapter'а (Object-метрика
+# HPA от B2, external.metrics.k8s.io занят KEDA) не возникает — это два разных
+# API-slot'а custom.metrics.k8s.io и external.metrics.k8s.io.
+#
+# ОТКЛОНЕНИЕ ОТ ИСХОДНОГО ЧЕРНОВИКА ТРИГГЕРА (проверено живьём на KEDA 2.20.1
+# и сверено с https://keda.sh/docs/2.20/scalers/prometheus/): metadata.metricName
+# у prometheus-скейлера в текущей версии — не существующее в документации, мёртвое
+# поле, движок его молча игнорирует. Имя external-метрики KEDA генерирует сам,
+# не давая его переопределить: `s<индекс триггера>-<тип>` (здесь: s0-prometheus) —
+# подтверждено `kubectl describe scaledobject consumer` (`External Metric Names:
+# s0-prometheus`, `Triggers Activity: s0-prometheus: ...`), причём и с
+# metadata.metricName, и без него, и с добавленным top-level triggers[].name —
+# на итоговое имя внешней метрики ни один из вариантов не влияет (name — это
+# идентификатор триггера для формул scaling modifiers, не имя метрики). Поле
+# metadata.metricName убрано как мёртвое; triggers[].name оставлен как читаемый
+# идентификатор триггера (`demo-queue-depth`), не более того — actual behaviour:
+# от него имя внешней метрики не зависит.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: consumer
+  namespace: cookbook-k8s
+  labels:
+    app: consumer
+spec:
+  scaleTargetRef:
+    name: consumer
+  minReplicaCount: 0
+  maxReplicaCount: 8
+  cooldownPeriod: 60
+  pollingInterval: 15
+  triggers:
+    - type: prometheus
+      name: demo-queue-depth
+      metadata:
+        serverAddress: http://prometheus.cookbook-k8s.svc:9090
+        threshold: "5"
+        query: max(demo_queue_depth{namespace="cookbook-k8s"})

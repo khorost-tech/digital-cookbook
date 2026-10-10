@@ -1,0 +1,47 @@
+# Значения для helm-чарта prometheus-community/prometheus-adapter (задача B2).
+# Установка (см. README, раздел «HPA по кастомной метрике»):
+#
+#   kubectl create namespace custom-metrics
+#   helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+#   helm repo update
+#   helm install prometheus-adapter prometheus-community/prometheus-adapter \
+#     -n custom-metrics --version 5.3.0 \
+#     -f manifests/prometheus-adapter-values.yaml
+#
+# Адаптер ходит в собственный Prometheus стенда (manifests/15-prometheus.yaml,
+# ns cookbook-k8s) — НЕ во внешний VictoriaMetrics 192.168.71.83:8428.
+prometheus:
+  url: http://prometheus.cookbook-k8s.svc
+  port: 9090
+
+# ⚠️ Отключаем встроенные default-правила (cpu/memory resource-метрики) — они
+# не нужны демо и не должны шуметь рядом с demo_queue_depth. Отдаём только
+# явное custom-правило ниже.
+rules:
+  default: false
+
+  # External-правила НЕ включаем: слот v1beta1.external.metrics.k8s.io в
+  # кластере один, его займёт KEDA в задаче B3. Пустой список — адаптер не
+  # регистрирует APIService external.metrics.k8s.io.
+  external: []
+
+  custom:
+    # demo_queue_depth, скрейпленный собственным Prometheus (15-prometheus.yaml)
+    # с лейблами namespace/pod/service (service проставлен relabel'ом из
+    # лейбла пода app — см. комментарий в 15-prometheus.yaml). Ассоциируем
+    # метрику с ресурсами namespace/service/pod, чтобы работал запрос
+    # custom.metrics.k8s.io/.../namespaces/cookbook-k8s/services/metricgen/demo_queue_depth
+    # и HPA типа Object на describedObject Service/metricgen (manifests/21-hpa-custom.yaml).
+    - seriesQuery: '{__name__="demo_queue_depth",namespace!="",service!=""}'
+      resources:
+        overrides:
+          namespace:
+            resource: namespace
+          service:
+            resource: service
+          pod:
+            resource: pod
+      name:
+        matches: "^demo_queue_depth$"
+        as: "demo_queue_depth"
+      metricsQuery: 'sum(<<.Series>>{<<.LabelMatchers>>}) by (<<.GroupBy>>)'

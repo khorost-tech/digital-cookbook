@@ -1,0 +1,154 @@
+KEDA ScaledObject "consumer" — живой scale-to-zero и подъём из нуля.
+Кластер: admin@k8s-volga, ns cookbook-k8s. KEDA 2.20.1 (ns keda).
+Источник метрики demo_queue_depth — под metricgen (1 реплика, НЕ скейлится).
+Скейлимый объект — Deployment consumer (KEDA-triggered HPA keda-hpa-consumer).
+
+=== ФАЗА 0: исходное состояние, до apply ScaledObject ===
+2026-07-23T06:19:34Z  метрика demo_queue_depth уже опущена в 0 (curl push?n=0, ответ queue_depth=0)
+2026-07-23T06:19:34Z  Prometheus-запрос max(demo_queue_depth{namespace="cookbook-k8s"}) => 0 (подтверждено напрямую через port-forward :19090)
+2026-07-23T06:19:34Z  deployment.apps/consumer: READY 1/1, AVAILABLE 1 (реплика от исходного состояния стенда, HPA от B2 уже удалён)
+
+=== ФАЗА 1: apply ScaledObject (2026-07-23T06:19:34Z) — снимки состояния ===
+
+[2026-07-23T06:19:34Z] applied manifests/30-keda-scaledobject.yaml
+
+[2026-07-23T06:20:17Z] snapshot #1 (+43с после apply, см. AGE 43s/42s ниже):
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    False    False      False    prometheus                     43s
+
+NAME                REFERENCE             TARGETS             MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   <unknown>/5 (avg)   1         8         0          42s
+
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   0/0     0            0           32m
+
+
+=== ФАЗА 2: подъём из нуля — push?n=30 в 2026-07-23T06:20:26Z (queue_depth=30) ===
+
+[2026-07-23T06:20:45Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    True     False      False    prometheus                     71s
+NAME                REFERENCE             TARGETS                         MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   -9223372036854775808m/5 (avg)   1         8         1          70s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   4/4     4            4           33m
+
+[2026-07-23T06:21:05Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    True     False      False    prometheus                     91s
+NAME                REFERENCE             TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   5/5 (avg)   1         8         6          90s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   6/6     6            6           33m
+
+[2026-07-23T06:21:21Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    True     False      False    prometheus                     107s
+NAME                REFERENCE             TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   5/5 (avg)   1         8         6          106s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   6/6     6            6           33m
+
+[2026-07-23T06:21:36Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    True     False      False    prometheus                     2m2s
+NAME                REFERENCE             TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   5/5 (avg)   1         8         6          2m2s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   6/6     6            6           33m
+
+[2026-07-23T06:21:52Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    True     False      False    prometheus                     2m18s
+NAME                REFERENCE             TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   5/5 (avg)   1         8         6          2m17s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   6/6     6            6           34m
+
+[2026-07-23T06:22:07Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    True     False      False    prometheus                     2m33s
+NAME                REFERENCE             TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   5/5 (avg)   1         8         6          2m33s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   6/6     6            6           34m
+
+[2026-07-23T06:22:23Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    True     False      False    prometheus                     2m49s
+NAME                REFERENCE             TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   5/5 (avg)   1         8         6          2m48s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   6/6     6            6           34m
+
+ИТОГ ФАЗЫ 2: push?n=30 в 06:20:26Z -> первые поды Ready (4/4) уже в 06:20:45Z (+19с) ->
+  полная сходимость к целевым 6/6 (ceil(30/5)=6) уже к 06:21:05Z (+39с от push) — это ПЕРВЫЙ снимок,
+  где и HPA REPLICAS=6, и Deployment READY/AVAILABLE=6/6. Все снимки с 06:21:05Z по 06:22:23Z подряд
+  (78с) показывают то же 6/6 — точка +39с не случайный выброс, а устойчивое достижение цели без
+  дальнейшего отката; более поздние снимки той же точки не добавляют.
+  Цена холодного старта consumer (busybox:1.37, образ уже в кеше узла) — единицы-десятки секунд:
+  KEDA polling каждые 15с решает поднять реплики, дальше обычный Deployment rollout (образ в кеше — быстро).
+
+=== ФАЗА 3: повторный уход в ноль — push?n=0 в 2026-07-23T06:22:59Z ===
+
+[2026-07-23T06:23:08Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    False    False      False    prometheus                     3m34s
+NAME                REFERENCE             TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   0/5 (avg)   1         8         6          3m33s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   6/6     6            6           35m
+
+[2026-07-23T06:23:24Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    False    False      False    prometheus                     3m50s
+NAME                REFERENCE             TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   0/5 (avg)   1         8         6          3m49s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   6/6     6            6           35m
+
+[2026-07-23T06:23:40Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    False    False      False    prometheus                     4m6s
+NAME                REFERENCE             TARGETS     MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   0/5 (avg)   1         8         6          4m5s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   6/6     6            6           36m
+
+[2026-07-23T06:23:55Z] snapshot
+NAME       SCALETARGETKIND      SCALETARGETNAME   MIN   MAX   READY   ACTIVE   FALLBACK   PAUSED   TRIGGERS     AUTHENTICATIONS   AGE
+consumer   apps/v1.Deployment   consumer          0     8     True    False    False      False    prometheus                     4m21s
+NAME                REFERENCE             TARGETS             MINPODS   MAXPODS   REPLICAS   AGE
+keda-hpa-consumer   Deployment/consumer   <unknown>/5 (avg)   1         8         0          4m21s
+NAME       READY   UP-TO-DATE   AVAILABLE   AGE
+consumer   0/0     0            0           36m
+
+ИТОГ ФАЗЫ 3: push?n=0 в 06:22:59Z -> триггер ACTIVE=False уже в снимке 06:23:08Z (+9с, один цикл поллинга 15с) ->
+  реальный уход Deployment consumer с 6/6 до 0/0 зафиксирован в снимке 06:23:55Z (+56с от push).
+  cooldownPeriod: 60. Наблюдаемая задержка между переходом ACTIVE=False и фактическим scale-down
+  (06:23:08Z -> 06:23:55Z, 47с) согласуется с cooldownPeriod=60с с учётом гранулярности снимков (шаг 15с/16с)
+  и того, что отсчёт cooldown реально стартует чуть раньше первого снятого False-снимка.
+
+=== СВОДКА (реальные тайминги, без подгонки) ===
+N(1)->0 (Фаза 1): ScaledObject применён при метрике=0 (метрика уже была 0 ДО apply) -> deactivate
+  виден уже в первом снимке (+43с): Active=False, HPA REPLICAS=0, консьюмер 0/0. Вывод сделан по
+  состояниям снимков — отдельный вывод события KEDAScaleTargetDeactivated в фикстуре не сохранён.
+0->N (Фаза 2): push n=30 06:20:26Z -> первые Ready поды 06:20:45Z (+19с) -> полная сходимость 6/6 06:21:05Z (+39с).
+N(6)->0 (Фаза 3): push n=0 06:22:59Z -> ACTIVE=False 06:23:08Z (+9с) -> 0/0 06:23:55Z (+56с от push, ~47с от деактивации, cooldownPeriod=60с).
+
+=== ПРИМЕЧАНИЕ ПО СИНТАКСИСУ ТРИГГЕРА (после снятия ряда) ===
+Ряд выше снят с ScaledObject, где в metadata триггера был лишний ключ metricName:
+  demo_queue_depth (черновик задачи). Проверка по факту (kubectl describe scaledobject,
+  сверка с https://keda.sh/docs/2.20/scalers/prometheus/) показала: у prometheus-скейлера
+  в KEDA 2.20.1 metadata.metricName не задокументирован и не используется — движок молча
+  игнорирует поле. Имя external-метрики KEDA генерирует сам: s<индекс>-<тип> (здесь
+  s0-prometheus), не изменяется ни metadata.metricName, ни top-level triggers[].name.
+  Итоговый manifests/30-keda-scaledobject.yaml (закоммиченная версия) — metricName убран,
+  добавлен читаемый triggers[].name: demo-queue-depth (идентификатор, не имя метрики).
+  На функциональное поведение (serverAddress/threshold/query/minReplicaCount/
+  maxReplicaCount/cooldownPeriod/pollingInterval) это не влияет — реплики масштабируются
+  по значению PromQL-запроса ровно так же, тайминги выше сняты на функционально идентичном
+  ScaledObject (отличие — только в мёртвом metadata.metricName, убранном для итоговой версии).
+  Финальная версия манифеста проверена отдельным apply: ScaledObject Ready=True,
+  External Metric Names: s0-prometheus (без изменений) — затем удалён (см. Шаг 5 задачи).
+

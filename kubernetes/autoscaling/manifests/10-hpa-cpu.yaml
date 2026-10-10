@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: php-apache, namespace: cookbook-k8s }
+spec:
+  selector: { matchLabels: { app: php-apache } }
+  template:
+    metadata: { labels: { app: php-apache } }
+    spec:
+      containers:
+        - name: php-apache
+          image: registry.k8s.io/hpa-example
+          ports: [{ containerPort: 80 }]
+          resources:
+            requests: { cpu: 200m, memory: 64Mi }
+            limits:   { cpu: 500m, memory: 128Mi }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: php-apache, namespace: cookbook-k8s }
+spec:
+  selector: { app: php-apache }
+  ports: [{ port: 80 }]
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: php-apache, namespace: cookbook-k8s }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: php-apache }
+  minReplicas: 1
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 50 } }
+  behavior:
+    scaleDown: { stabilizationWindowSeconds: 60 }

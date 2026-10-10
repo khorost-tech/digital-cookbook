@@ -1,211 +1,145 @@
-# Temporal: durable execution вглубь — стенды
+# Temporal: durable execution вглубь — стенд
 
-Живые стенды к серии статей «Temporal: durable execution вглубь» на
-[khorost.tech](https://khorost.tech).
+Живой стенд к серии из восьми статей «Temporal: durable execution вглубь»
+на [khorost.tech](https://khorost.tech/architecture/).
 
-Этот каталог — **фундамент серии** (8 статей). Здесь общий Temporal-сервер в
-режиме `server start-dev` и суб-стенды, по одному на большую тему. На момент
-создания готов только первый суб-стенд — **`00-paradigm`** (durable execution
-на пальцах). Остальные — заготовки под следующие заходы:
+Обзорная статья про Temporal — [здесь](https://khorost.tech/architecture/temporal-durable-workflows/);
+она отвечает на вопрос «брать или нет». Этот стенд про другое: **как оно
+устроено внутри и что нужно знать, чтобы эксплуатировать это в проде**.
 
-| Суб-стенд        | Тема                                                        | Статус       |
-|------------------|-------------------------------------------------------------|--------------|
-| `00-paradigm`    | Durable execution: выполнение переживает падение воркера     | **готов**    |
-| `01-internals`   | Внутренности: event history, replay, task queues            | планируется  |
-| `02-timers-signals` | Таймеры, сигналы, запросы, `ContinueAsNew`               | планируется  |
-| `03-saga`        | Saga / компенсации на длинных транзакциях                    | планируется  |
-| `04-versioning`  | Версионирование воркфлоу, безопасный деплой изменений        | планируется  |
-| `05-testing`     | Тестирование воркфлоу (replay-тесты, time-skipping)         | планируется  |
-| `06-observability` | Наблюдаемость: метрики воркера, трейсинг, Web UI          | планируется  |
-| `07-languages`   | Один воркфлоу на разных SDK (Go/Java/…)                     | планируется  |
+Все числа, которые попадают в статьи, живут в [FIXTURES.md](FIXTURES.md) и
+больше нигде. Сырые прогоны — в `scripts/.runs/`.
 
-## Версии (сверено живьём 2026-07-08)
+## Топология: прод-подобная, роли разнесены
 
-| Компонент | Версия | Как проверено |
+Стенд **не** использует `server start-dev`. Dev-server держит историю в
+памяти, поэтому на нём нельзя показать ни перезапуск сервера с сохранением
+исполнения, ни persistence-слой, ни отдельный visibility-store — а это
+предмет статей 2 и 7 серии.
+
+| Сервис | Роль |
+|---|---|
+| `postgres` | persistence: event history, mutable state, таймеры |
+| `elasticsearch` | visibility отдельным хранилищем |
+| `temporal-schema` | одноразовый: ставит схемы и индекс visibility, завершается |
+| `temporal-frontend` | gRPC API, точка входа |
+| `temporal-history` | продвижение состояния, запись истории, таймеры |
+| `temporal-matching` | сведение задач с воркерами |
+| `temporal-worker` | системные фоновые задачи Temporal |
+| `temporal-namespace` | одноразовый: создаёт namespace `default` |
+| `temporal-ui` | Web UI |
+| `prometheus`, `grafana` | метрики сервиса и SDK |
+
+Четыре роли — четыре контейнера (`SERVICES=<роль>`). Это не украшение:
+разнесение даёт демонстрации, недоступные ни на dev-server, ни на едином
+auto-setup — убить **только** `history` и посмотреть, что видит воркер;
+погасить сервер целиком и увидеть, что исполнение продолжается после
+подъёма, потому что история лежит в Postgres.
+
+## Версии
+
+Сверены живьём `scripts/probe.sh` (2026-08-15): Temporal Server `1.29.7`,
+UI `2.53.3`, PostgreSQL `18.4`, Elasticsearch `8.19.5`, Go `1.26.3`,
+Go SDK `v1.46.0`, Java SDK `1.30.1`, TypeScript SDK `1.22.0`,
+Python SDK `1.31.0`, .NET SDK `1.18.0`.
+
+Образ `temporalio/auto-setup` отстаёт от `temporalio/server`: максимальный
+тег auto-setup на дату сборки — `1.29.7`. Стенд стоит на auto-setup, потому
+что только этот образ несёт шаблон конфигурации и умеет ставить схему.
+
+## Порты
+
+| Что | С хоста |
+|---|---|
+| gRPC frontend | **7253** |
+| Web UI | **8253** — http://localhost:8253 |
+| Prometheus | **9253** |
+| Grafana | **3253** |
+
+`7233` занят стендом `event-coordination`, `7243` — стендом `saga`.
+
+## Как поднять
+
+```bash
+bash scripts/up.sh       # поднять и дождаться готовности
+bash scripts/probe.sh    # сверить версии живьём
+bash scripts/down.sh     # погасить вместе с томом Postgres
+```
+
+## Правило прогонов: всё внутри сети compose
+
+Локально собранные бинари на рабочей Windows-машине не достукиваются до
+`localhost:7253` — dial висит на `[::1]`/IPv4 и отваливается по таймауту.
+Поэтому воркеры и клиенты запускаются **контейнерами на сети стенда** и
+ходят на `temporal-frontend:7233`. То же касается пяти SDK-воркеров
+профиля 07: каждый собирается в официальном образе своего языка, на хосте
+не нужен ни один языковой тулчейн, кроме Docker.
+
+Это же условие влияет на числа: каждый gRPC-раунд здесь стоит сотни
+миллисекунд. Величины, снятые метриками SDK внутри процесса воркера, эту
+накладную не несут — источник у каждого числа указан в `FIXTURES.md`.
+
+## Профили
+
+Общее доменное ядро (`go/internal/provisioning`) плюс восемь изолированных
+профилей. Домен один — процесс «провизионинг ресурса», — но каждый профиль
+ломается и перемеряется отдельно.
+
+| Профиль | Статья | Что показывает |
 |---|---|---|
-| Temporal (образ `temporalio/temporal`) | `1.7.2` (CLI) = **Server 1.31.1**, **UI 2.49.1** | `docker pull temporalio/temporal` + `docker run --rm temporalio/temporal:1.7.2 --version`. Тег `latest` на момент сборки указывал ровно на `1.7.2`; в compose пин зафиксирован явным тегом. |
-| Temporal Go SDK | `go.temporal.io/sdk v1.46.0` | `go get go.temporal.io/sdk@latest` → `go.mod` (module proxy, latest на 2026-07-08) |
-| Go | `1.25.x` (`go.mod` требует `go 1.25`, тулчейн подтянул `1.25.4`) | сборка `go build ./...`; кросс-компиляция `CGO_ENABLED=0 GOOS=linux` для прогона в контейнере |
+| `00-paradigm` | 1. Durable execution: парадигма | один процесс тремя способами; убийство воркера и убийство всего сервера |
+| `01-internals` | 2. Архитектура вглубь | sticky-кэш по метрикам SDK, гашение роли `history` под нагрузкой, срез persistence |
+| `02-determinism` | 3. Детерминизм и replay | воспроизводимая non-determinism error, цена replay от длины истории |
+| `03-activities` | 4. Activities вглубь | идемпотентность, heartbeat, local activity против обычной |
+| `04-messaging` | 5. Signals, Queries, Updates | Query не растит историю, Update валидируется синхронно, цена Continue-As-New |
+| `05-versioning` | 6. Версионирование | наивная правка, починка `GetVersion`, преждевременно снятый патч |
+| `06-operations` | 7. Эксплуатация | ёмкость воркера против schedule-to-start, тест с промоткой времени |
+| `07-languages` | 8. По языкам | один сценарий на Go, Java, TypeScript, Python, .NET |
 
-## Топология
-
-Один контейнер `temporal-devserver` (`server start-dev`) поднимает сразу весь
-Temporal (frontend/history/matching/worker-роли), встроенное in-memory
-хранилище и Web UI. Это **не** прод-топология (в проде — раздельные роли +
-PostgreSQL/Cassandra + Elasticsearch), а компактный фундамент для локальной
-разработки, на котором стоят все суб-стенды серии.
-
-| Что | Внутри контейнера | С хоста | Примечание |
-|---|---|---|---|
-| gRPC frontend (SDK-клиент/воркер) | `7233` | **`7253`** | `7233` занят стендом event-coordination, `7243` — saga |
-| Web UI | `8233` | **`8253`** | http://localhost:8253 |
-
-- Имя проекта compose зафиксировано (`name: temporal-cookbook`) — иначе
-  docker compose берёт имя каталога (`compose`), общее у всех стендов
-  репозитория, и начинает считать чужие контейнеры «орфанами».
-- Данные эфемерны (in-memory dev store): после `down` вся история воркфлоу
-  пропадает. Durable execution здесь демонстрируется в пределах жизни **сервера**
-  при падении **воркера**, а не при перезапуске самого сервера.
-
-## Как поднять сервер
+Каждый профиль запускается своим скриптом:
 
 ```bash
-docker compose -f temporal/compose/compose.yml up -d
-docker compose -f temporal/compose/compose.yml ps      # дождаться "healthy"
-# Web UI: http://localhost:8253
-docker compose -f temporal/compose/compose.yml down     # остановить
+bash scripts/00-paradigm.sh
+bash scripts/01-internals.sh
+bash scripts/07-languages.sh
 ```
 
-Хостового Temporal CLI / Go-тулчейна для проверки не требуется — воркфлоу
-можно гонять как локальным Go-бинарём, так и внутри контейнера (см. ниже).
-
-## Суб-стенд `00-paradigm`: durable execution
-
-Демонстрирует **главное свойство Temporal**: выполнение воркфлоу переживает
-падение воркера. Воркфлоу «провизионинг ресурса»:
-
-```
-CheckAvailability → Reserve → durable-пауза (Sleep 15s)
-  → ждём Signal "confirmation" с таймаутом (5m)
-    → Allocate            (если подтверждено)
-    → CancelReservation   (если таймаут / явный отказ — компенсация)
-```
-
-Ключевые идеи, которые видно в коде и логе:
-
-- **Детерминизм.** Код воркфлоу (`ProvisioningWorkflow` в `workflow.go`) не
-  делает прямого I/O — только через `workflow.*` API. Любой побочный эффект
-  вынесен в **activity**. Поэтому Temporal может «переиграть» (replay) историю
-  событий после падения воркера и получить ровно то же состояние.
-- **Activity не выполняются дважды.** Результат каждой activity записан в
-  историю на сервере. После перезапуска воркфлоу проигрывается заново, но
-  activity, уже отработавшие, **не вызываются повторно** — результат берётся
-  из истории. Доказательство — счётчик «РЕАЛЬНОЕ выполнение №N» в логе воркера:
-  он локален процессу, после рестарта считает с нуля, и уже сделанных activity
-  в логе нового процесса нет.
-- **Signal как «человек в цикле».** Подтверждение приходит внешним сигналом
-  `confirmation`; ожидание сигнала и таймер живут на **сервере**, а не в памяти
-  воркера, поэтому переживают его падение.
-
-### Три процесса (по терминалу на каждый)
-
-```bash
-# 1) Воркер — ЕГО мы убиваем и перезапускаем
-go run . start-worker
-
-# 2) Стартер — запускает воркфлоу и блокируется, ожидая итог
-go run . start-workflow -resource=gpu-node-7
-
-# 3) Подтверждение (человек в цикле)
-go run . send-signal -approve          # Allocate (успех)
-go run . send-signal                    # без -approve → отказ → CancelReservation
-```
-
-Все три ходят на `localhost:7253` по умолчанию (флаг `-address`).
-
-> **Прогон с хоста в этом окружении.** Локально собранный Go-бинарь на данной
-> Windows-машине не смог достучаться до `localhost:7253` / `127.0.0.1:7253`
-> (dial висит на `[::1]`/IPv4 и отваливается по таймауту) — та же особенность
-> ОС/файрвола, что задокументирована в стенде `kafka` (порт открыт и
-> подтверждён, но локальные бинари блокируются). Надёжный способ, которым и
-> сделан прогон ниже, — запускать воркер/стартер **внутри сети compose**,
-> подключаясь к сервису `temporal:7233`:
->
-> ```bash
-> # кросс-компиляция статического бинаря и прогон в контейнере на сети стенда
-> CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -o /tmp/paradigm ./00-paradigm
-> NET=temporal-cookbook_default
-> docker run -d  --name tw1    --network $NET -v /tmp/paradigm:/paradigm:ro alpine:3 /paradigm start-worker   -address=temporal:7233
-> docker run -d  --name tstart --network $NET -v /tmp/paradigm:/paradigm:ro alpine:3 /paradigm start-workflow -address=temporal:7233 -resource=gpu-node-7
-> docker kill tw1                                                            # убить воркер в середине
-> docker run -d  --name tw2    --network $NET -v /tmp/paradigm:/paradigm:ro alpine:3 /paradigm start-worker   -address=temporal:7233
-> docker run --rm             --network $NET -v /tmp/paradigm:/paradigm:ro alpine:3 /paradigm send-signal    -address=temporal:7233 -approve
-> ```
-
-### Пошаговый сценарий демонстрации durability
-
-1. Поднимите сервер (`docker compose … up -d`, дождитесь `healthy`).
-2. **Терминал A:** `go run . start-worker` — воркер ждёт задачи.
-3. **Терминал B:** `go run . start-workflow -resource=gpu-node-7` — воркфлоу
-   стартует; в терминале A видно `CheckAvailability` и `Reserve`, затем
-   «durable-пауза … sleep 15s».
-4. **Убейте воркер A** (Ctrl+C или `kill -9`) во время паузы или ожидания
-   сигнала. Стартер в терминале B продолжает спокойно ждать — состояние
-   воркфлоу на сервере, не в воркере.
-5. **Терминал A снова:** `go run . start-worker` — новый воркер подхватывает
-   воркфлоу. В его логе **нет** ни `CheckAvailability`, ни `Reserve` — только
-   продолжение с точки ожидания сигнала.
-6. **Терминал C:** `go run . send-signal -approve` — приходит подтверждение,
-   выполняется `Allocate` (в логе нового воркера — «РЕАЛЬНОЕ выполнение №1»,
-   счётчик с нуля), воркфлоу завершается, стартер печатает результат.
-7. Загляните в Web UI http://localhost:8253 → воркфлоу `provisioning-demo`:
-   видно всю историю событий, момент простоя между воркерами и итог `Completed`.
-
-Для ветки компенсации повторите без `-approve` (или дождитесь 5-минутного
-таймаута) — вместо `Allocate` отработает `CancelReservation`.
-
-### Реальный прогон (проверено живьём 2026-07-08)
-
-Воркер #1 запустил воркфлоу, выполнил две первые activity и вошёл в паузу —
-после чего был **убит** (`docker kill`):
-
-```
-[worker] запущен, очередь="provisioning-tq", сервер=temporal:7233
-INFO  workflow старт  RunID 019f41c7-9d6a-734e-ac23-2cdad437f8fb  resource gpu-node-7
->>> ACTIVITY CheckAvailability("gpu-node-7") — РЕАЛЬНОЕ выполнение №1 в этом процессе воркера
->>> ACTIVITY Reserve("gpu-node-7") — РЕАЛЬНОЕ выполнение №2 → res-gpu-node-7-001
-INFO  ресурс зарезервирован  reservationID res-gpu-node-7-001
-INFO  durable-пауза перед ожиданием подтверждения  sleep 15s
-                                          <-- здесь воркер #1 УБИТ (docker kill) -->
-```
-
-Воркер #2 (новый процесс, другой `WorkerID`) подхватил **тот же** `RunID` и
-продолжил с точки ожидания сигнала — **`CheckAvailability`/`Reserve` заново НЕ
-выполнялись** (их нет в логе), а `Allocate` идёт как «выполнение №1» (счётчик
-процесса с нуля):
-
-```
-[worker] запущен, очередь="provisioning-tq", сервер=temporal:7233
-INFO  Started Worker  WorkerID 1@95b60cac6881@
-INFO  ждём сигнал подтверждения  RunID 019f41c7-9d6a-734e-ac23-2cdad437f8fb  signal confirmation timeout 5m
-INFO  получен сигнал подтверждения  approved true by operator
->>> ACTIVITY Allocate("res-gpu-node-7-001") — РЕАЛЬНОЕ выполнение №1
-INFO  workflow завершён успешно  result ресурс выделен по брони res-gpu-node-7-001
-```
-
-Стартер всё это время просто ждал и в конце получил результат:
-
-```
-[starter] воркфлоу запущен: WorkflowID=provisioning-demo RunID=019f41c7-9d6a-734e-ac23-2cdad437f8fb
-[starter] жду результат воркфлоу (это НЕ мешает убивать/перезапускать воркер)...
-[starter] РЕЗУЛЬТАТ: ресурс выделен по брони res-gpu-node-7-001
-```
-
-**Что доказано.** Один и тот же `RunID 019f41c7-…` в логах обоих воркеров —
-это одно продолжающееся durable-выполнение, разорванное убийством воркера
-посередине. Уже сделанные `CheckAvailability` и `Reserve` в новом процессе не
-повторились (их результат — из истории на сервере), а воркфлоу дошло до
-`Allocate` и завершилось успешно после перезапуска воркера. Это и есть durable
-execution.
-
-> Абсолютные тайминги и `RunID`/`WorkerID` в вашем прогоне будут другими —
-> host-зависимо. Инвариант, который воспроизводится всегда: тот же `RunID`
-> продолжается на новом воркере, а уже отработавшие activity повторно не
-> вызываются.
+Скрипты печатают отчёт и строки `ЗАМЕР`/`ЯЗЫК`/`СТАТУС`, из которых
+собираются фикстуры.
 
 ## Структура
 
 ```
 temporal/
-  compose/compose.yml        # Temporal server start-dev (порты 7253/8253), name: temporal-cookbook
+  compose/
+    compose.yml               # одиннадцать сервисов, роли Temporal раздельно
+    prometheus.yml            # скрейп метрик сервиса и SDK
+    grafana-datasource.yml
   go/
-    go.mod                    # module tech.khorost/temporal-cookbook, go.temporal.io/sdk v1.46.0
-    go.sum
-    00-paradigm/              # суб-стенд #0: durable execution
-      main.go                 # подкоманды start-worker | start-workflow | send-signal
-      workflow.go             # ProvisioningWorkflow + activity (детерминизм, счётчик выполнений)
-      worker.go               # воркер: регистрация воркфлоу/activity, тот, кого убиваем
-      starter.go              # запуск воркфлоу (блокирующий) + отправка сигнала
+    internal/provisioning/    # общее доменное ядро: домен и activity
+    internal/obs/             # экспорт метрик SDK в Prometheus
+    00-paradigm/ … 07-languages/
+  clients/
+    java/ ts/ python/ dotnet/ # воркеры профиля 07, сборка в образах
+  scripts/
+    lib.sh up.sh down.sh
+    probe.sh                  # фактчек-гейт: версии живьём
+    00-paradigm.sh … 07-languages.sh
+    verify-static.sh          # статический гейт
+    .runs/                    # сырые прогоны профилей
+  FIXTURES.md                 # единственный источник чисел для статей
   README.md
-  .gitignore
 ```
+
+## Гейты
+
+```bash
+bash scripts/probe.sh
+bash scripts/verify-static.sh
+```
+
+## Оговорка про этот стенд
+
+Топология прод-подобная, но это не прод: по одному экземпляру каждой роли,
+один узел Elasticsearch, без TLS и без аутентификации. Она сделана такой
+ровно настолько, чтобы механика была видна честно.

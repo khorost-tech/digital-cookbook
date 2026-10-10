@@ -1,85 +1,57 @@
-// Суб-стенд 00-paradigm серии «Temporal: durable execution вглубь».
+// Профиль 00-paradigm к статье «Durable execution: почему код должен
+// переживать падения».
 //
-// Демонстрирует главное свойство Temporal — durable execution: выполнение
-// воркфлоу ПЕРЕЖИВАЕТ падение воркера. Воркфлоу «провизионинг ресурса»
-// (CheckAvailability → Reserve → durable-пауза → ожидание Signal-подтверждения
-// с таймаутом → Allocate, либо компенсация CancelReservation) можно прервать,
-// убив процесс воркера в середине, и продолжить с той же точки, перезапустив
-// воркер: уже выполненные activity НЕ выполняются заново (их результат берётся
-// из истории на сервере Temporal).
+// Один и тот же процесс тремя способами:
 //
-// Три подкоманды — по одному процессу на каждую, чтобы демонстрацию можно
-// было проделать руками из разных терминалов:
+//	naive        — состояние в памяти процесса
+//	statemachine — состояние в таблице Postgres, механика руками
+//	temporal     — durable execution
 //
-//	go run . start-worker                          # воркер (его убиваем/перезапускаем)
-//	go run . start-workflow [-resource=gpu-node-7] # запуск воркфлоу (блокируется до итога)
-//	go run . send-signal   [-approve]              # подтверждение (человек в цикле)
-//
-// Все процессы по умолчанию ходят на localhost:7253 (см. temporal/compose).
+// Все три ломаются одинаково: убийством процесса в середине. Разница —
+// в том, что происходит дальше.
 package main
 
 import (
+	"context"
 	"flag"
-	"fmt"
 	"log"
 	"os"
+	"time"
 )
-
-const defaultHostPort = "localhost:7253"
 
 func main() {
 	log.SetFlags(log.Ltime)
-
 	if len(os.Args) < 2 {
-		usage()
-		os.Exit(2)
+		log.Fatal("подкоманда: naive | statemachine | temporal-worker | temporal-start | temporal-signal")
 	}
+	ctx := context.Background()
+	cmd, args := os.Args[1], os.Args[2:]
 
-	cmd := os.Args[1]
-	args := os.Args[2:]
+	fs := flag.NewFlagSet(cmd, flag.ExitOnError)
+	address := fs.String("address", "temporal-frontend:7233", "адрес frontend Temporal")
+	dsn := fs.String("dsn", "postgres://temporal:temporal@postgres:5432/temporal?sslmode=disable", "DSN Postgres")
+	resource := fs.String("resource", "gpu-node-7", "имя ресурса")
+	workflowID := fs.String("workflow", "provisioning-demo", "WorkflowID / идентификатор процесса")
+	pause := fs.Duration("pause", 15*time.Second, "длительность паузы в середине процесса")
+	approve := fs.Bool("approve", false, "подтвердить (для temporal-signal)")
+	_ = fs.Parse(args)
 
+	var err error
 	switch cmd {
-	case "start-worker":
-		fs := flag.NewFlagSet("start-worker", flag.ExitOnError)
-		hostPort := fs.String("address", defaultHostPort, "адрес frontend Temporal (gRPC)")
-		_ = fs.Parse(args)
-		if err := runWorker(*hostPort); err != nil {
-			log.Fatalf("[worker] ошибка: %v", err)
-		}
-
-	case "start-workflow":
-		fs := flag.NewFlagSet("start-workflow", flag.ExitOnError)
-		hostPort := fs.String("address", defaultHostPort, "адрес frontend Temporal (gRPC)")
-		workflowID := fs.String("workflow", "provisioning-demo", "WorkflowID")
-		resource := fs.String("resource", "gpu-node-7", "имя провизионируемого ресурса")
-		_ = fs.Parse(args)
-		if err := startWorkflow(*hostPort, *workflowID, *resource); err != nil {
-			log.Fatalf("[starter] %v", err)
-		}
-
-	case "send-signal":
-		fs := flag.NewFlagSet("send-signal", flag.ExitOnError)
-		hostPort := fs.String("address", defaultHostPort, "адрес frontend Temporal (gRPC)")
-		workflowID := fs.String("workflow", "provisioning-demo", "WorkflowID")
-		approve := fs.Bool("approve", false, "true — подтвердить (Allocate), false — отказ (компенсация)")
-		_ = fs.Parse(args)
-		if err := sendSignal(*hostPort, *workflowID, *approve); err != nil {
-			log.Fatalf("[signal] %v", err)
-		}
-
+	case "naive":
+		err = runNaive(ctx, *resource, *pause)
+	case "statemachine":
+		err = runStateMachine(ctx, *dsn, *workflowID, *resource, *pause)
+	case "temporal-worker":
+		err = runTemporalWorker(*address)
+	case "temporal-start":
+		err = startTemporalWorkflow(ctx, *address, *workflowID, *resource)
+	case "temporal-signal":
+		err = signalTemporal(ctx, *address, *workflowID, *approve)
 	default:
-		usage()
-		os.Exit(2)
+		log.Fatalf("неизвестная подкоманда %q", cmd)
 	}
-}
-
-func usage() {
-	fmt.Fprintln(os.Stderr, `00-paradigm — durable execution в Temporal.
-
-Использование:
-  go run . start-worker    [-address=host:port]
-  go run . start-workflow  [-address=host:port] [-workflow=ID] [-resource=name]
-  go run . send-signal     [-address=host:port] [-workflow=ID] [-approve]
-
-Сценарий демонстрации durability — см. temporal/README.md.`)
+	if err != nil {
+		log.Fatalf("[%s] ОШИБКА: %v", cmd, err)
+	}
 }

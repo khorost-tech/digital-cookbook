@@ -42,6 +42,7 @@
       "architecture/serialization-formats-json-avro-protobuf.md"
     ],
     "architecture/temporal": [
+      "architecture/durable-execution-paradigm.md",
       "architecture/temporal-durable-workflows.md"
     ],
     "architecture/testing": [
@@ -230,7 +231,11 @@
     "kubernetes/architecture": [
       "kubernetes/k8s-architecture-control-plane.md"
     ],
+    "kubernetes/autoscaling": [
+      "kubernetes/k8s-autoscaling-hpa-vpa-keda.md"
+    ],
     "kubernetes/resources": [
+      "kubernetes/k8s-autoscaling-hpa-vpa-keda.md",
       "kubernetes/k8s-resources-requests-limits-qos.md"
     ],
     "kubernetes/scheduling": [
@@ -285,7 +290,8 @@
       "observability/distributed-tracing-tempo.md",
       "observability/logs-correlation-loki.md",
       "observability/metrics-prometheus-red-use.md",
-      "observability/otel-instrumentation-go-java.md"
+      "observability/otel-instrumentation-go-java.md",
+      "observability/slo-error-budget-alerting.md"
     ],
     "observability/vector-pipeline": [
       "observability/vector-data-pipeline.md"

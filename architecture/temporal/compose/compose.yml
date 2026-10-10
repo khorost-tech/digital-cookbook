@@ -1,48 +1,193 @@
 # Стенд к серии статей «Temporal: durable execution вглубь» на khorost.tech.
-# https://khorost.tech/architecture/ (серия из 8 статей; см. temporal/README.md)
+# https://khorost.tech/architecture/ (восемь статей; см. temporal/README.md)
 #
-# Temporal в режиме `server start-dev` — единственный контейнер, поднимающий
-# сразу всё, что нужно для локальной разработки: сервер (frontend/history/
-# matching/worker), встроенное хранилище (in-memory SQLite) и Web UI. Это
-# НЕ прод-топология (в проде — отдельные роли + PostgreSQL/Cassandra +
-# Elasticsearch), а компактный фундамент, на котором стоят все суб-стенды
-# серии (00-paradigm … 07-languages).
+# ТОПОЛОГИЯ ПРОД-ПОДОБНАЯ, а не `server start-dev`. Это принципиально:
+# dev-server держит историю в памяти, поэтому на нём нельзя показать ни
+# перезапуск сервера с сохранением исполнения, ни persistence-слой, ни
+# отдельный visibility-store — а это предмет статей 2 и 7 серии.
 #
-# Хостовые порты выбраны так, чтобы не конфликтовать с соседними стендами
-# репозитория, которые тоже завязаны на Temporal/оркестрацию:
-#   7253 (gRPC frontend) — 7233 занят стендом event-coordination,
-#                          7243 — стендом saga; берём следующий свободный 7253.
-#   8253 (Web UI)        — по аналогии сдвинут с дефолтного 8233 на 8253.
-# При конфликте на другой машине — поменяйте левую часть в ports и порт
-# в клиентах Go (по умолчанию SDK ходит на localhost:7253, см. go/00-paradigm).
+# Четыре роли Temporal подняты ОТДЕЛЬНЫМИ контейнерами (SERVICES=<роль>).
+# Это даёт демонстрации, недоступные ни на dev-server, ни на едином
+# auto-setup: убить ТОЛЬКО history и посмотреть, что видит воркер.
 #
-# Данные эфемерны (in-memory dev store): после `down` вся история воркфлоу
-# пропадает — это осознанный выбор для стенда, каждый прогон демонстрации
-# начинается с чистого листа. Долговечность (durable execution) здесь
-# демонстрируется в пределах ЖИЗНИ сервера при падении ВОРКЕРА, а не при
-# перезапуске самого сервера.
-
-# Явное имя проекта — иначе docker compose берёт имя каталога (`compose`),
-# общее у всех стендов репозитория (kafka/compose, event-coordination/compose,
-# …), и `up` начинает считать чужие контейнеры «орфанами»/пересоздавать их.
+# Порты хоста выбраны так, чтобы не конфликтовать с соседними стендами:
+#   7253 — gRPC frontend (7233 занят стендом event-coordination, 7243 — saga)
+#   8253 — Web UI, 9253 — Prometheus, 3253 — Grafana
+#
+# Имя проекта обязательно: иначе docker compose берёт имя каталога (compose),
+# общее у всех стендов репозитория, и считает чужие контейнеры орфанами.
 name: temporal-cookbook
 
+x-temporal-env: &temporal-env
+  DB: postgres12_pgx
+  DB_PORT: 5432
+  POSTGRES_SEEDS: postgres
+  POSTGRES_USER: temporal
+  POSTGRES_PWD: temporal
+  ENABLE_ES: "true"
+  ES_SEEDS: elasticsearch
+  ES_PORT: 9200
+  ES_VIS_INDEX: temporal_visibility_v1_dev
+  # Роли не трогают схему: её ставит одноразовый сервис temporal-schema.
+  SKIP_SCHEMA_SETUP: "true"
+  SKIP_DB_CREATE: "true"
+  # Метрики Prometheus отдаёт каждая роль на своём порту 8000.
+  PROMETHEUS_ENDPOINT: 0.0.0.0:8000
+
 services:
-  temporal:
-    image: temporalio/temporal:1.7.2   # CLI 1.7.2 = Server 1.31.1, UI 2.49.1 (сверено живьём 2026-07-08)
-    container_name: temporal-devserver
-    command:
-      - server
-      - start-dev
-      - --ip=0.0.0.0
-      - --port=7233
-      - --ui-port=8233
-    ports:
-      - "7253:7233"   # gRPC frontend — сюда подключается SDK-клиент/воркер
-      - "8253:8233"   # Web UI — http://localhost:8253
+  postgres:
+    image: postgres:18.4
+    container_name: temporal-postgres
+    environment:
+      POSTGRES_USER: temporal
+      POSTGRES_PASSWORD: temporal
+      # ВАЖНО: в PostgreSQL 18 том монтируется на /var/lib/postgresql,
+      # старый путь /var/lib/postgresql/data образ отвергает.
+      PGDATA: /var/lib/postgresql/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql
     healthcheck:
-      # `temporal` CLI внутри образа умеет ходить в собственный frontend
-      test: ["CMD", "temporal", "operator", "cluster", "health", "--address", "127.0.0.1:7233"]
+      test: ["CMD-SHELL", "pg_isready -U temporal"]
       interval: 5s
       timeout: 5s
-      retries: 20
+      retries: 30
+    # Без политики перезапуска хранилища не возвращаются после перезапуска
+    # демона Docker, а роли Temporal возвращаются — стенд поднимается в
+    # заведомо нерабочем виде и падает не там, где сломано.
+    restart: unless-stopped
+
+  elasticsearch:
+    image: elasticsearch:8.19.5
+    container_name: temporal-elasticsearch
+    environment:
+      discovery.type: single-node
+      xpack.security.enabled: "false"
+      # Стенд тяжёлый: ES без явного лимита забирает четверть памяти хоста.
+      ES_JAVA_OPTS: -Xms512m -Xmx512m
+      cluster.routing.allocation.disk.threshold_enabled: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+    restart: unless-stopped
+
+  # Одноразовый сервис: ставит схемы temporal/temporal_visibility в Postgres
+  # и индекс visibility в Elasticsearch, после чего ЗАВЕРШАЕТСЯ с кодом 0.
+  # entrypoint переопределён на сам auto-setup.sh: штатный entrypoint после
+  # настройки схемы поднял бы ещё и сервер, а сервер нам нужен ролями.
+  temporal-schema:
+    image: temporalio/auto-setup:1.29.7
+    container_name: temporal-schema
+    entrypoint: ["/etc/temporal/auto-setup.sh"]
+    environment:
+      <<: *temporal-env
+      SKIP_SCHEMA_SETUP: "false"
+      SKIP_DB_CREATE: "false"
+      # Namespace регистрирует отдельный сервис, когда frontend уже жив.
+      SKIP_DEFAULT_NAMESPACE_CREATION: "true"
+    depends_on:
+      postgres: {condition: service_healthy}
+      elasticsearch: {condition: service_healthy}
+    restart: "no"
+
+  temporal-frontend:
+    image: temporalio/auto-setup:1.29.7
+    container_name: temporal-frontend
+    environment:
+      <<: *temporal-env
+      SERVICES: frontend
+    ports:
+      - "7253:7233"   # gRPC — сюда ходят SDK-клиенты с хоста
+    depends_on:
+      temporal-schema: {condition: service_completed_successfully}
+    restart: unless-stopped
+
+  temporal-history:
+    image: temporalio/auto-setup:1.29.7
+    container_name: temporal-history
+    environment:
+      <<: *temporal-env
+      SERVICES: history
+    depends_on:
+      temporal-schema: {condition: service_completed_successfully}
+    restart: unless-stopped
+
+  temporal-matching:
+    image: temporalio/auto-setup:1.29.7
+    container_name: temporal-matching
+    environment:
+      <<: *temporal-env
+      SERVICES: matching
+    depends_on:
+      temporal-schema: {condition: service_completed_successfully}
+    restart: unless-stopped
+
+  # Внутренний worker-сервис Temporal (archival, репликация, системные
+  # воркфлоу) — НЕ путать с воркерами приложения, которые мы пишем сами.
+  temporal-worker:
+    image: temporalio/auto-setup:1.29.7
+    container_name: temporal-worker
+    environment:
+      <<: *temporal-env
+      SERVICES: worker
+    depends_on:
+      temporal-schema: {condition: service_completed_successfully}
+    restart: unless-stopped
+
+  # Одноразовый: создаёт namespace default, когда frontend начал отвечать.
+  temporal-namespace:
+    image: temporalio/auto-setup:1.29.7
+    container_name: temporal-namespace
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - |
+        until temporal operator cluster health --address temporal-frontend:7233 | grep -q SERVING; do
+          echo "жду frontend..."; sleep 2
+        done
+        temporal operator namespace describe --address temporal-frontend:7233 default >/dev/null 2>&1 \
+          || temporal operator namespace create --address temporal-frontend:7233 \
+               --retention 24h default
+        echo "namespace default готов"
+    depends_on:
+      temporal-frontend: {condition: service_started}
+    restart: "no"
+
+  temporal-ui:
+    image: temporalio/ui:2.53.3
+    container_name: temporal-ui
+    environment:
+      TEMPORAL_ADDRESS: temporal-frontend:7233
+      TEMPORAL_CORS_ORIGINS: http://localhost:3000
+    ports:
+      - "8253:8080"
+    depends_on:
+      temporal-frontend: {condition: service_started}
+    restart: unless-stopped
+
+  prometheus:
+    image: prom/prometheus:v3.7.3
+    container_name: temporal-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9253:9090"
+    restart: unless-stopped
+
+  grafana:
+    image: grafana/grafana:12.3.1
+    container_name: temporal-grafana
+    environment:
+      GF_AUTH_ANONYMOUS_ENABLED: "true"
+      GF_AUTH_ANONYMOUS_ORG_ROLE: Admin
+      GF_SECURITY_ALLOW_EMBEDDING: "true"
+    volumes:
+      - ./grafana-datasource.yml:/etc/grafana/provisioning/datasources/prometheus.yml:ro
+    ports:
+      - "3253:3000"
+    depends_on:
+      prometheus: {condition: service_started}
+    restart: unless-stopped
+
+volumes:
+  pgdata:

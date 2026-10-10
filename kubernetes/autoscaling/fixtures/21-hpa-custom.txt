@@ -1,0 +1,52 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 21-hpa-custom
+# HPA по кастомной метрике demo_queue_depth (Object, describedObject Service/metricgen), target AverageValue 5, min 1 max 8
+# scaleTargetRef: Deployment/consumer (НЕ metricgen — см. README, 'почему consumer, а не metricgen')
+# behavior не задан в HPA -> действуют дефолты k8s: scaleUp быстрый (до x2 реплик/15с), scaleDown stabilizationWindowSeconds=300s
+# baseline перед push?n=40: demo_queue_depth=7 (унаследовано от предыдущей проверки шага 1), HPA REPLICAS=1
+# t=0: curl "http://localhost:18080/push?n=40" в 08:48:18 MSK
+# --- ФАЗА 1: нагрузка включена (queue_depth=40) ---
+t=30s [08:49:20] consumer   Deployment/consumer   5/5 (avg)   1     8     8     100s
+t=60s [08:49:50] consumer   Deployment/consumer   5/5 (avg)   1     8     8     2m10s
+t=90s [08:50:20] consumer   Deployment/consumer   5/5 (avg)   1     8     8     2m40s
+t=120s [08:51:30] consumer   Deployment/consumer   5/5 (avg)   1     8     8     3m50s
+t=150s [08:52:00] consumer   Deployment/consumer   5/5 (avg)   1     8     8     4m20s
+t=180s [08:52:30] consumer   Deployment/consumer   5/5 (avg)   1     8     8     4m50s
+t=210s [08:53:01] consumer   Deployment/consumer   5/5 (avg)   1     8     8     5m20s
+t=240s [08:53:31] consumer   Deployment/consumer   5/5 (avg)   1     8     8     5m51s
+t=270s [08:54:01] consumer   Deployment/consumer   5/5 (avg)   1     8     8     6m21s
+t=300s [08:54:31] consumer   Deployment/consumer   5/5 (avg)   1     8     8     6m51s
+# --- ИТОГО ФАЗЫ 1: пик 8/8 реплик уже на первом замере t=30s (ceil(40/5)=8=maxReplicas); промежуточные шаги роста не снимались (HPA удалён после демо, события не сохранялись) - держался 8/8 весь интервал 30..300s (10 точек подряд) ---
+# t=0 фазы 2: curl "http://localhost:18080/push?n=0"
+# --- ФАЗА 2: нагрузка снята (queue_depth=0), ждём scaleDown.stabilizationWindowSeconds=300s (дефолт, не задан явно в HPA) ---
+t=30s [08:55:21] consumer   Deployment/consumer   0/5 (avg)   1     8     8     7m41s
+t=60s [08:55:51] consumer   Deployment/consumer   0/5 (avg)   1     8     8     8m11s
+t=90s [08:56:22] consumer   Deployment/consumer   0/5 (avg)   1     8     8     8m42s
+t=120s [08:56:52] consumer   Deployment/consumer   0/5 (avg)   1     8     8     9m13s
+t=150s [08:57:23] consumer   Deployment/consumer   0/5 (avg)   1     8     8     9m43s
+t=180s [08:57:53] consumer   Deployment/consumer   0/5 (avg)   1     8     8     10m
+t=210s [08:58:24] consumer   Deployment/consumer   0/5 (avg)   1     8     8     10m
+t=240s [08:58:54] consumer   Deployment/consumer   0/5 (avg)   1     8     8     11m
+t=270s [08:59:24] consumer   Deployment/consumer   0/5 (avg)   1     8     8     11m
+t=300s [09:00:01] consumer   Deployment/consumer   0/5 (avg)   1     8     1     12m
+t=330s [09:00:31] consumer   Deployment/consumer   0/5 (avg)   1     8     1     12m
+t=360s [09:01:02] consumer   Deployment/consumer   0/5 (avg)   1     8     1     13m
+t=390s [09:01:32] consumer   Deployment/consumer   0/5 (avg)   1     8     1     13m
+t=420s [09:02:02] consumer   Deployment/consumer   0/5 (avg)   1     8     1     14m
+t=450s [09:02:32] consumer   Deployment/consumer   0/5 (avg)   1     8     1     14m
+# --- ИТОГО ---
+# ФАЗА 1 (push?n=40): пик 8/8 реплик (упор в maxReplicas, ceil(40/5)=8) уже на
+#   первом замере t=30s - промежуточные шаги роста (1->2->4->8) не сняты: HPA
+#   удалён после демо, события не сохранялись. Известно только, что рост
+#   уложился быстрее интервала опроса 30s, т.к. дефолтная scaleUp policy k8s
+#   (behavior не задан в HPA) разрешает удвоение реплик каждые ~15s без
+#   ограничения периодом стабилизации вверх. Держался 8/8 весь интервал
+#   30..300s (10 точек подряд).
+# ФАЗА 2 (push?n=0): TARGETS упал в 0/5 сразу (t=30s) - метрика мгновенная (gauge,
+#   не скользящее среднее, как cpu-утилизация), но REPLICAS оставался 8 весь
+#   scaleDown.stabilizationWindowSeconds=300s (дефолт k8s, не переопределён в HPA:
+#   см. manifests/21-hpa-custom.yaml - spec.behavior отсутствует). Возврат к 1
+#   реплике - ОДНИМ шагом на t=300s (ровно по истечении окна стабилизации, не
+#   постепенно, как в демо HPA-по-CPU: там метрика сама затухала несколько
+#   циклов, здесь метрика уже 0 с t=30s, поэтому на выходе из окна HPA сразу
+#   применил актуальный расчёт ceil(0/5)=0 -> minReplicas=1). Стабильно 1
+#   реплика на t=300..450s (6 точек подряд).

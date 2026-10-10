@@ -1,0 +1,35 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 10-hpa-cpu
+# HPA по CPU, target utilization 50%, min 1 max 10, scaleDown stabilization 60s
+# baseline (до load-gen, замерено отдельно перед фазой 1): cpu: 0%/50%, REPLICAS 1
+# --- ФАЗА 1: нагрузка включена (load-gen работает) ---
+t= 30s [00:27:14] php-apache   Deployment/php-apache   cpu: 250%/50%   1     10    3     2m6s
+t= 60s [00:27:44] php-apache   Deployment/php-apache   cpu: 94%/50%   1     10    10    2m36s
+t= 90s [00:28:14] php-apache   Deployment/php-apache   cpu: 59%/50%   1     10    10    3m6s
+t=120s [00:28:44] php-apache   Deployment/php-apache   cpu: 42%/50%   1     10    10    3m37s
+t=150s [00:29:33] php-apache   Deployment/php-apache   cpu: 42%/50%   1     10    9     4m26s
+t=180s [00:30:03] php-apache   Deployment/php-apache   cpu: 45%/50%   1     10    9     4m56s
+t=210s [00:30:34] php-apache   Deployment/php-apache   cpu: 46%/50%   1     10    9     5m26s
+t=240s [00:31:04] php-apache   Deployment/php-apache   cpu: 46%/50%   1     10    9     5m56s
+t=270s [00:31:34] php-apache   Deployment/php-apache   cpu: 46%/50%   1     10    9     6m26s
+t=300s [00:32:04] php-apache   Deployment/php-apache   cpu: 47%/50%   1     10    9     6m57s
+t=330s [00:32:34] php-apache   Deployment/php-apache   cpu: 49%/50%   1     10    9     7m27s
+t=360s [00:33:05] php-apache   Deployment/php-apache   cpu: 46%/50%   1     10    9     7m57s
+# --- ФАЗА 2: нагрузка снята, ждём окно стабилизации 60s + остывание метрики ---
+t= 30s [00:34:19] php-apache   Deployment/php-apache   cpu: 47%/50%   1     10    9     9m12s
+t= 60s [00:34:49] php-apache   Deployment/php-apache   cpu: 31%/50%   1     10    9     9m42s
+t= 90s [00:35:20] php-apache   Deployment/php-apache   cpu: 0%/50%   1     10    9     10m
+t=120s [00:35:50] php-apache   Deployment/php-apache   cpu: 0%/50%   1     10    6     10m
+t=150s [00:36:20] php-apache   Deployment/php-apache   cpu: 0%/50%   1     10    1     11m
+t=180s [00:36:50] php-apache   Deployment/php-apache   cpu: 0%/50%   1     10    1     11m
+t=210s [00:37:20] php-apache   Deployment/php-apache   cpu: 0%/50%   1     10    1     12m
+t=240s [00:37:50] php-apache   Deployment/php-apache   cpu: 0%/50%   1     10    1     12m
+t=270s [00:38:21] php-apache   Deployment/php-apache   cpu: 0%/50%   1     10    1     13m
+t=300s [00:38:51] php-apache   Deployment/php-apache   cpu: 0%/50%   1     10    1     13m
+t=330s [00:39:21] php-apache   Deployment/php-apache   cpu: 0%/50%   1     10    1     14m
+t=360s [00:39:51] php-apache   Deployment/php-apache   cpu: 0%/50%   1     10    1     14m
+# --- ИТОГО (по факту снятых точек) ---
+# пик реплик: 10 (t=60s фазы 1, всплеск после старта load-gen до 250% CPU)
+# устойчивый уровень под нагрузкой: 9 реплик, ~46-49% CPU (t=150s..360s фазы 1)
+# возврат к 1 реплике: t=150s фазы 2 (через 150s после delete pod/load-gen,
+#   т.е. на 90s дольше scaleDown.stabilizationWindowSeconds=60s — HPA снижает
+#   реплики постепенно, не залпом, поэтому фактическое время больше окна)
