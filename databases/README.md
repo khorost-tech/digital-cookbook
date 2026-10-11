@@ -19,7 +19,7 @@
 | [`redis/deep-dive/`](redis/deep-dive/) | Redis/Valkey: глубокое погружение (кодировки, event loop, персистентность, Cluster/Sentinel, память, streams/Lua, эксплуатация) | [статья](https://khorost.tech/databases/) |
 | [`scylladb/`](scylladb/) | ScyllaDB: глубокое погружение (топология, компакция, LWT, драйверы) | [статья](https://khorost.tech/databases/) |
 | [`sqlite/`](sqlite/) | SQLite против Postgres: цена сетевого хопа, граница одного писателя, litestream и DuckDB | [статья](https://khorost.tech/databases/sqlite-embedded-databases/) |
-| [`timeseries/`](timeseries/) | TimescaleDB, Prometheus и VictoriaMetrics на одних рядах: отсечение чанков, continuous aggregate на свежих, опоздавших и удалённых данных, байт на точку, память на ряд, increase() в двух системах, бесплатные сборки | 🔜 скоро |
+| [`timeseries/`](timeseries/) | TimescaleDB, Prometheus и VictoriaMetrics на одних рядах: отсечение чанков, continuous aggregate на свежих, опоздавших и удалённых данных, байт на точку, память на ряд, increase() в двух системах, бесплатные сборки | [статья](https://khorost.tech/databases/timeseries-databases/) |
 | [`transactions/`](transactions/) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | [статья](https://khorost.tech/databases/transactions-brokers-rabbitmq-kafka/) |
 | [`wal/`](wal/) | WAL и его аналоги: PostgreSQL, MySQL, MongoDB, SQLite, Redis, CDC/Debezium | [статья](https://khorost.tech/databases/) |
 

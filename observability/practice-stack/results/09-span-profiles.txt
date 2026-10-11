@@ -1,0 +1,19 @@
+Проба Span Profiles, метка spanprof-1791666713: запросов 3000, успешных 3000
+========================================================================
+CPU go-frontend в окне прогона (±60 с): 2.15 с
+корневых спанов с pyroscope.profile.id в окне: 3000
+профиль по набору span_id: 1.07 с CPU, фреймов 348; функции стенда:
+  main.(*Service).CreateOrder
+  main.(*Service).CreateOrder.func1
+  main.(*Service).handleOrder
+  main.(*httpInventory).Lookup
+  main.(*natsPublisher).Publish
+  main.(*natsPublisher).Publish.WithSpanKind.func1
+  main.fanoutHandler.Handle
+  main.traceContextHandler.Handle
+отдельных спанов с непустым профилем: 15 из 400
+  пример: span_id 12da41d791ce1abf, 20 мс CPU, функции: ['main.(*Service).CreateOrder', 'main.(*Service).handleOrder', 'main.(*httpInventory).Lookup']
+контроль, несуществующий span_id: 0
+
+ИТОГ: профиль по span_id доступен: по набору запросов — с функциями обработки заказа; у отдельного короткого запроса — только если в него попал сэмпл (15 из 400); контроль пуст
+
