@@ -1,0 +1,54 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 10-statefulset
+# cmd: kubectl get pod,pvc -n cookbook-k8s -l app=demo -o wide
+# ---
+NAME         READY   STATUS    RESTARTS   AGE   IP             NODE             NOMINATED NODE   READINESS GATES
+pod/demo-0   1/1     Running   0          11s   10.244.3.84    k8s-volga-wk01   <none>           <none>
+pod/demo-1   1/1     Running   0          10s   10.244.6.122   k8s-volga-wk03   <none>           <none>
+pod/demo-2   1/1     Running   0          9s    10.244.4.47    k8s-volga-wk02   <none>           <none>
+
+NAME                                STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE   VOLUMEMODE
+persistentvolumeclaim/data-demo-0   Bound    pvc-435cbbcd-dc71-44f4-ab84-092fc2d51fed   1Gi        RWO            nfs-csi        <unset>                 11s   Filesystem
+persistentvolumeclaim/data-demo-1   Bound    pvc-5e4879c6-5ebc-41d2-bec2-0808faf31d7b   1Gi        RWO            nfs-csi        <unset>                 10s   Filesystem
+persistentvolumeclaim/data-demo-2   Bound    pvc-bc189be0-f55a-449d-85d1-65aa3e053189   1Gi        RWO            nfs-csi        <unset>                 9s    Filesystem
+NAME                                       CLAIM         RECLAIM   STATUS
+pvc-435cbbcd-dc71-44f4-ab84-092fc2d51fed   data-demo-0   Retain    Bound
+pvc-5e4879c6-5ebc-41d2-bec2-0808faf31d7b   data-demo-1   Retain    Bound
+pvc-bc189be0-f55a-449d-85d1-65aa3e053189   data-demo-2   Retain    Bound
+demo-0 первая запись 2026-07-23T11:01:41Z
+demo-1 первая запись 2026-07-23T11:01:42Z
+demo-2 первая запись 2026-07-23T11:01:43Z
+
+# cmd: kubectl -n cookbook-k8s exec demo-0 -- nslookup demo-0.demo.cookbook-k8s.svc.cluster.local (и demo-1., demo-2. — headless-сервис, индивидуальные адреса подов)
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+Name:	demo-0.demo.cookbook-k8s.svc.cluster.local
+Address: 10.244.3.84
+
+
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+
+Name:	demo-1.demo.cookbook-k8s.svc.cluster.local
+Address: 10.244.6.122
+
+Server:		10.96.0.10
+Address:	10.96.0.10:53
+
+Name:	demo-2.demo.cookbook-k8s.svc.cluster.local
+Address: 10.244.4.47
+
+
+# cmd: kubectl -n cookbook-k8s get endpointslice -l kubernetes.io/service-name=demo -o wide (все три адреса разом)
+NAME         ADDRESSTYPE   PORTS   ENDPOINTS                              AGE
+demo-pb8x8   IPv4          80      10.244.3.84,10.244.6.122,10.244.4.47   77s
+
+# Примечание (проверено повторно в задаче D1): короткое имя пода без метки сервиса
+# (например, `demo-1`) изнутри busybox НЕ резолвится — busybox подставляет search-суффиксы
+# из /etc/resolv.conf по очереди (demo-1.cookbook-k8s.svc.cluster.local, demo-1.svc.cluster.local,
+# demo-1.cluster.local), а реальная DNS-запись пода — demo-1.demo.cookbook-k8s.svc.cluster.local
+# (имя сервиса — отдельная, вторая метка), которую search-suffix-перебор так не строит.
+# Резолвится только полный FQDN (см. запросы выше). Это особенность резолвера busybox
+# (обработка ndots/search в /etc/resolv.conf), а НЕ общее свойство headless-сервисов — сама
+# запись валидна и рассчитана на использование по полному имени в любом резолвере.

@@ -1,0 +1,100 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 20-identity-order
+# Шаг 1: под demo-1 удалён и пересоздан — та же идентичность (имя, PVC), тот же журнал.
+
+# cmd: kubectl -n cookbook-k8s get pvc data-demo-1 -o jsonpath='uid=... created=... volume=...' (ДО удаления пода)
+# ---
+uid=5e4879c6-5ebc-41d2-bec2-0808faf31d7b created=2026-07-23T11:01:41Z volume=pvc-5e4879c6-5ebc-41d2-bec2-0808faf31d7b
+
+# cmd: kubectl -n cookbook-k8s exec demo-1 -- sh -c 'echo "метка до удаления $(date -u +%FT%TZ)" >> /data/journal.txt'
+# cmd: kubectl -n cookbook-k8s exec demo-1 -- cat /data/journal.txt (состояние ДО удаления)
+# ---
+demo-1 первая запись 2026-07-23T11:01:42Z
+метка до удаления 2026-07-23T11:14:09Z
+
+# cmd: kubectl -n cookbook-k8s delete pod demo-1
+# cmd: kubectl -n cookbook-k8s wait --for=condition=Ready pod/demo-1 --timeout=180s
+# ---
+pod "demo-1" deleted from cookbook-k8s namespace
+pod/demo-1 condition met
+
+# cmd: kubectl -n cookbook-k8s get pod demo-1 -o wide (сразу после пересоздания — то же имя, новый IP, RESTARTS 0 — новый объект пода)
+# ---
+NAME     READY   STATUS    RESTARTS   AGE   IP             NODE             NOMINATED NODE   READINESS GATES
+demo-1   1/1     Running   0          1s    10.244.6.112   k8s-volga-wk03   <none>           <none>
+
+# cmd: kubectl exec -n cookbook-k8s demo-1 -- cat /data/journal.txt (состояние ПОСЛЕ удаления — тот же файл на том же томе)
+# ---
+demo-1 первая запись 2026-07-23T11:01:42Z
+метка до удаления 2026-07-23T11:14:09Z
+demo-1 первая запись 2026-07-23T11:14:46Z
+
+# Вывод: журнал содержит все три строки — первую запись из D0 (11:01:42Z), метку,
+# добавленную ДО удаления (11:14:09Z), И новую запись, которую сделал стартовый скрипт
+# нового пода (11:14:46Z, `>>` дописывает, не перезаписывает). Если бы под пересоздался
+# на новом пустом томе, первых двух строк бы не было. IP у пода новый (10.244.6.112 вместо
+# 10.244.6.122) и RESTARTS=0 при AGE=1s — это новый объект Pod, но имя и данные — те же.
+
+# cmd: kubectl -n cookbook-k8s get pvc data-demo-1 -o jsonpath='uid=... created=... volume=...' (ПОСЛЕ пересоздания пода)
+# ---
+uid=5e4879c6-5ebc-41d2-bec2-0808faf31d7b created=2026-07-23T11:01:41Z volume=pvc-5e4879c6-5ebc-41d2-bec2-0808faf31d7b
+
+# Вывод: uid, creationTimestamp и volume у PVC data-demo-1 идентичны снимку ДО удаления пода —
+# PVC не пересоздавался, под просто переподключился к тому же PersistentVolume
+# (pvc-5e4879c6-5ebc-41d2-bec2-0808faf31d7b).
+
+# cmd: kubectl -n cookbook-k8s get pvc data-demo-1 (возраст PVC для контроля — не сброшен)
+# ---
+NAME          STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+data-demo-1   Bound    pvc-5e4879c6-5ebc-41d2-bec2-0808faf31d7b   1Gi        RWO            nfs-csi        <unset>                 13m
+
+# Шаг 2: обновление StatefulSet (patch аннотации шаблона) — снимок каждые 10с.
+# cmd: kubectl patch statefulset demo (annotations.rollout=1) + снимок каждые 10с (kubectl get pod -l app=demo)
+--- обновление StatefulSet: снимок каждые 10с ---
+t= 10s demo-0   1/1   Running       0     14m demo-1   1/1   Running       0     61s demo-2   1/1   Terminating   0     14m 
+t= 20s demo-0   1/1   Running       0     14m demo-1   1/1   Running       0     71s demo-2   1/1   Terminating   0     14m 
+t= 30s demo-0   1/1   Running       0     14m demo-1   1/1   Running       0     81s demo-2   1/1   Terminating   0     14m 
+t= 40s demo-0   1/1   Running   0     14m demo-1   1/1   Running   0     92s demo-2   0/1   Error     0     14m 
+t= 50s demo-0   1/1   Running       0     14m demo-1   1/1   Terminating   0     102s demo-2   1/1   Running       0     10s 
+t= 60s demo-0   1/1   Running       0     14m demo-1   1/1   Terminating   0     112s demo-2   1/1   Running       0     20s 
+t= 70s demo-0   1/1   Running       0     15m demo-1   1/1   Terminating   0     2m2s demo-2   1/1   Running       0     30s 
+t= 80s demo-0   1/1   Terminating   0     15m demo-1   1/1   Running       0     8s demo-2   1/1   Running       0     40s 
+t= 90s demo-0   1/1   Terminating   0     15m demo-1   1/1   Running       0     19s demo-2   1/1   Running       0     51s 
+t=100s demo-0   1/1   Terminating   0     15m demo-1   1/1   Running       0     29s demo-2   1/1   Running       0     61s 
+t=110s demo-0   1/1   Running   0     8s demo-1   1/1   Running   0     39s demo-2   1/1   Running   0     71s 
+t=120s demo-0   1/1   Running   0     18s demo-1   1/1   Running   0     49s demo-2   1/1   Running   0     81s 
+t=130s demo-0   1/1   Running   0     28s demo-1   1/1   Running   0     59s demo-2   1/1   Running   0     91s 
+t=140s demo-0   1/1   Running   0     39s demo-1   1/1   Running   0     70s demo-2   1/1   Running   0     102s 
+t=150s demo-0   1/1   Running   0     49s demo-1   1/1   Running   0     80s demo-2   1/1   Running   0     112s 
+t=160s demo-0   1/1   Running   0     59s demo-1   1/1   Running   0     90s demo-2   1/1   Running   0     2m2s 
+t=170s demo-0   1/1   Running   0     69s demo-1   1/1   Running   0     100s demo-2   1/1   Running   0     2m12s 
+t=180s demo-0   1/1   Running   0     80s demo-1   1/1   Running   0     111s demo-2   1/1   Running   0     2m23s 
+t=190s demo-0   1/1   Running   0     90s demo-1   1/1   Running   0     2m1s demo-2   1/1   Running   0     2m33s 
+t=200s demo-0   1/1   Running   0     100s demo-1   1/1   Running   0     2m11s demo-2   1/1   Running   0     2m43s 
+t=210s demo-0   1/1   Running   0     110s demo-1   1/1   Running   0     2m21s demo-2   1/1   Running   0     2m53s 
+t=220s demo-0   1/1   Running   0     2m demo-1   1/1   Running   0     2m31s demo-2   1/1   Running   0     3m3s 
+t=230s demo-0   1/1   Running   0     2m11s demo-1   1/1   Running   0     2m42s demo-2   1/1   Running   0     3m14s 
+t=240s demo-0   1/1   Running   0     2m21s demo-1   1/1   Running   0     2m52s demo-2   1/1   Running   0     3m24s
+
+# cmd: kubectl -n cookbook-k8s get statefulset demo (после завершения обновления)
+# cmd: kubectl -n cookbook-k8s rollout status statefulset/demo --timeout=10s
+# ---
+NAME   READY   AGE
+demo   3/3     18m
+partitioned roll out complete: 3 new pods have been updated...
+
+# Вывод по порядку обновления: пересоздание шло СТРОГО по одному поду одновременно
+# (podManagementPolicy: OrderedReady, updateStrategy: RollingUpdate/partition:0 — оба поля
+# дефолтные, явно в манифесте не заданы). Порядок — от старшего индекса к младшему, как и
+# ожидается для StatefulSet: demo-2 первым (Terminating уже на t=10s, новый Running к t=50s),
+# затем demo-1 (Terminating с t=50s, новый Running к t=80s), затем demo-0 (Terminating с
+# t=80s, новый Running к t=110s). Ни на одном снимке не встретилось двух подов одновременно
+# в Terminating/не-Ready — обновление действительно последовательное.
+#
+# Побочное наблюдение (t=40s): demo-2 на короткое время показал STATUS=Error вместо
+# Terminating (0/1, RESTARTS 0). Событий Warning/BackOff в `kubectl get events` для этого
+# перехода нет — предыдущий контейнер выполнял `sleep infinity` и получил SIGTERM при
+# остановке; такой процесс завершается с ненулевым кодом (не перехватывает сигнал), и
+# kubectl на пару секунд отображает это как Error, прежде чем под уйдёт в Terminating и
+# будет удалён. Список событий (SuccessfulDelete → Killing → SuccessfulCreate → Started)
+# подтверждает штатное завершение, ошибок провижининга/шедулинга на этом пересоздании нет.
+

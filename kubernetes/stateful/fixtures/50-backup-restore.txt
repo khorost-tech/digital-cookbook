@@ -1,0 +1,21 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 50-backup-restore
+# cmd: kubectl api-resources --api-group=snapshot.storage.k8s.io
+# ---
+NAME   SHORTNAMES   APIVERSION   NAMESPACED   KIND
+# cmd: kubectl get crd | grep -i snapshot
+(пусто — совпадений нет)
+--- количество строк ДО бэкапа ---
+1000
+--- размер дампа (байт) ---
+6957
+--- после DROP TABLE: попытка сосчитать строки ---
+ERROR:  relation "notes" does not exist
+LINE 1: SELECT count(*) FROM notes;
+                             ^
+command terminated with exit code 1
+--- количество строк ПОСЛЕ восстановления ---
+1000
+--- строки после пересоздания пода (без восстановления) ---
+1000
+--- PVC/PV после пересоздания пода (тот же том, не новый) ---
+data-pg-0 -> pvc-b85e3eb7-5902-4fa2-b47c-82b45acf3317

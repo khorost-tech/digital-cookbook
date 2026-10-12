@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: pg
+  namespace: cookbook-k8s
+spec:
+  clusterIP: None
+  selector:
+    app: pg
+  ports:
+    - port: 5432
+      name: postgres
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pg
+  namespace: cookbook-k8s
+spec:
+  serviceName: pg
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pg
+  template:
+    metadata:
+      labels:
+        app: pg
+    spec:
+      # NFS-экспорт nfs-csi сквошит ЛЮБОЙ клиентский uid/gid к фиксированному 1024:100
+      # (проверено: файлы на томе всегда создаются с владельцем 1024:100 независимо от uid
+      # процесса-писателя) — типичная настройка Synology-шары "map all users to admin".
+      # PostgreSQL сверяет владельца PGDATA с эффективным uid процесса побайтово, поэтому
+      # контейнер должен стартовать РОВНО под uid/gid 1024:100, иначе initdb падает с
+      # "data directory has wrong ownership" (проверено на 999:999).
+      securityContext:
+        runAsUser: 1024
+        runAsGroup: 100
+        fsGroup: 100
+      containers:
+        - name: postgres
+          image: postgres:18.4
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_PASSWORD
+              value: cookbook-not-a-real-secret
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          readinessProbe:
+            exec:
+              command:
+                - "/bin/sh"
+                - "-c"
+                - "pg_isready -U postgres"
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 5
+            failureThreshold: 6
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: nfs-csi
+        resources:
+          requests:
+            storage: 1Gi

@@ -26,7 +26,7 @@
 |---|---|---|
 | [`databases/citus`](databases/citus) | Шардирование PostgreSQL через Citus: scatter-gather, колокация против репартиции, референсные таблицы, пагинация, ребаланс | [статья](https://khorost.tech/databases/sharding-in-production/) |
 | [`databases/clickhouse`](databases/clickhouse) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | [статья](https://khorost.tech/databases/clickhouse-when-olap/) |
-| [`databases/distributed-sql`](databases/distributed-sql) | CockroachDB, YugabyteDB, TiDB и OceanBase под одними замерами: цена операции в раунд-трипах при назначенном RTT между узлами, write skew под уровнем по умолчанию и SERIALIZABLE, совместимость штатным драйвером, отказ узла с лидером | 🔜 скоро |
+| [`databases/distributed-sql`](databases/distributed-sql) | CockroachDB, YugabyteDB, TiDB и OceanBase под одними замерами: цена операции в раунд-трипах при назначенном RTT между узлами, write skew под уровнем по умолчанию и SERIALIZABLE, совместимость штатным драйвером, отказ узла с лидером | [статья](https://khorost.tech/databases/distributed-sql-newsql/) |
 | [`databases/db-indexes`](databases/db-indexes) | Индексы в БД: PostgreSQL, MongoDB, Tarantool | [статья](https://khorost.tech/databases/) |
 | [`databases/graph`](databases/graph) | Графовые БД и Go: один и тот же граф платформы в трёх углах (Neo4j, Apache AGE, baseline на PostgreSQL) и одинаковые графовые запросы к каждому | [статья](https://khorost.tech/databases/graph-databases-and-go/) |
 | [`databases/identifiers`](databases/identifiers) | Идентификаторы: локальность и bloat UUIDv4/UUIDv7/bigint в PostgreSQL, распределение в Mongo/Scylla, генерация в Go/Java/Rust | [статья](https://khorost.tech/databases/identifiers-index-locality-bloat/) |
@@ -136,6 +136,7 @@
 | [`kubernetes/autoscaling`](kubernetes/autoscaling) | Автоскейлинг: HPA, VPA и KEDA на управляемой бизнес-метрике — от источника метрики до решения о масштабировании | 🔜 скоро |
 | [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
 | [`kubernetes/scheduling`](kubernetes/scheduling) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | [статья](https://khorost.tech/kubernetes/k8s-pod-scheduling-affinity-taints/) |
+| [`kubernetes/stateful`](kubernetes/stateful) | StatefulSet и хранилище: собственный том на реплику, стабильная идентичность подов, изоляция данных между репликами | 🔜 скоро |
 
 ## Security
 

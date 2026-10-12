@@ -1,0 +1,72 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 30-scale-pvc
+# cmd: kubectl get pod,pvc -n cookbook-k8s -l app=demo
+# ---
+NAME         READY   STATUS    RESTARTS   AGE
+pod/demo-0   1/1     Running   0          14m
+pod/demo-1   1/1     Running   0          41s
+pod/demo-2   1/1     Running   0          40s
+
+NAME                                STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-demo-0   Bound    pvc-435cbbcd-dc71-44f4-ab84-092fc2d51fed   1Gi        RWO            nfs-csi        <unset>                 30m
+persistentvolumeclaim/data-demo-1   Bound    pvc-5e4879c6-5ebc-41d2-bec2-0808faf31d7b   1Gi        RWO            nfs-csi        <unset>                 30m
+persistentvolumeclaim/data-demo-2   Bound    pvc-bc189be0-f55a-449d-85d1-65aa3e053189   1Gi        RWO            nfs-csi        <unset>                 30m
+--- журнал demo-2 до новой метки (для контекста: содержит записи из предыдущих задач серии) ---
+demo-2 первая запись 2026-07-23T11:01:43Z
+demo-2 первая запись 2026-07-23T11:16:18Z
+метка перед скейлом вниз 2026-07-23T11:29:11Z
+demo-2 первая запись 2026-07-23T11:31:21Z
+--- метка demo-2 перед скейлом вниз ---
+demo-2 первая запись 2026-07-23T11:01:43Z
+demo-2 первая запись 2026-07-23T11:16:18Z
+метка перед скейлом вниз 2026-07-23T11:29:11Z
+demo-2 первая запись 2026-07-23T11:31:21Z
+метка перед скейлом вниз 2026-07-23T11:32:01Z
+--- после скейла до 1 реплики ---
+NAME         READY   STATUS    RESTARTS   AGE
+pod/demo-0   1/1     Running   0          15m
+pod/demo-1   1/1     Running   0          80s
+pod/demo-2   0/1     Error     0          79s
+
+NAME                                STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+persistentvolumeclaim/data-demo-0   Bound    pvc-435cbbcd-dc71-44f4-ab84-092fc2d51fed   1Gi        RWO            nfs-csi        <unset>                 30m
+persistentvolumeclaim/data-demo-1   Bound    pvc-5e4879c6-5ebc-41d2-bec2-0808faf31d7b   1Gi        RWO            nfs-csi        <unset>                 30m
+persistentvolumeclaim/data-demo-2   Bound    pvc-bc189be0-f55a-449d-85d1-65aa3e053189   1Gi        RWO            nfs-csi        <unset>                 30m
+--- журнал demo-2 после возврата наверх ---
+demo-2 первая запись 2026-07-23T11:01:43Z
+demo-2 первая запись 2026-07-23T11:16:18Z
+метка перед скейлом вниз 2026-07-23T11:29:11Z
+demo-2 первая запись 2026-07-23T11:31:21Z
+метка перед скейлом вниз 2026-07-23T11:32:01Z
+demo-2 первая запись 2026-07-23T11:33:12Z
+--- demo-rp: PVC до скейла вниз ---
+NAME             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+data-demo-rp-0   Bound    pvc-678a019a-afe1-4e88-9c29-905c2d34ff0c   1Gi        RWO            nfs-csi        <unset>                 2s
+data-demo-rp-1   Bound    pvc-33595ed6-606f-4288-9544-49a67fa147be   1Gi        RWO            nfs-csi        <unset>                 1s
+--- demo-rp: PVC после скейла до 1 (whenScaled: Delete) ---
+NAME             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+data-demo-rp-0   Bound    pvc-678a019a-afe1-4e88-9c29-905c2d34ff0c   1Gi        RWO            nfs-csi        <unset>                 41s
+data-demo-rp-1   Bound    pvc-33595ed6-606f-4288-9544-49a67fa147be   1Gi        RWO            nfs-csi        <unset>                 40s
+--- demo-rp: PVC ~50с после скейла (удаление реально заняло больше 30с) ---
+NAME             STATUS   VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+data-demo-rp-0   Bound    pvc-678a019a-afe1-4e88-9c29-905c2d34ff0c   1Gi        RWO            nfs-csi        <unset>                 61s
+--- PV после удаления PVC data-demo-rp-1: Retain оставляет Released, том сам не уходит ---
+NAME                                       CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS     CLAIM                         STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+pvc-33595ed6-606f-4288-9544-49a67fa147be   1Gi        RWO            Retain           Released   cookbook-k8s/data-demo-rp-1   nfs-csi        <unset>                          77s
+pvc-678a019a-afe1-4e88-9c29-905c2d34ff0c   1Gi        RWO            Retain           Bound      cookbook-k8s/data-demo-rp-0   nfs-csi        <unset>                          78s
+--- demo-rp: PVC после удаления StatefulSet целиком (whenDeleted: Delete) ---
+NAME             STATUS        VOLUME                                     CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+data-demo-rp-0   Terminating   pvc-678a019a-afe1-4e88-9c29-905c2d34ff0c   1Gi        RWO            nfs-csi        <unset>                 100s
+--- demo-rp: PVC после удаления StatefulSet (окончательно, точное время не зафиксировано в этом снимке — см. пересъёмку ниже) ---
+No resources found in cookbook-k8s namespace.
+--- ПЕРЕСНЯТО: удаление demo-rp целиком, PVC с отметками времени ---
+2026-07-23T11:43:59Z
+2026-07-23T11:44:06Z data-demo-rp-0   Terminating   pvc-2ec43fc5-34a5-4572-824c-8d6adc9d4c2c   1Gi   RWO   nfs-csi   <unset>   17s;data-demo-rp-1   Terminating   pvc-02bc7559-1ae7-44e0-b997-2cee91a9ef1b   1Gi   RWO   nfs-csi   <unset>   16s;
+2026-07-23T11:44:11Z data-demo-rp-0   Terminating   pvc-2ec43fc5-34a5-4572-824c-8d6adc9d4c2c   1Gi   RWO   nfs-csi   <unset>   22s;data-demo-rp-1   Terminating   pvc-02bc7559-1ae7-44e0-b997-2cee91a9ef1b   1Gi   RWO   nfs-csi   <unset>   21s;
+2026-07-23T11:44:16Z data-demo-rp-0   Terminating   pvc-2ec43fc5-34a5-4572-824c-8d6adc9d4c2c   1Gi   RWO   nfs-csi   <unset>   28s;data-demo-rp-1   Terminating   pvc-02bc7559-1ae7-44e0-b997-2cee91a9ef1b   1Gi   RWO   nfs-csi   <unset>   27s;
+2026-07-23T11:44:22Z data-demo-rp-0   Terminating   pvc-2ec43fc5-34a5-4572-824c-8d6adc9d4c2c   1Gi   RWO   nfs-csi   <unset>   33s;data-demo-rp-1   Terminating   pvc-02bc7559-1ae7-44e0-b997-2cee91a9ef1b   1Gi   RWO   nfs-csi   <unset>   32s;
+2026-07-23T11:44:27Z data-demo-rp-0   Terminating   pvc-2ec43fc5-34a5-4572-824c-8d6adc9d4c2c   1Gi   RWO   nfs-csi   <unset>   38s;data-demo-rp-1   Terminating   pvc-02bc7559-1ae7-44e0-b997-2cee91a9ef1b   1Gi   RWO   nfs-csi   <unset>   37s;
+2026-07-23T11:44:32Z No resources found in cookbook-k8s namespace.;
+--- demo-rp: PV после удаления PVC data-demo-rp-0/1 (Retain -> Released) ---
+NAME                                       CLAIM            RECLAIM   STATUS
+pvc-02bc7559-1ae7-44e0-b997-2cee91a9ef1b   data-demo-rp-1   Retain    Released
+pvc-2ec43fc5-34a5-4572-824c-8d6adc9d4c2c   data-demo-rp-0   Retain    Released

@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: shared
+  namespace: cookbook-k8s
+spec:
+  accessModes: ["ReadWriteMany"]
+  storageClassName: nfs-csi
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rwx-writer
+  namespace: cookbook-k8s
+  labels:
+    app: rwx-demo
+spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values: ["rwx-demo"]
+          topologyKey: kubernetes.io/hostname
+  containers:
+    - name: app
+      image: busybox:1.37
+      command: ["sleep", "infinity"]
+      volumeMounts:
+        - name: shared
+          mountPath: /shared
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+  volumes:
+    - name: shared
+      persistentVolumeClaim:
+        claimName: shared
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: rwx-reader
+  namespace: cookbook-k8s
+  labels:
+    app: rwx-demo
+spec:
+  affinity:
+    podAntiAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        - labelSelector:
+            matchExpressions:
+              - key: app
+                operator: In
+                values: ["rwx-demo"]
+          topologyKey: kubernetes.io/hostname
+  containers:
+    - name: app
+      image: busybox:1.37
+      command: ["sleep", "infinity"]
+      volumeMounts:
+        - name: shared
+          mountPath: /shared
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+  volumes:
+    - name: shared
+      persistentVolumeClaim:
+        claimName: shared

@@ -1,0 +1,24 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 40-storage-limits
+# cmd: kubectl get storageclass nfs-csi -o custom-columns=NAME:.metadata.name,PROVISIONER:.provisioner,RECLAIM:.reclaimPolicy,BINDING:.volumeBindingMode,EXPAND:.allowVolumeExpansion
+# ---
+NAME      PROVISIONER      RECLAIM   BINDING     EXPAND
+nfs-csi   nfs.csi.k8s.io   Retain    Immediate   <none>
+--- попытка расширить data-demo-0 с 1Gi до 2Gi ---
+Error from server (Forbidden): persistentvolumeclaims "data-demo-0" is forbidden: only dynamically provisioned pvc can be resized and the storageclass that provisions the pvc must support resize
+--- размер PVC после попытки ---
+1Gi
+--- RWX: писатель и читатель на одном томе ---
+NAME     MODES             STATUS
+shared   [ReadWriteMany]   Bound
+NAME         NODE
+rwx-writer   k8s-volga-wk02
+rwx-reader   k8s-volga-wk01
+
+запись из writer 2026-07-23T11:51:03Z
+
+--- PV тома shared ДО удаления PVC ---
+NAME                                       CLAIM         RECLAIM   STATUS
+pvc-db95e396-9deb-40b8-9c36-7337287b19a9   shared        Retain    Bound
+--- PV тома shared ПОСЛЕ удаления PVC ---
+NAME                                       CLAIM         RECLAIM   STATUS
+pvc-db95e396-9deb-40b8-9c36-7337287b19a9   shared        Retain    Released

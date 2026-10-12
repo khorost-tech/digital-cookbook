@@ -1,0 +1,39 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 60-nfs-ownership
+# temp PVC/Pod nfs-ownership-check (nfs-csi, 1Gi), securityContext.runAsUser/runAsGroup=999 (штатный uid образа postgres)
+# cmd: kubectl -n cookbook-k8s exec nfs-ownership-check -- id
+# ---
+uid=999 gid=999 groups=999
+
+# cmd: kubectl -n cookbook-k8s exec nfs-ownership-check -- sh -c 'echo test > /data/testfile; ls -lan /data'
+# ---
+total 4
+drwxrwxrwx    1 1024     100             16 Jul 23 12:20 .
+drwxr-xr-x    1 0        0               63 Jul 23 12:20 ..
+-rwxrwxrwx    1 1024     100              5 Jul 23 12:20 testfile
+
+# Дёшево воспроизведено: временный под postgres:18.4 (securityContext.runAsUser/runAsGroup=999,
+# штатный uid образа postgres), PGDATA на этом же томе (nfs-csi). initdb стартовал, дошёл до
+# создания конфигов и упал на проверке владельца каталога — воспроизведено реально, а не по памяти.
+# cmd: kubectl -n cookbook-k8s logs nfs-ownership-pg-fail
+# ---
+The files belonging to this database system will be owned by user "postgres".
+This user must also own the server process.
+
+The database cluster will be initialized with locale "en_US.utf8".
+The default database encoding has accordingly been set to "UTF8".
+The default text search configuration will be set to "english".
+
+Data page checksums are enabled.
+
+fixing permissions on existing directory /data/pgfail ... ok
+creating subdirectories ... ok
+selecting dynamic shared memory implementation ... posix
+selecting default "max_connections" ... 20
+selecting default "shared_buffers" ... 400kB
+selecting default time zone ... Etc/UTC
+creating configuration files ... ok
+2026-07-23 12:20:57.007 UTC [69] FATAL:  data directory "/data/pgfail" has wrong ownership
+2026-07-23 12:20:57.007 UTC [69] HINT:  The server must be started by the user that owns the data directory.
+child process exited with exit code 1
+initdb: removing contents of data directory "/data/pgfail"
+running bootstrap script ... 

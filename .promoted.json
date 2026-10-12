@@ -44,7 +44,8 @@
     "architecture/temporal": [
       "architecture/durable-execution-paradigm.md",
       "architecture/temporal-architecture-internals.md",
-      "architecture/temporal-durable-workflows.md"
+      "architecture/temporal-durable-workflows.md",
+      "architecture/temporal-workflow-determinism.md"
     ],
     "architecture/testing": [
       "architecture/flaky-tests-diagnose-and-fix.md",
@@ -242,6 +243,9 @@
     ],
     "kubernetes/scheduling": [
       "kubernetes/k8s-pod-scheduling-affinity-taints.md"
+    ],
+    "kubernetes/stateful": [
+      "kubernetes/k8s-stateful-storage.md"
     ],
     "lang/brainfuck": [
       "lang/turing-completeness-and-expressiveness.md"
