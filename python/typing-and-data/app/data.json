@@ -1,0 +1,30 @@
+[
+  {
+    "id": 1,
+    "customer": "strugatsky",
+    "express": false,
+    "discount": "10.00",
+    "lines": [
+      {"sku": "NOON-XXI", "quantity": 2, "price": "320.00"},
+      {"sku": "SNAIL", "quantity": 1, "price": "240.00"}
+    ]
+  },
+  {
+    "id": 2,
+    "customer": "lem",
+    "express": true,
+    "discount": "50.00",
+    "lines": [
+      {"sku": "SOLARIS", "quantity": 3, "price": "224.00"}
+    ]
+  },
+  {
+    "id": 3,
+    "customer": "clarke",
+    "express": false,
+    "discount": "900.00",
+    "lines": [
+      {"sku": "ODYSSEY", "quantity": 1, "price": "410.00"}
+    ]
+  }
+]

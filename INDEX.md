@@ -133,7 +133,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`kubernetes/architecture`](kubernetes/architecture) | Архитектура Kubernetes на живом кластере: из чего состоит control plane, кто ведущий, что происходит между kubectl apply и запущенным контейнером | [статья](https://khorost.tech/kubernetes/k8s-architecture-control-plane/) |
-| [`kubernetes/autoscaling`](kubernetes/autoscaling) | Автоскейлинг: HPA, VPA и KEDA на управляемой бизнес-метрике — от источника метрики до решения о масштабировании | 🔜 скоро |
+| [`kubernetes/autoscaling`](kubernetes/autoscaling) | Автоскейлинг: HPA, VPA и KEDA на управляемой бизнес-метрике — от источника метрики до решения о масштабировании | [статья](https://khorost.tech/kubernetes/k8s-autoscaling-hpa-vpa-keda/) |
 | [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
 | [`kubernetes/scheduling`](kubernetes/scheduling) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | [статья](https://khorost.tech/kubernetes/k8s-pod-scheduling-affinity-taints/) |
 | [`kubernetes/stateful`](kubernetes/stateful) | StatefulSet и хранилище: собственный том на реплику, стабильная идентичность подов, изоляция данных между репликами | 🔜 скоро |
@@ -153,4 +153,10 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`lang/brainfuck`](lang/brainfuck) | Интерпретатор brainfuck на Go (~110 строк) как универсальная машина размером с экран — и замер разрыва выразительности | [статья](https://khorost.tech/lang/turing-completeness-and-expressiveness/) |
+
+## Python
+
+| Пример | Описание | Статья |
+|---|---|---|
+| [`python/typing-and-data`](python/typing-and-data) | Кто ловит подсунутый дефект — mypy, mypy --strict, pyright, pydantic на границе и голое выполнение; и кто не полез в данные, которые ответу не нужны: лишние разделы Parquet сделаны нечитаемыми, дошедший до ответа тем самым доказал, что в них не заглядывал. Времени этот стенд не меряет вовсе | 🔜 скоро |
 

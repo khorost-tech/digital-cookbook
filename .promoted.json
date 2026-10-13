@@ -105,6 +105,7 @@
     "databases/picodata": [
       "databases/picodata-architecture-fork-vs-product.md",
       "databases/picodata-distributed-sql-sbroad.md",
+      "databases/picodata-operations-production.md",
       "databases/picodata-postgres-protocol.md",
       "databases/picodata-rust-plugins.md",
       "performance/inmemory-tarantool-picodata-compute-near-data.md"
@@ -298,7 +299,8 @@
       "observability/logs-correlation-loki.md",
       "observability/metrics-prometheus-red-use.md",
       "observability/otel-instrumentation-go-java.md",
-      "observability/slo-error-budget-alerting.md"
+      "observability/slo-error-budget-alerting.md",
+      "observability/tracing-as-data-span-design-exemplars.md"
     ],
     "observability/vector-pipeline": [
       "observability/vector-data-pipeline.md"
@@ -335,6 +337,9 @@
     ],
     "performance/testcontainers-template-db": [
       "performance/testcontainers-template-db.md"
+    ],
+    "python/typing-and-data": [
+      "python/python-modern-typing.md"
     ],
     "rust/docker-minimal": [
       "rust/rust-docker-minimal-images.md"

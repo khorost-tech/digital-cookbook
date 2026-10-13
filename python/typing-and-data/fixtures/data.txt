@@ -1,0 +1,19 @@
+# Чтение Parquet: pandas и polars, пять способов задать один вопрос
+# состояния набора: all-readable (контроль) и pruned-locked
+# лишние разделы делаются НЕЧИТАЕМЫМИ — дошедший до ответа доказал,
+#   что в них не заглядывал; байты для этого не годятся, см. arm_data.py
+# плечи выполняются от непривилегированного пользователя
+# времени этот стенд не меряет
+# снято: 2026-08-25T09:45:02Z
+#
+{"bucket_to": 5, "buckets": 20, "dataset_sha256": "dd606381bdd3474a", "kind": "env", "rows": 200000, "unprivileged_user": "nobody", "versions": {"pandas": "3.0.5", "polars": "1.44.0", "pyarrow": "25.0.1", "python": "3.14.7"}}
+{"arm": "pandas-full", "error": null, "error_type": null, "groups": 4, "kind": "run", "locked_buckets": [], "reached_answer": true, "result_sha256": "06f55bc69e2716c8", "state": "all-readable"}
+{"arm": "pandas-columns", "error": null, "error_type": null, "groups": 4, "kind": "run", "locked_buckets": [], "reached_answer": true, "result_sha256": "06f55bc69e2716c8", "state": "all-readable"}
+{"arm": "pandas-filters", "error": null, "error_type": null, "groups": 4, "kind": "run", "locked_buckets": [], "reached_answer": true, "result_sha256": "06f55bc69e2716c8", "state": "all-readable"}
+{"arm": "polars-eager", "error": null, "error_type": null, "groups": 4, "kind": "run", "locked_buckets": [], "reached_answer": true, "result_sha256": "06f55bc69e2716c8", "state": "all-readable"}
+{"arm": "polars-lazy", "error": null, "error_type": null, "groups": 4, "kind": "run", "locked_buckets": [], "reached_answer": true, "result_sha256": "06f55bc69e2716c8", "state": "all-readable"}
+{"arm": "pandas-full", "error": "[Errno 13] Failed to open local file '/data/day_bucket=10/part.parquet'. Detail: [errno 13] Permission denied", "error_type": "PermissionError", "groups": 0, "kind": "run", "locked_buckets": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "reached_answer": false, "result_sha256": null, "state": "pruned-locked"}
+{"arm": "pandas-columns", "error": "[Errno 13] Failed to open local file '/data/day_bucket=10/part.parquet'. Detail: [errno 13] Permission denied", "error_type": "PermissionError", "groups": 0, "kind": "run", "locked_buckets": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "reached_answer": false, "result_sha256": null, "state": "pruned-locked"}
+{"arm": "pandas-filters", "error": null, "error_type": null, "groups": 4, "kind": "run", "locked_buckets": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "reached_answer": true, "result_sha256": "06f55bc69e2716c8", "state": "pruned-locked"}
+{"arm": "polars-eager", "error": "Permission denied (os error 13): /data/day_bucket=10/part.parquet", "error_type": "PermissionError", "groups": 0, "kind": "run", "locked_buckets": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "reached_answer": false, "result_sha256": null, "state": "pruned-locked"}
+{"arm": "polars-lazy", "error": null, "error_type": null, "groups": 4, "kind": "run", "locked_buckets": [5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19], "reached_answer": true, "result_sha256": "06f55bc69e2716c8", "state": "pruned-locked"}
