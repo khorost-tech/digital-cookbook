@@ -1,0 +1,45 @@
+# run_in_executor: ThreadPoolExecutor и ProcessPoolExecutor, сборка: gil
+# rounds=5
+# снято: 2026-08-22T14:27:01Z
+# среда: PREFLIGHT OK: живых посторонних python нет, зомби 0, простой процессора 98% (loadavg 1.39)
+#
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 337.3, "python": "3.14.7", "round": 1, "workers": 2}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 202.18, "python": "3.14.7", "round": 1, "workers": 2}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 624.96, "python": "3.14.7", "round": 1, "workers": 4}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 188.12, "python": "3.14.7", "round": 1, "workers": 4}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 1025.01, "python": "3.14.7", "round": 1, "workers": 8}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 198.07, "python": "3.14.7", "round": 1, "workers": 8}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 179.33, "python": "3.14.7", "round": 1, "workers": 1}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 196.84, "python": "3.14.7", "round": 1, "workers": 1}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 196.61, "python": "3.14.7", "round": 2, "workers": 4}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 639.35, "python": "3.14.7", "round": 2, "workers": 4}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 202.88, "python": "3.14.7", "round": 2, "workers": 8}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 1067.57, "python": "3.14.7", "round": 2, "workers": 8}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 198.98, "python": "3.14.7", "round": 2, "workers": 1}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 188.88, "python": "3.14.7", "round": 2, "workers": 1}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 202.53, "python": "3.14.7", "round": 2, "workers": 2}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 352.1, "python": "3.14.7", "round": 2, "workers": 2}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 1108.21, "python": "3.14.7", "round": 3, "workers": 8}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 205.77, "python": "3.14.7", "round": 3, "workers": 8}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 183.21, "python": "3.14.7", "round": 3, "workers": 1}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 202.06, "python": "3.14.7", "round": 3, "workers": 1}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 365.77, "python": "3.14.7", "round": 3, "workers": 2}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 204.26, "python": "3.14.7", "round": 3, "workers": 2}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 685.83, "python": "3.14.7", "round": 3, "workers": 4}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 208.24, "python": "3.14.7", "round": 3, "workers": 4}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 200.26, "python": "3.14.7", "round": 4, "workers": 1}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 198.0, "python": "3.14.7", "round": 4, "workers": 1}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 202.4, "python": "3.14.7", "round": 4, "workers": 2}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 358.7, "python": "3.14.7", "round": 4, "workers": 2}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 199.68, "python": "3.14.7", "round": 4, "workers": 4}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 678.23, "python": "3.14.7", "round": 4, "workers": 4}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 199.54, "python": "3.14.7", "round": 4, "workers": 8}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 1029.23, "python": "3.14.7", "round": 4, "workers": 8}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 358.94, "python": "3.14.7", "round": 5, "workers": 2}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 197.12, "python": "3.14.7", "round": 5, "workers": 2}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 668.73, "python": "3.14.7", "round": 5, "workers": 4}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 201.13, "python": "3.14.7", "round": 5, "workers": 4}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 1071.17, "python": "3.14.7", "round": 5, "workers": 8}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 201.09, "python": "3.14.7", "round": 5, "workers": 8}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": true, "ops_per_sec": 197.75, "python": "3.14.7", "round": 5, "workers": 1}
+{"build": "gil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": true, "ops_per_sec": 203.16, "python": "3.14.7", "round": 5, "workers": 1}

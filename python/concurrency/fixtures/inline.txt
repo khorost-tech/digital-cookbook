@@ -1,0 +1,26 @@
+# Устранение вызова мелкой частой функции, сборка: gil
+# iters=300 rounds=7
+# снято: 2026-08-22T11:52:18Z
+# среда: PREFLIGHT OK: живых посторонних python нет, зомби 0, загрузка 0.24
+#
+{"checksum": 2744417984, "elapsed_s": 0.0714, "iters": 300, "round": 1, "variant": "inlined"}
+{"checksum": 2744417984, "elapsed_s": 0.0697, "iters": 300, "round": 1, "variant": "chunky"}
+{"checksum": 2744417984, "elapsed_s": 0.0858, "iters": 300, "round": 1, "variant": "called"}
+{"checksum": 2744417984, "elapsed_s": 0.0706, "iters": 300, "round": 2, "variant": "chunky"}
+{"checksum": 2744417984, "elapsed_s": 0.0821, "iters": 300, "round": 2, "variant": "called"}
+{"checksum": 2744417984, "elapsed_s": 0.0654, "iters": 300, "round": 2, "variant": "inlined"}
+{"checksum": 2744417984, "elapsed_s": 0.0866, "iters": 300, "round": 3, "variant": "called"}
+{"checksum": 2744417984, "elapsed_s": 0.0744, "iters": 300, "round": 3, "variant": "inlined"}
+{"checksum": 2744417984, "elapsed_s": 0.0727, "iters": 300, "round": 3, "variant": "chunky"}
+{"checksum": 2744417984, "elapsed_s": 0.0734, "iters": 300, "round": 4, "variant": "inlined"}
+{"checksum": 2744417984, "elapsed_s": 0.0676, "iters": 300, "round": 4, "variant": "chunky"}
+{"checksum": 2744417984, "elapsed_s": 0.083, "iters": 300, "round": 4, "variant": "called"}
+{"checksum": 2744417984, "elapsed_s": 0.0673, "iters": 300, "round": 5, "variant": "chunky"}
+{"checksum": 2744417984, "elapsed_s": 0.0843, "iters": 300, "round": 5, "variant": "called"}
+{"checksum": 2744417984, "elapsed_s": 0.0736, "iters": 300, "round": 5, "variant": "inlined"}
+{"checksum": 2744417984, "elapsed_s": 0.0874, "iters": 300, "round": 6, "variant": "called"}
+{"checksum": 2744417984, "elapsed_s": 0.0749, "iters": 300, "round": 6, "variant": "inlined"}
+{"checksum": 2744417984, "elapsed_s": 0.0714, "iters": 300, "round": 6, "variant": "chunky"}
+{"checksum": 2744417984, "elapsed_s": 0.0731, "iters": 300, "round": 7, "variant": "inlined"}
+{"checksum": 2744417984, "elapsed_s": 0.0702, "iters": 300, "round": 7, "variant": "chunky"}
+{"checksum": 2744417984, "elapsed_s": 0.0831, "iters": 300, "round": 7, "variant": "called"}

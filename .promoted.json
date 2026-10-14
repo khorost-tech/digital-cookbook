@@ -338,6 +338,9 @@
     "performance/testcontainers-template-db": [
       "performance/testcontainers-template-db.md"
     ],
+    "python/concurrency": [
+      "python/python-asyncio-and-gil.md"
+    ],
     "python/typing-and-data": [
       "python/python-modern-typing.md"
     ],

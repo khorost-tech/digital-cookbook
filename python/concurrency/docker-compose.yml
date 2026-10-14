@@ -1,0 +1,19 @@
+name: python-concurrency
+
+services:
+  bench:
+    build: .
+    volumes:
+      - ./fixtures:/fixtures
+      - ./bench:/bench
+    # tini как PID 1. Без него PID 1 — это sleep infinity, который никогда
+    # не вызывает wait(): осиротевшие воркеры пула процессов усыновляются
+    # им и навсегда остаются зомби. За один прогон матрицы их набегает
+    # несколько десятков.
+    init: true
+    # py-spy читает память чужого процесса через process_vm_readv,
+    # без этой возможности он не может присоединиться к цели.
+    cap_add:
+      - SYS_PTRACE
+    # Держим контейнер живым: сценарии запускаются через docker compose exec.
+    command: ["sleep", "infinity"]

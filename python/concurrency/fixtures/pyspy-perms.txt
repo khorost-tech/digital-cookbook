@@ -1,0 +1,29 @@
+# Права py-spy: три сценария без CAP_SYS_PTRACE и с ней
+# снято: 2026-08-22T14:05:18Z
+#
+## БЕЗ CAP_SYS_PTRACE
+пользователь: root (uid=0)
+CapEff: 00000000a80425fb
+Yama ptrace_scope: модуль не включён (файла нет)
+--- режим 1: py-spy САМ запускает цель ---
+py-spy> Wrote raw flamegraph data to '/tmp/r.raw'. Samples: 95 Errors: 0
+--- режим 2: присоединение к СОСЕДНЕМУ процессу (не потомку py-spy) ---
+  цель pid=19, её родитель pid=7 (та же оболочка, py-spy ей не предок)
+Process 19: /opt/py/gil/bin/python -c from workload import cpu_task
+Python v3.14.7 (/opt/py-versions/cpython-3.14.7-linux-x86_64-gnu/bin/python3.14)
+--- режим 3: присоединение ОТ ДРУГОГО пользователя к процессу root ---
+Permission Denied: Try running again with elevated permissions by going 'sudo env "PATH=$PATH" !!'
+
+## С CAP_SYS_PTRACE
+пользователь: root (uid=0)
+CapEff: 00000000a80c25fb
+Yama ptrace_scope: модуль не включён (файла нет)
+--- режим 1: py-spy САМ запускает цель ---
+py-spy> Wrote raw flamegraph data to '/tmp/r.raw'. Samples: 97 Errors: 0
+--- режим 2: присоединение к СОСЕДНЕМУ процессу (не потомку py-spy) ---
+  цель pid=19, её родитель pid=7 (та же оболочка, py-spy ей не предок)
+Process 19: /opt/py/gil/bin/python -c from workload import cpu_task
+Python v3.14.7 (/opt/py-versions/cpython-3.14.7-linux-x86_64-gnu/bin/python3.14)
+--- режим 3: присоединение ОТ ДРУГОГО пользователя к процессу root ---
+Permission Denied: Try running again with elevated permissions by going 'sudo env "PATH=$PATH" !!'
+

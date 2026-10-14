@@ -1,0 +1,45 @@
+# run_in_executor: ThreadPoolExecutor и ProcessPoolExecutor, сборка: nogil
+# rounds=5
+# снято: 2026-08-22T14:28:09Z
+# среда: PREFLIGHT OK: живых посторонних python нет, зомби 0, простой процессора 98% (loadavg 1.39)
+#
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 383.02, "python": "3.14.7", "round": 1, "workers": 2}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 389.28, "python": "3.14.7", "round": 1, "workers": 2}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 733.07, "python": "3.14.7", "round": 1, "workers": 4}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 720.65, "python": "3.14.7", "round": 1, "workers": 4}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 1214.54, "python": "3.14.7", "round": 1, "workers": 8}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 1208.11, "python": "3.14.7", "round": 1, "workers": 8}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 192.02, "python": "3.14.7", "round": 1, "workers": 1}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 188.19, "python": "3.14.7", "round": 1, "workers": 1}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 706.88, "python": "3.14.7", "round": 2, "workers": 4}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 711.25, "python": "3.14.7", "round": 2, "workers": 4}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 1121.98, "python": "3.14.7", "round": 2, "workers": 8}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 1222.17, "python": "3.14.7", "round": 2, "workers": 8}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 193.15, "python": "3.14.7", "round": 2, "workers": 1}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 189.67, "python": "3.14.7", "round": 2, "workers": 1}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 368.86, "python": "3.14.7", "round": 2, "workers": 2}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 358.49, "python": "3.14.7", "round": 2, "workers": 2}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 1151.98, "python": "3.14.7", "round": 3, "workers": 8}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 1221.66, "python": "3.14.7", "round": 3, "workers": 8}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 184.81, "python": "3.14.7", "round": 3, "workers": 1}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 184.33, "python": "3.14.7", "round": 3, "workers": 1}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 365.73, "python": "3.14.7", "round": 3, "workers": 2}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 384.93, "python": "3.14.7", "round": 3, "workers": 2}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 721.82, "python": "3.14.7", "round": 3, "workers": 4}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 719.35, "python": "3.14.7", "round": 3, "workers": 4}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 187.32, "python": "3.14.7", "round": 4, "workers": 1}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 196.07, "python": "3.14.7", "round": 4, "workers": 1}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 389.15, "python": "3.14.7", "round": 4, "workers": 2}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 382.35, "python": "3.14.7", "round": 4, "workers": 2}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 689.83, "python": "3.14.7", "round": 4, "workers": 4}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 725.45, "python": "3.14.7", "round": 4, "workers": 4}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 1290.24, "python": "3.14.7", "round": 4, "workers": 8}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 1166.52, "python": "3.14.7", "round": 4, "workers": 8}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 377.91, "python": "3.14.7", "round": 5, "workers": 2}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 387.19, "python": "3.14.7", "round": 5, "workers": 2}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 732.98, "python": "3.14.7", "round": 5, "workers": 4}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 718.05, "python": "3.14.7", "round": 5, "workers": 4}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 1246.94, "python": "3.14.7", "round": 5, "workers": 8}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 1240.37, "python": "3.14.7", "round": 5, "workers": 8}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "processes", "gil_enabled": false, "ops_per_sec": 195.7, "python": "3.14.7", "round": 5, "workers": 1}
+{"build": "nogil", "checksum": 3478450432, "count": 400, "executor": "threads", "gil_enabled": false, "ops_per_sec": 196.02, "python": "3.14.7", "round": 5, "workers": 1}

@@ -1,0 +1,35 @@
+# Профилирование, сборка: gil
+# iters=3000 rounds=7 частота сэмплирования py-spy=200 Гц
+# ядро: Linux 5.15.167.4-microsoft-standard-WSL2
+# снято: 2026-08-22T10:25:35Z
+# среда: PREFLIGHT OK: живых посторонних python нет, зомби 0, загрузка 0.19
+#
+## Цена инструмента: время того же прогона
+круг=1 режим=без_профайлера elapsed_s=3.7005
+круг=1 режим=cProfile elapsed_s=4.9685
+круг=1 режим=py-spy elapsed_s=3.7879
+круг=1 доли={"chunky_step": {"calls": 3000, "cprofile_pct": 64.17, "pyspy_pct": 75.28}, "samples": 801, "tiny_step": {"calls": 6000000, "cprofile_pct": 18.48, "pyspy_pct": 15.86}}
+круг=2 режим=без_профайлера elapsed_s=3.6319
+круг=2 режим=cProfile elapsed_s=4.8891
+круг=2 режим=py-spy elapsed_s=3.7200
+круг=2 доли={"chunky_step": {"calls": 3000, "cprofile_pct": 64.52, "pyspy_pct": 76.79}, "samples": 698, "tiny_step": {"calls": 6000000, "cprofile_pct": 18.28, "pyspy_pct": 14.76}}
+круг=3 режим=без_профайлера elapsed_s=3.6281
+круг=3 режим=cProfile elapsed_s=4.5364
+круг=3 режим=py-spy elapsed_s=3.7273
+круг=3 доли={"chunky_step": {"calls": 3000, "cprofile_pct": 63.49, "pyspy_pct": 80.72}, "samples": 726, "tiny_step": {"calls": 6000000, "cprofile_pct": 18.25, "pyspy_pct": 13.36}}
+круг=4 режим=без_профайлера elapsed_s=3.5738
+круг=4 режим=cProfile elapsed_s=4.7615
+круг=4 режим=py-spy elapsed_s=3.6560
+круг=4 доли={"chunky_step": {"calls": 3000, "cprofile_pct": 65.51, "pyspy_pct": 80.32}, "samples": 691, "tiny_step": {"calls": 6000000, "cprofile_pct": 17.96, "pyspy_pct": 13.6}}
+круг=5 режим=без_профайлера elapsed_s=3.6448
+круг=5 режим=cProfile elapsed_s=4.6712
+круг=5 режим=py-spy elapsed_s=3.6901
+круг=5 доли={"chunky_step": {"calls": 3000, "cprofile_pct": 64.24, "pyspy_pct": 77.71}, "samples": 803, "tiny_step": {"calls": 6000000, "cprofile_pct": 18.19, "pyspy_pct": 16.94}}
+круг=6 режим=без_профайлера elapsed_s=3.5541
+круг=6 режим=cProfile elapsed_s=4.2820
+круг=6 режим=py-spy elapsed_s=3.7304
+круг=6 доли={"chunky_step": {"calls": 3000, "cprofile_pct": 63.46, "pyspy_pct": 78.84}, "samples": 761, "tiny_step": {"calls": 6000000, "cprofile_pct": 18.31, "pyspy_pct": 15.24}}
+круг=7 режим=без_профайлера elapsed_s=3.6219
+круг=7 режим=cProfile elapsed_s=4.6475
+круг=7 режим=py-spy elapsed_s=3.8049
+круг=7 доли={"chunky_step": {"calls": 3000, "cprofile_pct": 64.42, "pyspy_pct": 77.22}, "samples": 755, "tiny_step": {"calls": 6000000, "cprofile_pct": 18.13, "pyspy_pct": 16.03}}

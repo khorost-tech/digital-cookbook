@@ -1,0 +1,57 @@
+# IO-нагрузка, сборка: nogil
+# seed=0 count=1000 delay=0.02s rounds=3 workers=1 8 64 256
+# ограничение: модель процессов не запускается выше 64 воркеров
+# ядер в контейнере: 16
+# ядро: Linux 5.15.167.4-microsoft-standard-WSL2
+# снято: 2026-08-22T09:11:02Z
+# среда: PREFLIGHT OK: живых посторонних python нет, зомби 0, загрузка 0.38
+# порядок моделей в круге — латинский квадрат, как и в CPU-сценарии
+#
+# workers=1 круг=1 порядок: threads processes asyncio
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 49.77, "p50_ms": 20.0677, "p95_ms": 20.0847, "p99_ms": 20.1289, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 20.0926, "workers": 1, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "processes", "ops_per_sec": 49.59, "p50_ms": 20.0731, "p95_ms": 20.0985, "p99_ms": 20.1654, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 20.164, "workers": 1, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 49.68, "p50_ms": 20.1118, "p95_ms": 20.15, "p99_ms": 20.2042, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 20.1308, "workers": 1, "workload": "io"}
+# workers=1 круг=2 порядок: processes asyncio threads
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "processes", "ops_per_sec": 49.61, "p50_ms": 20.0719, "p95_ms": 20.0858, "p99_ms": 20.1277, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 20.1579, "workers": 1, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 49.75, "p50_ms": 20.1001, "p95_ms": 20.123, "p99_ms": 20.1535, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 20.1001, "workers": 1, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 49.78, "p50_ms": 20.0572, "p95_ms": 20.0816, "p99_ms": 20.0935, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 20.0895, "workers": 1, "workload": "io"}
+# workers=1 круг=3 порядок: asyncio threads processes
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 49.75, "p50_ms": 20.0897, "p95_ms": 20.1158, "p99_ms": 20.1338, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 20.0985, "workers": 1, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 49.74, "p50_ms": 20.0696, "p95_ms": 20.0809, "p99_ms": 20.0961, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 20.1043, "workers": 1, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "processes", "ops_per_sec": 49.63, "p50_ms": 20.0678, "p95_ms": 20.0841, "p99_ms": 20.0925, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 20.1478, "workers": 1, "workload": "io"}
+# workers=8 круг=1 порядок: threads processes asyncio
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 398.09, "p50_ms": 20.0685, "p95_ms": 20.0857, "p99_ms": 20.0943, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 2.512, "workers": 8, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "processes", "ops_per_sec": 396.63, "p50_ms": 20.0783, "p95_ms": 20.0955, "p99_ms": 20.1055, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 2.5212, "workers": 8, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 395.84, "p50_ms": 20.1449, "p95_ms": 20.1746, "p99_ms": 20.3668, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 2.5263, "workers": 8, "workload": "io"}
+# workers=8 круг=2 порядок: processes asyncio threads
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "processes", "ops_per_sec": 395.97, "p50_ms": 20.0788, "p95_ms": 20.092, "p99_ms": 20.102, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 2.5255, "workers": 8, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 396.01, "p50_ms": 20.1424, "p95_ms": 20.1667, "p99_ms": 20.2336, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 2.5252, "workers": 8, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 397.94, "p50_ms": 20.0761, "p95_ms": 20.0906, "p99_ms": 20.1061, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 2.513, "workers": 8, "workload": "io"}
+# workers=8 круг=3 порядок: asyncio threads processes
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 395.9, "p50_ms": 20.1448, "p95_ms": 20.1842, "p99_ms": 20.2329, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 2.5259, "workers": 8, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 397.99, "p50_ms": 20.07, "p95_ms": 20.0873, "p99_ms": 20.1065, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 2.5126, "workers": 8, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "processes", "ops_per_sec": 396.83, "p50_ms": 20.0629, "p95_ms": 20.0912, "p99_ms": 20.1059, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 2.52, "workers": 8, "workload": "io"}
+# workers=64 круг=1 порядок: threads processes asyncio
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 3060.82, "p50_ms": 20.0647, "p95_ms": 20.0846, "p99_ms": 20.1122, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 0.3267, "workers": 64, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "processes", "ops_per_sec": 2435.68, "p50_ms": 20.0637, "p95_ms": 20.088, "p99_ms": 20.1059, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 0.4106, "workers": 64, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 3005.15, "p50_ms": 20.3925, "p95_ms": 20.5316, "p99_ms": 20.5516, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 0.3328, "workers": 64, "workload": "io"}
+# workers=64 круг=2 порядок: processes asyncio threads
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "processes", "ops_per_sec": 2394.18, "p50_ms": 20.0639, "p95_ms": 20.0916, "p99_ms": 20.1193, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 0.4177, "workers": 64, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 2998.56, "p50_ms": 20.4287, "p95_ms": 20.5079, "p99_ms": 20.5904, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 0.3335, "workers": 64, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 3039.7, "p50_ms": 20.0671, "p95_ms": 20.0848, "p99_ms": 20.106, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 0.329, "workers": 64, "workload": "io"}
+# workers=64 круг=3 порядок: asyncio threads processes
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 2995.7, "p50_ms": 20.4481, "p95_ms": 20.7188, "p99_ms": 20.7852, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 0.3338, "workers": 64, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 3096.54, "p50_ms": 20.0689, "p95_ms": 20.0856, "p99_ms": 20.1028, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 0.3229, "workers": 64, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "processes", "ops_per_sec": 2366.29, "p50_ms": 20.0617, "p95_ms": 20.0834, "p99_ms": 20.0969, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 0.4226, "workers": 64, "workload": "io"}
+# workers=256 круг=1 порядок: threads processes asyncio
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 6440.52, "p50_ms": 20.0684, "p95_ms": 20.1739, "p99_ms": 24.3241, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 0.1553, "workers": 256, "workload": "io"}
+# ПРОПУЩЕНО: processes при workers=256 > PROC_MAX=64
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 11117.48, "p50_ms": 21.1234, "p95_ms": 22.9542, "p99_ms": 23.0436, "python": "3.14.7", "round_no": 1, "seed": 0, "wall_s": 0.0899, "workers": 256, "workload": "io"}
+# workers=256 круг=2 порядок: processes asyncio threads
+# ПРОПУЩЕНО: processes при workers=256 > PROC_MAX=64
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 11232.82, "p50_ms": 21.0832, "p95_ms": 22.0715, "p99_ms": 22.1727, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 0.089, "workers": 256, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 5812.91, "p50_ms": 20.0683, "p95_ms": 20.0984, "p99_ms": 20.9009, "python": "3.14.7", "round_no": 2, "seed": 0, "wall_s": 0.172, "workers": 256, "workload": "io"}
+# workers=256 круг=3 порядок: asyncio threads processes
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "asyncio", "ops_per_sec": 11222.93, "p50_ms": 21.0774, "p95_ms": 22.3656, "p99_ms": 22.4533, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 0.0891, "workers": 256, "workload": "io"}
+{"build": "nogil", "checksum": 3994340992, "count": 1000, "gil_enabled": false, "mode": "threads", "ops_per_sec": 9385.04, "p50_ms": 20.0639, "p95_ms": 20.0996, "p99_ms": 23.8078, "python": "3.14.7", "round_no": 3, "seed": 0, "wall_s": 0.1066, "workers": 256, "workload": "io"}
+# ПРОПУЩЕНО: processes при workers=256 > PROC_MAX=64
