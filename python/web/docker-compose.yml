@@ -1,0 +1,13 @@
+name: python-web
+
+services:
+  bench:
+    build: .
+    init: true
+    volumes:
+      - ./app:/app
+      - ./bench:/bench
+      - ./fixtures:/fixtures
+    # Приложения поднимаются скриптами сценариев, а не тут: у каждого свой
+    # сервер, и запускать их надо по одному, чтобы нагрузка шла на одну цель.
+    command: ["sleep", "infinity"]

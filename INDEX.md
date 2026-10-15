@@ -136,7 +136,7 @@
 | [`kubernetes/autoscaling`](kubernetes/autoscaling) | Автоскейлинг: HPA, VPA и KEDA на управляемой бизнес-метрике — от источника метрики до решения о масштабировании | [статья](https://khorost.tech/kubernetes/k8s-autoscaling-hpa-vpa-keda/) |
 | [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
 | [`kubernetes/scheduling`](kubernetes/scheduling) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | [статья](https://khorost.tech/kubernetes/k8s-pod-scheduling-affinity-taints/) |
-| [`kubernetes/stateful`](kubernetes/stateful) | StatefulSet и хранилище: собственный том на реплику, стабильная идентичность подов, изоляция данных между репликами | 🔜 скоро |
+| [`kubernetes/stateful`](kubernetes/stateful) | StatefulSet и хранилище: собственный том на реплику, стабильная идентичность подов, изоляция данных между репликами | [статья](https://khorost.tech/kubernetes/k8s-stateful-storage/) |
 
 ## Security
 
@@ -160,4 +160,5 @@
 |---|---|---|
 | [`python/concurrency`](python/concurrency) | GIL, asyncio, потоки и процессы: где GIL связывает счётную задачу, что даёт сборка без GIL и чем за неё платят; профилирование cProfile против py-spy | 🔜 скоро |
 | [`python/typing-and-data`](python/typing-and-data) | Кто ловит подсунутый дефект — mypy, mypy --strict, pyright, pydantic на границе и голое выполнение; и кто не полез в данные, которые ответу не нужны: лишние разделы Parquet сделаны нечитаемыми, дошедший до ответа тем самым доказал, что в них не заглядывал. Времени этот стенд не меряет вовсе | 🔜 скоро |
+| [`python/web`](python/web) | FastAPI, Django и Flask на побайтово одинаковых ответах: во что обходится сам фреймворк и когда это перестаёт быть заметно; воркеры, корректное завершение, отказ на старте | 🔜 скоро |
 

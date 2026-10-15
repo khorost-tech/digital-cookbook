@@ -344,6 +344,9 @@
     "python/typing-and-data": [
       "python/python-modern-typing.md"
     ],
+    "python/web": [
+      "python/python-web-frameworks.md"
+    ],
     "rust/docker-minimal": [
       "rust/rust-docker-minimal-images.md"
     ],
