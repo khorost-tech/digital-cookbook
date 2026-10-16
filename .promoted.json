@@ -43,6 +43,7 @@
     ],
     "architecture/temporal": [
       "architecture/durable-execution-paradigm.md",
+      "architecture/temporal-activities-deep-dive.md",
       "architecture/temporal-architecture-internals.md",
       "architecture/temporal-durable-workflows.md",
       "architecture/temporal-workflow-determinism.md"
@@ -300,6 +301,7 @@
       "observability/metrics-prometheus-red-use.md",
       "observability/otel-instrumentation-go-java.md",
       "observability/slo-error-budget-alerting.md",
+      "observability/telemetry-cardinality-cost.md",
       "observability/tracing-as-data-span-design-exemplars.md"
     ],
     "observability/vector-pipeline": [
@@ -340,6 +342,9 @@
     ],
     "python/concurrency": [
       "python/python-asyncio-and-gil.md"
+    ],
+    "python/data-access": [
+      "python/python-data-access-sqlalchemy.md"
     ],
     "python/typing-and-data": [
       "python/python-modern-typing.md"

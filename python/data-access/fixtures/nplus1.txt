@@ -1,0 +1,20 @@
+# N+1 и стратегии загрузки связей
+# rounds=5, счёт запросов по pg_stat_statements
+# снято: 2026-08-24T07:34:45Z
+# среда: PREFLIGHT OK: беглых плеч нет, PostgreSQL 18.4 (Debian 18.4-1.pgdg13+1), набор данных совпадает, простой процессора 99% (loadavg 0.38)
+#
+{"authors": 20, "books": 200, "ms": 111.704, "queries": 221, "rating_sum": 5997, "reviews": 1995, "round": 1, "rows_from_server": 2215, "scenario": "nplus1", "strategy": "lazy"}
+{"authors": 20, "books": 200, "ms": 33.672, "queries": 3, "rating_sum": 5997, "reviews": 1995, "round": 1, "rows_from_server": 2215, "scenario": "nplus1", "strategy": "selectinload"}
+{"authors": 20, "books": 200, "ms": 31.357, "queries": 1, "rating_sum": 5997, "reviews": 1995, "round": 1, "rows_from_server": 1995, "scenario": "nplus1", "strategy": "joinedload"}
+{"authors": 20, "books": 200, "ms": 113.993, "queries": 221, "rating_sum": 5997, "reviews": 1995, "round": 2, "rows_from_server": 2215, "scenario": "nplus1", "strategy": "lazy"}
+{"authors": 20, "books": 200, "ms": 32.515, "queries": 3, "rating_sum": 5997, "reviews": 1995, "round": 2, "rows_from_server": 2215, "scenario": "nplus1", "strategy": "selectinload"}
+{"authors": 20, "books": 200, "ms": 35.19, "queries": 1, "rating_sum": 5997, "reviews": 1995, "round": 2, "rows_from_server": 1995, "scenario": "nplus1", "strategy": "joinedload"}
+{"authors": 20, "books": 200, "ms": 116.785, "queries": 221, "rating_sum": 5997, "reviews": 1995, "round": 3, "rows_from_server": 2215, "scenario": "nplus1", "strategy": "lazy"}
+{"authors": 20, "books": 200, "ms": 31.438, "queries": 3, "rating_sum": 5997, "reviews": 1995, "round": 3, "rows_from_server": 2215, "scenario": "nplus1", "strategy": "selectinload"}
+{"authors": 20, "books": 200, "ms": 36.566, "queries": 1, "rating_sum": 5997, "reviews": 1995, "round": 3, "rows_from_server": 1995, "scenario": "nplus1", "strategy": "joinedload"}
+{"authors": 20, "books": 200, "ms": 113.1, "queries": 221, "rating_sum": 5997, "reviews": 1995, "round": 4, "rows_from_server": 2215, "scenario": "nplus1", "strategy": "lazy"}
+{"authors": 20, "books": 200, "ms": 32.599, "queries": 3, "rating_sum": 5997, "reviews": 1995, "round": 4, "rows_from_server": 2215, "scenario": "nplus1", "strategy": "selectinload"}
+{"authors": 20, "books": 200, "ms": 30.162, "queries": 1, "rating_sum": 5997, "reviews": 1995, "round": 4, "rows_from_server": 1995, "scenario": "nplus1", "strategy": "joinedload"}
+{"authors": 20, "books": 200, "ms": 113.08, "queries": 221, "rating_sum": 5997, "reviews": 1995, "round": 5, "rows_from_server": 2215, "scenario": "nplus1", "strategy": "lazy"}
+{"authors": 20, "books": 200, "ms": 32.788, "queries": 3, "rating_sum": 5997, "reviews": 1995, "round": 5, "rows_from_server": 2215, "scenario": "nplus1", "strategy": "selectinload"}
+{"authors": 20, "books": 200, "ms": 31.244, "queries": 1, "rating_sum": 5997, "reviews": 1995, "round": 5, "rows_from_server": 1995, "scenario": "nplus1", "strategy": "joinedload"}

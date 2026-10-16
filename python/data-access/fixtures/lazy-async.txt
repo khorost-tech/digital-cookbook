@@ -1,0 +1,5 @@
+# Ленивая загрузка в async-сессии: фиксация поведения
+# снято: 2026-08-24T07:34:49Z
+#
+{"message": "greenlet_spawn has not been called; can't call await_only() here. Was IO attempted in an unexpected place? (Background on this error at: https://sqlalche.me/e/20/xd2s)", "preloaded": false, "raised": true, "sqlalchemy": "2.0.52", "type": "MissingGreenlet"}
+{"books": 15, "preloaded": true, "raised": false, "sqlalchemy": "2.0.52"}
