@@ -1,0 +1,33 @@
+# Разрешение egress client(role=allowed) -> server, порт 8080. НАМЕРЕННО без правила для
+# DNS — это предмет демонстрации задачи G1 (сценарий A в README): правило доступа корректно
+# и достаточно для прохождения трафика по IP, но без отдельного разрешения egress на DNS
+# (UDP/TCP 53 к CoreDNS в kube-system) резолв имени "server" не работает — запрос по имени
+# падает на стадии резолва, а не на стадии доступа. DNS-разрешение добавляется отдельно
+# в manifests/22-allow-dns.yaml (шаг "лечения").
+#
+# Этот файл содержит ТОЛЬКО egress-часть и применяется постоянно, в обоих сценариях
+# README ("Порядок запуска с нуля"). Ingress-часть (доступ client -> server) вынесена в
+# ОТДЕЛЬНЫЙ файл manifests/21a-allow-client-ingress.yaml и применяется ТОЛЬКО в сценарии A
+# (демо G1, ловушка DNS) — в сценарии B (демо G3, L7-правило) вместо неё ingress-разрешение
+# даёт manifests/30-cnp-l7.yaml (CiliumNetworkPolicy). Две ingress-политики взаимоисключающи
+# по union-семантике — подробности в 21a-allow-client-ingress.yaml и README, раздел "G3".
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-client-to-server-egress
+  namespace: cookbook-net
+spec:
+  podSelector:
+    matchLabels:
+      role: allowed
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - podSelector:
+            matchLabels:
+              app: server
+      ports:
+        - protocol: TCP
+          port: 8080

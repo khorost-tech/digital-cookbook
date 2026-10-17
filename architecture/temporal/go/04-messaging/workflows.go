@@ -68,20 +68,40 @@ func CartWorkflow(ctx workflow.Context, state CartState) (CartState, error) {
 	}
 
 	ch := workflow.GetSignalChannel(ctx, SignalAdd)
+	apply := func(amount int) {
+		if state.Total+amount > state.Cap {
+			logger.Info("превышен cap, позиция отклонена", "amount", amount, "cap", state.Cap)
+			return
+		}
+		state.Total += amount
+	}
 	for state.Cycles < state.MaxCycles {
 		var amount int
 		ch.Receive(ctx, &amount)
 		state.Cycles++
-		if state.Total+amount > state.Cap {
-			logger.Info("превышен cap, позиция отклонена", "amount", amount, "cap", state.Cap)
-			continue
-		}
-		state.Total += amount
+		apply(amount)
 	}
 
 	if !state.WithCAN {
 		logger.Info("лимит итераций исчерпан, завершаемся", "total", state.Total)
 		return state, nil
+	}
+
+	// Перед ротацией канал осушается. Сигналы, которые уже доставлены в
+	// этот запуск, но ещё не прочитаны, новый запуск не получит: Continue-
+	// As-New переносит только аргументы. Поэтому всё, что лежит в буфере,
+	// разбирается здесь, без ожидания (ReceiveAsync не блокирует).
+	drained := 0
+	for {
+		var amount int
+		if !ch.ReceiveAsync(&amount) {
+			break
+		}
+		drained++
+		apply(amount)
+	}
+	if drained > 0 {
+		logger.Info("перед Continue-As-New разобран остаток сигналов", "drained", drained)
 	}
 
 	// Continue-As-New: то же логическое исполнение продолжается новым

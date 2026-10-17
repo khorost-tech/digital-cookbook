@@ -1,0 +1,11 @@
+# slim: COPY + rm в том же RUN против подключения через BuildKit
+# платформа: linux/amd64, docker 29.8.0
+# база python:3.14-slim: python@sha256:a2b82f3c48559aa0a8446d9af49826b6e2b2016f4cd2afabfe6013ec53729170
+# снято: 2026-10-16T20:29:24Z
+#
+# cmd: docker history --human=false --format '{{.Size}}\t{{.CreatedBy}}' py-tooling/slim-copy:ab
+{"strategy": "slim-copy", "compressed_bytes": 113374641, "unpacked_bytes": 247463936, "wheels_layer_bytes": 53329920, "inspect_before": 113374641, "inspect_after": 360838577, "image_ls": "361MB"}
+# cmd: docker history --human=false --format '{{.Size}}\t{{.CreatedBy}}' py-tooling/slim:ab
+{"strategy": "slim", "compressed_bytes": 60955050, "unpacked_bytes": 194134016, "wheels_layer_bytes": 0, "inspect_before": 255089066, "inspect_after": 255089066, "image_ls": "255MB"}
+# cmd: docker history --human=false --format '{{.Size}}\t{{.CreatedBy}}' py-tooling/multistage:ab
+{"strategy": "multistage", "compressed_bytes": 61205722, "unpacked_bytes": 197353472, "wheels_layer_bytes": 0, "inspect_before": 258559194, "inspect_after": 258559194, "image_ls": "259MB"}

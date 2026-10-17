@@ -92,7 +92,7 @@ bash scripts/down.sh     # погасить вместе с томом Postgres
 | `02-determinism` | 3. Детерминизм и replay | воспроизводимая non-determinism error, цена replay от длины истории |
 | `03-activities` | 4. Activities вглубь | идемпотентность, heartbeat, local activity против обычной |
 | `04-messaging` | 5. Signals, Queries, Updates | Query не растит историю, Update валидируется синхронно, цена Continue-As-New |
-| `05-versioning` | 6. Версионирование | наивная правка, починка `GetVersion`, преждевременно снятый патч |
+| `05-versioning` | 6. Версионирование | наивная правка, починка `GetVersion`, преждевременно снятый патч, контроль: вызов снят у истории с маркером |
 | `06-operations` | 7. Эксплуатация | ёмкость воркера против schedule-to-start, тест с промоткой времени |
 | `07-languages` | 8. По языкам | один сценарий на Go, Java, TypeScript, Python, .NET |
 

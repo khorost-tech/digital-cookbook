@@ -167,6 +167,9 @@ if have 04-messaging; then
     # Утверждение статьи 5 — «ограничена одной итерацией», а не «в N раз
     # меньше»: проверяем именно границу, а не отношение.
     cmp_num "с Continue-As-New история в пределах одной итерации" "${ev_with}" "<=" 100
+    can_total=$(grep 'QUERY workflow=cart-can-with-' "${RUNS}/04-messaging.log" | sed -n 's/.*total=\([0-9]*\) ожидалось=.*/\1/p')
+    can_want=$(grep 'QUERY workflow=cart-can-with-' "${RUNS}/04-messaging.log" | sed -n 's/.*ожидалось=\([0-9]*\).*/\1/p')
+    cmp_num "сигналы не теряются на ротациях Continue-As-New" "${can_total}" "==" "${can_want:-неизвестно}"
 else bad "04-messaging" "нет лога"; fi
 
 # ── 05-versioning ─────────────────────────────────────────────────────
@@ -181,6 +184,11 @@ if have 05-versioning; then
         cmp_num "расхождения при наивной правке" "${mm[0]}" ">" 0
         cmp_num "расхождений под патчем нет" "${mm[1]}" "==" 0
         cmp_num "расхождения при рано снятом патче" "${mm[2]}" ">" 0
+        if (( ${#st[@]} >= 4 && ${#mm[@]} >= 4 )); then
+            [[ "${st[3]}" == "Completed" ]] && ok "снятый вызов не мешает истории с маркером" \
+                || bad "снятый вызов при истории с маркером" "статус ${st[3]}"
+            cmp_num "расхождений у истории с маркером нет" "${mm[3]}" "==" 0
+        else bad "05-versioning" "нет контроля v3 → v4"; fi
     else bad "05-versioning" "в логе меньше трёх сценариев"; fi
 else bad "05-versioning" "нет лога"; fi
 

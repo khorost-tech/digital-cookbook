@@ -1,0 +1,27 @@
+# CiliumNetworkPolicy с HTTP-правилом (L7): то, что обычная NetworkPolicy
+# не умеет в принципе — различать методы и пути внутри одного и того же
+# адреса и порта. role: allowed получает право только на GET /a к server:8080.
+# Всё остальное к этому же адресу/порту (другой путь, другой метод) отклоняется
+# ИМЕННО на уровне L7-прокси Cilium (envoy), а не молча дропается на L3/L4:
+# соединение устанавливается, но HTTP-запрос получает отказ прокси.
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: allow-server-http-get-a
+  namespace: cookbook-net
+spec:
+  endpointSelector:
+    matchLabels:
+      app: server
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            role: allowed
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+          rules:
+            http:
+              - method: "GET"
+                path: "^/a$"

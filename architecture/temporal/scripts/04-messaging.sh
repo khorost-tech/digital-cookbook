@@ -82,6 +82,11 @@ for mode in without with; do
     sleep 8
     if [[ "${mode}" == "with" ]]; then
         go_run_in_net m4-run 04-messaging history -workflow "${wf}" -can | grep '^ЗАМЕР'
+        # Ни один сигнал не должен потеряться на ротациях: каждый добавляет
+        # 1, cap заведомо не достигается, значит итог обязан равняться
+        # числу отправленных. Без осушения канала перед Continue-As-New
+        # сигнал, пришедший в момент ротации, пропал бы молча.
+        go_run_in_net m4-run 04-messaging query -workflow "${wf}" | sed "s/\$/ ожидалось=${SIGNALS}/"
     else
         go_run_in_net m4-run 04-messaging history -workflow "${wf}" | grep '^ЗАМЕР'
     fi

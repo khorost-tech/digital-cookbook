@@ -1,0 +1,98 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 30-identity
+# cmd: kubectl -n cookbook-net get ciliumendpoints -o custom-columns=NAME:.metadata.name,IDENTITY:.status.identity.id,IP:.status.networking.addressing[0].ipv4
+# ---
+NAME             IDENTITY   IP
+client-allowed   13474      10.244.6.124
+client-denied    48544      10.244.6.84
+server           2715       10.244.3.127
+--- лейблы, из которых выводится identity ---
+NAME             READY   STATUS    RESTARTS   AGE   LABELS
+client-allowed   1/1     Running   0          49m   app=client,role=allowed
+client-denied    1/1     Running   0          49m   app=client,role=denied
+server           1/1     Running   0          49m   app=server
+--- расшифровка identity (какие лейблы за ней стоят) ---
+# cmd: kubectl -n kube-system exec ds/cilium -- cilium-dbg identity list
+# Полный вывод — 372 строки, весь кластер (все namespace, включая reserved:* и argocd/monitoring).
+# `head -20` из брифа попадает только на зарезервированные системные identity (id 1-10) и
+# первый неймспейс по возрастанию id — cookbook-net там не видно, это нерелевантный срез,
+# приводить его как "расшифровку identity стенда" было бы нечестно. Вместо этого — grep по
+# трём id, которые сняты выше в fixture этим же прогоном (13474, 48544, 2715):
+ID      LABELS
+13474   k8s:app=client
+        k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=cookbook-net
+        k8s:io.cilium.k8s.namespace.labels.pod-security.kubernetes.io/enforce=baseline
+        k8s:io.cilium.k8s.namespace.labels.purpose=digital-cookbook
+        k8s:io.cilium.k8s.policy.cluster=default
+        k8s:io.cilium.k8s.policy.serviceaccount=default
+        k8s:io.kubernetes.pod.namespace=cookbook-net
+        k8s:role=allowed
+48544   k8s:app=client
+        k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=cookbook-net
+        k8s:io.cilium.k8s.namespace.labels.pod-security.kubernetes.io/enforce=baseline
+        k8s:io.cilium.k8s.namespace.labels.purpose=digital-cookbook
+        k8s:io.cilium.k8s.policy.cluster=default
+        k8s:io.cilium.k8s.policy.serviceaccount=default
+        k8s:io.kubernetes.pod.namespace=cookbook-net
+        k8s:role=denied
+2715    k8s:app=server
+        k8s:io.cilium.k8s.namespace.labels.kubernetes.io/metadata.name=cookbook-net
+        k8s:io.cilium.k8s.namespace.labels.pod-security.kubernetes.io/enforce=baseline
+        k8s:io.cilium.k8s.namespace.labels.purpose=digital-cookbook
+        k8s:io.cilium.k8s.policy.cluster=default
+        k8s:io.cilium.k8s.policy.serviceaccount=default
+        k8s:io.kubernetes.pod.namespace=cookbook-net
+# Видно главное: identity 13474 (client-allowed) и 48544 (client-denied) отличаются
+# ТОЛЬКО лейблом k8s:role — остальной набор (namespace, app, serviceaccount) идентичен.
+# Именно этот один лейбл и есть та переменная, от которой зависит доступ.
+--- ФАКТ: client-allowed — голый Pod (не Deployment/ReplicaSet), см. manifests/10-workloads.yaml ---
+# `kubectl delete pod client-allowed` удаляет объект НАВСЕГДА — ничего его не пересоздаёт
+# автоматически (это не Deployment). `kubectl wait --for=condition=Ready` после delete упал
+# с NotFound — под физически отсутствовал. Пересоздание в понимании этой задачи — это
+# `kubectl apply -f manifests/10-workloads.yaml` (тот же манифест, тот же набор лейблов),
+# как и предполагает жизненный цикл голого Pod в этом стенде. Честно фиксирую это отклонение
+# от дословных команд брифа, а не подгоняю под них.
+kubectl apply -f manifests/10-workloads.yaml
+
+--- ПОСЛЕ пересоздания client-allowed (kubectl apply) ---
+NAME             IDENTITY   IP
+client-allowed   13474      10.244.6.239
+client-denied    48544      10.244.6.84
+server           2715       10.244.3.127
+--- доступ сохранился БЕЗ правки политик ---
+ROUTE-A
+
+--- меняем лейбл role: allowed -> denied у client-allowed ---
+NAME             IDENTITY   IP
+client-allowed   13474      10.244.6.239
+client-denied    48544      10.244.6.84
+server           2715       10.244.3.127
+--- тот же под, тот же IP, но доступа больше нет ---
+ROUTE-A
+
+--- ФАКТ: sleep 15 из брифа оказался мал — identity/CiliumEndpoint не успел пересчитаться ---
+# Сразу после `label --overwrite` (через 15s) CiliumEndpoint ещё показывал СТАРУЮ identity
+# 13474 и curl всё ещё проходил (ROUTE-A выше) — это гонка переисчисления identity в Cilium
+# agent, а не опровержение модели "identity = f(лейблы)". Проверка: `kubectl get pod
+# client-allowed --show-labels` в этот момент уже показывала role=denied — лейбл на Pod
+# применился мгновенно, а вот CiliumEndpoint.status.identity ещё не догнал. Подождал ещё ~20s
+# (итого ~35s с момента label) и снял заново:
+kubectl -n cookbook-net get ciliumendpoints client-allowed -o custom-columns=NAME:.metadata.name,IDENTITY:.status.identity.id,IP:.status.networking.addressing[0].ipv4
+NAME             IDENTITY   IP
+client-allowed   48544      10.244.6.239
+# IP не изменился (10.244.6.239 — тот же адрес, что и после пересоздания в шаге 2), а identity
+# стала 48544 — ТА ЖЕ identity, что у client-denied. Ожидаемо и даже нагляднее, чем в брифе:
+# Cilium выводит identity как хеш/аллокацию по НАБОРУ лейблов, а не по объекту Pod, поэтому
+# два разных Pod с одинаковым набором лейблов (app=client, role=denied, тот же namespace)
+# получают ОДНУ И ТУ ЖЕ identity 48544. Это прямое подтверждение: identity привязана к
+# лейблам, а не к поду и не к адресу.
+--- доступ после устоявшейся identity 48544 ---
+curl: (28) Resolving timed out after 5000 milliseconds
+command terminated with exit code 28
+
+--- возвращаем лейбл обратно ---
+NAME             IDENTITY   IP
+client-allowed   13474      10.244.6.239
+client-denied    48544      10.244.6.84
+server           2715       10.244.3.127
+ROUTE-A
+

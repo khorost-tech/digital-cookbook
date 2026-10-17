@@ -1,0 +1,19 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 10-workloads
+# cmd: kubectl -n cookbook-net get pod -o custom-columns=NAME:.metadata.name,IP:.status.podIP,NODE:.spec.nodeName
+# ---
+NAME             IP             NODE
+client-allowed   10.244.6.124   k8s-volga-wk03
+client-denied    10.244.6.84    k8s-volga-wk03
+server           10.244.3.127   k8s-volga-wk01
+--- лейблы подов ---
+NAME             READY   STATUS    RESTARTS   AGE   LABELS
+client-allowed   1/1     Running   0          27s   app=client,role=allowed
+client-denied    1/1     Running   0          27s   app=client,role=denied
+server           1/1     Running   0          27s   app=server
+--- связность ДО политик: оба клиента достают server (curl, образ curlimages/curl:8.11.1) ---
+client-allowed -> http://server:8080/a : ROUTE-A
+
+client-denied -> http://server:8080/a : ROUTE-A
+
+--- разные пути отдают разное (нужно для L7-демо) ---
+ROUTE-B

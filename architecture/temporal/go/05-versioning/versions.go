@@ -114,6 +114,10 @@ func WorkflowV3Patched(ctx workflow.Context, resource string) (string, error) {
 // Проверка «мы же дождались завершения старых» и сам код опираются на
 // ОДНО допущение — что старых больше нет. Одно допущение, проверенное
 // дважды, не даёт двух проверок.
+//
+// Экземпляру, который прошёл точку GetVersion уже с патчем, этот код не
+// мешает: SDK пропускает маркер версии без соответствующего вызова.
+// Это проверяет контрольный сценарий v3 → v4 в scripts/05-versioning.sh.
 func WorkflowV4PatchRemoved(ctx workflow.Context, resource string) (string, error) {
 	ctx = workflow.WithActivityOptions(ctx, provisioning.DefaultActivityOptions())
 	var acts *provisioning.Activities

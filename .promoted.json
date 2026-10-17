@@ -46,6 +46,7 @@
       "architecture/temporal-activities-deep-dive.md",
       "architecture/temporal-architecture-internals.md",
       "architecture/temporal-durable-workflows.md",
+      "architecture/temporal-signals-queries-child-workflows.md",
       "architecture/temporal-workflow-determinism.md"
     ],
     "architecture/testing": [
@@ -239,6 +240,9 @@
     "kubernetes/autoscaling": [
       "kubernetes/k8s-autoscaling-hpa-vpa-keda.md"
     ],
+    "kubernetes/networking": [
+      "kubernetes/k8s-networking-cilium-mesh.md"
+    ],
     "kubernetes/resources": [
       "kubernetes/k8s-autoscaling-hpa-vpa-keda.md",
       "kubernetes/k8s-resources-requests-limits-qos.md"
@@ -345,6 +349,9 @@
     ],
     "python/data-access": [
       "python/python-data-access-sqlalchemy.md"
+    ],
+    "python/tooling": [
+      "python/python-packaging-uv-poetry.md"
     ],
     "python/typing-and-data": [
       "python/python-modern-typing.md"

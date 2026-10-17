@@ -7,6 +7,9 @@
 # Контрпример 2: маркер патча снят, пока живой экземпляр со старой
 #                историей ещё существует → та же ошибка возвращается,
 #                но теперь код выглядит безупречно.
+# Контроль:      тот же код v4 у экземпляра, прошедшего точку уже с
+#                маркером, → доходит до конца: удаление вызова ломает
+#                только историю со старой веткой, а не историю с маркером.
 set -euo pipefail
 # shellcheck source=lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -27,8 +30,14 @@ status_of() { go_run_in_net v5-run 05-versioning status -workflow "$1" | grep '^
 
 # Число упоминаний расхождения в логе воркера. Ошибка детерминизма
 # приходит именно в лог воркера: сам воркфлоу при этом жив.
-mismatches() {
-    docker logs v5-w 2>&1 | grep -ci 'nondeterministic\|non-determinism\|mismatch\|history event is' || true
+# Считаются только строки СВОЕГО экземпляра. Застрявшие экземпляры прошлых
+# сценариев живы и сидят в той же очереди задач, и новый воркер честно
+# пытается их проиграть — без фильтра их ошибки приписывались бы текущему
+# сценарию. Так контроль v3 → v4 в первой попытке получил 6 «своих»
+# расхождений, хотя сам дошёл до конца.
+mismatches() {                    # mismatches <workflow-id>
+    docker logs v5-w 2>&1 | grep -F "WorkflowID $1 " \
+        | grep -ci 'nondeterministic\|non-determinism\|mismatch\|history event is' || true
 }
 
 run_case() {                      # run_case <имя> <версия-старта> <версия...> — цепочка подмен
@@ -55,8 +64,9 @@ run_case() {                      # run_case <имя> <версия-старта
     # Пауза 90s должна истечь, и воркфлоу продолжится уже новым кодом.
     sleep 95
     status_of "${wf}" | sed 's/^/    /'
-    echo "    упоминаний расхождения в логе воркера: $(mismatches)"
-    docker logs v5-w 2>&1 | grep -i 'nondeterministic\|mismatch\|history event is' | head -2 | sed 's/^/      /' || true
+    echo "    упоминаний расхождения в логе воркера: $(mismatches "${wf}")"
+    docker logs v5-w 2>&1 | grep -F "WorkflowID ${wf} " \
+        | grep -i 'nondeterministic\|mismatch\|history event is' | head -2 | sed 's/^/      /' || true
     docker kill v5-w >/dev/null 2>&1 || true
     docker rm -f v5-w >/dev/null 2>&1 || true
 }
@@ -74,6 +84,15 @@ echo "  новой веткой — для него удаление марке�
 echo "  Ломается тот, кто родился ДО патча: его история говорит"
 echo "  «старая ветка», а код v4 знает только новую."
 run_case removed v1 v3 v4
+
+section "Контроль: вызов GetVersion снят у экземпляра С маркером (v3 → v4)"
+echo "  Экземпляр родился на v3 и прошёл точку GetVersion уже с патчем: в его"
+echo "  истории записан маркер версии 1. Код v4 вызова не содержит вовсе."
+echo "  SDK пропускает маркер версии, которому в коде нет вызова, и"
+echo "  экземпляр обязан дойти до конца. Значит, ждать выхода за retention"
+echo "  историй С маркером, чтобы удалить вызов, не нужно: ломает только"
+echo "  история, в которой записана старая ветка (сценарий выше)."
+run_case removed-after-marker v3 v4
 
 section "Что это значит"
 echo "  non-determinism error НЕ убивает воркфлоу: статус остаётся Running,"

@@ -1,0 +1,56 @@
+name: python-tooling
+
+services:
+  # Локальный индекс: колёса скачиваются один раз и дальше отдаются по HTTP.
+  # Так из замера уходит сеть — главный источник разброса, который перекрыл
+  # бы разницу между инструментами.
+  index:
+    image: python:3.13-slim
+    init: true
+    volumes:
+      - ./index:/index:ro
+      - ./bench:/bench:ro
+    working_dir: /index
+    # Не http.server: он шлёт только Last-Modified, а pip без Cache-Control
+    # или ETag ответы не кэширует вовсе. Подробности — в bench/serve_index.py.
+    command: ["python", "/bench/serve_index.py"]
+
+  bench:
+    build: .
+    init: true
+    depends_on:
+      - index
+    environment:
+      # Все три инструмента ходят в один и тот же индекс одним и тем же
+      # способом. Разные способы дали бы разную работу.
+      LOCAL_INDEX: "http://index:8080/simple"
+      # Каждый инструмент доходит до индекса СВОИМ способом, и это надо
+      # выровнять явно. pip по простому HTTP требует доверенного хоста, uv
+      # не требует, Poetry берёт источник из pyproject. Если оставить как
+      # есть, инструменты будут делать разную работу: один ходит в
+      # локальный индекс, другой молча уходит в PyPI и меряет сеть.
+      UV_DEFAULT_INDEX: "http://index:8080/simple"
+      PIP_INDEX_URL: "http://index:8080/simple"
+      PIP_TRUSTED_HOST: "index"
+      UV_CACHE_DIR: /caches/uv
+      POETRY_CACHE_DIR: /caches/poetry
+      PIP_CACHE_DIR: /caches/pip
+      # Виртуальные окружения Poetry по умолчанию лежат ВНУТРИ его кэша.
+      # Оставить так нельзя: очистка кэша сносила бы заодно и окружение, а
+      # у остальных инструментов очистка кэша окружения не трогает. Тогда
+      # «холодный кэш» означал бы для Poetry больше работы, чем для них.
+      POETRY_VIRTUALENVS_PATH: /venvs/poetry
+      POETRY_VIRTUALENVS_CREATE: "true"
+      POETRY_VIRTUALENVS_IN_PROJECT: "false"
+    volumes:
+      - ./app:/app
+      - ./bench:/bench
+      - ./fixtures:/fixtures
+      - ./index:/index
+      - caches:/caches
+      - venvs:/venvs
+    command: ["sleep", "infinity"]
+
+volumes:
+  caches:
+  venvs:

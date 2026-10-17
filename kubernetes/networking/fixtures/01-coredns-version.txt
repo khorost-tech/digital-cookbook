@@ -1,0 +1,5 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 01-coredns-version
+# cmd: kubectl -n kube-system get deploy coredns -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image
+# ---
+NAME      IMAGE
+coredns   registry.k8s.io/coredns/coredns:v1.14.2

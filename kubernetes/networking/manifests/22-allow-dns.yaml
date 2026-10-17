@@ -1,0 +1,29 @@
+# "Лечение" ловушки из 21-allow-client.yaml: явное разрешение egress на DNS для
+# подов с лейблом role: allowed. Селектор namespace — по стандартному лейблу
+# kubernetes.io/metadata.name: kube-system, селектор подов — по фактическим
+# лейблам CoreDNS в этом кластере (сверено: kubectl -n kube-system get pods
+# -l k8s-app=kube-dns --show-labels -> k8s-app=kube-dns).
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-client-to-dns
+  namespace: cookbook-net
+spec:
+  podSelector:
+    matchLabels:
+      role: allowed
+  policyTypes:
+    - Egress
+  egress:
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53

@@ -1,0 +1,28 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 20-policy-dns-trap
+# cmd: kubectl -n cookbook-net get networkpolicy
+# ---
+NAME           POD-SELECTOR   AGE
+default-deny   <none>         10s
+--- СОСТОЯНИЕ 1: после default-deny, client-allowed -> server по имени ---
+curl: (28) Resolving timed out after 5001 milliseconds
+command terminated with exit code 28
+
+--- СОСТОЯНИЕ 2: разрешение есть. Обращение ПО ИМЕНИ ---
+curl: (28) Resolving timed out after 5000 milliseconds
+command terminated with exit code 28
+
+--- то же обращение ПО IP (10.104.186.225), в обход резолва имени ---
+ROUTE-A
+
+--- и сам резолв имени ---
+;; connection timed out; no servers could be reached
+
+command terminated with exit code 1
+
+--- СОСТОЯНИЕ 3: после разрешения DNS, обращение ПО ИМЕНИ ---
+ROUTE-A
+
+--- а client-denied по-прежнему не пускают (политика работает) ---
+curl: (28) Resolving timed out after 5001 milliseconds
+command terminated with exit code 28
+

@@ -1,0 +1,30 @@
+# L3/L4-разрешение ingress client(role=allowed) -> server, порт 8080. Применяется
+# ТОЛЬКО в сценарии A ("Порядок запуска" в README) — воспроизведение демо G1
+# (ловушка забытого DNS-egress). НЕ применяется в сценарии B (демо G3, L7-правило),
+# потому что действует по union-семантике: пока эта политика активна, она разрешает
+# ЛЮБОЙ TCP-трафик на server:8080 независимо от HTTP-метода/пути и тем самым перекрывает
+# L7-ограничение manifests/30-cnp-l7.yaml (GET /b тоже пройдёт, хотя L7-правило разрешает
+# только GET /a) — разведано и зафиксировано в fixtures/40-l7-policy.txt. Подробности —
+# в README, разделы "Порядок запуска с нуля" и "G3".
+#
+# Egress-часть (client role=allowed -> server) вынесена отдельно и живёт постоянно
+# в manifests/21-allow-client.yaml — она не участвует в конфликте между сценариями.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-client-to-server-ingress
+  namespace: cookbook-net
+spec:
+  podSelector:
+    matchLabels:
+      app: server
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              role: allowed
+      ports:
+        - protocol: TCP
+          port: 8080

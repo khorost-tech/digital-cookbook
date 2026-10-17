@@ -1,0 +1,70 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 40-l7-policy
+# cmd: kubectl -n cookbook-net get ciliumnetworkpolicy
+# ---
+NAME                      AGE   VALID
+allow-server-http-get-a   21s   True
+--- проба 1: GET /a (разрешено правилом) ---
+ROUTE-A
+
+HTTP_CODE=200
+--- проба 2: GET /b (тот же адрес и порт, другой путь) ---
+ROUTE-B
+
+HTTP_CODE=200
+--- проба 3: POST /a (разрешённый путь, другой метод) ---
+<html>
+<head><title>405 Not Allowed</title></head>
+<body>
+<center><h1>405 Not Allowed</h1></center>
+<hr><center>nginx/1.27.3</center>
+</body>
+</html>
+
+HTTP_CODE=405
+--- анализ проб 1-3 ---
+Наблюдение: GET /a -> 200, но GET /b тоже -> 200 (ROUTE-B), хотя L7-правило CiliumNetworkPolicy
+разрешает только GET /a. Причина: обычная NetworkPolicy allow-client-to-server-ingress (G1)
+разрешает role=allowed -> server:8080 по L3/L4 без ограничения по HTTP. Политики Kubernetes
+суммируются как разрешения (union) — L3/L4-разрешение G1 остаётся действующим независимо от
+CiliumNetworkPolicy, и трафик проходит по нему. L7-правило НЕ "сужает" уже выданное L3-разрешение.
+POST /a вернул 405 от самого nginx (ngx_http_static_module не поддерживает POST для alias-файла) —
+это отказ веб-сервера, а не Cilium, и в текущей конфигурации не показателен для L7-демонстрации.
+Вывод: чтобы CiliumNetworkPolicy стало ЕДИНСТВЕННЫМ источником разрешения на ingress к server,
+временно снимаем ingress-часть G1 (networkpolicy allow-client-to-server-ingress) и повторяем пробы.
+--- повтор с единственным источником разрешения (только CiliumNetworkPolicy L7, G1-ingress снят) ---
+--- проба 1r: GET /a (разрешено L7-правилом) ---
+ROUTE-A
+
+HTTP_CODE=200
+--- проба 2r: GET /b (тот же адрес и порт, другой путь — должно быть отклонено L7) ---
+Access denied
+
+HTTP_CODE=403
+--- проба 3r: POST /a (разрешённый путь, другой метод — должно быть отклонено L7) ---
+Access denied
+
+HTTP_CODE=403
+--- для контраста: L3/L4-отказ (client-denied, разрешений нет) ---
+curl: (6) Could not resolve host: server
+
+HTTP_CODE=000
+command terminated with exit code 6
+--- дополнительно: L3/L4-отказ по IP напрямую (client-denied, минуя DNS, чтобы отделить резолв от TCP-уровня) ---
+server pod IP: 10.244.3.127
+curl: (28) Connection timed out after 10001 milliseconds
+
+HTTP_CODE=000
+command terminated with exit code 28
+--- итоговое сравнение (реальные результаты) ---
+GET /a  (client-allowed, L7 разрешает)                      -> HTTP 200, тело "ROUTE-A"
+GET /b  (client-allowed, тот же host:port, L7 не разрешает)  -> HTTP 403, тело "Access denied" (ответ Cilium envoy)
+POST /a (client-allowed, тот же path, L7 не разрешает метод) -> HTTP 403, тело "Access denied" (ответ Cilium envoy)
+GET /a по имени (client-denied, нет egress-DNS)              -> curl: (6) Could not resolve host: server (резолв не прошёл)
+GET /a по IP (client-denied, нет ingress-разрешения вообще)  -> curl: (28) Connection timed out (TCP SYN молча дропнут, HTTP_CODE=000)
+Вывод: L7-отклонение — это ВСЕГДА HTTP-ответ (соединение установлено, TCP/HTTP-хендшейк прошёл,
+Envoy Cilium вернул 403 и осмысленное тело) — клиент точно знает, что запрос был обработан и отклонён
+именно на уровне приложения. L3/L4-отказ — это отсутствие ответа: пакеты молча дропаются (SYN без
+SYN-ACK), клиент видит только таймаут (curl error 28) или, если блокировка происходит раньше — на
+этапе DNS (нет egress-правила на CoreDNS) — ошибку резолва (curl error 6). Разница принципиальна:
+обычная NetworkPolicy может решить, ходить трафику или нет, но не может заглянуть внутрь HTTP и
+различить GET /a и GET /b — для этого нужен L7-осведомлённый датаплейн (Cilium + Envoy).

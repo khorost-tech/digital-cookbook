@@ -1,0 +1,118 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: server-content
+  namespace: cookbook-net
+data:
+  a.html: |
+    ROUTE-A
+  b.html: |
+    ROUTE-B
+  default.conf: |
+    server {
+        listen 8080;
+        location = /a {
+            default_type text/plain;
+            alias /usr/share/nginx/html/a.html;
+        }
+        location = /b {
+            default_type text/plain;
+            alias /usr/share/nginx/html/b.html;
+        }
+        location / {
+            default_type text/plain;
+            return 200 "root\n";
+        }
+    }
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: server
+  namespace: cookbook-net
+  labels:
+    app: server
+spec:
+  containers:
+    - name: server
+      image: nginx:1.27.3
+      ports:
+        - containerPort: 8080
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+      volumeMounts:
+        - name: content
+          mountPath: /usr/share/nginx/html/a.html
+          subPath: a.html
+        - name: content
+          mountPath: /usr/share/nginx/html/b.html
+          subPath: b.html
+        - name: conf
+          mountPath: /etc/nginx/conf.d/default.conf
+          subPath: default.conf
+  volumes:
+    - name: content
+      configMap:
+        name: server-content
+    - name: conf
+      configMap:
+        name: server-content
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: server
+  namespace: cookbook-net
+spec:
+  selector:
+    app: server
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client-allowed
+  namespace: cookbook-net
+  labels:
+    app: client
+    role: allowed
+spec:
+  containers:
+    - name: client
+      image: curlimages/curl:8.11.1
+      command: ["sleep", "infinity"]
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: client-denied
+  namespace: cookbook-net
+  labels:
+    app: client
+    role: denied
+spec:
+  containers:
+    - name: client
+      image: curlimages/curl:8.11.1
+      command: ["sleep", "infinity"]
+      resources:
+        requests:
+          cpu: 50m
+          memory: 32Mi
+        limits:
+          cpu: 100m
+          memory: 64Mi

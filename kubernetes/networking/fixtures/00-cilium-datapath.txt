@@ -1,0 +1,29 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 00-cilium-datapath
+# cmd: kubectl -n kube-system get ds cilium -o custom-columns=NAME:.metadata.name,IMAGE:.spec.template.spec.containers[0].image,DESIRED:.status.desiredNumberScheduled,READY:.status.numberReady
+# ---
+NAME     IMAGE                                                                                                   DESIRED   READY
+cilium   quay.io/cilium/cilium:v1.19.4@sha256:2eb67991eaa9368ba199c2fac2c573cb0ffdeb79184533344f42fc9a7ff6af3c   6         6
+--- kube-proxy в кластере ---
+Error from server (NotFound): daemonsets.apps "kube-proxy" not found
+--- ключевые параметры cilium-config ---
+kube-proxy-replacement=true
+routing-mode=tunnel
+enable-hubble=true
+enable-l7-proxy=true
+identity-allocation-mode=crd
+--- eBPF service map (cilium-dbg service list, срез сервисов кластера — балансировка живёт в eBPF, не в iptables) ---
+ID   Frontend                  Service Type   Backend                                 
+1    10.100.133.39:80/TCP      ClusterIP      1 => 10.244.3.93:8081/TCP (active)      
+2    10.96.0.10:53/TCP         ClusterIP      1 => 10.244.3.23:53/TCP (active)        
+                                              2 => 10.244.3.143:53/TCP (active)       
+3    10.96.0.10:53/UDP         ClusterIP      1 => 10.244.3.23:53/UDP (active)        
+                                              2 => 10.244.3.143:53/UDP (active)       
+4    10.96.0.10:9153/TCP       ClusterIP      1 => 10.244.3.23:9153/TCP (active)      
+                                              2 => 10.244.3.143:9153/TCP (active)     
+5    10.102.168.139:80/TCP     ClusterIP      1 => 10.244.3.183:4245/TCP (active)     
+6    10.96.0.1:443/TCP         ClusterIP      1 => 192.168.71.209:6443/TCP (active)   
+                                              2 => 192.168.71.210:6443/TCP (active)   
+                                              3 => 192.168.71.211:6443/TCP (active)   
+7    10.107.189.177:443/TCP    ClusterIP      1 => 192.168.71.209:4244/TCP (active)   
+8    0.0.0.0:30794/TCP         NodePort                                               
+11   0.0.0.0:31124/TCP         NodePort                                               

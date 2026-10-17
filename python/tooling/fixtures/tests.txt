@@ -1,0 +1,49 @@
+# Тесты: mocks, sqlite (фейк), postgres (Testcontainers), hypothesis
+# состояния кода: none (контроль), null-filter, like-case, group-by, n-plus-1
+# rounds=3 seed=0; цена меряется только на исправном коде
+# property-based: 100 примеров, два прогона —
+#   без сжатия (счёт примеров) и со сжатием (контрпример)
+# снято: 2026-08-25T00:41:15Z
+#
+{"caught": false, "container_starts": 0, "defect": "none", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 1.187, "suite": "mocks", "tests": 3}
+{"caught": false, "container_starts": 0, "defect": "none", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 1.001, "suite": "sqlite", "tests": 3}
+{"caught": false, "container_starts": 1, "defect": "none", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 6.139, "suite": "postgres", "tests": 3}
+{"caught": false, "container_starts": 1, "defect": "none", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 7.331, "suite": "hypothesis", "tests": 1}
+{"caught": false, "container_starts": 0, "defect": "null-filter", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 0.864, "suite": "mocks", "tests": 3}
+{"caught": true, "container_starts": 0, "defect": "null-filter", "failed": 1, "failed_names": ["test_unfinished"], "kind": "matrix", "seconds": 0.922, "suite": "sqlite", "tests": 3}
+{"caught": true, "container_starts": 1, "defect": "null-filter", "failed": 1, "failed_names": ["test_unfinished"], "kind": "matrix", "seconds": 6.259, "suite": "postgres", "tests": 3}
+{"caught": true, "container_starts": 1, "defect": "null-filter", "failed": 1, "failed_names": ["test_rules_hold_for_any_dataset"], "kind": "matrix", "seconds": 6.133, "suite": "hypothesis", "tests": 1}
+{"caught": false, "container_starts": 0, "defect": "like-case", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 0.871, "suite": "mocks", "tests": 3}
+{"caught": false, "container_starts": 0, "defect": "like-case", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 0.884, "suite": "sqlite", "tests": 3}
+{"caught": true, "container_starts": 1, "defect": "like-case", "failed": 1, "failed_names": ["test_search_is_case_insensitive"], "kind": "matrix", "seconds": 6.178, "suite": "postgres", "tests": 3}
+{"caught": true, "container_starts": 1, "defect": "like-case", "failed": 1, "failed_names": ["test_rules_hold_for_any_dataset"], "kind": "matrix", "seconds": 6.396, "suite": "hypothesis", "tests": 1}
+{"caught": false, "container_starts": 0, "defect": "group-by", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 0.869, "suite": "mocks", "tests": 3}
+{"caught": false, "container_starts": 0, "defect": "group-by", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 0.877, "suite": "sqlite", "tests": 3}
+{"caught": true, "container_starts": 1, "defect": "group-by", "failed": 1, "failed_names": ["test_per_author"], "kind": "matrix", "seconds": 6.448, "suite": "postgres", "tests": 3}
+{"caught": true, "container_starts": 1, "defect": "group-by", "failed": 1, "failed_names": ["test_rules_hold_for_any_dataset"], "kind": "matrix", "seconds": 6.66, "suite": "hypothesis", "tests": 1}
+{"caught": true, "container_starts": 0, "defect": "n-plus-1", "failed": 1, "failed_names": ["test_per_author"], "kind": "matrix", "seconds": 0.889, "suite": "mocks", "tests": 3}
+{"caught": false, "container_starts": 0, "defect": "n-plus-1", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 0.88, "suite": "sqlite", "tests": 3}
+{"caught": false, "container_starts": 1, "defect": "n-plus-1", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 6.729, "suite": "postgres", "tests": 3}
+{"caught": false, "container_starts": 1, "defect": "n-plus-1", "failed": 0, "failed_names": [], "kind": "matrix", "seconds": 7.56, "suite": "hypothesis", "tests": 1}
+{"caught": false, "counterexample": null, "defect": "none", "examples": 100, "kind": "hypothesis", "max_examples": 100, "seconds": 7.426, "shrink": false}
+{"caught": false, "counterexample": null, "defect": "none", "examples": 100, "kind": "hypothesis", "max_examples": 100, "seconds": 7.299, "shrink": true}
+{"caught": true, "counterexample": "Failing test case: test_rules_hold_for_any_dataset(\n    pg_engine=Engine(postgresql+psycopg://test:***@host.docker.internal:45334/test),\n    data=([{'title': 'IbVuxzI',\n          'author': 'strugatsky',\n          'status': None,\n          'id': 1},\n      {'status': None, 'title': 'CJo', 'author': 'strugatsky', 'id': 2},\n      {'status': 'wip', 'author': 'clarke', 'title': 'LnOhy', 'id': 3},\n      {'status': 'done', 'author': 'clarke', 'title': 'Scunthorpe', 'id': 4},\n      {'status': 'wip', 'title': 'AdVwq', 'author': 'strugatsky', 'id': 5},\n      {'title': 'TWLK', 'author': 'strugatsky', 'status': 'done', 'id': 6}],\n     'wl'),\n)", "defect": "null-filter", "examples": 4, "kind": "hypothesis", "max_examples": 100, "seconds": 6.357, "shrink": false}
+{"caught": true, "counterexample": "Failing test case: test_rules_hold_for_any_dataset(\n    pg_engine=Engine(postgresql+psycopg://test:***@host.docker.internal:46066/test),\n    data=([{'author': 'lem', 'title': 'AAA', 'status': None, 'id': 1}], 'A'),\n)", "defect": "null-filter", "examples": 27, "kind": "hypothesis", "max_examples": 100, "seconds": 6.663, "shrink": true}
+{"caught": true, "counterexample": "Failing test case: test_rules_hold_for_any_dataset(\n    pg_engine=Engine(postgresql+psycopg://test:***@host.docker.internal:46076/test),\n    data=([{'title': 'pIYSI', 'status': None, 'author': 'clarke', 'id': 1},\n      {'title': 'hBhHRYCFKzVO', 'author': 'lem', 'status': None, 'id': 2},\n      {'title': 'ukRVB', 'status': 'wip', 'author': 'lem', 'id': 3},\n      {'status': 'wip', 'title': 'kaBm', 'author': 'strugatsky', 'id': 4}],\n     'y'),\n)", "defect": "like-case", "examples": 4, "kind": "hypothesis", "max_examples": 100, "seconds": 6.291, "shrink": false}
+{"caught": true, "counterexample": "Failing test case: test_rules_hold_for_any_dataset(\n    pg_engine=Engine(postgresql+psycopg://test:***@host.docker.internal:46096/test),\n    data=([{'author': 'lem', 'title': 'AAA', 'status': 'done', 'id': 1}], 'a'),\n)", "defect": "like-case", "examples": 47, "kind": "hypothesis", "max_examples": 100, "seconds": 7.386, "shrink": true}
+{"caught": true, "counterexample": "Failing test case: test_rules_hold_for_any_dataset(\n    pg_engine=Engine(postgresql+psycopg://test:***@host.docker.internal:44818/test),\n    data=([{'author': 'lem', 'title': 'AAA', 'status': 'done', 'id': 1}], 'A'),\n)", "defect": "group-by", "examples": 2, "kind": "hypothesis", "max_examples": 100, "seconds": 6.727, "shrink": false}
+{"caught": true, "counterexample": "Failing test case: test_rules_hold_for_any_dataset(\n    pg_engine=Engine(postgresql+psycopg://test:***@host.docker.internal:45760/test),\n    data=([{'author': 'lem', 'title': 'AAA', 'status': 'done', 'id': 1}], 'A'),\n)", "defect": "group-by", "examples": 12, "kind": "hypothesis", "max_examples": 100, "seconds": 8.724, "shrink": true}
+{"caught": false, "counterexample": null, "defect": "n-plus-1", "examples": 100, "kind": "hypothesis", "max_examples": 100, "seconds": 7.485, "shrink": false}
+{"caught": false, "counterexample": null, "defect": "n-plus-1", "examples": 100, "kind": "hypothesis", "max_examples": 100, "seconds": 7.557, "shrink": true}
+{"container_starts": 3, "failed": 0, "kind": "cost", "round": 1, "scope": "function", "seconds": 13.501, "suite": "postgres", "tests": 3}
+{"container_starts": 1, "failed": 0, "kind": "cost", "round": 1, "scope": "session", "seconds": 6.155, "suite": "postgres", "tests": 3}
+{"container_starts": 0, "failed": 0, "kind": "cost", "round": 1, "scope": "—", "seconds": 0.87, "suite": "mocks", "tests": 3}
+{"container_starts": 0, "failed": 0, "kind": "cost", "round": 1, "scope": "—", "seconds": 0.885, "suite": "sqlite", "tests": 3}
+{"container_starts": 1, "failed": 0, "kind": "cost", "round": 2, "scope": "session", "seconds": 6.242, "suite": "postgres", "tests": 3}
+{"container_starts": 3, "failed": 0, "kind": "cost", "round": 2, "scope": "function", "seconds": 13.446, "suite": "postgres", "tests": 3}
+{"container_starts": 0, "failed": 0, "kind": "cost", "round": 2, "scope": "—", "seconds": 0.86, "suite": "mocks", "tests": 3}
+{"container_starts": 0, "failed": 0, "kind": "cost", "round": 2, "scope": "—", "seconds": 0.891, "suite": "sqlite", "tests": 3}
+{"container_starts": 3, "failed": 0, "kind": "cost", "round": 3, "scope": "function", "seconds": 13.483, "suite": "postgres", "tests": 3}
+{"container_starts": 1, "failed": 0, "kind": "cost", "round": 3, "scope": "session", "seconds": 6.124, "suite": "postgres", "tests": 3}
+{"container_starts": 0, "failed": 0, "kind": "cost", "round": 3, "scope": "—", "seconds": 0.854, "suite": "mocks", "tests": 3}
+{"container_starts": 0, "failed": 0, "kind": "cost", "round": 3, "scope": "—", "seconds": 0.905, "suite": "sqlite", "tests": 3}

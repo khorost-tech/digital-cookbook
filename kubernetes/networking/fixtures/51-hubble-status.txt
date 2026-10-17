@@ -1,0 +1,6 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 51-hubble-status
+# cmd: kubectl -n kube-system exec ds/cilium -- hubble status
+# ---
+Healthcheck (via unix:///var/run/cilium/hubble.sock): Ok
+Current/Max Flows: 4,095/4,095 (100.00%)
+Flows/s: 12.27

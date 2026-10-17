@@ -1,0 +1,70 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 21-scenario-a-replay
+# purpose: подтвердить, что сценарий A ("Порядок запуска с нуля" -> "Сценарий A" в README)
+# фактически воспроизводит демо G1 при применении манифестов 21-allow-client.yaml
+# (egress) + 21a-allow-client-ingress.yaml (ingress) БЕЗ manifests/22-allow-dns.yaml и
+# БЕЗ manifests/30-cnp-l7.yaml — независимая живая проверка задачи по ревью, не замена
+# исторической fixtures/20-policy-dns-trap.txt (та снималась при другой раскладке файлов,
+# до разделения 21-allow-client.yaml на egress+ingress, и намеренно не переснимается).
+#
+# состояние перед этим прогоном: default-deny + allow-client-to-server-egress уже
+# применены (общая база сценариев A/B), allow-client-to-dns и allow-server-http-get-a
+# (L7, сценарий B) сняты, чтобы честно воспроизвести сценарий A с нуля.
+
+--- cmd: kubectl -n cookbook-net apply -f manifests/21a-allow-client-ingress.yaml ---
+networkpolicy.networking.k8s.io/allow-client-to-server-ingress created
+
+--- cmd: kubectl -n cookbook-net get networkpolicy ---
+NAME                              POD-SELECTOR   AGE
+allow-client-to-server-egress     role=allowed   66m
+allow-client-to-server-ingress    app=server     0s
+default-deny                      <none>         67m
+
+--- СОСТОЯНИЕ 2 (ловушка): ingress+egress есть, DNS ещё нет ---
+--- cmd: kubectl -n cookbook-net exec client-allowed -- curl -sS -m 6 http://server:8080/a ---
+curl: (6) Could not resolve host: server
+command terminated with exit code 6
+
+--- cmd: kubectl -n cookbook-net exec client-allowed -- curl -sS -m 6 http://10.104.186.225:8080/a ---
+ROUTE-A
+
+--- cmd: kubectl -n cookbook-net exec client-allowed -- nslookup server ---
+;; connection timed out; no servers could be reached
+command terminated with exit code 1
+
+--- cmd: kubectl -n cookbook-net apply -f manifests/22-allow-dns.yaml ---
+networkpolicy.networking.k8s.io/allow-client-to-dns created
+
+--- СОСТОЯНИЕ 3 (лечение): DNS разрешён для role=allowed ---
+--- cmd: kubectl -n cookbook-net exec client-allowed -- curl -sS -m 6 http://server:8080/a ---
+ROUTE-A
+
+--- cmd: kubectl -n cookbook-net exec client-denied -- curl -sS -m 6 http://server:8080/a ---
+curl: (6) Could not resolve host: server
+command terminated with exit code 6
+
+--- вывод ---
+Сценарий A из README воспроизводит демо G1 буквально: после применения 21-allow-client.yaml
+(egress) + 21a-allow-client-ingress.yaml (ingress), но ДО 22-allow-dns.yaml, обращение к
+server по имени падает на резолве, а по тому же адресу через ClusterIP — проходит (ROUTE-A).
+После применения 22-allow-dns.yaml обращение по имени тоже начинает работать. client-denied
+не резолвит имя server ни в одном из состояний (у него нет egress-правила на DNS вообще).
+Разница с исторической fixtures/20-policy-dns-trap.txt — в коде ошибки curl при обращении по
+имени (28 "Resolving timed out" там, 6 "Could not resolve host" здесь: другой таймаут -m у
+curl и, вероятно, другое состояние resolv.conf/кэша на момент прогона) — сам характер отказа
+(резолв не проходит) и его причина (egress-политика не называет CoreDNS) идентичны.
+
+--- после проверки: возврат стенда в состояние сценария B (см. README) ---
+--- cmd: kubectl -n cookbook-net delete networkpolicy allow-client-to-server-ingress ---
+networkpolicy.networking.k8s.io "allow-client-to-server-ingress" deleted
+
+--- cmd: kubectl -n cookbook-net apply -f manifests/30-cnp-l7.yaml ---
+ciliumnetworkpolicy.cilium.io/allow-server-http-get-a created
+
+--- cmd: kubectl -n cookbook-net get networkpolicy,ciliumnetworkpolicy ---
+NAME                                                            POD-SELECTOR   AGE
+networkpolicy.networking.k8s.io/allow-client-to-dns             role=allowed   0s
+networkpolicy.networking.k8s.io/allow-client-to-server-egress   role=allowed   66m
+networkpolicy.networking.k8s.io/default-deny                    <none>         67m
+
+NAME                                                    AGE   VALID
+ciliumnetworkpolicy.cilium.io/allow-server-http-get-a   0s    True

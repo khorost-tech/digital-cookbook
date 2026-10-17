@@ -1,0 +1,174 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 50-hubble
+# порождение трафика непосредственно перед снятием потока (порядок важен: Hubble хранит только недавние потоки)
+# cmd (context, трафик): kubectl -n cookbook-net exec client-allowed -- curl ... ; kubectl -n cookbook-net exec client-denied -- curl ...
+# ---
+--- ситуация 1: client-allowed GET /a (ожидается: разрешено CiliumNetworkPolicy allow-server-http-get-a) ---
+GET /a -> HTTP 200
+--- ситуация 2: client-allowed GET /b (ожидается: L7-отклонение Envoy, тот же адрес/порт, другой путь) ---
+GET /b -> HTTP 403
+--- ситуация 3: client-denied GET /a напрямую по IP пода server (в обход DNS, ожидается: L3/L4-дроп — у client-denied нет разрешений вовсе) ---
+server pod IP: 10.244.3.127
+curl: (28) Connection timed out after 10002 milliseconds
+(curl exit code: 28, HTTP_CODE=000 и таймаут — ожидаемо для L3/L4-дропа: пакет отброшен молча, ответа нет)
+
+--- срез 1: полный поток по namespace cookbook-net, последние 40 записей (кластерный обзор через hubble-relay) ---
+# cmd: RELAY_IP=$(kubectl -n kube-system get svc hubble-relay -o jsonpath='{.spec.clusterIP}')
+# cmd: kubectl -n kube-system exec ds/cilium -- hubble observe --server ${RELAY_IP}:80 --namespace cookbook-net --last 40
+# (RELAY_IP на момент снятия: 10.102.168.139 — адрес ClusterIP сервиса hubble-relay, может отличаться в другом кластере)
+Jul 23 21:56:24.847: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:35728 (ID:13474) to-overlay FORWARDED (TCP Flags: ACK)
+Jul 23 21:56:24.847: cookbook-net/client-allowed:35728 (ID:13474) -> cookbook-net/server:8080 (ID:2715) http-request DROPPED (HTTP/1.1 GET http://server:8080/b)
+Jul 23 21:56:24.847: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:35728 (ID:13474) to-overlay FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:56:24.847: cookbook-net/client-allowed:35728 (ID:13474) <- cookbook-net/server:8080 (ID:2715) http-response FORWARDED (HTTP/1.1 403 0ms (GET http://server:8080/b))
+Jul 23 21:56:24.847: cookbook-net/client-allowed:35728 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-proxy FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:56:24.847: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:35728 (ID:13474) to-overlay FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:57:24.643: 10.244.3.141:38218 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:57:24.643: 10.244.3.141:38218 (host) <- cookbook-net/server:8080 (ID:2715) to-stack FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:57:24.643: 10.244.3.141:38218 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: ACK)
+Jul 23 21:58:39.546: cookbook-net/client-allowed:58703 (ID:13474) -> kube-system/coredns-6dc87b5c58-lpzvj:53 (ID:50550) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN ALLOWED (UDP)
+Jul 23 21:58:39.546: cookbook-net/client-allowed:58703 (ID:13474) -> kube-system/coredns-6dc87b5c58-lpzvj:53 (ID:50550) to-overlay FORWARDED (UDP)
+Jul 23 21:58:39.546: cookbook-net/client-allowed:58703 (ID:13474) -> kube-system/coredns-6dc87b5c58-lpzvj:53 (ID:50550) to-endpoint FORWARDED (UDP)
+Jul 23 21:58:39.546: cookbook-net/client-allowed:58703 (ID:13474) <- kube-system/coredns-6dc87b5c58-lpzvj:53 (ID:50550) to-overlay FORWARDED (UDP)
+Jul 23 21:58:39.546: cookbook-net/client-allowed:58703 (ID:13474) <- kube-system/coredns-6dc87b5c58-lpzvj:53 (ID:50550) to-endpoint FORWARDED (UDP)
+Jul 23 21:58:39.637: cookbook-net/client-allowed (ID:13474) <> cookbook-net/server:8080 (world) SOCK_XLATE_POINT_UNKNOWN TRACED (TCP)
+Jul 23 21:58:39.637: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN ALLOWED (TCP Flags: SYN)
+Jul 23 21:58:39.637: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-overlay FORWARDED (TCP Flags: SYN)
+Jul 23 21:58:39.637: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN ALLOWED (TCP Flags: SYN)
+Jul 23 21:58:39.637: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-proxy FORWARDED (TCP Flags: SYN)
+Jul 23 21:58:39.637: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:60804 (ID:13474) to-overlay FORWARDED (TCP Flags: SYN, ACK)
+Jul 23 21:58:39.637: cookbook-net/client-allowed:60804 (ID:13474) <- cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: SYN, ACK)
+Jul 23 21:58:39.637: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-overlay FORWARDED (TCP Flags: ACK)
+Jul 23 21:58:39.637: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-proxy FORWARDED (TCP Flags: ACK)
+Jul 23 21:58:39.637: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-proxy FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:58:39.637: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-overlay FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:58:39.637: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:60804 (ID:13474) to-overlay FORWARDED (TCP Flags: ACK)
+Jul 23 21:58:39.638: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) http-request FORWARDED (HTTP/1.1 GET http://server:8080/a)
+Jul 23 21:58:39.638: 10.244.3.141:60284 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: SYN)
+Jul 23 21:58:39.638: 10.244.3.141:60284 (host) <- cookbook-net/server:8080 (ID:2715) to-stack FORWARDED (TCP Flags: SYN, ACK)
+Jul 23 21:58:39.638: 10.244.3.141:60284 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: ACK)
+Jul 23 21:58:39.638: 10.244.3.141:60284 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:58:39.638: 10.244.3.141:60284 (host) <- cookbook-net/server:8080 (ID:2715) to-stack FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:58:39.638: cookbook-net/client-allowed:60804 (ID:13474) <- cookbook-net/server:8080 (ID:2715) http-response FORWARDED (HTTP/1.1 200 0ms (GET http://server:8080/a))
+Jul 23 21:58:39.638: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:60804 (ID:13474) to-overlay FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:58:39.638: cookbook-net/client-allowed:60804 (ID:13474) <- cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:58:39.639: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-proxy FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:58:39.639: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:60804 (ID:13474) to-overlay FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:58:39.639: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-overlay FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:58:39.639: cookbook-net/client-allowed:60804 (ID:13474) <- cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:58:39.639: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-overlay FORWARDED (TCP Flags: ACK)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:39031 (ID:13474) -> kube-system/coredns-6dc87b5c58-6rwqh:53 (ID:50550) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN ALLOWED (UDP)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:39031 (ID:13474) -> kube-system/coredns-6dc87b5c58-6rwqh:53 (ID:50550) to-overlay FORWARDED (UDP)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:39031 (ID:13474) -> kube-system/coredns-6dc87b5c58-6rwqh:53 (ID:50550) to-endpoint FORWARDED (UDP)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:39031 (ID:13474) <- kube-system/coredns-6dc87b5c58-6rwqh:53 (ID:50550) to-overlay FORWARDED (UDP)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:39031 (ID:13474) <- kube-system/coredns-6dc87b5c58-6rwqh:53 (ID:50550) to-endpoint FORWARDED (UDP)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN ALLOWED (TCP Flags: SYN)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN ALLOWED (TCP Flags: SYN)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-overlay FORWARDED (TCP Flags: SYN)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-proxy FORWARDED (TCP Flags: SYN)
+Jul 23 21:58:39.940: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:60816 (ID:13474) to-overlay FORWARDED (TCP Flags: SYN, ACK)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-proxy FORWARDED (TCP Flags: ACK)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-proxy FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:58:39.940: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:60816 (ID:13474) to-overlay FORWARDED (TCP Flags: ACK)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:60816 (ID:13474) <- cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: SYN, ACK)
+Jul 23 21:58:39.940: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-overlay FORWARDED (TCP Flags: ACK)
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-overlay FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) http-request DROPPED (HTTP/1.1 GET http://server:8080/b)
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) <- cookbook-net/server:8080 (ID:2715) http-response FORWARDED (HTTP/1.1 403 0ms (GET http://server:8080/b))
+Jul 23 21:58:39.941: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:60816 (ID:13474) to-overlay FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) <- cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: ACK, PSH)
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-proxy FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:58:39.941: cookbook-net/server:8080 (ID:2715) <> cookbook-net/client-allowed:60816 (ID:13474) to-overlay FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-overlay FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) <- cookbook-net/server:8080 (ID:2715) to-endpoint FORWARDED (TCP Flags: ACK, FIN)
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) to-overlay FORWARDED (TCP Flags: ACK)
+Jul 23 21:58:40.260: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:40.260: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:41.272: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:41.272: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:42.296: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:42.296: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:43.320: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:43.320: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:44.348: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:44.348: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:45.368: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:45.368: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:47.384: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:47.384: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+
+--- срез 2: только отклонённые потоки (--verdict DROPPED --last 20) ---
+# cmd: kubectl -n kube-system exec ds/cilium -- hubble observe --server ${RELAY_IP}:80 --namespace cookbook-net --verdict DROPPED --last 20
+Jul 23 21:56:24.847: cookbook-net/client-allowed:35728 (ID:13474) -> cookbook-net/server:8080 (ID:2715) http-request DROPPED (HTTP/1.1 GET http://server:8080/b)
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) http-request DROPPED (HTTP/1.1 GET http://server:8080/b)
+Jul 23 21:58:40.260: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:40.260: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:41.272: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:41.272: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:42.296: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:42.296: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:43.320: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:43.320: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:44.348: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:44.348: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:45.368: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:45.368: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+Jul 23 21:58:47.384: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)
+Jul 23 21:58:47.384: cookbook-net/client-denied:47520 (ID:48544) <> cookbook-net/server:8080 (ID:2715) Policy denied DROPPED (TCP Flags: SYN)
+
+--- срез 3: только HTTP/L7-записи (--protocol http --last 20) ---
+# cmd: kubectl -n kube-system exec ds/cilium -- hubble observe --server ${RELAY_IP}:80 --namespace cookbook-net --protocol http --last 20
+Jul 23 21:56:24.641: cookbook-net/client-allowed:35712 (ID:13474) -> cookbook-net/server:8080 (ID:2715) http-request FORWARDED (HTTP/1.1 GET http://server:8080/a)
+Jul 23 21:56:24.641: cookbook-net/client-allowed:35712 (ID:13474) <- cookbook-net/server:8080 (ID:2715) http-response FORWARDED (HTTP/1.1 200 0ms (GET http://server:8080/a))
+Jul 23 21:56:24.847: cookbook-net/client-allowed:35728 (ID:13474) -> cookbook-net/server:8080 (ID:2715) http-request DROPPED (HTTP/1.1 GET http://server:8080/b)
+Jul 23 21:56:24.847: cookbook-net/client-allowed:35728 (ID:13474) <- cookbook-net/server:8080 (ID:2715) http-response FORWARDED (HTTP/1.1 403 0ms (GET http://server:8080/b))
+Jul 23 21:58:39.638: cookbook-net/client-allowed:60804 (ID:13474) -> cookbook-net/server:8080 (ID:2715) http-request FORWARDED (HTTP/1.1 GET http://server:8080/a)
+Jul 23 21:58:39.638: cookbook-net/client-allowed:60804 (ID:13474) <- cookbook-net/server:8080 (ID:2715) http-response FORWARDED (HTTP/1.1 200 0ms (GET http://server:8080/a))
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) -> cookbook-net/server:8080 (ID:2715) http-request DROPPED (HTTP/1.1 GET http://server:8080/b)
+Jul 23 21:58:39.941: cookbook-net/client-allowed:60816 (ID:13474) <- cookbook-net/server:8080 (ID:2715) http-response FORWARDED (HTTP/1.1 403 0ms (GET http://server:8080/b))
+
+--- анализ (реальные наблюдения, две независимые пробы дали одинаковый паттерн) ---
+Три ситуации дают ТРИ РАЗЛИЧИМЫХ паттерна в потоке Hubble:
+
+1. РАЗРЕШЁННЫЙ запрос (client-allowed GET /a): полная цепочка TCP (SYN, SYN-ACK, ACK) —
+   вердикт policy-verdict ALLOWED — затем http-request FORWARDED с методом и путём
+   (GET http://server:8080/a) — затем http-response FORWARDED с кодом (HTTP/1.1 200 0ms).
+   Виден весь путь запроса от установления соединения до содержимого ответа.
+
+2. L7-ОТКЛОНЕНИЕ (client-allowed GET /b): TCP-хендшейк проходит и получает вердикт ALLOWED
+   (L3/L4-часть разрешена — соединение легитимно на уровне адреса/порта), но конкретно
+   HTTP-запрос получает СВОЙ, отдельный вердикт: "http-request DROPPED (HTTP/1.1 GET
+   http://server:8080/b)" — Envoy разобрал запрос и отклонил именно его, с методом и путём
+   в записи. При этом тут же видна ответная запись "http-response FORWARDED (HTTP/1.1 403
+   0ms (GET http://server:8080/b))" — это уже TCP-сегмент с телом 403, который Envoy
+   отправляет клиенту, и он сам по себе не заблокирован (соединение доставляет ответ).
+   ФАКТИЧЕСКИЙ вид записи: два вердикта на одну L7-транзакцию — DROPPED на входящий
+   HTTP-запрос (это и есть решение политики) и FORWARDED на исходящий HTTP-ответ с кодом 403
+   (доставка уже вынесенного решения клиенту). Причина не выводится отдельным полем в
+   текстовом --last выводе CLI (без --output json нет явного текста "policy denied" для
+   HTTP-записи) — но метод, путь и вердикт DROPPED однозначно указывают, что запрос был
+   разобран на уровне HTTP и отклонён именно за несоответствие правилу (путь/метод), а не за
+   проблему сети: тот же клиент к тому же адресу и порту секундами ранее получил ALLOWED.
+
+3. L3/L4-ОТКЛОНЕНИЕ (client-denied, любой запрос к server): единственная запись на попытку —
+   "policy-verdict:none TRAFFIC_DIRECTION_UNKNOWN DENIED (TCP Flags: SYN)", сразу за ней —
+   "Policy denied DROPPED (TCP Flags: SYN)". Ни SYN-ACK, ни http-request, ни ответа — пакет
+   SYN отклонён датаплейном ДО того, как соединение вообще установилось. curl повторяет SYN
+   каждую ~1-2 секунды (видно по временным меткам 21:58:40.260, 41.272, 42.296...) — Hubble
+   фиксирует КАЖДУЮ повторную попытку с одинаковым вердиктом и явной причиной "Policy denied"
+   прямо в тексте записи. Это единственная из трёх ситуаций, где причина названа буквально
+   в самой строке потока.
+
+ОГРАНИЧЕНИЕ НАБЛЮДЕНИЯ (зафиксировано честно, не подгонка): текстовый вывод `hubble observe`
+для http-request/http-response НЕ печатает отдельного текстового поля "policy denied" (в
+отличие от L3/L4-записи, где "Policy denied" — часть самой строки). Отличить L7-DROP от
+L7-FORWARD можно только по слову вердикта (DROPPED/FORWARDED) перед скобкой с HTTP-деталями,
+плюс по факту, что ответ содержит код 403/405 и т.п. Более подробная причина (например
+конкретное имя CiliumNetworkPolicy L7-правила) в этом срезе не запрашивалась — она доступна
+через `--output json` (поле summary/verdict/drop_reason_desc), но за рамки задачи (снять
+текстовый поток с фильтром по namespace) не выходили, чтобы не расширять срез самопроизвольно.
+Второе ограничение: `hubble observe`, направленный на конкретный под `ds/cilium` без указания
+`--server`, показывает флоу ТОЛЬКО того узла, на котором оказался выбранный под DaemonSet —
+`kubectl exec ds/cilium` выбирает под недетерминированно (в этом прогоне попал на
+control-plane узел, где ни client, ни server не находятся, и локальный `hubble observe` без
+`--server` вернул пустой вывод). Рабочий способ — тот, что задокументирован в README:
+адресовать `hubble-relay` (кластерный агрегатор), тогда неважно, через какой под DaemonSet
+Cilium выполнен `exec` — relay отдаёт объединённый поток со всех узлов кластера.
