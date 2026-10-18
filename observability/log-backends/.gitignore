@@ -1,0 +1,5 @@
+.env
+results/.last-*
+results/.card-*.txt
+results/.tuned-*.txt
+results/.isolation-*.txt

@@ -298,6 +298,9 @@
       "messaging/rabbitmq-monitoring-and-production-checklist.md",
       "messaging/rabbitmq-streams-vs-kafka.md"
     ],
+    "observability/log-backends": [
+      "observability/log-backends-loki-opensearch-victorialogs.md"
+    ],
     "observability/practice-stack": [
       "observability/continuous-profiling-pyroscope.md",
       "observability/distributed-tracing-tempo.md",
@@ -357,6 +360,7 @@
       "python/python-modern-typing.md"
     ],
     "python/web": [
+      "python/python-production-patterns.md",
       "python/python-web-frameworks.md"
     ],
     "rust/docker-minimal": [

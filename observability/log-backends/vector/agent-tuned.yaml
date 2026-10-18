@@ -1,0 +1,112 @@
+# Vector: тот же конвейер, но пишет в индекс logs-tuned.
+#
+# Разница с agent.yaml только в имени индекса OpenSearch: под logs-tuned* лежит
+# шаблон со СТРОГИМ маппингом (opensearch/index-template-tuned.json), тогда как
+# logs-default создаётся динамическим маппингом.
+#
+# Настройка Loki и VictoriaLogs задана в их собственных конфигурациях
+# (loki-tuned.yaml), а не здесь: у них разметку определяет приёмная сторона.
+#
+# УСТРОЙСТВО, от которого зависит честность всего сравнения: трансформация
+# `parse` стоит ДО ветвления на синки. Все три получают один и тот же объект.
+# Если размечать в каждом синке отдельно, разница объёмов окажется разницей
+# разметки, а не моделей индексации.
+
+data_dir: /var/lib/vector
+
+api:
+  enabled: true
+  address: 0.0.0.0:8686
+
+sources:
+  app_file:
+    type: file
+    include:
+      - /logs/app.log
+    read_from: beginning
+    fingerprint:
+      strategy: checksum
+
+transforms:
+  parse:
+    type: remap
+    inputs: [app_file]
+    source: |
+      # Генератор пишет готовый JSON, поэтому разбор простой. Ошибка разбора не
+      # глотается: битая строка должна быть видна, а не молча исчезнуть из
+      # одного бэкенда, перекосив сравнение.
+      . = parse_json!(.message)
+
+sinks:
+  # --- Loki ------------------------------------------------------------------
+  to_loki:
+    type: loki
+    inputs: [parse]
+    endpoint: http://loki:3100
+    encoding:
+      codec: json
+    # Метки — то, по чему Loki строит индекс. Здесь их две, обе низкой
+    # кардинальности. Заметьте: Loki ДОБАВИТ к ним свою — service_name, которую
+    # выводит из service. То есть меток в итоге больше, чем задано здесь, и это
+    # надо помнить при счёте стримов.
+    #
+    # Метка detected_level в ЭТОМ конвейере НЕ появляется, хотя при прямом push
+    # в Loki появляется (results/00-feasibility.txt снималась именно так). Набор
+    # меток зависит от способа доставки; фактический снимает и сверяет точным
+    # равенством scripts/verify-equivalence.sh — сейчас это level, service,
+    # service_name.
+    labels:
+      service: "{{ service }}"
+      level: "{{ level }}"
+    # Vector 0.57 требует у шаблонов «базу confinement» — статический префикс,
+    # по которому видно, куда синк потенциально может писать. Для ИНДЕКСОВ и
+    # путей это защита по существу: без префикса `logs-{{ service }}` синк может
+    # задеть произвольный индекс. Для МЕТОК Loki такого риска нет: метка не
+    # адресует хранилище, она часть данных.
+    #
+    # Префикс здесь исказил бы сравнение (значения меток стали бы длиннее и
+    # другими), поэтому включён явный отказ от confinement. Имя параметра
+    # намеренно пугающее, и это правильно: решение должно быть осознанным.
+    #
+    # Тот же механизм в соседнем стенде серии ловится полной `vector validate`,
+    # но пропускается `validate --no-environment` — см. vector-pipeline,
+    # results/08-confinement.txt.
+    dangerously_allow_unconfined_template_resolution: true
+    out_of_order_action: accept
+
+  # --- OpenSearch ------------------------------------------------------------
+  to_opensearch:
+    type: elasticsearch
+    inputs: [parse]
+    endpoints: ["http://opensearch:9200"]
+    mode: bulk
+    bulk:
+      index: logs-tuned
+    api_version: v8
+    healthcheck:
+      enabled: false
+
+  # --- VictoriaLogs ----------------------------------------------------------
+  #
+  # Тот же синк elasticsearch: VictoriaLogs принимает bulk-протокол по своему
+  # адресу. Параметры запроса обязательны и определяют модель хранения:
+  #   _msg_field     — какое поле считать телом сообщения
+  #   _time_field    — какое поле считать временем
+  #   _stream_fields — какие поля образуют ПОТОК
+  #
+  # Последний параметр — прямой аналог меток Loki: указать в нём
+  # высококардинальное поле значит устроить VictoriaLogs ту же беду, что метка с
+  # уникальным значением устраивает Loki. В замере кардинальности это и
+  # проверяется.
+  to_victorialogs:
+    type: elasticsearch
+    inputs: [parse]
+    endpoints: ["http://victorialogs:9428/insert/elasticsearch"]
+    mode: bulk
+    query:
+      _msg_field: message
+      _time_field: timestamp
+      _stream_fields: service,level
+    api_version: v8
+    healthcheck:
+      enabled: false

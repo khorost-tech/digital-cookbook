@@ -1,0 +1,108 @@
+# Три бэкенда логов на одном потоке: Loki, OpenSearch, VictoriaLogs.
+#
+# Ключевое устройство: ОДИН генератор пишет файл, ОДИН Vector его читает и
+# разливает тремя синками. Трансформация в Vector стоит ДО ветвления, поэтому
+# во все три бэкенда уходит буквально одно и то же событие. Разлив тремя
+# отдельными агентами (promtail/filebeat/vlagent) выглядел бы реалистичнее, но
+# сравнение объёмов стало бы сравнением их разметки, а не моделей индексации.
+#
+# Порты 94xx: 93xx заняты стендом practice-stack этой же серии, и два стенда
+# должны подниматься одновременно без конфликтов.
+
+services:
+  # --- бэкенды ---------------------------------------------------------------
+
+  loki:
+    image: grafana/loki:3.7.5
+    container_name: lb-loki
+    command: ["-config.file=/etc/loki/loki.yaml"]
+    volumes:
+      - ./loki/${LOKI_CONFIG:-loki.yaml}:/etc/loki/loki.yaml:ro
+      - loki-data:/loki
+    ports:
+      - "9401:3100"
+
+  opensearch:
+    image: opensearchproject/opensearch:3.5.0
+    container_name: lb-os
+    environment:
+      - discovery.type=single-node
+      - OPENSEARCH_INITIAL_ADMIN_PASSWORD=LogBackends#2026
+      # 1g — компромисс: с 512m OpenSearch на сотне тысяч записей начинает
+      # тормозить на слияниях, и замер объёма ловит не устройство индекса, а
+      # нехватку памяти. Для машин поменьше в README сказано, как урезать.
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      # Security-плагин выключен намеренно: стенд локальный, а с включённым
+      # плагином каждый запрос требует TLS и учётных данных, и примеры запросов
+      # в статье превратились бы в примеры настройки TLS.
+      - DISABLE_SECURITY_PLUGIN=true
+    volumes:
+      - os-data:/usr/share/opensearch/data
+    ports:
+      - "9402:9200"
+
+  victorialogs:
+    # Версия пинуется. `latest` на момент сборки указывал сюда же, но через
+    # месяц это будет другой образ, и числа замеров перестанут соответствовать.
+    image: victoriametrics/victoria-logs:v1.52.0
+    container_name: lb-vlogs
+    command:
+      - -storageDataPath=/victoria-logs-data
+      - -retentionPeriod=7d
+    volumes:
+      - vlogs-data:/victoria-logs-data
+    ports:
+      - "9403:9428"
+
+  # --- конвейер --------------------------------------------------------------
+
+  vector:
+    # Версия та же, что в соседних стендах серии (vector-pipeline,
+    # vector-vs-collector): расхождение версий агента внесло бы разницу в
+    # разметку, и сравнивать замеры между стендами стало бы нельзя.
+    image: timberio/vector:0.57.0-debian
+    container_name: lb-vector
+    command: ["--config", "/etc/vector/${VECTOR_CONFIG:-agent.yaml}"]
+    volumes:
+      - ./vector:/etc/vector:ro
+      - logs:/logs
+      - vector-data:/var/lib/vector
+    environment:
+      - VECTOR_LOG=warn
+    depends_on: [loki, opensearch, victorialogs]
+    ports:
+      - "9406:8686"
+
+  # --- генератор -------------------------------------------------------------
+
+  loadgen:
+    build: ./loadgen
+    container_name: lb-loadgen
+    volumes:
+      - logs:/logs
+    profiles: ["tools"]
+
+  # --- для человека ----------------------------------------------------------
+
+  grafana:
+    image: grafana/grafana:13.1.2
+    container_name: lb-grafana
+    environment:
+      - GF_AUTH_ANONYMOUS_ENABLED=true
+      - GF_AUTH_ANONYMOUS_ORG_ROLE=Admin
+      - GF_AUTH_DISABLE_LOGIN_FORM=true
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "9405:3000"
+    profiles: ["ui"]
+
+volumes:
+  # Именованные тома обязательны: размер данных меряется СНАРУЖИ вспомогательным
+  # контейнером, потому что образы Loki и VictoriaLogs собраны без шелла и `du`
+  # внутри них не работает (проверено, см. results/00-feasibility.txt).
+  loki-data:
+  os-data:
+  vlogs-data:
+  vector-data:
+  logs:
