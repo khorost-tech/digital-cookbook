@@ -95,6 +95,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`infrastructure/ansible`](infrastructure/ansible) | Деплой Docker Compose стека через Ansible: docker_compose_v2, vault | [статья](https://khorost.tech/infrastructure/ansible-docker-compose-deploy/) |
+| [`infrastructure/cicd`](infrastructure/cicd) | CI-пайплайн (кэш, reusable workflows, matrix, OIDC), zero-downtime миграции (expand-contract, блокирующий DDL) и release engineering (semver/changelog, DORA) | 🔜 скоро |
 | [`infrastructure/proxmox`](infrastructure/proxmox) | Terraform для Proxmox: VM/LXC, cloud-init, for_each | [статья](https://khorost.tech/infrastructure/proxmox-terraform-vm-automation/) |
 | [`infrastructure/terraform`](infrastructure/terraform) | Стык Terraform → Ansible: docker-хост + firewall + inventory | [статья](https://khorost.tech/infrastructure/terraform-docker-hosts-and-networks/) |
 
@@ -138,6 +139,7 @@
 | [`kubernetes/networking`](kubernetes/networking) | Сеть в Kubernetes: датаплейн Cilium без kube-proxy, сетевые политики L3/L4 и L7, наблюдаемость через Hubble | 🔜 скоро |
 | [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
 | [`kubernetes/scheduling`](kubernetes/scheduling) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | [статья](https://khorost.tech/kubernetes/k8s-pod-scheduling-affinity-taints/) |
+| [`kubernetes/secrets`](kubernetes/secrets) | Секреты в Kubernetes: чем base64 не является, и какие механизмы закрывают разрыв — Sealed Secrets и External Secrets | 🔜 скоро |
 | [`kubernetes/stateful`](kubernetes/stateful) | StatefulSet и хранилище: собственный том на реплику, стабильная идентичность подов, изоляция данных между репликами | [статья](https://khorost.tech/kubernetes/k8s-stateful-storage/) |
 
 ## Security
@@ -161,7 +163,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`python/concurrency`](python/concurrency) | GIL, asyncio, потоки и процессы: где GIL связывает счётную задачу, что даёт сборка без GIL и чем за неё платят; профилирование cProfile против py-spy | [статья](https://khorost.tech/python/python-asyncio-and-gil/) |
-| [`python/data-access`](python/data-access) | SQLAlchemy 2.0 против голого asyncpg: сколько стоит каждый слой доступа и когда эта цена перестаёт существовать; N+1 в запросах, а не в миллисекундах; что видит автогенерация Alembic и возвращает ли откат схему назад | 🔜 скоро |
+| [`python/data-access`](python/data-access) | SQLAlchemy 2.0 против голого asyncpg: сколько стоит каждый слой доступа и когда эта цена перестаёт существовать; N+1 в запросах, а не в миллисекундах; что видит автогенерация Alembic и возвращает ли откат схему назад | [статья](https://khorost.tech/python/python-data-access-sqlalchemy/) |
 | [`python/tooling`](python/tooling) | uv, Poetry и pip на одном наборе зависимостей в трёх состояниях кэша; шесть стратегий сборки образа при побайтово одинаковом ответе; кто ловит подсунутый дефект — моки, фейк на SQLite, настоящая база в контейнере и property-based тест | 🔜 скоро |
 | [`python/typing-and-data`](python/typing-and-data) | Кто ловит подсунутый дефект — mypy, mypy --strict, pyright, pydantic на границе и голое выполнение; и кто не полез в данные, которые ответу не нужны: лишние разделы Parquet сделаны нечитаемыми, дошедший до ответа тем самым доказал, что в них не заглядывал. Времени этот стенд не меряет вовсе | [статья](https://khorost.tech/python/python-modern-typing/) |
 | [`python/web`](python/web) | FastAPI, Django и Flask на побайтово одинаковых ответах: во что обходится сам фреймворк и когда это перестаёт быть заметно; воркеры, корректное завершение, отказ на старте | [статья](https://khorost.tech/python/python-web-frameworks/) |

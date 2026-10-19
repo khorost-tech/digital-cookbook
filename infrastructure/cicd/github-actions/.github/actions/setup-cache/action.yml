@@ -1,0 +1,35 @@
+name: setup-cache
+description: >-
+  Установка Go и восстановление кэша модулей (GOMODCACHE) и сборки (GOCACHE).
+  Ключ кэша привязан к go.sum, restore-keys дают частичное попадание при его
+  изменении — один источник правды для кэша во всех job'ах пайплайна.
+inputs:
+  go-version:
+    description: Версия Go
+    required: true
+runs:
+  using: composite
+  steps:
+    # Версии пиньены по commit SHA (тег — в комментарии): тег можно переставить
+    # на другой коммит, SHA — нет.
+    - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+      with:
+        go-version: ${{ inputs.go-version }}
+        # Кэш ведём сами через actions/cache ниже, чтобы контролировать ключ и пути.
+        cache: false
+
+    - name: Определить пути кэша Go
+      id: paths
+      shell: bash
+      run: |
+        echo "build=$(go env GOCACHE)" >> "$GITHUB_OUTPUT"
+        echo "mod=$(go env GOMODCACHE)" >> "$GITHUB_OUTPUT"
+
+    - uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: |
+          ${{ steps.paths.outputs.build }}
+          ${{ steps.paths.outputs.mod }}
+        key: go-${{ inputs.go-version }}-${{ hashFiles('**/go.sum') }}
+        restore-keys: |
+          go-${{ inputs.go-version }}-

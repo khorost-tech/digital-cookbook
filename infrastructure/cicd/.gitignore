@@ -1,0 +1,18 @@
+# Бинарники Go-сборок демо (собираются скриптами во временные пути, в репо не нужны)
+github-actions/app/app
+zero-downtime/loadgen/loadgen
+zero-downtime/k8s/app/app
+release-dora/dora/dora
+*.exe
+
+# Репозиторий-фикстура раздела release-dora строится seed-repo.sh на месте
+release-dora/changelog/.repo-fixture/
+release-dora/changelog/CHANGELOG.generated.md
+
+# Локальные копии kubeconfig не коммитим (доступ к кластеру — через переменную окружения)
+**/kubeconfig
+**/*.kubeconfig
+
+# Временные выходы демо
+*.tmp
+*.log

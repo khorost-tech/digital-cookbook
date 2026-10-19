@@ -1,0 +1,112 @@
+name: reusable-build
+
+# Reusable workflow: один источник правды для конвейера сборки. Вызывается из
+# ci.yml (и может вызываться из ДРУГИХ репозиториев — см. ci-external-example.yml).
+# Стадии lint → test → build → publish связаны через needs.
+#
+# Версии actions пиньены по полному commit SHA, а тег оставлен в комментарии:
+# тег — движущаяся ссылка, её можно переставить на другой коммит, SHA — нет.
+# Это рекомендация GitHub по безопасному использованию сторонних actions.
+#
+# ⚠️ ОГРАНИЧЕНИЕ ПРИ ВНЕШНЕМ ВЫЗОВЕ. Шаги ниже ссылаются на локальный composite
+# action по относительному пути `./.github/actions/setup-cache`. Такой путь
+# резолвится в репозитории ВЫЗЫВАЮЩЕГО, а не в том, где лежит этот workflow.
+# Чтобы workflow работал из чужого репозитория, composite нужно либо продублировать
+# у вызывающего, либо ссылаться на него по полному пути
+# `{owner}/{repo}/path/to/action@{sha}`. Здесь оставлен относительный путь, потому
+# что стенд вызывает workflow внутри себя.
+on:
+  workflow_call:
+    inputs:
+      go-version:
+        description: Версия Go для сборки
+        type: string
+        required: true
+      runs-on:
+        description: Раннер (позволяет matrix по платформам на стороне вызывающего)
+        type: string
+        default: ubuntu-latest
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ${{ inputs.runs-on }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-cache
+        with:
+          go-version: ${{ inputs.go-version }}
+      - name: gofmt и go vet
+        run: |
+          test -z "$(gofmt -l .)" || { echo 'gofmt нашёл неотформатированные файлы'; gofmt -l .; exit 1; }
+          go vet ./...
+
+  test:
+    needs: lint
+    runs-on: ${{ inputs.runs-on }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-cache
+        with:
+          go-version: ${{ inputs.go-version }}
+      - name: go test
+        run: go test -race ./...
+
+  build:
+    needs: test
+    runs-on: ${{ inputs.runs-on }}
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: ./.github/actions/setup-cache
+        with:
+          go-version: ${{ inputs.go-version }}
+      - name: Собрать бинарь
+        run: CGO_ENABLED=0 go build -o out/app .
+      - name: Передать бинарь следующей стадии
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: app-${{ inputs.go-version }}-${{ inputs.runs-on }}
+          path: app/out/app
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    # Публикуем только с main и только по push: на pull_request и в merge queue
+    # публиковать нечего, а минуты раннера тратились бы на каждый прогон.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ${{ inputs.runs-on }}
+    # OIDC: job запрашивает короткоживущий id-token у GitHub и меняет его на
+    # доступ к внешнему реестру/облаку. ВАЖНО: эти права должен выдать ВЫЗЫВАЮЩИЙ
+    # (см. ci.yml) — вызываемый workflow может права только сохранить или урезать,
+    # но не повысить.
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Получить артефакт сборки
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: app-${{ inputs.go-version }}-${{ inputs.runs-on }}
+          path: out
+      # ⚠️ ЭТО СХЕМА, А НЕ РАБОЧАЯ ПУБЛИКАЦИЯ. Реальный обмен id-token на доступ
+      # требует настроенного доверия на стороне облака/реестра (workload identity
+      # provider или IAM-роль с trust policy на этот репозиторий), которого у
+      # стенда нет. Шаг ниже печатает, какое место занимает такой обмен; сам обмен
+      # НЕ выполняется и не проверялся живым прогоном.
+      - name: Место обмена OIDC-токена на доступ (не выполняется)
+        run: |
+          echo "Здесь стоял бы action облачного провайдера, меняющий id-token на доступ:"
+          echo "  aws-actions/configure-aws-credentials с role-to-assume, или"
+          echo "  google-github-actions/auth с workload_identity_provider."
+          echo "Долгоживущие ключи при этом не нужны — только федерация по id-token."

@@ -1,0 +1,92 @@
+# PostgreSQL в кластере для уровня B. Хранилище — emptyDir, а НЕ nfs-csi:
+# стенд эфемерный (namespace удаляется в конце прогона, схема создаётся заново
+# каждый раз), персистентность не нужна, а на NFS с root_squash entrypoint
+# postgres не может сделать chown PGDATA ("Operation not permitted").
+# securityContext — под требования PodSecurity "restricted" этого кластера.
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: cicd-zdt
+spec:
+  selector:
+    app: postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postgres-initdb
+  namespace: cicd-zdt
+data:
+  01-schema.sql: |
+    CREATE TABLE orders (
+        id           bigserial PRIMARY KEY,
+        customer     text        NOT NULL,
+        amount_cents integer     NOT NULL,
+        created_at   timestamptz NOT NULL DEFAULT now()
+    );
+    INSERT INTO orders (customer, amount_cents)
+    SELECT 'customer-' || (g % 100), (g * 7) % 100000
+    FROM generate_series(1, 5000) AS g;
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: cicd-zdt
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: postgres:18-alpine
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          env:
+            - name: POSTGRES_USER
+              value: zdt
+            - name: POSTGRES_PASSWORD
+              value: zdt
+            - name: POSTGRES_DB
+              value: zdt
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/postgresql/data
+            - name: initdb
+              mountPath: /docker-entrypoint-initdb.d
+          readinessProbe:
+            exec:
+              command: ["pg_isready", "-U", "zdt", "-d", "zdt"]
+            initialDelaySeconds: 5
+            periodSeconds: 3
+      volumes:
+        - name: data
+          emptyDir: {}
+        - name: initdb
+          configMap:
+            name: postgres-initdb

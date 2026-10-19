@@ -1,0 +1,27 @@
+# PostgreSQL для раздела zero-downtime, уровень A (локальные демо).
+# Порт проброшен на localhost:5457 (5456 занимает стенд background-jobs, если
+# оба подняты одновременно). log_lock_waits=on нужен blocking-ddl-demo.sh:
+# он считает ожидания блокировок в логе как дельту.
+services:
+  postgres:
+    image: postgres:18.4
+    container_name: cicd-zdt-postgres
+    environment:
+      POSTGRES_USER: zdt
+      POSTGRES_PASSWORD: zdt
+      POSTGRES_DB: zdt
+    command:
+      - postgres
+      - -c
+      - log_lock_waits=on
+      - -c
+      - deadlock_timeout=200ms
+    ports:
+      - "5457:5432"
+    volumes:
+      - ./../sql/01-schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zdt -d zdt"]
+      interval: 1s
+      timeout: 3s
+      retries: 30

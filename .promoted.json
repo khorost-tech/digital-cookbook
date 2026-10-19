@@ -219,6 +219,9 @@
     "infrastructure/ansible": [
       "infrastructure/ansible-docker-compose-deploy.md"
     ],
+    "infrastructure/cicd": [
+      "infrastructure/ci-pipeline-github-actions.md"
+    ],
     "infrastructure/proxmox": [
       "infrastructure/proxmox-terraform-vm-automation.md"
     ],
@@ -249,6 +252,9 @@
     ],
     "kubernetes/scheduling": [
       "kubernetes/k8s-pod-scheduling-affinity-taints.md"
+    ],
+    "kubernetes/secrets": [
+      "kubernetes/k8s-secrets-sealed-external.md"
     ],
     "kubernetes/stateful": [
       "kubernetes/k8s-stateful-storage.md"
@@ -348,7 +354,8 @@
       "performance/testcontainers-template-db.md"
     ],
     "python/concurrency": [
-      "python/python-asyncio-and-gil.md"
+      "python/python-asyncio-and-gil.md",
+      "python/python-performance-gil-native.md"
     ],
     "python/data-access": [
       "python/python-data-access-sqlalchemy.md"

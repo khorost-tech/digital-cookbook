@@ -1,0 +1,36 @@
+# Конфиг git-cliff: changelog и следующая semver-версия из conventional commits.
+# Правила bump: breaking (feat!/BREAKING CHANGE) -> MAJOR, feat -> MINOR,
+# fix -> PATCH. Коммиты без conventional-префикса в changelog не попадают и на
+# версию не влияют — это и есть контракт дисциплины сообщений.
+
+[changelog]
+header = "# Changelog\n\n"
+body = """
+{% for group, commits in commits | group_by(attribute="group") %}
+### {{ group | upper_first }}
+{% for commit in commits %}
+- {{ commit.message | upper_first }}\
+{% endfor %}
+{% endfor %}
+"""
+trim = true
+
+[git]
+conventional_commits = true
+# Неконвенциональные коммиты отбрасываем: они не должны ни попадать в changelog,
+# ни влиять на версию (падающий вариант в changelog-demo.sh это проверяет).
+filter_unconventional = true
+commit_parsers = [
+    { message = "^feat", group = "Features" },
+    { message = "^fix", group = "Bug Fixes" },
+    { message = "^docs", group = "Documentation" },
+    { message = "^perf", group = "Performance" },
+    { message = "^refactor", group = "Refactor" },
+    { message = "^chore", group = "Chore" },
+]
+filter_commits = false
+tag_pattern = "v[0-9].*"
+
+[bump]
+features_always_bump_minor = true
+breaking_always_bump_major = true

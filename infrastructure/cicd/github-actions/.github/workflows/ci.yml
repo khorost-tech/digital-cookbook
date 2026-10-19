@@ -1,0 +1,38 @@
+name: ci
+
+# Вызывающий workflow. Вся логика конвейера — в reusable-build.yml; здесь только
+# матрица (версии Go × платформы), события и права. Так конвейер не копируется по
+# репозиториям: меняем reusable-build.yml — меняется поведение везде, где его
+# вызывают. Внешний вызов (из другого репозитория) — см. ci-external-example.yml.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  # merge_group ОБЯЗАТЕЛЕН, если включена merge queue: очередь ставит проверки на
+  # временную ветку слияния и шлёт именно это событие. Без него required checks в
+  # очереди не запускаются и слияние заканчивается неудачей.
+  merge_group:
+
+# Права на уровне workflow — минимальные. Вызываемый reusable workflow НЕ может
+# их повысить: по цепочке вызовов права только сохраняются или уменьшаются.
+# Поэтому id-token: write выдаётся здесь, на job — иначе OIDC внутри
+# reusable-build.yml не получит токен, сколько бы он его ни просил.
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      # fail-fast: false — не гасить остальные ячейки матрицы из-за одной упавшей,
+      # чтобы за один прогон увидеть все версии/платформы, где есть проблема.
+      fail-fast: false
+      matrix:
+        go-version: ["1.25", "1.26"]
+        runs-on: [ubuntu-latest, macos-latest]
+    uses: ./.github/workflows/reusable-build.yml
+    with:
+      go-version: ${{ matrix.go-version }}
+      runs-on: ${{ matrix.runs-on }}
