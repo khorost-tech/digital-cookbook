@@ -47,6 +47,7 @@
       "architecture/temporal-architecture-internals.md",
       "architecture/temporal-durable-workflows.md",
       "architecture/temporal-signals-queries-child-workflows.md",
+      "architecture/temporal-versioning-evolution.md",
       "architecture/temporal-workflow-determinism.md"
     ],
     "architecture/testing": [
@@ -361,7 +362,8 @@
       "python/python-data-access-sqlalchemy.md"
     ],
     "python/tooling": [
-      "python/python-packaging-uv-poetry.md"
+      "python/python-packaging-uv-poetry.md",
+      "python/python-testing.md"
     ],
     "python/typing-and-data": [
       "python/python-modern-typing.md"

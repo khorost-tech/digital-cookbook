@@ -6,7 +6,7 @@ Kubernetes на практике: control plane и планирование, р�
 |---|---|---|
 | [`architecture/`](architecture/) | Архитектура Kubernetes на живом кластере: из чего состоит control plane, кто ведущий, что происходит между kubectl apply и запущенным контейнером | [статья](https://khorost.tech/kubernetes/k8s-architecture-control-plane/) |
 | [`autoscaling/`](autoscaling/) | Автоскейлинг: HPA, VPA и KEDA на управляемой бизнес-метрике — от источника метрики до решения о масштабировании | [статья](https://khorost.tech/kubernetes/k8s-autoscaling-hpa-vpa-keda/) |
-| [`networking/`](networking/) | Сеть в Kubernetes: датаплейн Cilium без kube-proxy, сетевые политики L3/L4 и L7, наблюдаемость через Hubble | 🔜 скоро |
+| [`networking/`](networking/) | Сеть в Kubernetes: датаплейн Cilium без kube-proxy, сетевые политики L3/L4 и L7, наблюдаемость через Hubble | [статья](https://khorost.tech/kubernetes/k8s-networking-cilium-mesh/) |
 | [`resources/`](resources/) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
 | [`scheduling/`](scheduling/) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | [статья](https://khorost.tech/kubernetes/k8s-pod-scheduling-affinity-taints/) |
 | [`secrets/`](secrets/) | Секреты в Kubernetes: чем base64 не является, и какие механизмы закрывают разрыв — Sealed Secrets и External Secrets | 🔜 скоро |
