@@ -366,6 +366,7 @@
       "python/python-testing.md"
     ],
     "python/typing-and-data": [
+      "python/python-data-ml-in-production.md",
       "python/python-modern-typing.md"
     ],
     "python/web": [
