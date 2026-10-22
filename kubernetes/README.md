@@ -9,7 +9,7 @@ Kubernetes на практике: control plane и планирование, р�
 | [`networking/`](networking/) | Сеть в Kubernetes: датаплейн Cilium без kube-proxy, сетевые политики L3/L4 и L7, наблюдаемость через Hubble | [статья](https://khorost.tech/kubernetes/k8s-networking-cilium-mesh/) |
 | [`resources/`](resources/) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
 | [`scheduling/`](scheduling/) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | [статья](https://khorost.tech/kubernetes/k8s-pod-scheduling-affinity-taints/) |
-| [`secrets/`](secrets/) | Секреты в Kubernetes: чем base64 не является, и какие механизмы закрывают разрыв — Sealed Secrets и External Secrets | 🔜 скоро |
+| [`secrets/`](secrets/) | Секреты в Kubernetes: чем base64 не является, и какие механизмы закрывают разрыв — Sealed Secrets и External Secrets | [статья](https://khorost.tech/kubernetes/k8s-secrets-sealed-external/) |
 | [`stateful/`](stateful/) | StatefulSet и хранилище: собственный том на реплику, стабильная идентичность подов, изоляция данных между репликами | [статья](https://khorost.tech/kubernetes/k8s-stateful-storage/) |
 
 ---

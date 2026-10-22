@@ -95,7 +95,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`infrastructure/ansible`](infrastructure/ansible) | Деплой Docker Compose стека через Ansible: docker_compose_v2, vault | [статья](https://khorost.tech/infrastructure/ansible-docker-compose-deploy/) |
-| [`infrastructure/cicd`](infrastructure/cicd) | CI-пайплайн (кэш, reusable workflows, matrix, OIDC), zero-downtime миграции (expand-contract, блокирующий DDL) и release engineering (semver/changelog, DORA) | 🔜 скоро |
+| [`infrastructure/cicd`](infrastructure/cicd) | CI-пайплайн (кэш, reusable workflows, matrix, OIDC), zero-downtime миграции (expand-contract, блокирующий DDL) и release engineering (semver/changelog, DORA) | [статья](https://khorost.tech/infrastructure/ci-pipeline-github-actions/) |
 | [`infrastructure/proxmox`](infrastructure/proxmox) | Terraform для Proxmox: VM/LXC, cloud-init, for_each | [статья](https://khorost.tech/infrastructure/proxmox-terraform-vm-automation/) |
 | [`infrastructure/terraform`](infrastructure/terraform) | Стык Terraform → Ansible: docker-хост + firewall + inventory | [статья](https://khorost.tech/infrastructure/terraform-docker-hosts-and-networks/) |
 
@@ -139,7 +139,7 @@
 | [`kubernetes/networking`](kubernetes/networking) | Сеть в Kubernetes: датаплейн Cilium без kube-proxy, сетевые политики L3/L4 и L7, наблюдаемость через Hubble | [статья](https://khorost.tech/kubernetes/k8s-networking-cilium-mesh/) |
 | [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
 | [`kubernetes/scheduling`](kubernetes/scheduling) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | [статья](https://khorost.tech/kubernetes/k8s-pod-scheduling-affinity-taints/) |
-| [`kubernetes/secrets`](kubernetes/secrets) | Секреты в Kubernetes: чем base64 не является, и какие механизмы закрывают разрыв — Sealed Secrets и External Secrets | 🔜 скоро |
+| [`kubernetes/secrets`](kubernetes/secrets) | Секреты в Kubernetes: чем base64 не является, и какие механизмы закрывают разрыв — Sealed Secrets и External Secrets | [статья](https://khorost.tech/kubernetes/k8s-secrets-sealed-external/) |
 | [`kubernetes/stateful`](kubernetes/stateful) | StatefulSet и хранилище: собственный том на реплику, стабильная идентичность подов, изоляция данных между репликами | [статья](https://khorost.tech/kubernetes/k8s-stateful-storage/) |
 
 ## Security

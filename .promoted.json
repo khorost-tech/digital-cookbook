@@ -221,6 +221,7 @@
       "infrastructure/ansible-docker-compose-deploy.md"
     ],
     "infrastructure/cicd": [
+      "architecture/zero-downtime-deploy-migrations.md",
       "infrastructure/ci-pipeline-github-actions.md"
     ],
     "infrastructure/proxmox": [
