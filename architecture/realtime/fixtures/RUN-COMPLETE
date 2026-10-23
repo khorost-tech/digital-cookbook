@@ -1,0 +1,14 @@
+{
+ "fixtures": {
+  "protocol.jsonl": "78da35cfcdd0409b7b6022c4aa63d454bdd7508ac39dedda15deeeb9a05dd743",
+  "flate.jsonl": "ba508a4fc5ea863f7fffedac6c973444b2bc289e06b85a7a435aca24d649c5cf",
+  "wire.jsonl": "7abb57b230f8c6156783f4280601847f5dc7c6b97d2935b2707a7df45dd75532",
+  "proxy.jsonl": "91d8f1d7f8d6f86bff45ee4d1b3868d27098a26c2ea1cf2374040b5f84f4123d",
+  "scale.jsonl": "794b22aad81e1db2f51331b8814880c6fc119fb4e85b7d26725e3b58355d5bf8",
+  "reconnect.jsonl": "b794e96e3709b95551916a9a17cd2454ccfb587f3f6dd2eccef1943f64c0532a",
+  "slow.jsonl": "bf3f57339fdc0c1842ab8403a6ee845983c30f12cc8288da1cec64a9ce7e9b90",
+  "idle.jsonl": "b1c1bd7c7b657176a34d24518ee29489a17749d3df37ceb1eb314aecba027e76"
+ },
+ "tests": 37,
+ "sabotages": 23
+}

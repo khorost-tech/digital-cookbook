@@ -1,0 +1,408 @@
+{
+ "session": "20261006T102148Z",
+ "published": {
+  "protocol": {
+   "go": {
+    "healthz_keys": [
+     "bus",
+     "bus_state",
+     "conns",
+     "instance",
+     "server"
+    ],
+    "longpoll_empty": 1,
+    "longpoll_ids": [
+     3
+    ],
+    "longpoll_requests": 2,
+    "poll_after_0": [
+     1
+    ],
+    "poll_after_1": null,
+    "publish_ok": 204,
+    "publish_without_id": 400,
+    "sse_cache_control": "no-cache",
+    "sse_content_type": "text/event-stream",
+    "sse_ids": [
+     1,
+     2,
+     3
+    ],
+    "sse_instance_header": true,
+    "sse_last_event_id": 3,
+    "sse_resume_without_history": [
+     5
+    ],
+    "stats_keys": [
+     "conns",
+     "delivered",
+     "disconnected",
+     "dropped",
+     "instance",
+     "max_queue"
+    ],
+    "ws_ids": [
+     1,
+     2,
+     3
+    ],
+    "ws_instance_header": true
+   },
+   "java": {
+    "healthz_keys": [
+     "bus",
+     "bus_state",
+     "conns",
+     "instance",
+     "server"
+    ],
+    "longpoll_empty": 1,
+    "longpoll_ids": [
+     3
+    ],
+    "longpoll_requests": 2,
+    "poll_after_0": [
+     1
+    ],
+    "poll_after_1": null,
+    "publish_ok": 204,
+    "publish_without_id": 400,
+    "sse_cache_control": "no-cache",
+    "sse_content_type": "text/event-stream",
+    "sse_ids": [
+     1,
+     2,
+     3
+    ],
+    "sse_instance_header": true,
+    "sse_last_event_id": 3,
+    "sse_resume_without_history": [
+     5
+    ],
+    "stats_keys": [
+     "conns",
+     "delivered",
+     "disconnected",
+     "dropped",
+     "instance",
+     "max_queue"
+    ],
+    "ws_ids": [
+     1,
+     2,
+     3
+    ],
+    "ws_instance_header": true
+   }
+  },
+  "flate": {
+   "1": 76.1,
+   "-1": 76.1,
+   "9": 15.2
+  },
+  "wire": {
+   "go/sse": {
+    "outcome": "delivered",
+    "down": 132.4,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "go/ws": {
+    "outcome": "delivered",
+    "down": 113.2,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "go/longpoll": {
+    "outcome": "delivered",
+    "down": 247.2,
+    "up": 120.0,
+    "requests": 1.0,
+    "empty": 0.0
+   },
+   "go/poll-50ms": {
+    "outcome": "delivered",
+    "down~": 387.9,
+    "up~": 225.9,
+    "requests~": 2.05,
+    "empty~": 1.05
+   },
+   "go/poll-500ms": {
+    "outcome": "delivered",
+    "down~": 140.6,
+    "up~": 23.1,
+    "requests~": 0.21,
+    "empty~": 0.0
+   },
+   "go/sse-gzip": {
+    "outcome": "delivered",
+    "down": 79.5,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "go/sse-gzip-9": {
+    "outcome": "delivered",
+    "down": 25.0,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "go/ws-deflate": {
+    "outcome": "delivered",
+    "down": 113.2,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "go/ws-deflate-all": {
+    "outcome": "delivered",
+    "down": 71.9,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "java/sse": {
+    "outcome": "delivered",
+    "down": 130.4,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "java/ws": {
+    "outcome": "delivered",
+    "down": 113.2,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "java/longpoll": {
+    "outcome": "delivered",
+    "down": 211.2,
+    "up": 120.0,
+    "requests": 1.0,
+    "empty": 0.0
+   },
+   "java/poll-50ms": {
+    "outcome": "delivered",
+    "down~": 319.0,
+    "up~": 231.4,
+    "requests~": 2.1,
+    "empty~": 1.1
+   },
+   "java/poll-500ms": {
+    "outcome": "delivered",
+    "down~": 133.0,
+    "up~": 23.1,
+    "requests~": 0.21,
+    "empty~": 0.0
+   },
+   "java/sse-gzip": {
+    "outcome": "delivered",
+    "down": 25.4,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "java/sse-gzip-9": {
+    "outcome": "delivered",
+    "down": 25.4,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "java/ws-deflate": {
+    "outcome": "delivered",
+    "down": 13.5,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   },
+   "java/ws-deflate-all": {
+    "outcome": "delivered",
+    "down": 13.5,
+    "up": 0.0,
+    "requests": 0.0,
+    "empty": 0.0
+   }
+  },
+  "proxy": {
+   "go/sse-window/direct": "delivered",
+   "go/sse-window/buffered": "delivered",
+   "go/sse-window/buffered-gzip": "delivered",
+   "go/sse-window/unbuffered": "delivered",
+   "go/handshake/direct": "upgraded",
+   "go/handshake/buffered": "upgraded",
+   "go/handshake/no-upgrade": "refused",
+   "go/idle/ws/direct": "alive",
+   "go/idle/ws/short-idle": "closed",
+   "go/idle/ws/short-idle-hb": "alive",
+   "go/idle/sse/direct": "alive",
+   "go/idle/sse/short-idle": "closed",
+   "go/idle/sse/short-idle-hb": "alive",
+   "java/sse-window/direct": "delivered",
+   "java/sse-window/buffered": "delivered",
+   "java/sse-window/buffered-gzip": "delivered",
+   "java/sse-window/unbuffered": "delivered",
+   "java/handshake/direct": "upgraded",
+   "java/handshake/buffered": "upgraded",
+   "java/handshake/no-upgrade": "refused",
+   "java/idle/ws/direct": "alive",
+   "java/idle/ws/short-idle": "closed",
+   "java/idle/ws/short-idle-hb": "alive",
+   "java/idle/sse/direct": "alive",
+   "java/idle/sse/short-idle": "closed",
+   "java/idle/sse/short-idle-hb": "alive"
+  },
+  "scale": {
+   "go/fanout/sse/none": "partial",
+   "go/fanout/sse/redis": "all",
+   "go/fanout/sse/nats": "all",
+   "go/fanout/ws/none": "partial",
+   "go/fanout/ws/redis": "all",
+   "go/fanout/ws/nats": "all",
+   "go/longpoll/scale": "partial",
+   "go/longpoll/sticky": "all",
+   "java/fanout/sse/none": "partial",
+   "java/fanout/sse/redis": "all",
+   "java/fanout/sse/nats": "all",
+   "java/fanout/ws/none": "partial",
+   "java/fanout/ws/redis": "all",
+   "java/fanout/ws/nats": "all",
+   "java/longpoll/scale": "partial",
+   "java/longpoll/sticky": "all"
+  },
+  "reconnect": {
+   "go/gap/redis": {
+    "outcome": "lost",
+    "missing": 5
+   },
+   "go/gap/redis-streams": {
+    "outcome": "no-loss",
+    "missing": 0
+   },
+   "go/gap/nats": {
+    "outcome": "lost",
+    "missing": 5
+   },
+   "go/gap/jetstream": {
+    "outcome": "no-loss",
+    "missing": 0
+   },
+   "go/resume/none": {
+    "outcome": "lost",
+    "missing": 5
+   },
+   "go/resume/redis-streams": {
+    "outcome": "no-loss",
+    "missing": 0
+   },
+   "go/resume/jetstream": {
+    "outcome": "no-loss",
+    "missing": 0
+   },
+   "go/storm/jitter-0ms": {
+    "outcome": "burst",
+    "max~": 200
+   },
+   "go/storm/jitter-2000ms": {
+    "outcome": "spread",
+    "max~": 18
+   },
+   "java/gap/redis": {
+    "outcome": "lost",
+    "missing": 5
+   },
+   "java/gap/redis-streams": {
+    "outcome": "no-loss",
+    "missing": 0
+   },
+   "java/gap/nats": {
+    "outcome": "lost",
+    "missing": 5
+   },
+   "java/gap/jetstream": {
+    "outcome": "no-loss",
+    "missing": 0
+   },
+   "java/resume/none": {
+    "outcome": "lost",
+    "missing": 5
+   },
+   "java/resume/redis-streams": {
+    "outcome": "no-loss",
+    "missing": 0
+   },
+   "java/resume/jetstream": {
+    "outcome": "no-loss",
+    "missing": 0
+   },
+   "java/storm/jitter-0ms": {
+    "outcome": "burst",
+    "max~": 200
+   },
+   "java/storm/jitter-2000ms": {
+    "outcome": "spread",
+    "max~": 23
+   }
+  },
+  "slow": {
+   "go/sse/unbounded/direct": "grew",
+   "go/sse/unbounded/buffered": "unnoticed",
+   "go/sse/unbounded/unbuffered": "grew",
+   "go/sse/drop-oldest/direct": "dropped",
+   "go/sse/drop-oldest/buffered": "unnoticed",
+   "go/sse/drop-oldest/unbuffered": "dropped",
+   "go/sse/disconnect/direct": "disconnected",
+   "go/sse/disconnect/buffered": "unnoticed",
+   "go/sse/disconnect/unbuffered": "disconnected",
+   "go/ws/unbounded/direct": "grew",
+   "go/ws/unbounded/buffered": "grew",
+   "go/ws/unbounded/unbuffered": "grew",
+   "go/ws/drop-oldest/direct": "dropped",
+   "go/ws/drop-oldest/buffered": "dropped",
+   "go/ws/drop-oldest/unbuffered": "dropped",
+   "go/ws/disconnect/direct": "disconnected",
+   "go/ws/disconnect/buffered": "disconnected",
+   "go/ws/disconnect/unbuffered": "disconnected",
+   "java/sse/unbounded/direct": "grew",
+   "java/sse/unbounded/buffered": "unnoticed",
+   "java/sse/unbounded/unbuffered": "grew",
+   "java/sse/drop-oldest/direct": "dropped",
+   "java/sse/drop-oldest/buffered": "unnoticed",
+   "java/sse/drop-oldest/unbuffered": "dropped",
+   "java/sse/disconnect/direct": "disconnected",
+   "java/sse/disconnect/buffered": "unnoticed",
+   "java/sse/disconnect/unbuffered": "disconnected",
+   "java/ws/unbounded/direct": "grew",
+   "java/ws/unbounded/buffered": "grew",
+   "java/ws/unbounded/unbuffered": "grew",
+   "java/ws/drop-oldest/direct": "dropped",
+   "java/ws/drop-oldest/buffered": "dropped",
+   "java/ws/drop-oldest/unbuffered": "dropped",
+   "java/ws/disconnect/direct": "disconnected",
+   "java/ws/disconnect/buffered": "disconnected",
+   "java/ws/disconnect/unbuffered": "disconnected"
+  },
+  "idle": {
+   "go/ws": {
+    "rss": 32.8,
+    "heap": 17.1
+   },
+   "go/sse": {
+    "rss": 34.4,
+    "heap": 20.6
+   },
+   "java/ws": {
+    "rss": 15.0,
+    "heap": 10.1
+   },
+   "java/sse": {
+    "rss": 28.2,
+    "heap": 17.9
+   }
+  }
+ }
+}

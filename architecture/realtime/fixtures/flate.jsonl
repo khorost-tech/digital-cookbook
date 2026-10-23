@@ -1,0 +1,4 @@
+{"kind": "flate", "level": 1, "bytes_per_message": 76.1, "raw": 111, "cmd": "python3 scripts/run-flate.py"}
+{"kind": "flate", "level": -1, "bytes_per_message": 76.1, "raw": 111, "cmd": "python3 scripts/run-flate.py"}
+{"kind": "flate", "level": 9, "bytes_per_message": 15.2, "raw": 111, "cmd": "python3 scripts/run-flate.py"}
+COMPLETE

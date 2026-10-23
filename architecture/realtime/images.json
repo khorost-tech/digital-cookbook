@@ -1,0 +1,30 @@
+{
+ "angie": {
+  "ref": "docker.angie.software/angie:1.12.2",
+  "digest": "sha256:7d6ad2b9efa7453ad0810b1fe8410f4673f0c30f65cebf6fe1b317d4f2c99d91"
+ },
+ "redis": {
+  "ref": "redis:8.8-alpine",
+  "digest": "sha256:0b2b77d3ea5078274795e3177cdbdada8b96316684a38911d528534ed679b5ec"
+ },
+ "nats": {
+  "ref": "nats:2.14-alpine",
+  "digest": "sha256:4063edae0717ba5f7501bfde75f97fd9b57f5b93597b92c70b6a6fbbf6a74e06"
+ },
+ "golang": {
+  "ref": "golang:1.27.1-alpine",
+  "digest": "sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414"
+ },
+ "alpine": {
+  "ref": "alpine:3.22",
+  "digest": "sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8"
+ },
+ "maven": {
+  "ref": "maven:3.9-eclipse-temurin-21",
+  "digest": "sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320"
+ },
+ "jre": {
+  "ref": "eclipse-temurin:21-jre-alpine",
+  "digest": "sha256:51ab5e3302e7141ce665ca3ea85e8b5cd648eafbc3c0c90dd79d6537684e4555"
+ }
+}

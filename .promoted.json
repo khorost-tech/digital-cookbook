@@ -23,6 +23,9 @@
     "architecture/idempotency": [
       "architecture/delivery-guarantees-idempotency.md"
     ],
+    "architecture/realtime": [
+      "architecture/realtime-websockets-sse.md"
+    ],
     "architecture/resilience": [
       "architecture/backpressure-load-shedding.md",
       "architecture/disaster-recovery-rto-rpo.md",
@@ -46,6 +49,7 @@
       "architecture/temporal-activities-deep-dive.md",
       "architecture/temporal-architecture-internals.md",
       "architecture/temporal-durable-workflows.md",
+      "architecture/temporal-production-operations.md",
       "architecture/temporal-signals-queries-child-workflows.md",
       "architecture/temporal-versioning-evolution.md",
       "architecture/temporal-workflow-determinism.md"
@@ -221,6 +225,7 @@
       "infrastructure/ansible-docker-compose-deploy.md"
     ],
     "infrastructure/cicd": [
+      "architecture/release-engineering-dora.md",
       "architecture/zero-downtime-deploy-migrations.md",
       "infrastructure/ci-pipeline-github-actions.md"
     ],
