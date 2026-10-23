@@ -61,14 +61,11 @@ PROBE=$!
 sleep 2
 
 echo "--- CREATE TRIGGER под работающей нагрузкой ---"
-psql_c -q -c "
-CREATE OR REPLACE FUNCTION sync_amount_total() RETURNS trigger AS \$fn\$
-BEGIN
-  IF NEW.total_cents IS NULL THEN NEW.total_cents := NEW.amount_cents; END IF;
-  RETURN NEW;
-END; \$fn\$ LANGUAGE plpgsql;
-CREATE TRIGGER trg_sync BEFORE INSERT OR UPDATE ON orders
-  FOR EACH ROW EXECUTE FUNCTION sync_amount_total();" >/dev/null
+# Функция и триггер — те же, что рекомендуются для перехода (двунаправленная
+# синхронизация, sql/sync-trigger.sql). Здесь важна только ветка INSERT; ветку
+# UPDATE проверяет scripts/trigger-update-demo.sh.
+docker exec -i "$CONTAINER" psql -U zdt -d zdt -q -v ON_ERROR_STOP=1 \
+    < "$ZDT_ROOT/sql/sync-trigger.sql" >/dev/null
 
 # Команда выше вернула управление — значит COMMIT состоялся. Только теперь
 # снимаем барьер: всё, что воркеры вставят дальше, заведомо идёт после commit.
