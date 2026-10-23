@@ -9,6 +9,8 @@
 --   изменилась только total_cents (писал новый код)   -> копируем в amount_cents;
 --   изменились обе и разошлись                         -> ошибка, а не тихий выбор
 --                                                         победителя.
+-- То же для INSERT: заполнена одна колонка — копируем во вторую; заданы обе и
+-- расходятся — ошибка, иначе старый и новый код прочитают разные суммы.
 -- Это проверяет scripts/trigger-update-demo.sh, вместе с прежним вариантом
 -- функции на том же контрпримере.
 CREATE OR REPLACE FUNCTION sync_amount_total() RETURNS trigger AS $fn$
@@ -18,6 +20,9 @@ BEGIN
       NEW.total_cents := NEW.amount_cents;
     ELSIF NEW.amount_cents IS NULL THEN
       NEW.amount_cents := NEW.total_cents;
+    ELSIF NEW.amount_cents <> NEW.total_cents THEN
+      RAISE EXCEPTION 'двойная запись: при вставке колонки расходятся (amount_cents=%, total_cents=%)',
+        NEW.amount_cents, NEW.total_cents;
     END IF;
   ELSIF NEW.amount_cents IS DISTINCT FROM OLD.amount_cents
         AND NEW.total_cents IS NOT DISTINCT FROM OLD.total_cents THEN

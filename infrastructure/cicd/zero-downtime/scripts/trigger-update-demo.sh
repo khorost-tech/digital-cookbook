@@ -75,8 +75,18 @@ check "строка после отвергнутого UPDATE"          "$(row)
 psql_c -q -c "INSERT INTO orders (customer, total_cents) VALUES ('v', 700)" >/dev/null
 check "INSERT новым кодом (только total_cents)" \
     "$(psql_q -c "SELECT amount_cents||'/'||total_cents FROM orders WHERE customer='v'")" "700/700"
+psql_c -q -c "INSERT INTO orders (customer, amount_cents, total_cents) VALUES ('w', 800, 800)" >/dev/null
+check "INSERT обеих колонок одним значением" \
+    "$(psql_q -c "SELECT amount_cents||'/'||total_cents FROM orders WHERE customer='w'")" "800/800"
+if psql_c -q -c "INSERT INTO orders (customer, amount_cents, total_cents) VALUES ('conflict', 100, 200)" >/dev/null 2>&1; then
+    check "INSERT обеих колонок разными значениями" "принят" "отвергнут"
+else
+    check "INSERT обеих колонок разными значениями" "отвергнут" "отвергнут"
+fi
+check "строк 'conflict' после отвергнутого INSERT" \
+    "$(psql_q -c "SELECT count(*) FROM orders WHERE customer='conflict'")" "0"
 
 echo
 if [ "$FAIL" -ne 0 ]; then echo "ОШИБКА: проверки не прошли." >&2; exit 1; fi
 echo "OK: наивная функция теряет UPDATE старого кода (${NAIVE}), рекомендуемая синхронизирует"
-echo "обе стороны и отвергает расходящееся обновление обеих колонок."
+echo "обе стороны и отвергает расходящиеся значения обеих колонок — при UPDATE и при INSERT."
