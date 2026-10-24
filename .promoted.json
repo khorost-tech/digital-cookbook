@@ -46,6 +46,7 @@
     ],
     "architecture/temporal": [
       "architecture/durable-execution-paradigm.md",
+      "architecture/temporal-across-languages.md",
       "architecture/temporal-activities-deep-dive.md",
       "architecture/temporal-architecture-internals.md",
       "architecture/temporal-durable-workflows.md",
@@ -73,6 +74,9 @@
       "databases/clickhouse-s3-storage.md",
       "databases/clickhouse-vs-timeseries-decision.md",
       "databases/clickhouse-when-olap.md"
+    ],
+    "databases/cockroachdb": [
+      "databases/cockroachdb-architecture-ranges-raft.md"
     ],
     "databases/db-indexes": [
       "databases/db-indexes-across-databases.md",
@@ -252,6 +256,9 @@
     ],
     "kubernetes/networking": [
       "kubernetes/k8s-networking-cilium-mesh.md"
+    ],
+    "kubernetes/operators": [
+      "kubernetes/k8s-operators-crd.md"
     ],
     "kubernetes/resources": [
       "kubernetes/k8s-autoscaling-hpa-vpa-keda.md",

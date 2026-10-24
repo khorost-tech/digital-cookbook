@@ -1,0 +1,34 @@
+# selfSigned намеренно: стенду не нужен внешний УЦ (Let's Encrypt/Selectel DNS-01 и т.п.),
+# selfSigned даёт ту же цепочку reconcile (Issuer -> Certificate -> CertificateRequest -> Secret)
+# без обращений наружу и без риска задеть боевые ClusterIssuer'ы кластера.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: cookbook-selfsigned
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-operators
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: demo-cert
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-operators
+spec:
+  secretName: demo-cert-tls
+  issuerRef:
+    name: cookbook-selfsigned
+    kind: Issuer
+  dnsNames:
+    - demo.cookbook.local
+  duration: 24h
+  renewBefore: 12h
+  # secretTemplate: без него cert-manager НЕ копирует лейблы Certificate на порождённый Secret —
+  # добавляем явно, чтобы label-селектор teardown.sh (stand=cookbook-operators) захватывал и Secret.
+  secretTemplate:
+    labels:
+      stand: cookbook-operators

@@ -1,0 +1,51 @@
+# CRD Greeting — минимальный API-тип для собственного оператора стенда.
+# group cookbook.khorost.tech, version v1alpha1, kind Greeting (plural greetings).
+# subresources.status обязателен: без него оператор не может писать status
+# отдельно от spec (PUT .../status — отдельный API-вызов, отдельные права RBAC).
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: greetings.cookbook.khorost.tech
+  labels:
+    stand: cookbook-operators
+spec:
+  group: cookbook.khorost.tech
+  scope: Namespaced
+  names:
+    plural: greetings
+    singular: greeting
+    kind: Greeting
+    listKind: GreetingList
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: WHO
+          type: string
+          jsonPath: .spec.who
+        - name: MESSAGE
+          type: string
+          jsonPath: .status.message
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: [who]
+              properties:
+                who:
+                  type: string
+                  description: "Кому адресовано приветствие — оператор подставит его в status.message."
+            status:
+              type: object
+              properties:
+                message:
+                  type: string
+                  description: "Приветствие, вычисленное оператором из spec.who; это же значение уходит в ConfigMap greeting-<name>."
+                observedGeneration:
+                  type: integer
+                  description: "metadata.generation, на которую отреагировал оператор в последний раз."

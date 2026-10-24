@@ -1,0 +1,46 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 10-certmanager
+# cmd: kubectl -n cookbook-k8s get issuer,certificate,certificaterequest,secret -l stand=cookbook-operators
+# ---
+NAME                                         READY   AGE
+issuer.cert-manager.io/cookbook-selfsigned   True    79s
+
+NAME                                    READY   SECRET          AGE
+certificate.cert-manager.io/demo-cert   True    demo-cert-tls   79s
+
+NAME                                             APPROVED   DENIED   READY   ISSUER                REQUESTER                                         AGE
+certificaterequest.cert-manager.io/demo-cert-1   True                True    cookbook-selfsigned   system:serviceaccount:cert-manager:cert-manager   78s
+
+NAME                   TYPE                DATA   AGE
+secret/demo-cert-tls   kubernetes.io/tls   3      78s
+--- что породил оператор из ОДНОГО объекта Certificate ---
+NAME          APPROVED   READY
+demo-cert-1   True       True
+--- status.conditions самого Certificate ---
+type=Ready status=True reason=Ready message=Certificate is up to date and has not expired
+--- владелец Secret: кто его создал ---
+type=kubernetes.io/tls ownerRefs=
+--- какие ключи внутри Secret (БЕЗ значений) ---
+ca.crt
+tls.crt
+tls.key
+--- ownerReferences ПУСТЫ по умолчанию (cert-manager 1.17: --enable-certificate-owner-ref=false); реальный признак принадлежности — аннотация ---
+cert-manager.io/certificate-name=demo-cert
+--- удаляем выпущенный Secret; оператор должен вернуть его сам ---
+2026-07-24T05:40:55Z
+05:40:55 Error from server (NotFound): secrets "demo-cert-tls" not found
+05:40:59 demo-cert-tls   kubernetes.io/tls   3     4s
+05:41:04 demo-cert-tls   kubernetes.io/tls   3     8s
+05:41:08 demo-cert-tls   kubernetes.io/tls   3     12s
+05:41:12 demo-cert-tls   kubernetes.io/tls   3     17s
+05:41:16 demo-cert-tls   kubernetes.io/tls   3     21s
+05:41:20 demo-cert-tls   kubernetes.io/tls   3     25s
+05:41:24 demo-cert-tls   kubernetes.io/tls   3     29s
+05:41:29 demo-cert-tls   kubernetes.io/tls   3     33s
+05:41:33 demo-cert-tls   kubernetes.io/tls   3     38s
+05:41:37 demo-cert-tls   kubernetes.io/tls   3     42s
+05:41:41 demo-cert-tls   kubernetes.io/tls   3     46s
+05:41:45 demo-cert-tls   kubernetes.io/tls   3     50s
+05:41:50 demo-cert-tls   kubernetes.io/tls   3     54s
+05:41:54 demo-cert-tls   kubernetes.io/tls   3     59s
+--- реальная метка creationTimestamp пересозданного Secret (точнее, чем шаг опроса) ---
+creationTimestamp=2026-07-24T05:40:56Z

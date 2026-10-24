@@ -1,0 +1,11 @@
+# Пример CR Greeting для демо reconcile: greeter-operator должен породить
+# ConfigMap greeting-demo с приветствием и заполнить status.
+apiVersion: cookbook.khorost.tech/v1alpha1
+kind: Greeting
+metadata:
+  name: demo
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-operators
+spec:
+  who: "мир"

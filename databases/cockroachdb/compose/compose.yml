@@ -1,0 +1,71 @@
+# Базовый кластер CockroachDB: три узла — минимум для Raft-кворума.
+#
+# Каждому узлу задана локальность (region/zone). Базовым сценариям она не
+# нужна, но делает вывод SHOW RANGES читаемым и переиспользуется в 05-geo.
+#
+# Память задана фиксированными величинами, а не долями: доля считается от
+# ВСЕЙ памяти машины, и три узла по 25% съели бы 75% хоста.
+name: crdb
+
+x-node: &node
+  image: cockroachdb/cockroach:v26.2.5
+  healthcheck:
+    # node status отвечает только на инициализированном кластере — до
+    # cockroach init контейнер healthy не станет, это нормально.
+    test: ["CMD", "cockroach", "node", "status", "--insecure", "--host=localhost:26257"]
+    interval: 5s
+    timeout: 5s
+    retries: 30
+    start_period: 15s
+  stop_grace_period: 60s
+
+services:
+  crdb1:
+    <<: *node
+    container_name: crdb1
+    hostname: crdb1
+    command: >
+      start --insecure
+      --join=crdb1:26257,crdb2:26257,crdb3:26257
+      --advertise-addr=crdb1:26257
+      --listen-addr=0.0.0.0:26257
+      --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=a
+      --cache=1GiB --max-sql-memory=1GiB
+    ports: ["15436:26257", "18080:8080"]
+    volumes: ["crdb1-data:/cockroach/cockroach-data"]
+
+  crdb2:
+    <<: *node
+    container_name: crdb2
+    hostname: crdb2
+    command: >
+      start --insecure
+      --join=crdb1:26257,crdb2:26257,crdb3:26257
+      --advertise-addr=crdb2:26257
+      --listen-addr=0.0.0.0:26257
+      --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=b
+      --cache=1GiB --max-sql-memory=1GiB
+    ports: ["15437:26257", "18081:8080"]
+    volumes: ["crdb2-data:/cockroach/cockroach-data"]
+
+  crdb3:
+    <<: *node
+    container_name: crdb3
+    hostname: crdb3
+    command: >
+      start --insecure
+      --join=crdb1:26257,crdb2:26257,crdb3:26257
+      --advertise-addr=crdb3:26257
+      --listen-addr=0.0.0.0:26257
+      --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=c
+      --cache=1GiB --max-sql-memory=1GiB
+    ports: ["15438:26257", "18082:8080"]
+    volumes: ["crdb3-data:/cockroach/cockroach-data"]
+
+volumes:
+  crdb1-data:
+  crdb2-data:
+  crdb3-data:

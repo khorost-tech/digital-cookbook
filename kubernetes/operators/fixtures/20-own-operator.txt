@@ -1,0 +1,65 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 20-own-operator
+# cmd: kubectl -n cookbook-k8s get greeting,configmap -l stand=cookbook-operators
+# ---
+NAME                                  WHO   MESSAGE
+greeting.cookbook.khorost.tech/demo   мир   Привет, мир!
+
+NAME                             DATA   AGE
+configmap/greeter-operator-src   1      108s
+configmap/greeting-demo          1      34s
+--- status, заполненный оператором ---
+{"message":"Привет, мир!","observedGeneration":1}
+--- содержимое порождённого ConfigMap ---
+{"message":"Привет, мир!"}
+--- портим порождённый ConfigMap вручную ---
+2026-07-24T05:56:02Z
+configmap/greeting-demo patched
+05:56:02 испорчено вручную
+05:56:07 испорчено вручную
+05:56:13 Привет, мир!
+05:56:18 Привет, мир!
+05:56:23 Привет, мир!
+05:56:28 Привет, мир!
+05:56:33 Привет, мир!
+05:56:39 Привет, мир!
+05:56:44 Привет, мир!
+05:56:49 Привет, мир!
+05:56:54 Привет, мир!
+05:56:59 Привет, мир!
+--- меняем spec.who: reconcile должен обновить и ConfigMap, и status ---
+2026-07-24T05:57:28Z
+greeting.cookbook.khorost.tech/demo patched
+Привет, Kubernetes!
+{"message":"Привет, Kubernetes!","observedGeneration":2}
+--- логи оператора (видно решения reconcile) ---
+2026-07-24T05:55:10.855062657Z 2026/07/24 05:55:10 greeter-operator: старт
+2026-07-24T05:55:10.855215386Z 2026/07/24 05:55:10 greeter-operator: клиент готов, namespace=cookbook-k8s, api=https://10.96.0.1:443
+2026-07-24T05:55:10.858769635Z 2026/07/24 05:55:10 стартовый проход: найдено Greeting: 0
+2026-07-24T05:55:10.859902651Z 2026/07/24 05:55:10 watch: соединение установлено, слушаю события greetings в ns=cookbook-k8s
+2026-07-24T05:55:19.422832448Z 2026/07/24 05:55:19 watch: событие ADDED greeting=demo (spec.who="мир") — запускаю reconcile
+2026-07-24T05:55:19.427271709Z 2026/07/24 05:55:19 reconcile demo: ConfigMap greeting-demo не найден — создаю с message="Привет, мир!"
+2026-07-24T05:55:19.432137993Z 2026/07/24 05:55:19 reconcile demo: status обновлён (message="Привет, мир!", observedGeneration=1)
+2026-07-24T05:55:19.432164014Z 2026/07/24 05:55:19 watch: событие MODIFIED greeting=demo (spec.who="мир") — запускаю reconcile
+2026-07-24T05:55:19.434559830Z 2026/07/24 05:55:19 reconcile demo: ConfigMap greeting-demo уже в желаемом состоянии (message="Привет, мир!") — изменений не требуется
+2026-07-24T05:55:19.434567300Z 2026/07/24 05:55:19 reconcile demo: status уже актуален (message="Привет, мир!", observedGeneration=1) — не трогаю
+2026-07-24T05:55:40.881065485Z 2026/07/24 05:55:40 resync: полный проход, найдено Greeting: 1
+2026-07-24T05:55:40.883218196Z 2026/07/24 05:55:40 reconcile demo: ConfigMap greeting-demo уже в желаемом состоянии (message="Привет, мир!") — изменений не требуется
+2026-07-24T05:55:40.883230212Z 2026/07/24 05:55:40 reconcile demo: status уже актуален (message="Привет, мир!", observedGeneration=1) — не трогаю
+2026-07-24T05:56:10.890948380Z 2026/07/24 05:56:10 resync: полный проход, найдено Greeting: 1
+2026-07-24T05:56:10.893691769Z 2026/07/24 05:56:10 reconcile demo: ConfigMap greeting-demo расходится с желаемым (было "испорчено вручную", нужно "Привет, мир!") — обновляю
+2026-07-24T05:56:10.897476631Z 2026/07/24 05:56:10 reconcile demo: status уже актуален (message="Привет, мир!", observedGeneration=1) — не трогаю
+2026-07-24T05:56:40.866782050Z 2026/07/24 05:56:40 resync: полный проход, найдено Greeting: 1
+2026-07-24T05:56:40.869425029Z 2026/07/24 05:56:40 reconcile demo: ConfigMap greeting-demo уже в желаемом состоянии (message="Привет, мир!") — изменений не требуется
+2026-07-24T05:56:40.869431093Z 2026/07/24 05:56:40 reconcile demo: status уже актуален (message="Привет, мир!", observedGeneration=1) — не трогаю
+2026-07-24T05:57:10.890790870Z 2026/07/24 05:57:10 resync: полный проход, найдено Greeting: 1
+2026-07-24T05:57:10.893184065Z 2026/07/24 05:57:10 reconcile demo: ConfigMap greeting-demo уже в желаемом состоянии (message="Привет, мир!") — изменений не требуется
+2026-07-24T05:57:10.893190881Z 2026/07/24 05:57:10 reconcile demo: status уже актуален (message="Привет, мир!", observedGeneration=1) — не трогаю
+2026-07-24T05:57:29.661638420Z 2026/07/24 05:57:29 watch: событие MODIFIED greeting=demo (spec.who="Kubernetes") — запускаю reconcile
+2026-07-24T05:57:29.665250436Z 2026/07/24 05:57:29 reconcile demo: ConfigMap greeting-demo расходится с желаемым (было "Привет, мир!", нужно "Привет, Kubernetes!") — обновляю
+2026-07-24T05:57:29.671306283Z 2026/07/24 05:57:29 reconcile demo: status обновлён (message="Привет, Kubernetes!", observedGeneration=2)
+2026-07-24T05:57:29.671321456Z 2026/07/24 05:57:29 watch: событие MODIFIED greeting=demo (spec.who="Kubernetes") — запускаю reconcile
+2026-07-24T05:57:29.674254683Z 2026/07/24 05:57:29 reconcile demo: ConfigMap greeting-demo уже в желаемом состоянии (message="Привет, Kubernetes!") — изменений не требуется
+2026-07-24T05:57:29.674263566Z 2026/07/24 05:57:29 reconcile demo: status уже актуален (message="Привет, Kubernetes!", observedGeneration=2) — не трогаю
+2026-07-24T05:57:40.862248211Z 2026/07/24 05:57:40 resync: полный проход, найдено Greeting: 1
+2026-07-24T05:57:40.864630333Z 2026/07/24 05:57:40 reconcile demo: ConfigMap greeting-demo уже в желаемом состоянии (message="Привет, Kubernetes!") — изменений не требуется
+2026-07-24T05:57:40.864635662Z 2026/07/24 05:57:40 reconcile demo: status уже актуален (message="Привет, Kubernetes!", observedGeneration=2) — не трогаю

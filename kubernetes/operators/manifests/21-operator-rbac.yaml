@@ -1,0 +1,46 @@
+# RBAC для greeter-operator. Права намеренно минимальны — только то, что
+# реально использует reconcile-цикл (get/list/watch greetings, get/update/patch
+# greetings/status, get/list/create/update configmaps в своём namespace) и
+# ничего сверх. Узость этих прав — материал задачи H2 (что будет, если
+# оператору не хватит прав или он получит их слишком много).
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: greeter-operator
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-operators
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: greeter-operator
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-operators
+rules:
+  - apiGroups: ["cookbook.khorost.tech"]
+    resources: ["greetings"]
+    verbs: ["get", "list", "watch", "update"]
+  - apiGroups: ["cookbook.khorost.tech"]
+    resources: ["greetings/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["get", "list", "create", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: greeter-operator
+  namespace: cookbook-k8s
+  labels:
+    stand: cookbook-operators
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: greeter-operator
+subjects:
+  - kind: ServiceAccount
+    name: greeter-operator
+    namespace: cookbook-k8s

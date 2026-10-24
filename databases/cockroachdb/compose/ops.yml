@@ -1,0 +1,63 @@
+# Профиль 06-ops: отдельный кластер на СТАРОЙ версии для сценария апгрейда.
+#
+# Проект называется crdbops и имеет свои тома — состояние базового
+# кластера этот профиль не трогает.
+#
+# Образ каждого узла задаётся своей переменной: rolling upgrade — это
+# подмена образа по одному узлу за раз, и без раздельных переменных
+# пришлось бы обновлять все три сразу, то есть показать не то.
+name: crdbops
+
+x-ops: &ops
+  healthcheck:
+    test: ["CMD", "cockroach", "node", "status", "--insecure", "--host=localhost:26257"]
+    interval: 5s
+    timeout: 5s
+    retries: 40
+    start_period: 20s
+  stop_grace_period: 60s
+
+services:
+  ops1:
+    <<: *ops
+    image: ${CRDB_OPS_IMAGE_1:-cockroachdb/cockroach:v25.4.14}
+    container_name: ops1
+    hostname: ops1
+    command: >
+      start --insecure
+      --join=ops1:26257,ops2:26257,ops3:26257
+      --advertise-addr=ops1:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=a --cache=512MiB --max-sql-memory=512MiB
+    ports: ["15450:26257", "18100:8080"]
+    volumes: ["ops1-data:/cockroach/cockroach-data"]
+
+  ops2:
+    <<: *ops
+    image: ${CRDB_OPS_IMAGE_2:-cockroachdb/cockroach:v25.4.14}
+    container_name: ops2
+    hostname: ops2
+    command: >
+      start --insecure
+      --join=ops1:26257,ops2:26257,ops3:26257
+      --advertise-addr=ops2:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=b --cache=512MiB --max-sql-memory=512MiB
+    ports: ["15451:26257", "18101:8080"]
+    volumes: ["ops2-data:/cockroach/cockroach-data"]
+
+  ops3:
+    <<: *ops
+    image: ${CRDB_OPS_IMAGE_3:-cockroachdb/cockroach:v25.4.14}
+    container_name: ops3
+    hostname: ops3
+    command: >
+      start --insecure
+      --join=ops1:26257,ops2:26257,ops3:26257
+      --advertise-addr=ops3:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=c --cache=512MiB --max-sql-memory=512MiB
+    ports: ["15452:26257", "18102:8080"]
+    volumes: ["ops3-data:/cockroach/cockroach-data"]
+
+volumes:
+  ops1-data:
+  ops2-data:
+  ops3-data:

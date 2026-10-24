@@ -8,9 +8,17 @@
 #   воркера.
 # Сюжет 2: тест с промоткой времени — воркфлоу «на сутки» проходит мгновенно.
 #
-# ИСТОЧНИК ЧИСЕЛ. schedule-to-start снимается из метрик SDK НАШЕГО
-# воркера (job temporal-sdk-worker, цель ops-worker:8077), а не из метрик
-# сервиса. В фикстурах у каждого числа проставляется source.
+# ИСТОЧНИК ЧИСЕЛ. schedule-to-start каждой задачи — по отметкам СЕРВЕРА:
+# activity возвращает StartedTime − ScheduledTime из activity.GetInfo, и
+# среднее, медиана и максимум считаются по всем задачам прогона. Полное время
+# — от старта первого воркфлоу до закрытия последнего, тоже по серверу.
+#
+# Прежняя редакция брала максимум как max() по ряду
+# temporal_activity_schedule_to_start_latency_seconds — а Tally экспортирует
+# его как Summary с квантилями, и максимум квантилей не есть максимум задач
+# (тот «максимум» ещё и превышал прогон, 39,5 с при 38,8 с; причина
+# превышения отдельно не установлена). Среднее по
+# sum/count метрики SDK точное и печатается рядом как независимая сверка.
 set -euo pipefail
 # shellcheck source=lib.sh
 source "$(dirname "${BASH_SOURCE[0]}")/lib.sh"
@@ -52,18 +60,20 @@ measure() {                       # measure <метка> <воркеров> <con
         | grep '^ЗАМЕР')"
     sleep 12
 
-    # Среднее и максимум ожидания задачи в очереди — из метрик SDK.
-    local s c mean mx
+    # Сверка: среднее по sum/count метрики SDK воркера (точное, в отличие от
+    # квантилей Summary) обязано сойтись со средним по серверным отметкам.
+    local s c sdkmean
     s="$(sdk_metric "sum(temporal_activity_schedule_to_start_latency_seconds_sum{task_queue=\"${q}\"})")"
     c="$(sdk_metric "sum(temporal_activity_schedule_to_start_latency_seconds_count{task_queue=\"${q}\"})")"
-    mx="$(sdk_metric "max(temporal_activity_schedule_to_start_latency_seconds{task_queue=\"${q}\"})")"
     if [[ "${s}" != "НЕТ_РЯДА" && "${c}" != "НЕТ_РЯДА" ]]; then
-        mean="$(awk -v s="${s}" -v c="${c}" 'BEGIN { if (c>0) printf "%.3f", s/c; else print "НЕТ_ЗАДАЧ" }')"
+        sdkmean="$(awk -v s="${s}" -v c="${c}" 'BEGIN { if (c>0) printf "%.3f", s/c; else print "НЕТ_ЗАДАЧ" }')"
     else
-        mean="НЕТ_РЯДА"
+        sdkmean="НЕТ_РЯДА"
     fi
-
-    echo "${line} workers=${workers} concurrency=${conc} pollers=${poll} sched_to_start_mean_s=${mean} sched_to_start_max_s=${mx} source=sdk"
+    # Сверка честная, только если SDK насчитал ВСЕ задачи прогона: при двух
+    # воркерах ряды обоих обязаны попасть в Prometheus (оба — цели скрейпа).
+    local cnt; cnt="$(awk -v c="${c}" 'BEGIN { printf "%d", c + 0.5 }')"
+    echo "${line} workers=${workers} concurrency=${conc} pollers=${poll} sdk_count=${cnt} sdk_sum_count_mean_s=${sdkmean}"
     docker rm -f ops-worker ops-worker-b >/dev/null 2>&1 || true
 }
 

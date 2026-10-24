@@ -24,3 +24,5 @@ scrape_configs:
       - targets:
           - i1-worker:8077     # профиль 01-internals, sticky-кэш
           - ops-worker:8077    # профиль 06-operations, schedule-to-start
+          - ops-worker-b:8077  # профиль 06, второй воркер конфигурации twoworkers:
+                               # без него сверка sum/count видит лишь часть задач

@@ -1,0 +1,145 @@
+# Многорегиональная топология: 9 узлов, три «региона» по три зоны.
+#
+# Девять, а не три, потому что SURVIVE REGION FAILURE поднимает число
+# ГОЛОСУЮЩИХ реплик до пяти при ограничении «не больше двух в одном
+# регионе» — на трёх узлах такую раскладку не построить.
+#
+# «Регион» здесь — это метка --locality. Межрегиональных задержек в
+# стенде НЕТ и эмулировать их нечем: ядро WSL2 собрано без планировщиков
+# трафика (ни netem, ни prio). scripts/05-geo.sh измеряет фактический RTT
+# и печатает его до всех замеров, чтобы результат не приняли за
+# измерение географии.
+#
+# Проект называется crdbgeo, чтобы не пересекаться с базовым кластером
+# (проект crdb): это отдельный кластер со своими томами.
+name: crdbgeo
+
+x-geo: &geo
+  image: cockroachdb/cockroach:v26.2.5
+  healthcheck:
+    test: ["CMD", "cockroach", "node", "status", "--insecure", "--host=localhost:26257"]
+    interval: 5s
+    timeout: 5s
+    retries: 40
+    start_period: 20s
+  stop_grace_period: 60s
+
+services:
+  geo1:
+    <<: *geo
+    container_name: geo1
+    hostname: geo1
+    command: >
+      start --insecure
+      --join=geo1:26257,geo2:26257,geo3:26257,geo4:26257,geo5:26257,geo6:26257,geo7:26257,geo8:26257,geo9:26257
+      --advertise-addr=geo1:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=a --cache=256MiB --max-sql-memory=256MiB
+    ports: ["15440:26257", "18090:8080"]
+    volumes: ["geo1-data:/cockroach/cockroach-data"]
+
+  geo2:
+    <<: *geo
+    container_name: geo2
+    hostname: geo2
+    command: >
+      start --insecure
+      --join=geo1:26257,geo2:26257,geo3:26257,geo4:26257,geo5:26257,geo6:26257,geo7:26257,geo8:26257,geo9:26257
+      --advertise-addr=geo2:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=b --cache=256MiB --max-sql-memory=256MiB
+    ports: ["15441:26257", "18091:8080"]
+    volumes: ["geo2-data:/cockroach/cockroach-data"]
+
+  geo3:
+    <<: *geo
+    container_name: geo3
+    hostname: geo3
+    command: >
+      start --insecure
+      --join=geo1:26257,geo2:26257,geo3:26257,geo4:26257,geo5:26257,geo6:26257,geo7:26257,geo8:26257,geo9:26257
+      --advertise-addr=geo3:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=c --cache=256MiB --max-sql-memory=256MiB
+    ports: ["15442:26257", "18092:8080"]
+    volumes: ["geo3-data:/cockroach/cockroach-data"]
+
+  geo4:
+    <<: *geo
+    container_name: geo4
+    hostname: geo4
+    command: >
+      start --insecure
+      --join=geo1:26257,geo2:26257,geo3:26257,geo4:26257,geo5:26257,geo6:26257,geo7:26257,geo8:26257,geo9:26257
+      --advertise-addr=geo4:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-west,zone=a --cache=256MiB --max-sql-memory=256MiB
+    ports: ["15443:26257", "18093:8080"]
+    volumes: ["geo4-data:/cockroach/cockroach-data"]
+
+  geo5:
+    <<: *geo
+    container_name: geo5
+    hostname: geo5
+    command: >
+      start --insecure
+      --join=geo1:26257,geo2:26257,geo3:26257,geo4:26257,geo5:26257,geo6:26257,geo7:26257,geo8:26257,geo9:26257
+      --advertise-addr=geo5:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-west,zone=b --cache=256MiB --max-sql-memory=256MiB
+    ports: ["15444:26257", "18094:8080"]
+    volumes: ["geo5-data:/cockroach/cockroach-data"]
+
+  geo6:
+    <<: *geo
+    container_name: geo6
+    hostname: geo6
+    command: >
+      start --insecure
+      --join=geo1:26257,geo2:26257,geo3:26257,geo4:26257,geo5:26257,geo6:26257,geo7:26257,geo8:26257,geo9:26257
+      --advertise-addr=geo6:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-west,zone=c --cache=256MiB --max-sql-memory=256MiB
+    ports: ["15445:26257", "18095:8080"]
+    volumes: ["geo6-data:/cockroach/cockroach-data"]
+
+  geo7:
+    <<: *geo
+    container_name: geo7
+    hostname: geo7
+    command: >
+      start --insecure
+      --join=geo1:26257,geo2:26257,geo3:26257,geo4:26257,geo5:26257,geo6:26257,geo7:26257,geo8:26257,geo9:26257
+      --advertise-addr=geo7:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-east,zone=a --cache=256MiB --max-sql-memory=256MiB
+    ports: ["15446:26257", "18096:8080"]
+    volumes: ["geo7-data:/cockroach/cockroach-data"]
+
+  geo8:
+    <<: *geo
+    container_name: geo8
+    hostname: geo8
+    command: >
+      start --insecure
+      --join=geo1:26257,geo2:26257,geo3:26257,geo4:26257,geo5:26257,geo6:26257,geo7:26257,geo8:26257,geo9:26257
+      --advertise-addr=geo8:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-east,zone=b --cache=256MiB --max-sql-memory=256MiB
+    ports: ["15447:26257", "18097:8080"]
+    volumes: ["geo8-data:/cockroach/cockroach-data"]
+
+  geo9:
+    <<: *geo
+    container_name: geo9
+    hostname: geo9
+    command: >
+      start --insecure
+      --join=geo1:26257,geo2:26257,geo3:26257,geo4:26257,geo5:26257,geo6:26257,geo7:26257,geo8:26257,geo9:26257
+      --advertise-addr=geo9:26257 --listen-addr=0.0.0.0:26257 --http-addr=0.0.0.0:8080
+      --locality=region=ru-east,zone=c --cache=256MiB --max-sql-memory=256MiB
+    ports: ["15448:26257", "18098:8080"]
+    volumes: ["geo9-data:/cockroach/cockroach-data"]
+
+volumes:
+  geo1-data:
+  geo2-data:
+  geo3-data:
+  geo4-data:
+  geo5-data:
+  geo6-data:
+  geo7-data:
+  geo8-data:
+  geo9-data:

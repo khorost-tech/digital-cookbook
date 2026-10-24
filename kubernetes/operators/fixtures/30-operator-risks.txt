@@ -1,0 +1,79 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 30-operator-risks
+# cmd: kubectl auth can-i --list --as=system:serviceaccount:cookbook-k8s:greeter-operator -n cookbook-k8s
+# ---
+Resources                                       Non-Resource URLs                      Resource Names   Verbs
+selfsubjectreviews.authentication.k8s.io        []                                     []               [create]
+selfsubjectaccessreviews.authorization.k8s.io   []                                     []               [create]
+selfsubjectrulesreviews.authorization.k8s.io    []                                     []               [create]
+configmaps                                      []                                     []               [get list create update]
+greetings.cookbook.khorost.tech                 []                                     []               [get list watch update]
+greetings.cookbook.khorost.tech/status          []                                     []               [get update patch]
+                                                [/.well-known/openid-configuration/]   []               [get]
+                                                [/.well-known/openid-configuration]    []               [get]
+                                                [/api/*]                               []               [get]
+                                                [/api]                                 []               [get]
+                                                [/apis/*]                              []               [get]
+                                                [/apis]                                []               [get]
+                                                [/healthz]                             []               [get]
+                                                [/healthz]                             []               [get]
+                                                [/livez]                               []               [get]
+                                                [/livez]                               []               [get]
+                                                [/openapi/*]                           []               [get]
+                                                [/openapi]                             []               [get]
+                                                [/openid/v1/jwks/]                     []               [get]
+                                                [/openid/v1/jwks]                      []               [get]
+                                                [/readyz]                              []               [get]
+                                                [/readyz]                              []               [get]
+                                                [/version/]                            []               [get]
+                                                [/version/]                            []               [get]
+                                                [/version]                             []               [get]
+                                                [/version]                             []               [get]
+--- секреты своему оператору недоступны ---
+no
+--- и в чужом namespace он тоже ничего не может (RoleBinding в cookbook-k8s) ---
+no
+--- для контраста: что может cert-manager (кластерный оператор) ---
+Resources                                               Non-Resource URLs                      Resource Names                       Verbs
+signers.cert-manager.io                                 []                                     [clusterissuers.cert-manager.io/*]   [approve]
+signers.cert-manager.io                                 []                                     [issuers.cert-manager.io/*]          [approve]
+events                                                  []                                     []                                   [create patch]
+certificaterequests.cert-manager.io                     []                                     []                                   [create update delete get list watch patch]
+certificates.cert-manager.io                            []                                     []                                   [create update delete get list watch patch]
+*.acme.selectel.ru                                      []                                     []                                   [create]
+selfsubjectreviews.authentication.k8s.io                []                                     []                                   [create]
+selfsubjectaccessreviews.authorization.k8s.io           []                                     []                                   [create]
+selfsubjectrulesreviews.authorization.k8s.io            []                                     []                                   [create]
+subjectaccessreviews.authorization.k8s.io               []                                     []                                   [create]
+routes.route.openshift.io/custom-host                   []                                     []                                   [create]
+challenges.acme.cert-manager.io                         []                                     []                                   [get list watch create delete update patch]
+httproutes.gateway.networking.k8s.io                    []                                     []                                   [get list watch create delete update]
+ingresses.networking.k8s.io                             []                                     []                                   [get list watch create delete update]
+pods                                                    []                                     []                                   [get list watch create delete]
+services                                                []                                     []                                   [get list watch create delete]
+secrets                                                 []                                     []                                   [get list watch create update delete patch]
+clusterissuers.cert-manager.io                          []                                     []                                   [get list watch update patch]
+issuers.cert-manager.io                                 []                                     []                                   [get list watch update patch]
+certificatesigningrequests.certificates.k8s.io          []                                     []                                   [get list watch update]
+gateways.gateway.networking.k8s.io                      []                                     []                                   [get list watch]
+                                                        [/.well-known/openid-configuration/]   []                                   [get]
+                                                        [/.well-known/openid-configuration]    []                                   [get]
+                                                        [/api/*]                               []                                   [get]
+--- может ли он читать секреты во ВСЕХ namespace ---
+yes
+--- ставим finalizer, которого никто не снимает ---
+greeting.cookbook.khorost.tech/demo patched
+2026-07-24T06:06:35Z
+greeting.cookbook.khorost.tech "demo" deleted from cookbook-k8s namespace
+--- объект после delete: deletionTimestamp проставлен, объект жив ---
+deletionTimestamp=2026-07-24T06:06:36Z finalizers=["cookbook.khorost.tech/demo-finalizer"]
+NAME   WHO          MESSAGE
+demo   Kubernetes   Привет, Kubernetes!
+--- снимаем finalizer вручную ---
+2026-07-24T06:06:53Z
+greeting.cookbook.khorost.tech/demo patched
+--- объект после снятия finalizer ---
+Error from server (NotFound): greetings.cookbook.khorost.tech "demo" not found
+--- порождённый ConfigMap пережил удаление CR (нет ownerReference) ---
+NAME            DATA   AGE
+greeting-demo   1      11m
+ownerReferences=

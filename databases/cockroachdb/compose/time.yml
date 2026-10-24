@@ -1,0 +1,48 @@
+# Оверлей профиля 02-time: расширенное окно неопределённости.
+#
+# Uncertainty interval равен максимально допустимому расхождению часов.
+# Подняв --max-offset, мы расширяем окно и получаем НАСТОЯЩИЕ
+# ReadWithinUncertaintyIntervalError на честных, несдвинутых часах — без
+# libfaketime и без риска, что метод не воспроизведётся в контейнерах,
+# делящих часы ядра хоста.
+#
+# 2s выбрано именно потому, что ДЕФОЛТ — 500ms: оверлей с дефолтным
+# значением ничего бы не изменил, и «замер» вышел бы пустым.
+#
+# Значение обязано совпадать на всех узлах: кластер с разными --max-offset
+# не соберётся.
+name: crdb
+
+services:
+  crdb1:
+    command: >
+      start --insecure
+      --join=crdb1:26257,crdb2:26257,crdb3:26257
+      --advertise-addr=crdb1:26257
+      --listen-addr=0.0.0.0:26257
+      --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=a
+      --max-offset=2s
+      --cache=1GiB --max-sql-memory=1GiB
+
+  crdb2:
+    command: >
+      start --insecure
+      --join=crdb1:26257,crdb2:26257,crdb3:26257
+      --advertise-addr=crdb2:26257
+      --listen-addr=0.0.0.0:26257
+      --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=b
+      --max-offset=2s
+      --cache=1GiB --max-sql-memory=1GiB
+
+  crdb3:
+    command: >
+      start --insecure
+      --join=crdb1:26257,crdb2:26257,crdb3:26257
+      --advertise-addr=crdb3:26257
+      --listen-addr=0.0.0.0:26257
+      --http-addr=0.0.0.0:8080
+      --locality=region=ru-central,zone=c
+      --max-offset=2s
+      --cache=1GiB --max-sql-memory=1GiB

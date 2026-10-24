@@ -9,6 +9,7 @@ import (
 	"context"
 	"time"
 
+	"go.temporal.io/sdk/activity"
 	"go.temporal.io/sdk/workflow"
 )
 
@@ -16,18 +17,24 @@ type SlowActs struct {
 	Work time.Duration
 }
 
-func (s *SlowActs) Slow(ctx context.Context, _ int) error {
+// Slow возвращает собственное ожидание в очереди: StartedTime − ScheduledTime.
+// Обе отметки ставит сервер, поэтому величина не зависит ни от часов воркера,
+// ни от того, как SDK агрегирует метрику. Это и есть schedule-to-start
+// отдельной задачи — из них считаются среднее и честный максимум.
+func (s *SlowActs) Slow(ctx context.Context, _ int) (time.Duration, error) {
+	info := activity.GetInfo(ctx)
+	waited := info.StartedTime.Sub(info.ScheduledTime)
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return 0, ctx.Err()
 	case <-time.After(s.Work):
-		return nil
+		return waited, nil
 	}
 }
 
 // LoadWorkflow планирует все activity СРАЗУ, а потом ждёт их все. Так
 // создаётся очередь: задач много, воркер разбирает их по своей ёмкости.
-func LoadWorkflow(ctx workflow.Context, steps int) error {
+func LoadWorkflow(ctx workflow.Context, steps int) ([]time.Duration, error) {
 	ctx = workflow.WithActivityOptions(ctx, workflow.ActivityOptions{
 		// ScheduleToStart намеренно велик: мы хотим ИЗМЕРИТЬ ожидание,
 		// а не отбраковывать задачи по таймауту.
@@ -39,12 +46,15 @@ func LoadWorkflow(ctx workflow.Context, steps int) error {
 	for i := 0; i < steps; i++ {
 		futures = append(futures, workflow.ExecuteActivity(ctx, a.Slow, i))
 	}
+	waits := make([]time.Duration, 0, steps)
 	for _, f := range futures {
-		if err := f.Get(ctx, nil); err != nil {
-			return err
+		var w time.Duration
+		if err := f.Get(ctx, &w); err != nil {
+			return nil, err
 		}
+		waits = append(waits, w)
 	}
-	return nil
+	return waits, nil
 }
 
 // DayLongWorkflow — процесс, который логически идёт сутки. В проде его

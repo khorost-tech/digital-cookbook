@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"sort"
 	"time"
 
 	"go.temporal.io/sdk/client"
@@ -74,6 +75,7 @@ func main() {
 
 		start := time.Now()
 		runs := make([]client.WorkflowRun, 0, *count)
+		ids := make([]string, 0, *count)
 		for i := 0; i < *count; i++ {
 			run, err := c.ExecuteWorkflow(ctx, client.StartWorkflowOptions{
 				ID:        fmt.Sprintf("ops-%s-%d", *label, i),
@@ -83,15 +85,49 @@ func main() {
 				log.Fatalf("старт: %v", err)
 			}
 			runs = append(runs, run)
+			ids = append(ids, run.GetID())
 		}
+		var waits []time.Duration
 		for _, r := range runs {
-			if err := r.Get(ctx, nil); err != nil {
+			var w []time.Duration
+			if err := r.Get(ctx, &w); err != nil {
 				log.Fatalf("результат: %v", err)
 			}
+			waits = append(waits, w...)
 		}
 		elapsed := time.Since(start)
-		fmt.Printf("ЗАМЕР ops label=%s steps=%d count=%d activities=%d elapsed_s=%.2f\n",
-			*label, *steps, *count, (*steps)*(*count), elapsed.Seconds())
+
+		// Полное время — по отметкам СЕРВЕРА: от старта первого воркфлоу до
+		// закрытия последнего. Клиентское time.Since печатается рядом и
+		// включает ещё подключение и доставку ответа.
+		var first, last time.Time
+		for i, id := range ids {
+			d, err := c.DescribeWorkflowExecution(ctx, id, runs[i].GetRunID())
+			if err != nil {
+				log.Fatalf("describe: %v", err)
+			}
+			info := d.GetWorkflowExecutionInfo()
+			st, ct := info.GetStartTime().AsTime(), info.GetCloseTime().AsTime()
+			if first.IsZero() || st.Before(first) {
+				first = st
+			}
+			if ct.After(last) {
+				last = ct
+			}
+		}
+
+		sort.Slice(waits, func(i, j int) bool { return waits[i] < waits[j] })
+		var sum time.Duration
+		for _, w := range waits {
+			sum += w
+		}
+		n := len(waits)
+		fmt.Printf("ЗАМЕР ops label=%s steps=%d count=%d activities=%d tasks_measured=%d "+
+			"span_server_s=%.2f elapsed_client_s=%.2f "+
+			"sched_to_start_mean_s=%.3f sched_to_start_p50_s=%.3f sched_to_start_max_s=%.3f source=server\n",
+			*label, *steps, *count, (*steps)*(*count), n,
+			last.Sub(first).Seconds(), elapsed.Seconds(),
+			(sum / time.Duration(n)).Seconds(), waits[n/2].Seconds(), waits[n-1].Seconds())
 
 	default:
 		log.Fatalf("неизвестная подкоманда %q", cmd)

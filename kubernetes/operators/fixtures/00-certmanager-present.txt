@@ -1,0 +1,15 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 00-certmanager-present
+# cmd: kubectl -n cert-manager get deploy -o custom-columns=NAME:.metadata.name,READY:.status.readyReplicas,IMAGE:.spec.template.spec.containers[0].image
+# ---
+NAME                                             READY   IMAGE
+cert-manager                                     1       quay.io/jetstack/cert-manager-controller:v1.17.2
+cert-manager-cainjector                          1       quay.io/jetstack/cert-manager-cainjector:v1.17.2
+cert-manager-webhook                             1       quay.io/jetstack/cert-manager-webhook:v1.17.2
+selectel-webhook-cert-manager-webhook-selectel   1       ghcr.io/selectel/cert-manager-webhook-selectel:v1.4.0
+--- CRD, которые оператор добавил в API кластера ---
+certificaterequests.cert-manager.io                     2026-07-19T08:31:35Z
+certificates.cert-manager.io                            2026-07-19T08:31:35Z
+challenges.acme.cert-manager.io                         2026-07-19T08:31:35Z
+clusterissuers.cert-manager.io                          2026-07-19T08:31:35Z
+issuers.cert-manager.io                                 2026-07-19T08:31:35Z
+orders.acme.cert-manager.io                             2026-07-19T08:31:35Z
