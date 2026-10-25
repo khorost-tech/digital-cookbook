@@ -12,6 +12,7 @@
 | [`architecture/event-coordination`](architecture/event-coordination) | Хореография vs оркестрация | [статья](https://khorost.tech/architecture/choreography-vs-orchestration/) |
 | [`architecture/event-payload`](architecture/event-payload) | Notification vs event-carried state transfer | [статья](https://khorost.tech/architecture/event-notification-vs-state-transfer/) |
 | [`architecture/event-sourcing`](architecture/event-sourcing) | Event Sourcing на практике: store, агрегаты, проекции | [статья](https://khorost.tech/architecture/event-sourcing-in-practice/) |
+| [`architecture/grpc`](architecture/grpc) | gRPC на Go и Java перекрёстно, за Angie и Envoy: доходит ли deadline до нижнего звена, останавливается ли стрим после отмены, коды ошибок и паника, порядок интерсепторов, встроенные ретраи, keepalive и GOAWAY, балансировка долгого HTTP/2-соединения за L4 и L7, gRPC-Gateway — счётом исходов | 🔜 скоро |
 | [`architecture/idempotency`](architecture/idempotency) | Гарантии доставки и идемпотентность (effectively-once) | [статья](https://khorost.tech/architecture/delivery-guarantees-idempotency/) |
 | [`architecture/realtime`](architecture/realtime) | WebSocket, SSE и polling на Go и Java за Angie, fan-out через Redis и NATS: байты на событие, буферизация и таймауты прокси, доставка между инстансами, потери при разрыве и догон по Last-Event-ID, медленный клиент, память на соединение — счётом исходов | 🔜 скоро |
 | [`architecture/resilience`](architecture/resilience) | Backpressure и load shedding: bounded-очередь, AIMD-лимитер | [статья](https://khorost.tech/architecture/backpressure-load-shedding/) |
@@ -44,6 +45,12 @@
 | [`databases/timeseries`](databases/timeseries) | TimescaleDB, Prometheus и VictoriaMetrics на одних рядах: отсечение чанков, continuous aggregate на свежих, опоздавших и удалённых данных, байт на точку, память на ряд, increase() в двух системах, бесплатные сборки | [статья](https://khorost.tech/databases/timeseries-databases/) |
 | [`databases/transactions`](databases/transactions) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | [статья](https://khorost.tech/databases/transactions-brokers-rabbitmq-kafka/) |
 | [`databases/wal`](databases/wal) | WAL и его аналоги: PostgreSQL, MySQL, MongoDB, SQLite, Redis, CDC/Debezium | [статья](https://khorost.tech/databases/) |
+
+## Data engineering
+
+| Пример | Описание | Статья |
+|---|---|---|
+| [`data-engineering/pipelines`](data-engineering/pipelines) | Батч-пайплайн Airflow 3 + dbt + PostgreSQL против эталона генератора: ETL против ELT при смене правила, идемпотентность загрузки и падение посреди неё, интервал данных и ручной запуск в Airflow 3, backfill и depends_on_past, поздние данные и окно пересмотра, повторы задач | 🔜 скоро |
 
 ## Messaging
 

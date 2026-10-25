@@ -1,0 +1,14 @@
+# Маршруты gRPC-Gateway — отдельно от .proto (grpc_api_configuration), чтобы
+# контракт не зависел от googleapis и Java-сборка его не тянула.
+type: google.api.Service
+config_version: 3
+http:
+  rules:
+    - selector: demo.v1.Demo.Unary
+      post: /v1/unary
+      body: "*"
+    - selector: demo.v1.Demo.ServerStream
+      get: /v1/stream
+    - selector: demo.v1.Demo.Chain
+      post: /v1/chain
+      body: "*"

@@ -1,0 +1,65 @@
+// Контракт стенда architecture/grpc — один на Go и Java.
+//
+// Demo — четыре типа RPC и звено цепочки. Поведение сервера задают поля запроса
+// (mode, fail_*) и переменные окружения GRPC_*: так одна и та же сборка ставит
+// все опыты, и различие исходов не может прийти из разных бинарников.
+syntax = "proto3";
+
+package demo.v1;
+
+option go_package = "tech.khorost/grpc/gen/demov1";
+option java_package = "tech.khorost.grpc.demo.v1";
+option java_multiple_files = true;
+
+service Demo {
+  // Unary: mode — ok | plain | status | details | panic | fail.
+  rpc Unary(UnaryRequest) returns (UnaryReply);
+  // Серверный стрим: count сообщений с паузой interval_ms.
+  rpc ServerStream(StreamRequest) returns (stream Item);
+  // Клиентский стрим: сервер считает сообщения.
+  rpc ClientStream(stream Item) returns (Summary);
+  // Двунаправленный стрим: эхо.
+  rpc Bidi(stream Item) returns (stream Item);
+  // Звено цепочки: если next пуст — работа шагами, иначе вызов next.
+  rpc Chain(ChainRequest) returns (ChainReply);
+}
+
+message UnaryRequest {
+  string mode = 1;       // ok | plain | status | details | panic | fail
+  string key = 2;        // ключ счётчика попыток (ось 5)
+  string fail_code = 3;  // код для mode=fail: UNAVAILABLE | INTERNAL | ...
+  int32 fail_times = 4;  // сколько первых попыток с этим ключом отказать
+  int32 size = 5;        // длина payload ответа, байт (ось 9)
+}
+
+message UnaryReply {
+  string instance = 1;
+  int32 attempt = 2;     // номер попытки по grpc-previous-rpc-attempts
+  bytes payload = 3;
+}
+
+message StreamRequest {
+  int32 count = 1;
+  int32 interval_ms = 2;
+}
+
+message Item {
+  int64 id = 1;
+  string text = 2;
+}
+
+message Summary {
+  int32 count = 1;
+}
+
+message ChainRequest {
+  int32 steps = 1;       // работа звена-исполнителя: steps шагов по step_ms
+  int32 step_ms = 2;
+  string next = 3;       // адрес следующего звена; пусто — исполнитель
+  bool propagate = 4;    // звено передаёт свой контекст дальше или создаёт новый
+}
+
+message ChainReply {
+  string instance = 1;
+  int32 steps_done = 2;
+}

@@ -1,0 +1,349 @@
+{
+ "session": "20261008T124130Z",
+ "published": {
+  "elt": {
+   "etl/initial": {
+    "outcome": "match",
+    "matched_days": 14,
+    "source_queries": 28
+   },
+   "etl/rule-change": {
+    "outcome": "match",
+    "matched_days": 14,
+    "source_queries": 28
+   },
+   "etl-facts/initial": {
+    "outcome": "match",
+    "matched_days": 14,
+    "source_queries": 28
+   },
+   "etl-facts/rule-change": {
+    "outcome": "match",
+    "matched_days": 14,
+    "source_queries": 0
+   },
+   "elt/initial": {
+    "outcome": "match",
+    "matched_days": 14,
+    "source_queries": 28
+   },
+   "elt/rule-change": {
+    "outcome": "match",
+    "matched_days": 14,
+    "source_queries": 0
+   }
+  },
+  "idempotency": {
+   "append/once": {
+    "outcome": "match",
+    "duplicates": 0,
+    "missing": 0,
+    "after_crash": null
+   },
+   "append/rerun": {
+    "outcome": "mismatch",
+    "duplicates": 686,
+    "missing": 0,
+    "after_crash": null
+   },
+   "append/crash-reload": {
+    "outcome": "mismatch",
+    "duplicates": 936,
+    "missing": 0,
+    "after_crash": {
+     "rows": 936,
+     "distinct": 686,
+     "duplicates": 250,
+     "missing": 0
+    }
+   },
+   "delete-insert/once": {
+    "outcome": "match",
+    "duplicates": 0,
+    "missing": 0,
+    "after_crash": null
+   },
+   "delete-insert/rerun": {
+    "outcome": "match",
+    "duplicates": 0,
+    "missing": 0,
+    "after_crash": null
+   },
+   "delete-insert/crash-reload": {
+    "outcome": "match",
+    "duplicates": 0,
+    "missing": 0,
+    "after_crash": {
+     "rows": 686,
+     "distinct": 686,
+     "duplicates": 0,
+     "missing": 0
+    }
+   },
+   "delete-batch/once": {
+    "outcome": "match",
+    "duplicates": 0,
+    "missing": 0,
+    "after_crash": null
+   },
+   "delete-batch/rerun": {
+    "outcome": "match",
+    "duplicates": 0,
+    "missing": 0,
+    "after_crash": null
+   },
+   "delete-batch/crash-reload": {
+    "outcome": "match",
+    "duplicates": 0,
+    "missing": 0,
+    "after_crash": {
+     "rows": 250,
+     "distinct": 250,
+     "duplicates": 0,
+     "missing": 436
+    }
+   },
+   "merge/once": {
+    "outcome": "match",
+    "duplicates": 0,
+    "missing": 0,
+    "after_crash": null
+   },
+   "merge/rerun": {
+    "outcome": "match",
+    "duplicates": 0,
+    "missing": 0,
+    "after_crash": null
+   },
+   "merge/crash-reload": {
+    "outcome": "match",
+    "duplicates": 0,
+    "missing": 0,
+    "after_crash": {
+     "rows": 686,
+     "distinct": 686,
+     "duplicates": 0,
+     "missing": 0
+    }
+   }
+  },
+  "interval": {
+   "interval": {
+    "outcome": "match",
+    "once": 14,
+    "many": 0,
+    "never": 0,
+    "distinct_picked": 14,
+    "day_offset": null,
+    "interval_hours": null,
+    "picked_logical": null,
+    "picked_run_day": null
+   },
+   "now": {
+    "outcome": "mismatch",
+    "once": 0,
+    "many": 1,
+    "never": 13,
+    "distinct_picked": 1,
+    "day_offset": null,
+    "interval_hours": null,
+    "picked_logical": null,
+    "picked_run_day": null
+   },
+   "scheduled-trigger": {
+    "outcome": "mismatch",
+    "once": null,
+    "many": null,
+    "never": null,
+    "distinct_picked": null,
+    "day_offset": 0,
+    "interval_hours": 0,
+    "picked_logical": null,
+    "picked_run_day": null
+   },
+   "scheduled-interval": {
+    "outcome": "match",
+    "once": null,
+    "many": null,
+    "never": null,
+    "distinct_picked": null,
+    "day_offset": -1,
+    "interval_hours": 24,
+    "picked_logical": null,
+    "picked_run_day": null
+   },
+   "manual-trigger": {
+    "outcome": "mismatch",
+    "once": null,
+    "many": null,
+    "never": null,
+    "distinct_picked": null,
+    "day_offset": null,
+    "interval_hours": null,
+    "picked_logical": false,
+    "picked_run_day": true
+   }
+  },
+  "backfill": {
+   "full": {
+    "outcome": "match",
+    "runs": 14,
+    "success": 14,
+    "failed": 0,
+    "not_run": 0,
+    "matched_days": 14,
+    "cli_rc": 0
+   },
+   "repeat-none": {
+    "outcome": "match",
+    "runs": 0,
+    "success": 0,
+    "failed": 0,
+    "not_run": 0,
+    "matched_days": 14,
+    "cli_rc": 0
+   },
+   "repeat-completed": {
+    "outcome": "match",
+    "runs": 14,
+    "success": 14,
+    "failed": 0,
+    "not_run": 0,
+    "matched_days": 14,
+    "cli_rc": 0
+   },
+   "fail-free": {
+    "outcome": "mismatch",
+    "runs": 14,
+    "success": 13,
+    "failed": 1,
+    "not_run": 0,
+    "matched_days": 13,
+    "cli_rc": 0
+   },
+   "ordered-default": {
+    "outcome": "mismatch",
+    "runs": 0,
+    "success": 0,
+    "failed": 0,
+    "not_run": 0,
+    "matched_days": 1,
+    "cli_rc": 1
+   },
+   "ordered-clean": {
+    "outcome": "mismatch",
+    "runs": 0,
+    "success": 0,
+    "failed": 0,
+    "not_run": 0,
+    "matched_days": 0,
+    "cli_rc": 1
+   },
+   "fail-ordered": {
+    "outcome": "mismatch",
+    "runs": 14,
+    "success": 4,
+    "failed": 1,
+    "not_run": 9,
+    "matched_days": 4,
+    "cli_rc": 0
+   },
+   "backwards-ordered": {
+    "outcome": "mismatch",
+    "runs": 0,
+    "success": 0,
+    "failed": 0,
+    "not_run": 0,
+    "matched_days": 0,
+    "cli_rc": 1
+   }
+  },
+  "late": {
+   "control": {
+    "outcome": "match",
+    "orders_missing": 0,
+    "revenue_missing": 0,
+    "matched_days": 14
+   },
+   "event": {
+    "outcome": "mismatch",
+    "orders_missing": 20,
+    "revenue_missing": 200000,
+    "matched_days": 13
+   },
+   "event-lookback1": {
+    "outcome": "mismatch",
+    "orders_missing": 20,
+    "revenue_missing": 200000,
+    "matched_days": 13
+   },
+   "event-lookback2": {
+    "outcome": "match",
+    "orders_missing": 0,
+    "revenue_missing": 0,
+    "matched_days": 14
+   },
+   "ingest": {
+    "outcome": "match",
+    "orders_missing": 0,
+    "revenue_missing": 0,
+    "matched_days": 14
+   },
+   "ingest-inc": {
+    "outcome": "mismatch",
+    "orders_missing": 20,
+    "revenue_missing": 200000,
+    "matched_days": 13
+   },
+   "ingest-inc-lookback": {
+    "outcome": "match",
+    "orders_missing": 0,
+    "revenue_missing": 0,
+    "matched_days": 14
+   },
+   "ingest-inc-refresh": {
+    "outcome": "match",
+    "orders_missing": 0,
+    "revenue_missing": 0,
+    "matched_days": 14
+   }
+  },
+  "retries": {
+   "control": {
+    "outcome": "match",
+    "task_state": "success",
+    "try_number": 1,
+    "duplicates": 0,
+    "missing": 0
+   },
+   "r3-k2": {
+    "outcome": "match",
+    "task_state": "success",
+    "try_number": 3,
+    "duplicates": 0,
+    "missing": 0
+   },
+   "r1-k2": {
+    "outcome": "mismatch",
+    "task_state": "failed",
+    "try_number": 2,
+    "duplicates": 0,
+    "missing": 686
+   },
+   "r3-append-k1": {
+    "outcome": "mismatch",
+    "task_state": "success",
+    "try_number": 2,
+    "duplicates": 250,
+    "missing": 0
+   },
+   "r3-delete-insert-k1": {
+    "outcome": "match",
+    "task_state": "success",
+    "try_number": 2,
+    "duplicates": 0,
+    "missing": 0
+   }
+  }
+ }
+}

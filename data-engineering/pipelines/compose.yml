@@ -1,0 +1,43 @@
+# Стенд data-engineering/pipelines: PostgreSQL (источник, хранилище, метаданные
+# Airflow) и Airflow 3 с dbt. Опыты запускают DAG и dbt через CLI в контейнере
+# airflow с явными логическими датами.
+name: de-pipelines
+services:
+  postgres:
+    image: postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+    environment:
+      POSTGRES_PASSWORD: stand
+    command: ["postgres", "-c", "shared_preload_libraries=pg_stat_statements", "-c", "pg_stat_statements.track=all"]
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 30
+  airflow:
+    build: ./airflow
+    image: de-airflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://postgres:stand@postgres/airflow
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+      AIRFLOW__CORE__DAGS_FOLDER: /opt/stand/airflow/dags
+      AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: "5"
+      AIRFLOW__DAG_PROCESSOR__REFRESH_INTERVAL: "5"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "True"
+      AIRFLOW__CORE__EXECUTION_API_SERVER_URL: http://localhost:8080/execution/
+      AIRFLOW__API_AUTH__JWT_SECRET: stand-only-not-a-secret
+      STAND_SHOP_DSN: postgresql://postgres:stand@postgres/shop
+      STAND_DWH_DSN: postgresql://postgres:stand@postgres/dwh
+      PYTHONPATH: /opt/stand
+    volumes:
+      - .:/opt/stand
+    # API-сервер нужен исполнителю: в Airflow 3 задачи получают работу и сдают
+    # состояние через Execution API (dags test обходится без него — он в одном процессе).
+    command: ["bash", "-c", "airflow db migrate && (airflow api-server --port 8080 &) && (airflow dag-processor &) && airflow scheduler"]
+volumes:
+  pgdata:

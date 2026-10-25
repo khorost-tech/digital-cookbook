@@ -20,6 +20,9 @@
     "architecture/event-sourcing": [
       "architecture/event-sourcing-in-practice.md"
     ],
+    "architecture/grpc": [
+      "architecture/grpc-deep-dive.md"
+    ],
     "architecture/idempotency": [
       "architecture/delivery-guarantees-idempotency.md"
     ],
@@ -62,6 +65,9 @@
       "architecture/testing-distributed-systems.md",
       "architecture/writing-testable-code.md"
     ],
+    "data-engineering/pipelines": [
+      "databases/data-batch-pipelines-orchestration.md"
+    ],
     "databases/citus": [
       "databases/sharding-in-production.md"
     ],
@@ -76,7 +82,8 @@
       "databases/clickhouse-when-olap.md"
     ],
     "databases/cockroachdb": [
-      "databases/cockroachdb-architecture-ranges-raft.md"
+      "databases/cockroachdb-architecture-ranges-raft.md",
+      "databases/cockroachdb-mvcc-time-clocks.md"
     ],
     "databases/db-indexes": [
       "databases/db-indexes-across-databases.md",

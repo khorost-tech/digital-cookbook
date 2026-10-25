@@ -1,0 +1,1151 @@
+{
+ "session": "20261006T224522Z",
+ "published": {
+  "protocol": {
+   "go->go": {
+    "_keys": 10,
+    "bidi": [
+     1,
+     2,
+     3
+    ],
+    "chain_steps": 2,
+    "client_stream": 3,
+    "server_stream": [
+     1,
+     2,
+     3
+    ],
+    "unary_details": [
+     "NotFound",
+     "RECORD_NOT_FOUND"
+    ],
+    "unary_invalid": [
+     "InvalidArgument",
+     ""
+    ],
+    "unary_ok": [
+     "OK",
+     ""
+    ],
+    "unary_plain": [
+     "Unknown",
+     ""
+    ],
+    "unary_status": [
+     "NotFound",
+     ""
+    ],
+    "unary_unavailable": [
+     "Unavailable",
+     ""
+    ]
+   },
+   "java->go": {
+    "_keys": 10,
+    "bidi": [
+     1,
+     2,
+     3
+    ],
+    "chain_steps": 2,
+    "client_stream": 3,
+    "server_stream": [
+     1,
+     2,
+     3
+    ],
+    "unary_details": [
+     "NotFound",
+     "RECORD_NOT_FOUND"
+    ],
+    "unary_invalid": [
+     "InvalidArgument",
+     ""
+    ],
+    "unary_ok": [
+     "OK",
+     ""
+    ],
+    "unary_plain": [
+     "Unknown",
+     ""
+    ],
+    "unary_status": [
+     "NotFound",
+     ""
+    ],
+    "unary_unavailable": [
+     "Unavailable",
+     ""
+    ]
+   },
+   "go->java": {
+    "_keys": 10,
+    "bidi": [
+     1,
+     2,
+     3
+    ],
+    "chain_steps": 2,
+    "client_stream": 3,
+    "server_stream": [
+     1,
+     2,
+     3
+    ],
+    "unary_details": [
+     "NotFound",
+     "RECORD_NOT_FOUND"
+    ],
+    "unary_invalid": [
+     "InvalidArgument",
+     ""
+    ],
+    "unary_ok": [
+     "OK",
+     ""
+    ],
+    "unary_plain": [
+     "Unknown",
+     ""
+    ],
+    "unary_status": [
+     "NotFound",
+     ""
+    ],
+    "unary_unavailable": [
+     "Unavailable",
+     ""
+    ]
+   },
+   "java->java": {
+    "_keys": 10,
+    "bidi": [
+     1,
+     2,
+     3
+    ],
+    "chain_steps": 2,
+    "client_stream": 3,
+    "server_stream": [
+     1,
+     2,
+     3
+    ],
+    "unary_details": [
+     "NotFound",
+     "RECORD_NOT_FOUND"
+    ],
+    "unary_invalid": [
+     "InvalidArgument",
+     ""
+    ],
+    "unary_ok": [
+     "OK",
+     ""
+    ],
+    "unary_plain": [
+     "Unknown",
+     ""
+    ],
+    "unary_status": [
+     "NotFound",
+     ""
+    ],
+    "unary_unavailable": [
+     "Unavailable",
+     ""
+    ]
+   }
+  },
+  "deadline": {
+   "go->go->go/propagate/300ms": [
+    "stopped",
+    "DeadlineExceeded"
+   ],
+   "go->go->go/propagate/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "go->go->go/fresh/300ms": [
+    "wasted",
+    "DeadlineExceeded"
+   ],
+   "go->go->go/fresh/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "go->go->java/propagate/300ms": [
+    "stopped",
+    "DeadlineExceeded"
+   ],
+   "go->go->java/propagate/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "go->go->java/fresh/300ms": [
+    "wasted",
+    "DeadlineExceeded"
+   ],
+   "go->go->java/fresh/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "go->java->go/propagate/300ms": [
+    "stopped",
+    "DeadlineExceeded"
+   ],
+   "go->java->go/propagate/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "go->java->go/fresh/300ms": [
+    "wasted",
+    "DeadlineExceeded"
+   ],
+   "go->java->go/fresh/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "go->java->java/propagate/300ms": [
+    "stopped",
+    "DeadlineExceeded"
+   ],
+   "go->java->java/propagate/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "go->java->java/fresh/300ms": [
+    "wasted",
+    "DeadlineExceeded"
+   ],
+   "go->java->java/fresh/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "java->go->go/propagate/300ms": [
+    "stopped",
+    "DeadlineExceeded"
+   ],
+   "java->go->go/propagate/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "java->go->go/fresh/300ms": [
+    "wasted",
+    "DeadlineExceeded"
+   ],
+   "java->go->go/fresh/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "java->go->java/propagate/300ms": [
+    "stopped",
+    "DeadlineExceeded"
+   ],
+   "java->go->java/propagate/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "java->go->java/fresh/300ms": [
+    "wasted",
+    "DeadlineExceeded"
+   ],
+   "java->go->java/fresh/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "java->java->go/propagate/300ms": [
+    "stopped",
+    "DeadlineExceeded"
+   ],
+   "java->java->go/propagate/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "java->java->go/fresh/300ms": [
+    "wasted",
+    "DeadlineExceeded"
+   ],
+   "java->java->go/fresh/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "java->java->java/propagate/300ms": [
+    "stopped",
+    "DeadlineExceeded"
+   ],
+   "java->java->java/propagate/3000ms": [
+    "completed",
+    "OK"
+   ],
+   "java->java->java/fresh/300ms": [
+    "wasted",
+    "DeadlineExceeded"
+   ],
+   "java->java->java/fresh/3000ms": [
+    "completed",
+    "OK"
+   ]
+  },
+  "cancel": {
+   "go->go/check": [
+    "stopped",
+    false
+   ],
+   "go->go/no-check": [
+    "kept-sending",
+    true
+   ],
+   "go->go/control": [
+    "stopped",
+    false
+   ],
+   "go->java/check": [
+    "stopped",
+    false
+   ],
+   "go->java/no-check": [
+    "kept-sending",
+    false
+   ],
+   "go->java/control": [
+    "stopped",
+    false
+   ],
+   "go->java/async": [
+    "kept-sending",
+    true
+   ],
+   "go->java/async-handler": [
+    "kept-sending",
+    false,
+    true
+   ],
+   "go->java/sync-handler": [
+    "kept-sending",
+    false,
+    false
+   ],
+   "java->go/check": [
+    "stopped",
+    false
+   ],
+   "java->go/no-check": [
+    "kept-sending",
+    true
+   ],
+   "java->go/control": [
+    "stopped",
+    false
+   ],
+   "java->java/check": [
+    "stopped",
+    false
+   ],
+   "java->java/no-check": [
+    "kept-sending",
+    false
+   ],
+   "java->java/control": [
+    "stopped",
+    false
+   ],
+   "java->java/async": [
+    "kept-sending",
+    true
+   ],
+   "java->java/async-handler": [
+    "kept-sending",
+    false,
+    true
+   ],
+   "java->java/sync-handler": [
+    "kept-sending",
+    false,
+    false
+   ]
+  },
+  "chain": {
+   "go->go/auth-first": [
+    10,
+    {
+     "OK": 10
+    },
+    10,
+    10
+   ],
+   "go->go/metrics-first": [
+    20,
+    {
+     "OK": 10,
+     "Unauthenticated": 10
+    },
+    20,
+    10
+   ],
+   "go->java/auth-first": [
+    10,
+    {
+     "OK": 10
+    },
+    10,
+    10
+   ],
+   "go->java/metrics-first": [
+    20,
+    {
+     "OK": 10,
+     "Unauthenticated": 10
+    },
+    20,
+    10
+   ],
+   "java->go/auth-first": [
+    10,
+    {
+     "OK": 10
+    },
+    10,
+    10
+   ],
+   "java->go/metrics-first": [
+    20,
+    {
+     "OK": 10,
+     "Unauthenticated": 10
+    },
+    20,
+    10
+   ],
+   "java->java/auth-first": [
+    10,
+    {
+     "OK": 10
+    },
+    10,
+    10
+   ],
+   "java->java/metrics-first": [
+    20,
+    {
+     "OK": 10,
+     "Unauthenticated": 10
+    },
+    20,
+    10
+   ],
+   "go->go/recover-outer": [
+    "Internal",
+    {
+     "OK": 1
+    }
+   ],
+   "go->go/recover-inner": [
+    "Internal",
+    {
+     "Internal": 1,
+     "OK": 1
+    }
+   ],
+   "go->java/recover-outer": [
+    "Internal",
+    {
+     "OK": 1
+    }
+   ],
+   "go->java/recover-inner": [
+    "Internal",
+    {
+     "Internal": 1,
+     "OK": 1
+    }
+   ],
+   "java->go/recover-outer": [
+    "Internal",
+    {
+     "OK": 1
+    }
+   ],
+   "java->go/recover-inner": [
+    "Internal",
+    {
+     "Internal": 1,
+     "OK": 1
+    }
+   ],
+   "java->java/recover-outer": [
+    "Internal",
+    {
+     "OK": 1
+    }
+   ],
+   "java->java/recover-inner": [
+    "Internal",
+    {
+     "Internal": 1,
+     "OK": 1
+    }
+   ]
+  },
+  "balance": {
+   "go->go/direct-pick-first": "pinned",
+   "go->go/direct-round-robin": "spread",
+   "go->go/angie-l4": "pinned",
+   "go->go/envoy-l4": "pinned",
+   "go->go/angie-l7": "spread",
+   "go->go/envoy-l7": "spread",
+   "go->java/direct-pick-first": "pinned",
+   "go->java/direct-round-robin": "spread",
+   "go->java/angie-l4": "pinned",
+   "go->java/envoy-l4": "pinned",
+   "go->java/angie-l7": "spread",
+   "go->java/envoy-l7": "spread",
+   "java->go/direct-pick-first": "pinned",
+   "java->go/direct-round-robin": "spread",
+   "java->go/angie-l4": "pinned",
+   "java->go/envoy-l4": "pinned",
+   "java->go/angie-l7": "spread",
+   "java->go/envoy-l7": "spread",
+   "java->java/direct-pick-first": "pinned",
+   "java->java/direct-round-robin": "spread",
+   "java->java/angie-l4": "pinned",
+   "java->java/envoy-l4": "pinned",
+   "java->java/angie-l7": "spread",
+   "java->java/envoy-l7": "spread"
+  },
+  "size": {
+   "go->go/1mb": [
+    "delivered",
+    "OK"
+   ],
+   "go->go/5mb": [
+    "rejected",
+    "ResourceExhausted"
+   ],
+   "go->go/5mb-raised": [
+    "delivered",
+    "OK"
+   ],
+   "go->java/1mb": [
+    "delivered",
+    "OK"
+   ],
+   "go->java/5mb": [
+    "rejected",
+    "ResourceExhausted"
+   ],
+   "go->java/5mb-raised": [
+    "delivered",
+    "OK"
+   ],
+   "java->go/1mb": [
+    "delivered",
+    "OK"
+   ],
+   "java->go/5mb": [
+    "rejected",
+    "ResourceExhausted"
+   ],
+   "java->go/5mb-raised": [
+    "delivered",
+    "OK"
+   ],
+   "java->java/1mb": [
+    "delivered",
+    "OK"
+   ],
+   "java->java/5mb": [
+    "rejected",
+    "ResourceExhausted"
+   ],
+   "java->java/5mb-raised": [
+    "delivered",
+    "OK"
+   ]
+  },
+  "errors": {
+   "go->go/ok": [
+    "OK",
+    "",
+    true
+   ],
+   "go->go/plain": [
+    "Unknown",
+    "",
+    true
+   ],
+   "go->go/status": [
+    "NotFound",
+    "",
+    true
+   ],
+   "go->go/details": [
+    "NotFound",
+    "RECORD_NOT_FOUND",
+    true
+   ],
+   "go->go/panic": [
+    "Unavailable",
+    "",
+    false
+   ],
+   "go->go/panic-recover": [
+    "Internal",
+    "",
+    true
+   ],
+   "go->java/ok": [
+    "OK",
+    "",
+    true
+   ],
+   "go->java/plain": [
+    "Unknown",
+    "",
+    true
+   ],
+   "go->java/status": [
+    "NotFound",
+    "",
+    true
+   ],
+   "go->java/details": [
+    "NotFound",
+    "RECORD_NOT_FOUND",
+    true
+   ],
+   "go->java/panic": [
+    "Unknown",
+    "",
+    true
+   ],
+   "go->java/panic-recover": [
+    "Internal",
+    "",
+    true
+   ],
+   "java->go/ok": [
+    "OK",
+    "",
+    true
+   ],
+   "java->go/plain": [
+    "Unknown",
+    "",
+    true
+   ],
+   "java->go/status": [
+    "NotFound",
+    "",
+    true
+   ],
+   "java->go/details": [
+    "NotFound",
+    "RECORD_NOT_FOUND",
+    true
+   ],
+   "java->go/panic": [
+    "Unavailable",
+    "",
+    false
+   ],
+   "java->go/panic-recover": [
+    "Internal",
+    "",
+    true
+   ],
+   "java->java/ok": [
+    "OK",
+    "",
+    true
+   ],
+   "java->java/plain": [
+    "Unknown",
+    "",
+    true
+   ],
+   "java->java/status": [
+    "NotFound",
+    "",
+    true
+   ],
+   "java->java/details": [
+    "NotFound",
+    "RECORD_NOT_FOUND",
+    true
+   ],
+   "java->java/panic": [
+    "Unknown",
+    "",
+    true
+   ],
+   "java->java/panic-recover": [
+    "Internal",
+    "",
+    true
+   ],
+   "go/gateway/ok": [
+    200,
+    "",
+    "",
+    0
+   ],
+   "go/gateway/status": [
+    404,
+    "NotFound",
+    "",
+    0
+   ],
+   "go/gateway/details": [
+    500,
+    "Internal",
+    "",
+    0
+   ],
+   "go/gateway/details-registered": [
+    404,
+    "NotFound",
+    "RECORD_NOT_FOUND",
+    0
+   ],
+   "go/gateway/invalid": [
+    400,
+    "InvalidArgument",
+    "",
+    0
+   ],
+   "go/gateway/unavailable": [
+    503,
+    "Unavailable",
+    "",
+    0
+   ],
+   "go/gateway/plain": [
+    500,
+    "Unknown",
+    "",
+    0
+   ],
+   "go/gateway/panic-recover": [
+    500,
+    "Internal",
+    "",
+    0
+   ],
+   "go/gateway/stream": [
+    200,
+    "",
+    "",
+    3
+   ],
+   "go/gateway/timeout": [
+    504,
+    "DeadlineExceeded",
+    "",
+    0
+   ],
+   "java/gateway/ok": [
+    200,
+    "",
+    "",
+    0
+   ],
+   "java/gateway/status": [
+    404,
+    "NotFound",
+    "",
+    0
+   ],
+   "java/gateway/details": [
+    500,
+    "Internal",
+    "",
+    0
+   ],
+   "java/gateway/details-registered": [
+    404,
+    "NotFound",
+    "RECORD_NOT_FOUND",
+    0
+   ],
+   "java/gateway/invalid": [
+    400,
+    "InvalidArgument",
+    "",
+    0
+   ],
+   "java/gateway/unavailable": [
+    503,
+    "Unavailable",
+    "",
+    0
+   ],
+   "java/gateway/plain": [
+    500,
+    "Unknown",
+    "",
+    0
+   ],
+   "java/gateway/panic-recover": [
+    500,
+    "Internal",
+    "",
+    0
+   ],
+   "java/gateway/stream": [
+    200,
+    "",
+    "",
+    3
+   ],
+   "java/gateway/timeout": [
+    504,
+    "DeadlineExceeded",
+    "",
+    0
+   ]
+  },
+  "retry": {
+   "go->go/no-policy": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "go->go/unavailable": {
+    "client_code": "OK",
+    "attempts": 3
+   },
+   "go->go/internal": {
+    "client_code": "Internal",
+    "attempts": 1
+   },
+   "go->go/max10": {
+    "client_code": "Unavailable",
+    "attempts": 5
+   },
+   "go->go/deadline": {
+    "client_code": "DeadlineExceeded",
+    "attempts": 1
+   },
+   "go->go/stream-no-policy": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "go->go/stream-before": {
+    "client_code": "Unavailable",
+    "attempts": 4
+   },
+   "go->go/stream-headers": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "go->go/stream-after": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "go->java/no-policy": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "go->java/unavailable": {
+    "client_code": "OK",
+    "attempts": 3
+   },
+   "go->java/internal": {
+    "client_code": "Internal",
+    "attempts": 1
+   },
+   "go->java/max10": {
+    "client_code": "Unavailable",
+    "attempts": 5
+   },
+   "go->java/deadline": {
+    "client_code": "DeadlineExceeded",
+    "attempts": 1
+   },
+   "go->java/stream-no-policy": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "go->java/stream-before": {
+    "client_code": "Unavailable",
+    "attempts": 4
+   },
+   "go->java/stream-headers": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "go->java/stream-after": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "java->go/no-policy": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "java->go/unavailable": {
+    "client_code": "OK",
+    "attempts": 3
+   },
+   "java->go/internal": {
+    "client_code": "Internal",
+    "attempts": 1
+   },
+   "java->go/max10": {
+    "client_code": "Unavailable",
+    "attempts": 5
+   },
+   "java->go/deadline": {
+    "client_code": "DeadlineExceeded",
+    "attempts": 1
+   },
+   "java->go/stream-no-policy": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "java->go/stream-before": {
+    "client_code": "Unavailable",
+    "attempts": 4
+   },
+   "java->go/stream-headers": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "java->go/stream-after": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "java->java/no-policy": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "java->java/unavailable": {
+    "client_code": "OK",
+    "attempts": 3
+   },
+   "java->java/internal": {
+    "client_code": "Internal",
+    "attempts": 1
+   },
+   "java->java/max10": {
+    "client_code": "Unavailable",
+    "attempts": 5
+   },
+   "java->java/deadline": {
+    "client_code": "DeadlineExceeded",
+    "attempts": 1
+   },
+   "java->java/stream-no-policy": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "java->java/stream-before": {
+    "client_code": "Unavailable",
+    "attempts": 4
+   },
+   "java->java/stream-headers": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   },
+   "java->java/stream-after": {
+    "client_code": "Unavailable",
+    "attempts": 1
+   }
+  },
+  "keepalive": {
+   "go->go/pings/default": [
+    "goaway",
+    "Unavailable"
+   ],
+   "go->go/pings/allowed": [
+    "survived",
+    "OK"
+   ],
+   "go->java/pings/default": [
+    "goaway",
+    "Unavailable"
+   ],
+   "go->java/pings/allowed": [
+    "survived",
+    "OK"
+   ],
+   "java->go/pings/default": [
+    "goaway",
+    "ResourceExhausted"
+   ],
+   "java->go/pings/allowed": [
+    "survived",
+    "OK"
+   ],
+   "java->java/pings/default": [
+    "goaway",
+    "ResourceExhausted"
+   ],
+   "java->java/pings/allowed": [
+    "survived",
+    "OK"
+   ],
+   "go/idle/direct/ka-off": [
+    "survived",
+    "OK"
+   ],
+   "go/idle/direct/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "go/idle/angie-l4/ka-off": [
+    "reconnected",
+    "OK"
+   ],
+   "go/idle/angie-l4/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "go/idle/envoy-l4/ka-off": [
+    "reconnected",
+    "OK"
+   ],
+   "go/idle/envoy-l4/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "go/idle/angie-l7/ka-off": [
+    "reconnected",
+    "OK"
+   ],
+   "go/idle/angie-l7/ka-on": [
+    "reconnected",
+    "OK"
+   ],
+   "go/idle/envoy-l7/ka-off": [
+    "reconnected",
+    "OK"
+   ],
+   "go/idle/envoy-l7/ka-on": [
+    "reconnected",
+    "OK"
+   ],
+   "java/idle/direct/ka-off": [
+    "survived",
+    "OK"
+   ],
+   "java/idle/direct/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "java/idle/angie-l4/ka-off": [
+    "reconnected",
+    "OK"
+   ],
+   "java/idle/angie-l4/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "java/idle/envoy-l4/ka-off": [
+    "reconnected",
+    "OK"
+   ],
+   "java/idle/envoy-l4/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "java/idle/angie-l7/ka-off": [
+    "reconnected",
+    "OK"
+   ],
+   "java/idle/angie-l7/ka-on": [
+    "reconnected",
+    "OK"
+   ],
+   "java/idle/envoy-l7/ka-off": [
+    "reconnected",
+    "OK"
+   ],
+   "java/idle/envoy-l7/ka-on": [
+    "reconnected",
+    "OK"
+   ],
+   "go/silent/direct/ka-off": [
+    "survived",
+    "OK"
+   ],
+   "go/silent/direct/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "go/silent/angie-l4/ka-off": [
+    "dropped",
+    "Unavailable"
+   ],
+   "go/silent/angie-l4/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "go/silent/envoy-l4/ka-off": [
+    "dropped",
+    "Unavailable"
+   ],
+   "go/silent/envoy-l4/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "go/silent/angie-l7/ka-off": [
+    "survived",
+    "OK"
+   ],
+   "go/silent/angie-l7/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "go/silent/envoy-l7/ka-off": [
+    "survived",
+    "OK"
+   ],
+   "go/silent/envoy-l7/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "java/silent/direct/ka-off": [
+    "survived",
+    "OK"
+   ],
+   "java/silent/direct/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "java/silent/angie-l4/ka-off": [
+    "dropped",
+    "Unavailable"
+   ],
+   "java/silent/angie-l4/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "java/silent/envoy-l4/ka-off": [
+    "dropped",
+    "Unavailable"
+   ],
+   "java/silent/envoy-l4/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "java/silent/angie-l7/ka-off": [
+    "survived",
+    "OK"
+   ],
+   "java/silent/angie-l7/ka-on": [
+    "survived",
+    "OK"
+   ],
+   "java/silent/envoy-l7/ka-off": [
+    "survived",
+    "OK"
+   ],
+   "java/silent/envoy-l7/ka-on": [
+    "survived",
+    "OK"
+   ]
+  }
+ }
+}

@@ -10,6 +10,7 @@
 | [`event-coordination/`](event-coordination/) | Хореография vs оркестрация | [статья](https://khorost.tech/architecture/choreography-vs-orchestration/) |
 | [`event-payload/`](event-payload/) | Notification vs event-carried state transfer | [статья](https://khorost.tech/architecture/event-notification-vs-state-transfer/) |
 | [`event-sourcing/`](event-sourcing/) | Event Sourcing на практике: store, агрегаты, проекции | [статья](https://khorost.tech/architecture/event-sourcing-in-practice/) |
+| [`grpc/`](grpc/) | gRPC на Go и Java перекрёстно, за Angie и Envoy: доходит ли deadline до нижнего звена, останавливается ли стрим после отмены, коды ошибок и паника, порядок интерсепторов, встроенные ретраи, keepalive и GOAWAY, балансировка долгого HTTP/2-соединения за L4 и L7, gRPC-Gateway — счётом исходов | 🔜 скоро |
 | [`idempotency/`](idempotency/) | Гарантии доставки и идемпотентность (effectively-once) | [статья](https://khorost.tech/architecture/delivery-guarantees-idempotency/) |
 | [`realtime/`](realtime/) | WebSocket, SSE и polling на Go и Java за Angie, fan-out через Redis и NATS: байты на событие, буферизация и таймауты прокси, доставка между инстансами, потери при разрыве и догон по Last-Event-ID, медленный клиент, память на соединение — счётом исходов | 🔜 скоро |
 | [`resilience/`](resilience/) | Backpressure и load shedding: bounded-очередь, AIMD-лимитер | [статья](https://khorost.tech/architecture/backpressure-load-shedding/) |

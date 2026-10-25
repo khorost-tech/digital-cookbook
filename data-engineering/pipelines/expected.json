@@ -1,0 +1,94 @@
+{
+  "written": "2026-10-07",
+  "note": "Гипотезы записаны до прогона оси. Эталон — из генератора (generator/gen.py), не из хранилища.",
+  "known_from_pre_run_probes": [
+    {
+      "fact": "сквозной прогон elt_daily за 2026-10-01 совпал с эталоном генератора: выручка 38675280, заказов 312, позиций 798",
+      "source": "проба 07.10"
+    },
+    {
+      "fact": "в Airflow 3 у запуска `airflow dags test <дата>` data_interval_start и data_interval_end совпадают с логической датой",
+      "source": "проба 07.10, вывод DagRun Finished"
+    }
+  ],
+  "elt": {
+    "hypothesis_before_run": "Обе схемы на правиле v1 совпадают с эталоном во все 14 дней. Смена правила на v2: ELT пересчитывает историю одним dbt run из raw — 0 запросов к источнику, 14 дней из 14 совпадают с эталоном v2; ETL хранит только итог, поэтому пересчёт — 14 повторных выгрузок, по 2 запроса к источнику на день (28), результат совпадает с эталоном v2.",
+    "confidence": "высокая",
+    "control": "правило v1 — совпадение с эталоном у обеих схем",
+    "revision_after_review": {
+      "written": "2026-10-08",
+      "change": "ETL и ELT различались и местом преобразования, и сохранённой детализацией; добавлен третий вариант etl-facts — ETL с подробными фактами заказа (со статусом), выручку считает SQL в хранилище",
+      "hypothesis_before_run": "etl-facts на смене правила совпадает с эталоном v2 без запросов к источнику, как ELT: пересчёт определяет сохранённая детализация, а не место преобразования"
+    }
+  },
+  "idempotency": {
+    "hypothesis_before_run": "Повтор дня без падения: append — дубли всех строк дня, delete-insert, delete-batch, merge — ровно эталон. Падение после k пакетов позиций: append — после падения часть позиций, после повтора дубли; delete-insert — после падения день как до прогона (откат), после повтора эталон; delete-batch — после падения день неполный (старое удалено, новое частично), после повтора эталон; merge — после падения частично, после повтора эталон.",
+    "confidence": "высокая",
+    "control": "один прогон без падения во всех режимах — эталон",
+    "observed_vs_hypothesis": {
+      "written": "2026-10-07",
+      "fact": "merge после падения на повторной загрузке — день целый (686 из 686): старые строки на месте, upsert успел обновить часть. Гипотеза «после падения частично» относилась к первой загрузке дня; стенд ставит падение на повторной."
+    }
+  },
+  "interval": {
+    "hypothesis_before_run": "Задача по data_interval_start обрабатывает день своей логической даты при любом времени запуска: backfill 14 дней — каждый день ровно раз. Задача по now() минус сутки при backfill обрабатывает один и тот же «вчерашний» день 14 раз, а 14 нужных дней — ни разу; при запуске с опозданием обрабатывает не тот день.",
+    "confidence": "высокая",
+    "control": "задача по data_interval_start — каждый день ровно раз",
+    "revision_setup": {
+      "written": "2026-10-07",
+      "reason": "первый прогон how=now брал «вчера» по часам машины (06.10) — число зависело бы от даты прогона стенда",
+      "change": "«текущая дата» опыта фиксирована: wall=2026-10-15",
+      "hypothesis_before_run": "how=now берёт 14.10 во всех 14 запусках: один день 14 раз, 13 дней — ни разу"
+    },
+    "revision_scheduled": {
+      "written": "2026-10-07",
+      "reason": "проба оси 4: в Airflow 3 @daily по умолчанию — расписание без интервалов, обычный запуск в полночь 07.10 получил data_interval_start = data_interval_end = 07.10",
+      "change": "варианты scheduled-trigger (sched_trigger, @daily) и scheduled-interval (sched_interval, CronDataIntervalTimetable): обычный запуск при снятии паузы; публикуется сдвиг взятого дня от дня срабатывания и длина интервала",
+      "hypothesis_before_run": "scheduled-trigger: сдвиг 0 — задача по data_interval_start берёт день, который только начался, интервал 0 ч; scheduled-interval: сдвиг −1 — прошедшие сутки, интервал 24 ч"
+    },
+    "revision_manual": {
+      "written": "2026-10-07",
+      "reason": "проба оси 6: ручной запуск airflow dags trigger --logical-date 2026-09-03 получил data_interval_start = момент запуска (07.10), а не логическую дату; dags test даёт интервал по логической дате",
+      "change": "вариант manual-trigger на interval_demo (end_date 14.09 — снятие паузы не создаёт обычного запуска)",
+      "hypothesis_before_run": "manual-trigger: по data_interval_start взят день запуска, а не логической даты"
+    }
+  },
+  "backfill": {
+    "hypothesis_before_run": "airflow backfill create за 14 дней создаёт 14 запусков с логическими датами 01–14.10, хранилище совпадает с эталоном. max_active_runs ограничивает одновременность, но не порядок; depends_on_past не даёт дню начаться, пока не успешен предыдущий: при падении одного дня последующие не выполняются.",
+    "confidence": "средняя",
+    "control": "результат backfill совпадает с эталоном",
+    "revision_after_probe": {
+      "written": "2026-10-07",
+      "reason": "пробы: (1) backfill не создаёт запуски на даты позже текущей — история 01–14.10 при сегодняшнем 07.10 дала 7 запусков; (2) Airflow 3 отказывает в backfill DAG с depends_on_past без --reprocess-behavior (InvalidReprocessBehavior) и с --run-backwards (InvalidBackfillDirection); (3) в Airflow 3 @daily по умолчанию — расписание без интервалов (create_cron_data_intervals=False): data_interval_start = data_interval_end = логическая дата; (4) исполнителю нужен API-сервер (Execution API)",
+      "change": "история перенесена на 01–14.09.2026 (в прошлом при любом прогоне), у DAG оси 4 end_date 14.09 — при снятии паузы обычный запуск не создаётся; варианты ordered-default (отказ) и fail-ordered с --reprocess-behavior failed",
+      "hypothesis_before_run": "full и repeat-completed — 14 запусков, эталон; repeat-none — 0 новых запусков; fail-free — 13 успешно, 1 сбой; ordered-default (одна дата диапазона уже обработана) — отказ CLI InvalidReprocessBehavior; без обработанных дат отказа нет; fail-ordered — 4 успешно (01–04.09), сбой 05.09, остальные 9 не выполнены; backwards-ordered — отказ CLI"
+    },
+    "revision_after_review": {
+      "written": "2026-10-08",
+      "change": "по исходнику Airflow 3.3.2 (_validate_backfill_params) отказ для DAG с depends_on_past зависит только от reprocess_behavior None/none, а не от обработанных дат; добавлен вариант ordered-clean — чистый диапазон без --reprocess-behavior",
+      "hypothesis_before_run": "ordered-clean отказан с InvalidReprocessBehavior, запусков 0"
+    }
+  },
+  "late": {
+    "hypothesis_before_run": "Поздние заказы за день D приходят в источник после обработки D. Выгрузка по времени события (created_at) без пересмотра теряет их навсегда; по времени поступления (ingested_at) загружает их, но в день прихода D+1 — выручка D занижена, а в витрине по дате заказа они всё же попадают в D, если витрина пересчитывается целиком; инкрементальная модель dbt без окна пересмотра их теряет, с окном в 1 день — находит; full refresh — находит.",
+    "confidence": "средняя",
+    "control": "без поздних заказов — эталон",
+    "revision_after_probe": {
+      "written": "2026-10-07",
+      "reason": "первый прогон: поздние заказы приходили на следующий день, а инкрементальная витрина пересчитывает и последний посчитанный день — ingest-inc совпал с эталоном; окно пересмотра 1 день у выгрузки по событию тоже хватало",
+      "change": "опоздание 2 дня (приход 07.09 02:00 за 05.09); варианты event-lookback1 и event-lookback2",
+      "hypothesis_before_run": "event — потеряны 20; event-lookback1 — потеряны (окно короче опоздания); event-lookback2 — эталон; ingest (витрина целиком) — эталон; ingest-inc — потеряны (витрина пересчитывает начиная с последнего дня); ingest-inc-lookback (окно 1 день от последнего) — эталон; ingest-inc-refresh — эталон"
+    }
+  },
+  "retries": {
+    "hypothesis_before_run": "Задача, падающая k раз переходной ошибкой, при retries ≥ k завершается успешно на попытке k+1 (try_number), при retries < k — падает. Неидемпотентная задача (append), упавшая после частичной записи, при повторах оставляет дубли; идемпотентная — эталон.",
+    "confidence": "высокая",
+    "control": "задача без сбоев — одна попытка",
+    "revision_setup": {
+      "written": "2026-10-07",
+      "reason": "первый прогон: задача брала день из data_interval_start, а у ручного запуска он равен моменту запуска — выгружался пустой день, падение не наступало",
+      "change": "день — из logical_date",
+      "hypothesis_before_run": "без изменений"
+    }
+  }
+}

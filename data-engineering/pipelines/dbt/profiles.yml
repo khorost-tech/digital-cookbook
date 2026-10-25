@@ -1,0 +1,12 @@
+shop:
+  target: dwh
+  outputs:
+    dwh:
+      type: postgres
+      host: postgres
+      port: 5432
+      user: postgres
+      password: stand
+      dbname: dwh
+      schema: public
+      threads: 1

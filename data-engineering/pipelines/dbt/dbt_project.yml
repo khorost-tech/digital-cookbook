@@ -1,0 +1,16 @@
+name: shop
+version: "1.0"
+profile: shop
+model-paths: ["models"]
+target-path: /tmp/dbt-target
+log-path: /tmp/dbt-logs
+vars:
+  rule: v1          # v1 — выручка без отменённых; v2 — ещё и без возвратов
+  lookback_days: 0  # окно пересмотра инкрементальной витрины, дней
+models:
+  shop:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts

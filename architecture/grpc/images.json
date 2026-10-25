@@ -1,0 +1,26 @@
+{
+ "golang": {
+  "ref": "golang:1.27.1-alpine",
+  "digest": "sha256:8a5910f31396cd4d89662f56c68b3ae31d374308270a1c3bd96672ee5ed43414"
+ },
+ "alpine": {
+  "ref": "alpine:3.22",
+  "digest": "sha256:5291449c3df73caf6ed85e649dec1b9e818b39a5d8c871e97afc13e9cd5e8fa8"
+ },
+ "maven": {
+  "ref": "maven:3.9-eclipse-temurin-21",
+  "digest": "sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320"
+ },
+ "jre": {
+  "ref": "eclipse-temurin:21-jre-alpine",
+  "digest": "sha256:51ab5e3302e7141ce665ca3ea85e8b5cd648eafbc3c0c90dd79d6537684e4555"
+ },
+ "angie": {
+  "ref": "docker.angie.software/angie:1.12.2",
+  "digest": "sha256:7d6ad2b9efa7453ad0810b1fe8410f4673f0c30f65cebf6fe1b317d4f2c99d91"
+ },
+ "envoy": {
+  "ref": "envoyproxy/envoy:v1.39-latest",
+  "digest": "sha256:460f8c329f24b2e1c7c5af64cb314a6f351ad1c262ba77b135ac46b35ebd5f85"
+ }
+}

@@ -1,0 +1,15 @@
+{
+ "fixtures": {
+  "protocol.jsonl": "cfbef3105d282b6bf763d635f365ae6e127bc7f6086696123bf1ea51c6100c90",
+  "deadline.jsonl": "8c6add8f4a7f353a29d0f894a4c8848d7f55ca0de7374332260dc4f32266775b",
+  "cancel.jsonl": "d3acc68f54dec96df24d147a962fc9ac95933caf6dfe537a45da04490bdc9d86",
+  "errors.jsonl": "6217470f40c6e1ec409367a4152da76574e84065b665debbb5414b3fc74fd39b",
+  "chain.jsonl": "26345e92ddf3dc5acb77ff7641e9b1879941ff2af2333687792314c113301488",
+  "retry.jsonl": "39051f8ce39938a9853531fd084838be8eea134a7c31ae5b863838ce4dbd869c",
+  "keepalive.jsonl": "0bb095686de4c247277c7a56b1123f7a564dc9821d0d0bf4af59320a1f59c83c",
+  "balance.jsonl": "9973423058803a67af2c978859994eab30dde927d632cbaf0859794290e53a7b",
+  "size.jsonl": "2c01c6c96edcaa937d334e3a08940d89cf6cd6d819fc89327f9a57d21bfa45a8"
+ },
+ "tests": 44,
+ "sabotages": 27
+}
