@@ -1,0 +1,121 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 50-rollouts
+# cmd: bash manifests/40-rollouts.sh
+# ---
+== 0. предполётная проверка: CRD Rollouts в кластере быть НЕ должно ==
+CRD Rollouts не найдено — можно ставить. Для контраста, чужие CRD argoproj.io на месте:
+NAME                                                    CREATED
+applications.argoproj.io                                2026-07-19T09:08:17Z
+applicationsets.argoproj.io                             2026-07-19T09:08:17Z
+appprojects.argoproj.io                                 2026-07-19T09:08:17Z
+imageupdaters.argocd-image-updater.argoproj.io          2026-07-19T09:08:42Z
+
+== 1. загрузка релизных ассетов v1.9.1 ==
+install.yaml:           1059836 байт, sha256 78c82343803c2bbc13a36049e269a532dd67f25b7e2cb3603c99e31d8d8a40b5
+namespace-install.yaml: 7628 байт, sha256 38eaadc3d8235e49e5222f85ad49448688b6a6acbaaaae13d3d53bd1db0212b4
+
+== 2. CRD: берём ТОЛЬКО kind: CustomResourceDefinition из install.yaml ==
+CRD в install.yaml: analysisruns.argoproj.io analysistemplates.argoproj.io clusteranalysistemplates.argoproj.io experiments.argoproj.io rollouts.argoproj.io
+ПРОВЕРКА: 5 CRD Rollouts, все в белом списке, пересечения с чужими нет
+
+== 3. контроллер: namespace-install БЕЗ трёх aggregate-ClusterRole ==
+вырезано ClusterRole/ClusterRoleBinding: argo-rollouts-aggregate-to-admin argo-rollouts-aggregate-to-edit argo-rollouts-aggregate-to-view
+ПРОВЕРКА: ClusterRole/ClusterRoleBinding в наборе контроллера = 0
+состав набора контроллера:
+      1 kind: ConfigMap
+      1 kind: Deployment
+      1 kind: Role
+      1 kind: RoleBinding
+      1 kind: Secret
+      1 kind: Service
+      1 kind: ServiceAccount
+
+== 4. применяем: сперва CRD (кластер), затем контроллер (ns cookbook-argocd) ==
+customresourcedefinition.apiextensions.k8s.io/analysisruns.argoproj.io created
+customresourcedefinition.apiextensions.k8s.io/analysistemplates.argoproj.io created
+customresourcedefinition.apiextensions.k8s.io/clusteranalysistemplates.argoproj.io created
+customresourcedefinition.apiextensions.k8s.io/experiments.argoproj.io created
+customresourcedefinition.apiextensions.k8s.io/rollouts.argoproj.io created
+serviceaccount/argo-rollouts created
+role.rbac.authorization.k8s.io/argo-rollouts created
+rolebinding.rbac.authorization.k8s.io/argo-rollouts created
+configmap/argo-rollouts-config created
+secret/argo-rollouts-notification-secret created
+service/argo-rollouts-metrics created
+deployment.apps/argo-rollouts created
+
+== 5. контроль границ сразу после установки ==
+-- CRD argoproj.io: пять наших НОВЫЕ, четыре чужих со СТАРЫМ creationTimestamp 2026-07-19:
+NAME                                                    CREATED
+analysisruns.argoproj.io                                2026-07-24T20:44:54Z
+analysistemplates.argoproj.io                           2026-07-24T20:44:54Z
+applications.argoproj.io                                2026-07-19T09:08:17Z
+applicationsets.argoproj.io                             2026-07-19T09:08:17Z
+appprojects.argoproj.io                                 2026-07-19T09:08:17Z
+clusteranalysistemplates.argoproj.io                    2026-07-24T20:44:55Z
+experiments.argoproj.io                                 2026-07-24T20:44:55Z
+imageupdaters.argocd-image-updater.argoproj.io          2026-07-19T09:08:42Z
+rollouts.argoproj.io                                    2026-07-24T20:44:55Z
+
+-- кластерные роли с 'rollout' в имени (ожидается: НИ ОДНОЙ — мы их вырезали):
+(нет ни одной — как и задумано)
+
+-- боевые Application (ожидается: только наш demo, чужих ноль):
+NAMESPACE         NAME   SYNC STATUS   HEALTH STATUS
+cookbook-argocd   demo   Synced        Healthy
+
+готово: Argo Rollouts v1.9.1 — CRD в кластере, контроллер namespace-scoped в cookbook-argocd
+
+### controller pod, версия, RBAC scope ###
+-- под контроллера:
+NAME                             READY   STATUS    RESTARTS   AGE   IP            NODE             NOMINATED NODE   READINESS GATES
+argo-rollouts-59f478665f-xpzzp   1/1     Running   0          45s   10.244.3.30   k8s-volga-wk01   <none>           <none>
+-- образ и аргументы:
+image=quay.io/argoproj/argo-rollouts:v1.9.1
+args=["--namespaced"]
+-- RBAC: Role (namespaced) есть, ClusterRole нашего SA нет:
+KIND          NAME
+Role          argo-rollouts
+RoleBinding   argo-rollouts
+-- привязок к argo-rollouts SA на КЛАСТЕРНОМ уровне (ожидается пусто):
+0
+-- версия из образа:
+v1.9.1
+-- квота после установки контроллера:
+Resource         Used    Hard
+--------         ----    ----
+limits.cpu       5       8
+limits.memory    4864Mi  8Gi
+pods             10      16
+requests.cpu     430m    2
+requests.memory  560Mi   3Gi
+### границы после демо 4 ###
+-- чужие CRD argoproj.io: creationTimestamp обязан остаться 2026-07-19 (боевой ArgoCD):
+applications.argoproj.io                                2026-07-19T09:08:17Z
+applicationsets.argoproj.io                             2026-07-19T09:08:17Z
+appprojects.argoproj.io                                 2026-07-19T09:08:17Z
+imageupdaters.argocd-image-updater.argoproj.io          2026-07-19T09:08:42Z
+-- наши CRD Rollouts (остаются до teardown):
+analysisruns.argoproj.io                                2026-07-24T20:44:54Z
+analysistemplates.argoproj.io                           2026-07-24T20:44:54Z
+clusteranalysistemplates.argoproj.io                    2026-07-24T20:44:55Z
+experiments.argoproj.io                                 2026-07-24T20:44:55Z
+rollouts.argoproj.io                                    2026-07-24T20:44:55Z
+-- боевые Application (ожидается только demo):
+NAMESPACE         NAME   SYNC STATUS   HEALTH STATUS
+cookbook-argocd   demo   Synced        Healthy
+-- ClusterRole/Binding с 'rollout' (ожидается ноль):
+(нет ни одной)
+-- ClusterRoleBinding на наш SA argo-rollouts (ожидается ноль):
+0
+-- метка baseline на namespace (не менялась):
+enforce=baseline
+-- NetworkPolicy (8 штук, git-server-allow-stand-only на месте, чужие в cookbook-k8s не создавались):
+8
+No resources found in cookbook-k8s namespace.
+-- контроллер Rollouts (остаётся):
+argo-rollouts image=quay.io/argoproj/argo-rollouts:v1.9.1 ready=1
+-- демо-объекты Rollout удалены:
+No resources found in cookbook-argocd namespace.
+-- квота после уборки:
+limits.cpu       5       8
+pods             10      16

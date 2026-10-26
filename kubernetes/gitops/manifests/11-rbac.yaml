@@ -1,0 +1,126 @@
+# Права нашего ArgoCD на то, что он разворачивает. Внутри одного namespace — и только.
+#
+# ЧТО СЛОМАЛОСЬ. После того как кластер был ограничен одним namespace (15-cluster-scope.yaml),
+# контроллер перестал ломиться в кластерные ресурсы, но упал на следующем шаге, дословно из
+# лога argocd-application-controller-0:
+#
+#   Failed to sync cluster: failed to load initial state of resource
+#   HorizontalPodAutoscaler.autoscaling: failed to list resources:
+#   horizontalpodautoscalers.autoscaling is forbidden: User
+#   "system:serviceaccount:cookbook-argocd:argocd-application-controller" cannot list
+#   resource "horizontalpodautoscalers" in API group "autoscaling" in the namespace "cookbook-argocd"
+#
+# ПОЧЕМУ. Role из namespace-install даёт контроллеру ровно столько, сколько нужно ему самому:
+#
+#   [""]           secrets, configmaps                      get,list,watch
+#   ["argoproj.io"] applications, applicationsets, appprojects  полный набор
+#   [""]           events                                    create,list
+#   ["apps"]       deployments                               get,list,watch
+#
+# Ни одного глагола на запись чего бы то ни было, кроме своих же CRD. В обычной установке
+# всё остальное даёт ClusterRole `argocd-application-controller` с правилом ["*"]/["*"]/["*"] —
+# то есть админ на весь кластер. Мы её ставить не имеем права (кластер общий), поэтому
+# те же права выдаются РОЛЬЮ в одном namespace.
+#
+# ПРО «*» В ПРАВИЛАХ. Да, это полный доступ — но к одному namespace. GitOps-контроллер по
+# природе задачи должен уметь создавать, менять и удалять произвольные типы, потому что
+# состав манифестов в git заранее неизвестен. Плюс cluster cache перечисляет ВСЕ namespaced-типы
+# в своей области: выдай ему только deployments+services — он споткнётся о следующий тип,
+# который не сможет перечислить, как споткнулся об HPA. Альтернатива (узкие правила +
+# resource.exclusions в argocd-cm) в общем кластере с полусотней CRD превращается в
+# бесконечный список исключений.
+# Граница здесь проходит не по глаголам, а по namespace, и она проверяемая:
+#   kubectl auth can-i list deployments -n cookbook-argocd --as=…:argocd-application-controller -> yes
+#   kubectl auth can-i list deployments -n argocd           --as=…:argocd-application-controller -> no
+# Вывод обеих команд — в fixtures/10-argocd.txt.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cookbook-argocd-manage-ns
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+rules:
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["*"]
+---
+# Только контроллер. Он применяет манифесты — ему и нужен полный набор глаголов.
+# repo-server в кластер не ходит вовсе (клонирует git и рендерит манифесты), поэтому его
+# здесь нет. argocd-server получает СВОЮ роль, более узкую — следующими двумя документами.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cookbook-argocd-manage-ns
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cookbook-argocd-manage-ns
+subjects:
+  - kind: ServiceAccount
+    name: argocd-application-controller
+    namespace: cookbook-argocd
+---
+# ПРАВА argocd-server: ОТДЕЛЬНАЯ роль, и она уже, чем у контроллера.
+#
+# В первой редакции широкая Role выше была привязана к обоим ServiceAccount, с обоснованием
+# «те же полномочия, что даёт боевая ClusterRole». Для контроллера это правда, для server —
+# нет: апстримная ClusterRole argocd-server на `*/*` даёт не всё, а ровно delete,get,patch —
+# без create и update, — плюс несколько узких правил. Разбор install.yaml v3.4.1 лежит
+# в fixtures/10-argocd.txt, раздел 3. Здесь тот же набор правил, но Ролью в одном namespace.
+#
+# Почему server беднее контроллера, хотя показывает те же объекты: живое состояние он не
+# вычитывает из API сам, а берёт из кэша контроллера. Собственные обращения к API у него —
+# это действия из UI и CLI: удалить ресурс, посмотреть логи пода, перезапустить Deployment
+# (перезапуск — это patch аннотации), запустить Job из ресурс-хука. Ни создавать, ни
+# обновлять произвольные объекты ему не нужно — этим занят контроллер.
+#
+# Практический смысл: «GitOps-контроллеру нужна звёздочка во всём» верно ровно для ОДНОГО
+# компонента из трёх. Разделение проверяется теми же can-i, что и граница по namespace:
+#   can-i create deployments -n cookbook-argocd --as=…:argocd-application-controller -> yes
+#   can-i create deployments -n cookbook-argocd --as=…:argocd-server                 -> no
+#   can-i delete deployments -n cookbook-argocd --as=…:argocd-server                 -> yes
+# Вывод — в fixtures/30-hardening.txt.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: cookbook-argocd-server-ns
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+rules:
+  # Основное правило апстрима: любой тип, но только «удалить / прочитать / поправить».
+  - apiGroups: ["*"]
+    resources: ["*"]
+    verbs: ["delete", "get", "patch"]
+  # Дальше — узкие правила апстрима, приведённые дословно. Часть из них правилом выше уже
+  # покрыта (resources ["*"] включает и субресурсы вроде pods/log), но глаголы у них ДРУГИЕ:
+  # list у events и create у jobs первое правило не даёт.
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["list"]
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get"]
+  - apiGroups: ["batch"]
+    resources: ["jobs"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: cookbook-argocd-server-ns
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: cookbook-argocd-server-ns
+subjects:
+  - kind: ServiceAccount
+    name: argocd-server
+    namespace: cookbook-argocd

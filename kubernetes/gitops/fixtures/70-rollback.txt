@@ -1,0 +1,45 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 70-rollback
+# demo 4, шаг 5 (★ ключевой замер): АВТОМАТИЧЕСКИЙ ОТКАТ canary при провале анализа
+# ---
+# Порог анализа переставлен 1 -> 5 (patch step 3 args). Метрика max(up{...}) на стенде = 1,
+# условие result[0] >= 5 заведомо ложно -> AnalysisRun падает -> Rollout сам откатывается на
+# stable (v2). Число НАСТОЯЩЕЕ: и метрика (1), и условие, и провал — не подделка.
+
+### таймлайн (все отметки — часы хоста, date -u) ###
+20:49:37.069  SETUP: threshold анализа 1 -> 5 (patch /spec/strategy/canary/steps/3/analysis/args/0/value)
+20:49:39.317  TRIGGER: version v2->v3 (старт раскатки, отсчёт пошёл)   <- T0
+20:49:40.536  phase=Progressing step=0  pods=[v2 v2 v3]  v3=1 v2=2     (canary v3 поднят, setWeight 25)
+20:49:42.516  phase=Paused     step=1  pods=[v2 v2 v3]  v3=1 v2=2      (пауза 20 s)
+20:50:00.889  phase=Progressing step=3  AR=[...86577bfbb-3-3=Failed]  pods=[v2 v2 v2 v3]  (анализ отработал, провал)
+20:50:02.841  phase=Degraded   step=0  abort=true  pods=[v2 v2]  v3=0 v2=2   <- T1 откат завершён
+20:50:02.934  ОТКАТ ЗАВЕРШЁН: поды v3 удалены, stable v2 снова 2/2, Rollout Degraded
+
+### ЗАМЕР ###
+start (T0 20:49:39.317) -> full rollback (T1 20:50:02.841) = 23.52 s   ← настоящее число
+  из них 20 s — заданная пауза step 1 (pause 20s) ДО шага анализа;
+  реакция механизма (провал анализа 20:50:00.889 -> откат завершён 20:50:02.841) = 1.95 s.
+Иначе говоря: как только анализ упал, откат занял ~2 s; остальное — сознательно заданная
+пауза выкатки, а не задержка отката.
+
+### AnalysisRun, который вызвал откат ###
+name=canary-demo-86577bfbb-3-3
+phase=Failed
+message=Metric "phase1-up" assessed Failed due to failed (1) > failureLimit (0)
+measurement: value=[1] phase=Failed          # реальное значение из Prometheus = 1
+successCondition: result[0] >= {{args.threshold}}   # threshold=5 -> 1>=5 ложно
+
+### Rollout: условие аборта ###
+Progressing=RolloutAborted: Rollout aborted update to revision 3: Step-based analysis
+  phase error/failed: Metric "phase1-up" assessed Failed due to failed (1) > failureLimit (0)
+Healthy=RolloutHealthy: Rollout is not healthy
+
+### события контроллера (подтверждают откат) ###
+20:47:54Z  AnalysisRunRunning     Step Analysis Run 'canary-demo-777fc94cf6-2-3' Running   (демо 4, успех)
+20:48:14Z  AnalysisRunSuccessful  Step Analysis Run 'canary-demo-777fc94cf6-2-3' Successful
+20:48:14Z  RolloutStepCompleted   Rollout step 4/7 completed (analysis)
+20:50:00Z  AnalysisRunFailed      Step Analysis Run 'canary-demo-86577bfbb-3-3' Failed     (демо 5, провал)
+20:50:00Z  RolloutAborted         Rollout aborted update to revision 3: ... failed (1) > failureLimit (0)
+
+# Механизм повёл себя РОВНО как ожидалось: провал step-анализа -> abort -> stable снова 100%.
+# После аборта Rollout остаётся Degraded (на здоровой stable-версии v2) до ручного retry/undo —
+# это штатное «застыл на последней хорошей версии», а не поломка.

@@ -1,0 +1,246 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 20-application
+# Первый цикл: Application -> OutOfSync -> ручной sync -> Synced/Healthy.
+# Снято 2026-07-24, время в выводах — UTC.
+
+
+================================================================================
+1. СОЗДАНИЕ Application
+================================================================================
+$ ./apply.sh manifests/20-application.yaml
+application.argoproj.io/demo created
+
+$ kubectl -n cookbook-argocd get application demo
+NAME   SYNC STATUS   HEALTH STATUS
+demo   Unknown       Healthy
+
+Unknown — это не «ещё думает». Это отказ: контроллер не смог сравнить состояние.
+Health при этом Healthy лишь потому, что сравнивать нечего — ни одного ресурса он
+не считал:
+$ kubectl -n cookbook-argocd get application demo -o jsonpath='{range .status.resources[*]}...'
+(пусто)
+
+
+================================================================================
+2. ПЕРВАЯ ПРИЧИНА: контроллер пытался закэшировать весь кластер
+================================================================================
+$ kubectl -n cookbook-argocd get application demo -o jsonpath='{.status.conditions}'
+ComparisonError: Failed to load live state: failed to get cluster info for "https://kubernetes.default.svc": error synchronizing cache state : failed to sync cluster https://10.96.0.1:443: failed to load initial state of resource ClusterTriggerAuthentication.keda.sh: failed to list resources: clustertriggerauthentications.keda.sh is forbidden: User "system:serviceaccount:cookbook-argocd:argocd-application-controller" cannot list resource "clustertriggerauthentications" in API group "keda.sh" at the cluster scope
+ComparisonError: Failed to load target state: failed to get cluster version for cluster "https://kubernetes.default.svc": failed to get cluster info for "https://kubernetes.default.svc": error synchronizing cache state : failed to sync cluster https://10.96.0.1:443: failed to load initial state of resource ClusterTriggerAuthentication.keda.sh: failed to list resources: clustertriggerauthentications.keda.sh is forbidden: User "system:serviceaccount:cookbook-argocd:argocd-application-controller" cannot list resource "clustertriggerauthentications" in API group "keda.sh" at the cluster scope
+UnknownError: error synchronizing cache state : failed to sync cluster https://10.96.0.1:443: failed to load initial state of resource ClusterTriggerAuthentication.keda.sh: failed to list resources: clustertriggerauthentications.keda.sh is forbidden: User "system:serviceaccount:cookbook-argocd:argocd-application-controller" cannot list resource "clustertriggerauthentications" in API group "keda.sh" at the cluster scope
+
+Читать это надо так: контроллер на старте перечисляет ВСЕ типы ресурсов кластера, чтобы
+построить кэш живого состояния. Дошёл до кластерного CRD чужого оператора (KEDA) — и
+получил отказ. Отказ правильный, прав у него действительно нет:
+
+$ kubectl auth can-i list clustertriggerauthentications.keda.sh --as=system:serviceaccount:cookbook-argocd:argocd-application-controller
+Warning: resource 'clustertriggerauthentications' is not namespace scoped in group 'keda.sh'
+no
+
+Ошибка не в RBAC — RBAC ровно такой, какой заказывали. Ошибка в области наблюдения:
+контроллер по умолчанию считает себя хозяином кластера. Лечится описанием кластера
+(manifests/15-cluster-scope.yaml):
+    namespaces: cookbook-argocd
+    clusterResources: "false"
+
+$ ./apply.sh manifests/15-cluster-scope.yaml
+secret/cluster-in-cluster created
+$ kubectl -n cookbook-argocd delete pod argocd-application-controller-0
+
+
+================================================================================
+3. ВТОРАЯ ПРИЧИНА: Role из namespace-install ничего не умеет
+================================================================================
+После перезапуска контроллер перестал ломиться в кластерные ресурсы — и уткнулся
+в следующую стену уже внутри своего namespace:
+
+$ kubectl -n cookbook-argocd logs argocd-application-controller-0
+{"error":"failed to load initial state of resource HorizontalPodAutoscaler.autoscaling: failed to list resources: horizontalpodautoscalers.autoscaling is forbidden: User \"system:serviceaccount:cookbook-argocd:argocd-application-controller\" cannot list resource \"horizontalpodautoscalers\" in API group \"autoscaling\" in the namespace \"cookbook-argocd\"","level":"error","msg":"Failed to sync cluster","server":"https://kubernetes.default.svc","time":"2026-07-24T16:10:43Z"}
+
+Обратите внимание на хвост: «in the namespace "cookbook-argocd"». Это уже свой namespace,
+и права всё равно нет — Role из namespace-install даёт контроллеру только то, что нужно
+ему самому (свои CRD, свои configmaps/secrets, события), и ни одного глагола записи на
+чужие типы. Разбор Role — в fixtures/10-argocd.txt, раздел 9.
+
+$ ./apply.sh manifests/11-rbac.yaml
+role.rbac.authorization.k8s.io/cookbook-argocd-manage-ns created
+rolebinding.rbac.authorization.k8s.io/cookbook-argocd-manage-ns created
+
+Следующая ошибка в логе, уже последняя, — про ServiceAccount, снята через несколько
+секунд после выдачи прав, пока RBAC ещё не разошёлся по кэшам:
+{"error":"failed to load initial state of resource ServiceAccount: failed to list resources: serviceaccounts is forbidden: ...","level":"error","msg":"Failed to sync cluster","time":"2026-07-24T16:13:06Z"}
+{"error":"failed to get repo objects","level":"warning","msg":"Ignoring temporary failed attempt to compare app state against repo","project":"default","time":"2026-07-24T16:13:06Z"}
+
+$ kubectl -n cookbook-argocd annotate application demo argocd.argoproj.io/refresh=hard --overwrite
+application.argoproj.io/demo annotated
+
+
+================================================================================
+4. СОСТОЯНИЕ ДО СИНХРОНИЗАЦИИ: OutOfSync / Missing
+================================================================================
+$ kubectl -n cookbook-argocd get application demo
+NAME   SYNC STATUS   HEALTH STATUS
+demo   OutOfSync     Missing
+
+$ kubectl -n cookbook-argocd get application demo -o jsonpath='...'
+sync.status   = OutOfSync
+health.status = Missing
+sync.revision = d049270d788de26273d85992c271c5994a6d7ca8
+
+Вот он, главный факт этого демо: ArgoCD УЖЕ прочитал репозиторий по git:// и знает
+хеш — d049270d788de26273d85992c271c5994a6d7ca8, тот самый seed-коммит из M0. Прочитал,
+сравнил, увидел расхождение — и ничего не сделал, потому что syncPolicy у Application
+нет. Ручной режим.
+
+$ kubectl -n cookbook-argocd get application demo -o jsonpath='{range .status.resources[*]}...'
+/v1 Service/demo -> OutOfSync
+apps/v1 Deployment/demo -> OutOfSync
+
+$ kubectl -n cookbook-argocd get deploy,svc -l app=demo
+No resources found in cookbook-argocd namespace.
+
+OutOfSync + Missing читается как «в git это есть, в кластере этого нет».
+
+
+================================================================================
+5. ЗАПУСК SYNC БЕЗ CLI
+================================================================================
+Локально плагин argocd не ставился. Sync запускается правкой поля operation прямо в
+объекте Application — именно это делает и кнопка Sync в UI:
+
+$ kubectl -n cookbook-argocd patch application demo --type merge \
+    -p '{"operation":{"initiatedBy":{"username":"stand"},"sync":{"revision":"HEAD","syncStrategy":{"apply":{}}}}}'
+application.argoproj.io/demo patched
+
+
+================================================================================
+6. ПОСЛЕ СИНХРОНИЗАЦИИ: Synced / Healthy
+================================================================================
+$ kubectl -n cookbook-argocd get application demo
+NAME   SYNC STATUS   HEALTH STATUS
+demo   Synced        Healthy
+
+$ kubectl -n cookbook-argocd get application demo -o jsonpath='...'
+sync.status         = Synced
+health.status       = Healthy
+sync.revision       = d049270d788de26273d85992c271c5994a6d7ca8
+operation.phase     = Succeeded
+operation.message   = successfully synced (all tasks run)
+operation.startedAt = 2026-07-24T16:14:56Z
+operation.finishedAt= 2026-07-24T16:14:57Z
+operation.revision  = HEAD
+synced revision     = d049270d788de26273d85992c271c5994a6d7ca8
+initiatedBy         = stand
+
+Секунда на весь цикл. Обратите внимание на две строки рядом: попросили HEAD
+(operation.revision), а в результат записан конкретный хеш (synced revision) — ArgoCD
+разрешает ссылку в момент операции и запоминает именно коммит.
+
+--- что именно применено ---
+$ kubectl -n cookbook-argocd get application demo -o jsonpath='{...syncResult.resources}'
+Service/demo     status=Synced  hookPhase=Running  message=service/demo created
+Deployment/demo  status=Synced  hookPhase=Running  message=deployment.apps/demo created
+
+--- объекты появились в кластере ---
+$ kubectl -n cookbook-argocd get deploy,svc,pod -l app=demo
+NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/demo   1/1     1            1           39s
+
+NAME           TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+service/demo   ClusterIP   10.105.220.154   <none>        80/TCP    39s
+
+NAME                        READY   STATUS    RESTARTS   AGE
+pod/demo-7ffcc6b8f5-5x4pr   1/1     Running   0          39s
+
+Namespace объектам никто не прописывал: в git его нет (см. ConfigMap git-seed в
+05-git-server.yaml), подставил destination.namespace из Application.
+
+--- чем ArgoCD помечает своё ---
+$ kubectl -n cookbook-argocd get deploy demo -o jsonpath='...'
+labels: {"app":"demo","stand":"cookbook-gitops"}
+annotations.tracking: demo:apps/Deployment:cookbook-argocd/demo
+
+Метки — только те, что лежат в git. Принадлежность записана аннотацией
+argocd.argoproj.io/tracking-id вида <app>:<group>/<kind>:<namespace>/<name>.
+
+--- история ---
+$ kubectl -n cookbook-argocd get application demo -o jsonpath='{range .status.history[*]}...'
+id=0  revision=d049270d788de26273d85992c271c5994a6d7ca8  deployedAt=2026-07-24T16:14:57Z
+
+
+================================================================================
+7. СОБЫТИЯ: весь цикл одной лентой
+================================================================================
+$ kubectl -n cookbook-argocd get events --field-selector involvedObject.kind=Application,involvedObject.name=demo
+TIME                   REASON               MESSAGE
+2026-07-24T16:09:20Z   ResourceUpdated      Updated sync status:  -> Unknown
+2026-07-24T16:09:20Z   ResourceUpdated      Updated health status:  -> Healthy
+2026-07-24T16:14:01Z   ResourceUpdated      Updated sync status: Unknown -> OutOfSync
+2026-07-24T16:14:01Z   ResourceUpdated      Updated health status: Healthy -> Missing
+2026-07-24T16:14:57Z   OperationCompleted   Sync operation to d049270d788de26273d85992c271c5994a6d7ca8 succeeded
+2026-07-24T16:14:57Z   ResourceUpdated      Updated sync status: OutOfSync -> Synced
+2026-07-24T16:14:57Z   ResourceUpdated      Updated health status: Missing -> Progressing
+2026-07-24T16:14:57Z   ResourceUpdated      Updated health status: Progressing -> Healthy
+
+Пять минут между Unknown и OutOfSync — это не работа ArgoCD, это время, которое ушло
+на разбор двух причин из разделов 2 и 3.
+
+
+================================================================================
+8. СВЕРКА REVISION С SEED-КОММИТОМ
+================================================================================
+Что записал ArgoCD:
+    synced revision = d049270d788de26273d85992c271c5994a6d7ca8
+
+Что лежит на нашем git-сервере прямо сейчас:
+$ kubectl -n cookbook-argocd exec deploy/git-server -c git-daemon -- git ls-remote git://127.0.0.1/demo.git
+d049270d788de26273d85992c271c5994a6d7ca8	HEAD
+d049270d788de26273d85992c271c5994a6d7ca8	refs/heads/main
+
+Совпадает посимвольно. Это и есть доказательство, что источником правды был именно
+внутрикластерный git-сервер стенда, а не что-то, что ArgoCD подобрал где-то ещё.
+
+
+================================================================================
+9. КОНТРОЛЬ ГРАНИЦ ПОСЛЕ ВСЕГО
+================================================================================
+--- Application: наш один, у боевого по-прежнему ноль ---
+$ kubectl get applications.argoproj.io -A
+NS                NAME   SYNC     HEALTH
+cookbook-argocd   demo   Synced   Healthy
+
+$ kubectl -n argocd get applications.argoproj.io
+No resources found in argocd namespace.
+
+--- CRD не изменились ---
+$ kubectl get crd | grep argoproj
+applications.argoproj.io                         2026-07-19T09:08:17Z   Helm   argocd   argocd
+applicationsets.argoproj.io                      2026-07-19T09:08:17Z   Helm   argocd   argocd
+appprojects.argoproj.io                          2026-07-19T09:08:17Z   Helm   argocd   argocd
+imageupdaters.argocd-image-updater.argoproj.io   2026-07-19T09:08:42Z   Helm   <none>   argocd
+
+--- боевой ArgoCD жив и не тронут ---
+$ kubectl -n argocd get deploy,statefulset
+KIND          NAME                               IMAGE                                              READY
+Deployment    argocd-applicationset-controller   quay.io/argoproj/argocd:v3.4.1                     1
+Deployment    argocd-image-updater-controller    quay.io/argoprojlabs/argocd-image-updater:v1.2.2   1
+Deployment    argocd-notifications-controller    quay.io/argoproj/argocd:v3.4.1                     1
+Deployment    argocd-redis                       library/redis:8.6.3-alpine                         1
+Deployment    argocd-repo-server                 quay.io/argoproj/argocd:v3.4.1                     1
+Deployment    argocd-server                      quay.io/argoproj/argocd:v3.4.1                     1
+StatefulSet   argocd-application-controller      quay.io/argoproj/argocd:v3.4.1                     1
+
+$ kubectl -n argocd get appproject default
+NS       NAME      CREATED                GEN
+argocd   default   2026-07-19T09:08:29Z   1
+
+generation: 1 — объект ни разу не переписывали с момента создания Helm-релизом.
+
+--- два AppProject default, и это разные объекты ---
+$ kubectl get appprojects.argoproj.io -A
+NS                NAME      CREATED
+argocd            default   2026-07-19T09:08:29Z    <- боевой, создан его Helm-релизом
+cookbook-argocd   default   2026-07-24T16:00:46Z    <- наш, создал НАШ argocd-server при первом старте
+
+Application ссылается на project: default и получает тот, что лежит в его собственном
+namespace. Заводить свой проект руками не понадобилось: argocd-server создаёт default
+сам, в том namespace, где работает.

@@ -1,0 +1,86 @@
+# Rollout со стратегией blue-green — вторая стратегия progressive delivery.
+#
+# Отличие от canary: обе версии живут ЦЕЛИКОМ и одновременно. Активная (blue) держит весь
+# трафик через activeService; новая (green) поднимается рядом и висит на previewService,
+# невидимая для активного трафика. Переключение — атомарная смена селектора activeService со
+# старого podTemplateHash на новый; отката ради — прежний ReplicaSet какое-то время держится.
+#
+# Самоедущее демо без ручного promote (плагин kubectl argo rollouts на операторе намеренно не
+# ставится): autoPromotionEnabled:true — контроллер переключает active на green, как только
+# preview стал Healthy. Прежний ReplicaSet (blue) держится ещё scaleDownDelaySeconds (дефолт
+# 30 s) — окно для мгновенного отката, оба набора живы одновременно.
+#
+# Первая редакция манифеста содержала ошибку конфигурации: autoPromotionEnabled:false +
+# autoPromotionSeconds:20 в расчёте на promote через 20 s. Документация прямо говорит, что
+# при autoPromotionEnabled:false autoPromotionSeconds игнорируется; стенд это и показал
+# (fixtures/80-bluegreen.txt): BlueGreenPause, «pause incomplete», active остался на blue.
+# Для переключения с задержкой нужен autoPromotionEnabled:true + autoPromotionSeconds.
+# Здесь — autoPromotionEnabled:true без задержки; окно «обе версии живы» даёт scaleDownDelay.
+#
+# Сервисы объявлены заранее: Rollout лишь дописывает им селектор rollouts-pod-template-hash.
+# Порт условный (нагрузка — pause, трафика нет): демонстрируется СМЕНА СЕЛЕКТОРА, а не ответы.
+apiVersion: v1
+kind: Service
+metadata:
+  name: bluegreen-active
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+spec:
+  selector:
+    app: bluegreen-demo
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bluegreen-preview
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+spec:
+  selector:
+    app: bluegreen-demo
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: bluegreen-demo
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+spec:
+  replicas: 2
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: bluegreen-demo
+  template:
+    metadata:
+      labels:
+        app: bluegreen-demo
+        stand: cookbook-gitops
+        version: v1
+    spec:
+      containers:
+        - name: app
+          image: registry.k8s.io/pause:3.10
+          env:
+            - name: VERSION
+              value: v1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+  strategy:
+    blueGreen:
+      activeService: bluegreen-active
+      previewService: bluegreen-preview
+      autoPromotionEnabled: true

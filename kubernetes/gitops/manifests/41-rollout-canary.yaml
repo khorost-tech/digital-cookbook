@@ -1,0 +1,67 @@
+# Rollout со стратегией canary + анализом метрик.
+#
+# kind: Rollout вместо Deployment — это и есть точка входа Argo Rollouts: тот же PodSpec, но
+# выкатка идёт долями (setWeight) с паузами и анализом между шагами, а не «всё сразу».
+#
+# Образ — registry.k8s.io/pause:3.10 (как и остальная нагрузка стенда): анализ смотрит во
+# ВНЕШНИЙ Prometheus, а не в поды canary, поэтому содержимое образа неважно — важно, чтобы
+# версии были РАЗЛИЧИМЫ. Различаем меткой version и env VERSION: правка любой из них меняет
+# хеш podTemplate -> контроллер видит новую ревизию и запускает canary. Второй образ в стенд
+# не тянется.
+#
+# Веса и паузы подобраны так, чтобы демо шло само (паузы по длительности, без ручного
+# promote — плагин kubectl argo rollouts на машине оператора намеренно не ставится). Анализ
+# врезан отдельным шагом: провал AnalysisRun на этом шаге -> abort -> автооткат на stable.
+#
+# replicas: 2 — сознательно мало: квота стенда считает поды штуками (16), а тут ещё живут
+# ArgoCD стенда (7), git-сервер, demo и контроллер Rollouts. При maxSurge:1/maxUnavailable:0
+# в пике держится stable(2)+surge(1)=3 пода нагрузки.
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: canary-demo
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+spec:
+  replicas: 2
+  revisionHistoryLimit: 2
+  selector:
+    matchLabels:
+      app: canary-demo
+  template:
+    metadata:
+      labels:
+        app: canary-demo
+        stand: cookbook-gitops
+        version: v1
+    spec:
+      containers:
+        - name: app
+          image: registry.k8s.io/pause:3.10
+          env:
+            - name: VERSION
+              value: v1
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+  strategy:
+    canary:
+      maxSurge: 1
+      maxUnavailable: 0
+      steps:
+        - setWeight: 25
+        - pause: { duration: 20s }
+        - setWeight: 50
+        # Анализ на середине выкатки. threshold=1 -> успех (демо 4). Для демо 5 (автооткат)
+        # этот же аргумент патчится в 5 — метрика 1 не проходит порог 5, анализ падает.
+        - analysis:
+            templates:
+              - templateName: prometheus-up
+            args:
+              - name: threshold
+                value: "1"
+        - setWeight: 75
+        - pause: { duration: 20s }
+        - setWeight: 100

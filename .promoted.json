@@ -20,6 +20,9 @@
     "architecture/event-sourcing": [
       "architecture/event-sourcing-in-practice.md"
     ],
+    "architecture/event-sourcing-deep": [
+      "architecture/es-event-store-internals.md"
+    ],
     "architecture/grpc": [
       "architecture/grpc-deep-dive.md"
     ],
@@ -83,6 +86,7 @@
     ],
     "databases/cockroachdb": [
       "databases/cockroachdb-architecture-ranges-raft.md",
+      "databases/cockroachdb-distributed-transactions.md",
       "databases/cockroachdb-mvcc-time-clocks.md"
     ],
     "databases/db-indexes": [
@@ -260,6 +264,9 @@
     ],
     "kubernetes/autoscaling": [
       "kubernetes/k8s-autoscaling-hpa-vpa-keda.md"
+    ],
+    "kubernetes/gitops": [
+      "kubernetes/k8s-gitops-argocd-progressive.md"
     ],
     "kubernetes/networking": [
       "kubernetes/k8s-networking-cilium-mesh.md"

@@ -1,0 +1,476 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 00-git-server
+# cmd: kubectl get ns cookbook-argocd -o custom-columns=NAME:.metadata.name,STATUS:.status.phase,LABELS:.metadata.labels
+# ---
+NAME              STATUS   LABELS
+cookbook-argocd   Active   map[kubernetes.io/metadata.name:cookbook-argocd purpose:digital-cookbook stand:cookbook-gitops]
+#
+# Метки Pod Security на namespace на момент этого замера (M0) не ставились: в списке выше
+# их и нет — только kubernetes.io/metadata.name, purpose и stand.
+#
+# УСТАРЕЛО. После ревью M1 решение пересмотрено: namespace переведён под
+# pod-security.kubernetes.io/enforce=baseline (плюс audit и warn) — вместе с NetworkPolicy
+# к git-серверу это закрывает цепочку «анонимный push -> манифест с hostPath -> под на узле»,
+# которая становится опасной с включением automated sync в M2. Замер метки, проверка, что
+# девять живых подов её пережили, и отказ на поде с hostPath — в fixtures/30-hardening.txt.
+# Вывод выше оставлен как есть: это настоящий снимок состояния на момент M0.
+
+# --- квота стенда: потолки заданы, потребление — только git-сервер ---
+# cmd: kubectl -n cookbook-argocd describe quota cookbook-gitops-quota
+Name:            cookbook-gitops-quota
+Namespace:       cookbook-argocd
+Resource         Used   Hard
+--------         ----   ----
+limits.cpu       500m   4
+limits.memory    256Mi  6Gi
+pods             1      25
+requests.cpu     20m    2
+requests.memory  32Mi   3Gi
+
+# --- дефолты LimitRange (без них под без requests в namespace с квотой не создастся) ---
+# cmd: kubectl -n cookbook-argocd describe limitrange cookbook-gitops-limits
+Name:       cookbook-gitops-limits
+Namespace:  cookbook-argocd
+Type        Resource  Min  Max  Default Request  Default Limit  Max Limit/Request Ratio
+----        --------  ---  ---  ---------------  -------------  -----------------------
+Container   cpu       -    1    50m              500m           -
+Container   memory    -    1Gi  64Mi             512Mi          -
+# (порядок строк cpu/memory в выводе describe не стабилен между прогонами — значения важны,
+#  порядок нет.)
+
+# ============================================================================
+# ВЕРСИИ ОКРУЖЕНИЯ. Источник строк таблицы версий в README.
+# ============================================================================
+# cmd: kubectl version
+Client Version: v1.36.1
+Kustomize Version: v5.8.1
+Server Version: v1.36.2
+
+# cmd: kubectl get nodes -o custom-columns=NAME:.metadata.name,K8S:.status.nodeInfo.kubeletVersion,OS:.status.nodeInfo.osImage --no-headers
+k8s-volga-cp01   v1.36.2   Talos (v1.13.6)
+k8s-volga-cp02   v1.36.2   Talos (v1.13.6)
+k8s-volga-cp03   v1.36.2   Talos (v1.13.6)
+k8s-volga-wk01   v1.36.2   Talos (v1.13.6)
+k8s-volga-wk02   v1.36.2   Talos (v1.13.6)
+k8s-volga-wk03   v1.36.2   Talos (v1.13.6)
+
+# Версия БОЕВОГО ArgoCD — команда на чтение, ns argocd не меняется:
+# cmd: kubectl -n argocd get deploy argocd-server -o jsonpath='{.spec.template.spec.containers[0].image}'
+quay.io/argoproj/argocd:v3.4.1
+
+# ============================================================================
+# ПОИСК ОБРАЗА С git daemon. Первый выбор (alpine/git) НЕ подошёл — вот факты.
+# ============================================================================
+# cmd: kubectl -n cookbook-argocd run img-alpinegit --image=alpine/git:v2.49.1 --restart=Never --command -- sh -c 'git --version; git daemon --version'
+git version 2.49.1
+git: 'daemon' is not a git command. See 'git --help'.
+
+# cmd: kubectl -n cookbook-argocd run img-gitsync --image=registry.k8s.io/git-sync/git-sync:v4.4.0 --restart=Never --command -- sh -c 'git --version; git daemon --version'
+git version 2.39.5
+git: 'daemon' is not a git command. See 'git --help'.
+
+# cmd: kubectl -n cookbook-argocd run img-bitnami --image=bitnami/git:2.49.0 --restart=Never --command -- sh -c 'git --version'   (события пода)
+Failed      Failed to pull image "bitnami/git:2.49.0": rpc error: code = NotFound desc = failed to pull and unpack image "docker.io/bitnami/git:2.49.0": failed to resolve reference "docker.io/bitnami/git:2.49.0": docker.io/bitnami/git:2.49.0: not found
+
+# Выбранный образ — единственный из проверенных, где git-daemon уже собран:
+# cmd: kubectl -n cookbook-argocd run t-bpd --image=buildpack-deps:bookworm-scm --restart=Never --command -- sh -c 'git --version; ls -la /usr/lib/git-core/git-daemon; git daemon --version'
+git version 2.39.5
+-rwxr-xr-x. 1 root root 2154272 Oct  7  2025 /usr/lib/git-core/git-daemon
+usage: git daemon [--verbose] [--syslog] [--export-all]
+           [--timeout=<n>] [--init-timeout=<n>] [--max-connections=<n>]
+
+# Дайджест, которым образ запинован в манифесте (снят с этого же кластера):
+# cmd: kubectl -n cookbook-argocd get pod t-dig -o jsonpath='{.status.containerStatuses[0].imageID}'
+docker.io/library/buildpack-deps@sha256:877e9e4d949edfbcbedabc3a2d7ab593955fee5d6d0777adf3a991eb30c750d8
+
+# --- Альтернатива, от которой отказались: доставить git-daemon в alpine/git на старте пода.
+# Технически работает — сеть до dl-cdn.alpinelinux.org из кластера есть. Но это поход в сеть
+# за пакетами при КАЖДОМ старте пода, а стенд про герметичность. Замер:
+# cmd: kubectl -n cookbook-argocd run apk-daemon --image=alpine/git:v2.49.1 --restart=Never --command -- sh -c 'apk add --no-cache git-daemon && git daemon --version; echo "rc=$?"'
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/main/x86_64/APKINDEX.tar.gz
+fetch https://dl-cdn.alpinelinux.org/alpine/v3.22/community/x86_64/APKINDEX.tar.gz
+(1/1) Installing git-daemon (2.49.1-r0)
+OK: 88 MiB in 67 packages
+usage: git daemon [--verbose] [--syslog] [--export-all]
+           [--timeout=<n>] [--init-timeout=<n>] [--max-connections=<n>]
+           [--strict-paths] [--base-path=<path>] [--base-path-relaxed]
+           [--user-path | --user-path=<path>]
+           [--interpolated-path=<path>]
+           [--reuseaddr] [--pid-file=<file>]
+           [--(enable|disable|allow-override|forbid-override)=<service>]
+           [--access-hook=<path>]
+           [--inetd | [--listen=<host_or_ipaddr>] [--port=<n>]
+                      [--detach] [--user=<user> [--group=<group>]]
+           [--log-destination=(stderr|syslog|none)]
+           [<directory>...]
+rc=129
+# После apk add команда `git daemon` существует — она печатает usage и выходит с кодом 129,
+# потому что у `git daemon` нет флага --version (в отличие от строки выше, где до apk add
+# было `git: 'daemon' is not a git command`). rc=129 здесь — признак успеха установки.
+
+# ============================================================================
+# GIT-СЕРВЕР В КЛАСТЕРЕ
+# ============================================================================
+# cmd: kubectl -n cookbook-argocd get deploy,svc,pod -l stand=cookbook-gitops -o wide
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE   CONTAINERS   IMAGES                                                                                                SELECTOR
+deployment.apps/git-server   1/1     1            1           23m   git-daemon   buildpack-deps:bookworm-scm@sha256:877e9e4d949edfbcbedabc3a2d7ab593955fee5d6d0777adf3a991eb30c750d8   app=git-server
+
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE   SELECTOR
+service/git-server   ClusterIP   10.101.197.185   <none>        9418/TCP   23m   app=git-server
+
+NAME                              READY   STATUS    RESTARTS   AGE     IP             NODE             NOMINATED NODE   READINESS GATES
+pod/git-server-764f8c755b-rrksh   1/1     Running   0          3m32s   10.244.6.191   k8s-volga-wk03   <none>           <none>
+
+# --- init-контейнер: bare-репозиторий создан и наполнен, сети на этом шаге не нужно ---
+# cmd: kubectl -n cookbook-argocd logs deploy/git-server -c seed-repo
+Initialized empty Git repository in /srv/git/demo.git/
+Initialized empty Git repository in /tmp/work/.git/
+[main (root-commit) d049270] seed: demo Deployment и Service
+ 2 files changed, 42 insertions(+)
+ create mode 100644 apps/demo/deployment.yaml
+ create mode 100644 apps/demo/service.yaml
+To /srv/git/demo.git
+ * [new branch]      main -> main
+--- seeded ---
+d049270 seed: demo Deployment и Service
+apps/demo/deployment.yaml
+apps/demo/service.yaml
+
+# ============================================================================
+# ВОСПРОИЗВОДИМОСТЬ SEED-КОММИТА. Хеш d049270 обязан пережить пересоздание пода —
+# на него будут ссылаться фикстуры M1/M2/M4.
+# ============================================================================
+# ПОЧЕМУ хеш вообще мог «плыть». Содержимое (ConfigMap), дерево, сообщение коммита и
+# личность автора/коммиттера у seed-а зафиксированы. Единственный недетерминированный
+# вход в SHA-1 коммита — метки времени: без GIT_AUTHOR_DATE/GIT_COMMITTER_DATE git берёт
+# стенные часы. Замер: два независимых init+commit с ОДИНАКОВЫМ содержимым — сначала без
+# фиксированных дат, потом с ними.
+# cmd: kubectl -n cookbook-argocd run seedhash-why --image=alpine/git:v2.49.1 --restart=Never --command -- sh -c '
+#   set -e
+#   mk() {
+#     rm -rf /tmp/$1; mkdir -p /tmp/$1; cd /tmp/$1
+#     git init -q --initial-branch=main .
+#     git config user.email "stand@khorost.tech"
+#     git config user.name "digital-cookbook stand"
+#     printf "one\n" > f.txt
+#     git add f.txt
+#     git commit -q -m "seed: demo Deployment и Service"
+#     git rev-parse HEAD
+#   }
+#   echo "=== БЕЗ GIT_AUTHOR_DATE/GIT_COMMITTER_DATE: два независимых init+commit ==="
+#   unset GIT_AUTHOR_DATE GIT_COMMITTER_DATE
+#   mk a
+#   sleep 2
+#   mk b
+#   echo "=== С GIT_AUTHOR_DATE/GIT_COMMITTER_DATE: те же два прогона ==="
+#   export GIT_AUTHOR_DATE=2026-07-24T12:00:00+00:00
+#   export GIT_COMMITTER_DATE=2026-07-24T12:00:00+00:00
+#   mk c
+#   sleep 2
+#   mk d'
+# cmd: kubectl -n cookbook-argocd logs seedhash-why
+=== БЕЗ GIT_AUTHOR_DATE/GIT_COMMITTER_DATE: два независимых init+commit ===
+4a992025e3725adffb927bf1b73b94968a56f7b5
+3aeaacb63ac899e37240dc3db40d47b003059a6d
+=== С GIT_AUTHOR_DATE/GIT_COMMITTER_DATE: те же два прогона ===
+3a1433da0d9e43e0f3e7e454497a14b775ab92c9
+3a1433da0d9e43e0f3e7e454497a14b775ab92c9
+# Одно и то же содержимое, разница только в двух переменных окружения: без них — два разных
+# хеша, с ними — один и тот же. Отсюда фикс в manifests/05-git-server.yaml: init-контейнер
+# seed-repo получил GIT_AUTHOR_DATE и GIT_COMMITTER_DATE = 2026-07-24T12:00:00+00:00.
+
+# --- ПРОВЕРКА НА САМОМ СТЕНДЕ: хеш до и после пересоздания пода ---
+# Шаг 1. Хеш на работающем сервере (под git-server-764f8c755b-wllwl, узел k8s-volga-wk01):
+# cmd: kubectl -n cookbook-argocd run seedhash-1 --image=alpine/git:v2.49.1 --restart=Never --command -- sh -c 'git ls-remote git://git-server.cookbook-argocd.svc.cluster.local/demo.git'
+d049270d788de26273d85992c271c5994a6d7ca8	HEAD
+d049270d788de26273d85992c271c5994a6d7ca8	refs/heads/main
+
+# Шаг 2. Под удалён целиком — вместе с ним удалён и emptyDir с репозиторием.
+# cmd: kubectl -n cookbook-argocd delete pod git-server-764f8c755b-wllwl --wait=true
+pod "git-server-764f8c755b-wllwl" deleted from cookbook-argocd namespace
+# cmd: kubectl -n cookbook-argocd rollout status deploy/git-server --timeout=180s
+Waiting for deployment "git-server" rollout to finish: 0 of 1 updated replicas are available...
+deployment "git-server" successfully rolled out
+# cmd: kubectl -n cookbook-argocd get pods -l app=git-server -o wide
+NAME                          READY   STATUS    RESTARTS   AGE   IP             NODE             NOMINATED NODE   READINESS GATES
+git-server-764f8c755b-rrksh   1/1     Running   0          12s   10.244.6.191   k8s-volga-wk03   <none>           <none>
+# Другое имя пода, другой узел (wk01 → wk03), пустой том — репозиторий создан с нуля.
+
+# Шаг 3. Хеш на НОВОМ поде:
+# cmd: kubectl -n cookbook-argocd run seedhash-2 --image=alpine/git:v2.49.1 --restart=Never --command -- sh -c 'git ls-remote git://git-server.cookbook-argocd.svc.cluster.local/demo.git'
+d049270d788de26273d85992c271c5994a6d7ca8	HEAD
+d049270d788de26273d85992c271c5994a6d7ca8	refs/heads/main
+
+# ИТОГ: d049270d788de26273d85992c271c5994a6d7ca8 до пересоздания и он же после.
+# Хеш seed-коммита теперь не зависит ни от момента запуска, ни от узла, ни от прогона —
+# на него можно ссылаться в фикстурах M1/M2/M4 и в тексте статьи.
+
+# --- лог демона: запросы upload-pack от exec-проб (127.0.0.1) и от временных подов ---
+# cmd: kubectl -n cookbook-argocd logs deploy/git-server -c git-daemon --tail=25
+[144] Connection from 127.0.0.1:45306
+[144] Extended attribute "host": 127.0.0.1
+[144] Extended attribute "protocol": version=2
+[144] Request upload-pack for '/demo.git'
+[7] [144] Disconnected
+[152] Connection from 127.0.0.1:36576
+[152] Extended attribute "host": 127.0.0.1
+[152] Extended attribute "protocol": version=2
+[152] Request upload-pack for '/demo.git'
+[7] [152] Disconnected
+[160] Connection from 127.0.0.1:36586
+[160] Extended attribute "host": 127.0.0.1
+[160] Extended attribute "protocol": version=2
+[160] Request upload-pack for '/demo.git'
+[7] [160] Disconnected
+[168] Connection from 127.0.0.1:51574
+[168] Extended attribute "host": 127.0.0.1
+[168] Extended attribute "protocol": version=2
+[168] Request upload-pack for '/demo.git'
+[7] [168] Disconnected
+[176] Connection from 127.0.0.1:36198
+[176] Extended attribute "host": 127.0.0.1
+[176] Extended attribute "protocol": version=2
+[176] Request upload-pack for '/demo.git'
+[7] [176] Disconnected
+
+# В хвосте лога — только exec-пробы с 127.0.0.1 (upload-pack каждые 10/30 с). Чтобы увидеть
+# запросы ИЗВНЕ пода (10.244.x.x), лог фильтруется по трём маркерам: строка соединения с
+# кластерного IP, значение атрибута host и строка запроса. Строки Disconnected и
+# Extended attribute "protocol" отброшены — они ничего не добавляют:
+# cmd: kubectl -n cookbook-argocd logs deploy/git-server -c git-daemon | grep -E 'Connection from 10\.|attribute "host"|Request '
+[14] Extended attribute "host": 127.0.0.1
+[14] Request upload-pack for '/demo.git'
+[22] Extended attribute "host": 127.0.0.1
+[22] Request upload-pack for '/demo.git'
+[24] Connection from 10.244.4.14:41854
+[24] Extended attribute "host": git-server.cookbook-argocd.svc.cluster.local
+[24] Request upload-pack for '/demo.git'
+[32] Extended attribute "host": 127.0.0.1
+[32] Request upload-pack for '/demo.git'
+[40] Extended attribute "host": 127.0.0.1
+[40] Request upload-pack for '/demo.git'
+[48] Extended attribute "host": 127.0.0.1
+[48] Request upload-pack for '/demo.git'
+[56] Extended attribute "host": 127.0.0.1
+[56] Request upload-pack for '/demo.git'
+[64] Extended attribute "host": 127.0.0.1
+[64] Request upload-pack for '/demo.git'
+[72] Extended attribute "host": 127.0.0.1
+[72] Request upload-pack for '/demo.git'
+[80] Extended attribute "host": 127.0.0.1
+[80] Request upload-pack for '/demo.git'
+[88] Extended attribute "host": 127.0.0.1
+[88] Request upload-pack for '/demo.git'
+[96] Extended attribute "host": 127.0.0.1
+[96] Request upload-pack for '/demo.git'
+[104] Extended attribute "host": 127.0.0.1
+[104] Request upload-pack for '/demo.git'
+[112] Extended attribute "host": 127.0.0.1
+[112] Request upload-pack for '/demo.git'
+[114] Connection from 10.244.4.153:42726
+[114] Extended attribute "host": git-server.cookbook-argocd.svc.cluster.local
+[114] Request upload-pack for '/demo.git'
+[118] Connection from 10.244.4.153:42728
+[118] Extended attribute "host": git-server.cookbook-argocd.svc.cluster.local
+[118] Request receive-pack for '/demo.git'
+[126] Connection from 10.244.4.153:42738
+[126] Extended attribute "host": git-server.cookbook-argocd.svc.cluster.local
+[126] Request upload-pack for '/demo.git'
+[128] Connection from 10.244.4.153:42754
+[128] Extended attribute "host": git-server.cookbook-argocd.svc.cluster.local
+[128] Request receive-pack for '/demo.git'
+[136] Connection from 10.244.4.153:42766
+[136] Extended attribute "host": git-server.cookbook-argocd.svc.cluster.local
+[136] Request upload-pack for '/demo.git'
+[144] Extended attribute "host": 127.0.0.1
+[144] Request upload-pack for '/demo.git'
+[152] Extended attribute "host": 127.0.0.1
+[152] Request upload-pack for '/demo.git'
+[160] Extended attribute "host": 127.0.0.1
+[160] Request upload-pack for '/demo.git'
+[168] Extended attribute "host": 127.0.0.1
+[168] Request upload-pack for '/demo.git'
+[176] Extended attribute "host": 127.0.0.1
+[176] Request upload-pack for '/demo.git'
+# 10.244.4.14 — под seedhash-1/seedhash-2 (только ls-remote, это upload-pack).
+# 10.244.4.153 — под git-probe: два upload-pack (clone и ls-remote) и ДВА receive-pack —
+# push и откат push-ем с --force. Именно receive-pack понадобится в M2.
+
+# ============================================================================
+# КЛОНИРОВАНИЕ И PUSH ИЗНУТРИ КЛАСТЕРА — репозиторий действительно отдаётся и принимает.
+# Временный под alpine/git:v2.49.1 в том же namespace; после снятия вывода удалён.
+# Скрипт пробы приведён целиком: он и клонирует, и пушит, и откатывает push обратно,
+# чтобы репозиторий остался на seed-коммите.
+# ============================================================================
+# cmd: kubectl -n cookbook-argocd run git-probe --image=alpine/git:v2.49.1 --restart=Never --command -- sh -c '
+#   set -e
+#   echo "=== git clone git://git-server.cookbook-argocd.svc.cluster.local/demo.git ==="
+#   git clone git://git-server.cookbook-argocd.svc.cluster.local/demo.git /tmp/demo
+#   cd /tmp/demo
+#   echo "=== git log --oneline ==="
+#   git log --oneline
+#   echo "=== ls -R ==="
+#   ls -R
+#   echo "=== содержимое apps/demo/deployment.yaml ==="
+#   cat apps/demo/deployment.yaml
+#   echo "=== проверка receive-pack (в M2 понадобится push) ==="
+#   git config user.email "probe@khorost.tech"
+#   git config user.name "git-probe"
+#   printf "\n# probe: временная строка для проверки push\n" >> apps/demo/service.yaml
+#   git commit -q -am "probe: проверка receive-pack"
+#   git push origin main
+#   echo "=== ветки на сервере после push ==="
+#   git ls-remote origin
+#   echo "=== откат: возвращаем репозиторий в исходное состояние ==="
+#   git push --force origin HEAD~1:main
+#   git ls-remote origin'
+# cmd: kubectl -n cookbook-argocd logs git-probe
+=== git clone git://git-server.cookbook-argocd.svc.cluster.local/demo.git ===
+Cloning into '/tmp/demo'...
+=== git log --oneline ===
+d049270 seed: demo Deployment и Service
+=== ls -R ===
+.:
+apps
+
+./apps:
+demo
+
+./apps/demo:
+deployment.yaml
+service.yaml
+=== содержимое apps/demo/deployment.yaml ===
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo
+  labels:
+    app: demo
+    stand: cookbook-gitops
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo
+  template:
+    metadata:
+      labels:
+        app: demo
+        stand: cookbook-gitops
+    spec:
+      containers:
+        - name: app
+          image: registry.k8s.io/pause:3.10
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+=== проверка receive-pack (в M2 понадобится push) ===
+To git://git-server.cookbook-argocd.svc.cluster.local/demo.git
+   d049270..ed5ab28  main -> main
+=== ветки на сервере после push ===
+ed5ab2892acc36c292be308cd4f4de9ec4c8454a	HEAD
+ed5ab2892acc36c292be308cd4f4de9ec4c8454a	refs/heads/main
+=== откат: возвращаем репозиторий в исходное состояние ===
+To git://git-server.cookbook-argocd.svc.cluster.local/demo.git
+ + ed5ab28...d049270 HEAD~1 -> main (forced update)
+d049270d788de26273d85992c271c5994a6d7ca8	HEAD
+d049270d788de26273d85992c271c5994a6d7ca8	refs/heads/main
+# Хеш probe-коммита (ed5ab28) НЕ воспроизводим — у него дата от стенных часов пода-пробы.
+# Воспроизводим только seed-коммит, и это ровно то, что нужно фикстурам M1/M2/M4.
+
+# ============================================================================
+# КОНТРОЛЬ ГРАНИЦ. Боевой ArgoCD в ns argocd — только чтение, чужие CRD не тронуты.
+# Замер снят ДВАЖДЫ: до работы стенда и после, одной и той же командой.
+# ============================================================================
+# ЗАМЕР ДО (снят в начале M0): Application в кластере — 0 штук.
+# cmd: kubectl get applications.argoproj.io -A
+No resources found
+
+# ЗАМЕР ПОСЛЕ (снят по завершении M0, временные поды уже убраны): столько же — 0 штук.
+# cmd: kubectl get applications.argoproj.io -A
+No resources found
+
+# Прочие объекты боевого ArgoCD — на месте и в исходном виде (замер ПОСЛЕ):
+# cmd: kubectl get appprojects.argoproj.io,applicationsets.argoproj.io -A
+NAMESPACE   NAME                             AGE
+argocd      appproject.argoproj.io/default   5d5h
+
+# cmd: kubectl get crd -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp --no-headers | grep argo
+applications.argoproj.io                                2026-07-19T09:08:17Z
+applicationsets.argoproj.io                             2026-07-19T09:08:17Z
+appprojects.argoproj.io                                 2026-07-19T09:08:17Z
+imageupdaters.argocd-image-updater.argoproj.io          2026-07-19T09:08:42Z
+# Даты создания CRD — 2026-07-19, за пять дней до стенда: ни один не пересоздан.
+
+# cmd: kubectl -n argocd get pods
+NAME                                                READY   STATUS    RESTARTS   AGE
+argocd-application-controller-0                     1/1     Running   0          5d5h
+argocd-applicationset-controller-5b86b54c9f-wx7p4   1/1     Running   0          5d5h
+argocd-image-updater-controller-6bddcf4696-7f66b    1/1     Running   0          5d5h
+argocd-notifications-controller-697bb8cd89-l2wqn    1/1     Running   0          5d5h
+argocd-redis-c8886b48c-xrrgp                        1/1     Running   0          5d5h
+argocd-repo-server-5bf9c59969-s7xl5                 1/1     Running   0          5d5h
+argocd-server-5b8cbf6fcd-cgn86                      1/1     Running   0          5d5h
+# RESTARTS=0 и AGE 5d — боевой ArgoCD не перезапускался и не менялся.
+
+# Итоговое состояние собственного namespace стенда (временные поды убраны):
+# cmd: kubectl -n cookbook-argocd get all
+NAME                              READY   STATUS    RESTARTS   AGE
+pod/git-server-764f8c755b-rrksh   1/1     Running   0          3m32s
+
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/git-server   ClusterIP   10.101.197.185   <none>        9418/TCP   23m
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/git-server   1/1     1            1           23m
+
+NAME                                    DESIRED   CURRENT   READY   AGE
+replicaset.apps/git-server-556bcdcb76   0         0         0       23m
+replicaset.apps/git-server-75f974d87d   0         0         0       23m
+replicaset.apps/git-server-764f8c755b   1         1         1       4m39s
+replicaset.apps/git-server-f6bf586b5    0         0         0       20m
+# Четыре ReplicaSet — история правок манифеста в ходе M0 (последняя правка — фиксированные
+# даты seed-коммита). Пустые RS чистятся revisionHistoryLimit; на стенд не влияют.
+
+# cmd: kubectl -n cookbook-argocd describe quota cookbook-gitops-quota
+Name:            cookbook-gitops-quota
+Namespace:       cookbook-argocd
+Resource         Used   Hard
+--------         ----   ----
+limits.cpu       500m   4
+limits.memory    256Mi  6Gi
+pods             1      25
+requests.cpu     20m    2
+requests.memory  32Mi   3Gi
+
+# --- почему репозиторий в emptyDir, а не в PVC (обоснование в README) ---
+# cmd: kubectl get storageclass -o custom-columns=NAME:.metadata.name,PROVISIONER:.provisioner,RECLAIM:.reclaimPolicy,DEFAULT:'.metadata.annotations.storageclass\.kubernetes\.io/is-default-class' --no-headers
+nfs-csi   nfs.csi.k8s.io   Retain   <none>
+# Единственный StorageClass в кластере, reclaimPolicy Retain и он НЕ дефолтный. PVC под
+# репозиторий означал бы: (1) после teardown остаётся PV в состоянии Released, который надо
+# убирать руками; (2) том переживает teardown и протащил бы мутации M2 в следующий прогон.
+# Воспроизводимость seed-хеша решена дешевле — фиксированными датами коммита, см. выше.
+
+# ============================================================================
+# ПРОВЕРКА teardown.sh — что он снесёт и чего не тронет (dry-run, без удаления).
+# ============================================================================
+# cmd: kubectl delete namespace cookbook-argocd --ignore-not-found --dry-run=client
+namespace "cookbook-argocd" deleted (dry run)
+
+# cmd: kubectl delete crd rollouts.argoproj.io analysisruns.argoproj.io analysistemplates.argoproj.io clusteranalysistemplates.argoproj.io experiments.argoproj.io --ignore-not-found --dry-run=client
+customresourcedefinition.apiextensions.k8s.io "rollouts.argoproj.io" deleted (dry run)
+customresourcedefinition.apiextensions.k8s.io "analysisruns.argoproj.io" deleted (dry run)
+customresourcedefinition.apiextensions.k8s.io "analysistemplates.argoproj.io" deleted (dry run)
+customresourcedefinition.apiextensions.k8s.io "clusteranalysistemplates.argoproj.io" deleted (dry run)
+customresourcedefinition.apiextensions.k8s.io "experiments.argoproj.io" deleted (dry run)
+# Чужих CRD в списке нет. Клиентский dry-run печатает 'deleted' и для несуществующих
+# объектов — Argo Rollouts ещё не установлен, эти пять CRD появятся только в M4.
+
+# Предохранитель скрипта: если чужой CRD попадёт в список на удаление, teardown
+# останавливается ДО первого kubectl delete. Проверено на копии скрипта:
+# cmd: bash teardown-guardtest.sh   (в ROLLOUTS_CRDS добавлен applications.argoproj.io)
+STOP: applications.argoproj.io — чужой CRD, он попал в список на удаление
+rc=1

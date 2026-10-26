@@ -1,0 +1,319 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 30-hardening
+# Закрытие двух дыр, найденных ревью M1, ДО перехода к automated sync в M2:
+#   1) namespace без метки Pod Security;
+#   2) git-сервер с анонимным push, не закрытый ни одной NetworkPolicy.
+# Плюс сужение прав ServiceAccount argocd-server до апстримного набора.
+# Все выводы ниже — вывод настоящих команд, снятый 2026-07-24.
+
+
+================================================================================
+1. ЗАЧЕМ: цепочка эскалации, которую разрывал ручной sync
+================================================================================
+Исходное состояние стенда после M1:
+
+# cmd: kubectl get ns cookbook-argocd cookbook-k8s cookbook-net --show-labels
+NAME              STATUS   LABELS
+cookbook-argocd   Active   kubernetes.io/metadata.name=cookbook-argocd,purpose=digital-cookbook,stand=cookbook-gitops
+cookbook-k8s      Active   kubernetes.io/metadata.name=cookbook-k8s,pod-security.kubernetes.io/enforce=baseline,purpose=digital-cookbook
+cookbook-net      Active   kubernetes.io/metadata.name=cookbook-net,pod-security.kubernetes.io/enforce=baseline,purpose=digital-cookbook
+
+Соседние стенды под baseline, наш — без метки вовсе.
+
+# cmd: kubectl -n cookbook-argocd get netpol
+NAME                                              POD-SELECTOR
+argocd-application-controller-network-policy      app.kubernetes.io/name=argocd-application-controller
+argocd-applicationset-controller-network-policy   app.kubernetes.io/name=argocd-applicationset-controller
+argocd-dex-server-network-policy                  app.kubernetes.io/name=argocd-dex-server
+argocd-notifications-controller-network-policy    app.kubernetes.io/name=argocd-notifications-controller
+argocd-redis-network-policy                       app.kubernetes.io/name=argocd-redis
+argocd-repo-server-network-policy                 app.kubernetes.io/name=argocd-repo-server
+argocd-server-network-policy                      app.kubernetes.io/name=argocd-server
+
+Семь политик из namespace-install, и все семь селектят поды САМОГО ArgoCD. git-server
+не попадает ни под одну, а под, не выбранный ни одной политикой, в Kubernetes открыт всем.
+
+Складываем с тем, как поднят демон (05-git-server.yaml: --export-all --enable=receive-pack,
+у протокола git:// нет ни аутентификации, ни авторизации) и получаем цепочку:
+
+  любой под кластера -> push в наш git -> манифест с hostPath или privileged ->
+  ArgoCD применяет его сам -> под с доступом к узлу
+
+В M1 цепочку разрывает ручной sync: между чужим коммитом и подом стоит человек.
+В M2 включается automated + selfHeal — и не разрывает уже ничего.
+Права ArgoCD ограничены одним namespace (11-rbac.yaml), но hostPath и privileged — это
+выход ЗА namespace, на узел; namespace-граница их не держит.
+
+
+================================================================================
+2. ЗАМОК ПЕРВЫЙ: метка Pod Security baseline на namespace
+================================================================================
+Сначала проверка, что метка не выселит уже работающие поды. Серверный dry-run на
+namespace с девятью живыми подами: если хоть один нарушает профиль, API-сервер вернёт
+Warning со списком. Не вернул ничего:
+
+# cmd: kubectl label --dry-run=server --overwrite ns cookbook-argocd pod-security.kubernetes.io/enforce=baseline
+namespace/cookbook-argocd labeled (server dry run)
+
+Применяем по-настоящему (метка лежит в manifests/00-namespace.yaml, ставятся сразу три —
+enforce/audit/warn):
+
+# cmd: bash apply.sh manifests/00-namespace.yaml
+namespace/cookbook-argocd configured
+resourcequota/cookbook-gitops-quota unchanged
+limitrange/cookbook-gitops-limits unchanged
+applied: manifests/00-namespace.yaml
+
+# cmd: kubectl get ns cookbook-argocd -o jsonpath='{.metadata.labels}'
+{"kubernetes.io/metadata.name":"cookbook-argocd","pod-security.kubernetes.io/audit":"baseline","pod-security.kubernetes.io/enforce":"baseline","pod-security.kubernetes.io/warn":"baseline","purpose":"digital-cookbook","stand":"cookbook-gitops"}
+
+Все девять подов на месте, ни одного рестарта:
+
+# cmd: kubectl -n cookbook-argocd get pods
+argocd-application-controller-0                    1/1  Running  restarts=0
+argocd-applicationset-controller-bff79b5d9-ktxn6   1/1  Running  restarts=0
+argocd-dex-server-78bf889848-p4895                 1/1  Running  restarts=0
+argocd-notifications-controller-585d78df9c-rh5sp   1/1  Running  restarts=0
+argocd-redis-6469595fd7-xftf9                      1/1  Running  restarts=0
+argocd-repo-server-6b75cff94-mcwzx                 1/1  Running  restarts=0
+argocd-server-84445584cc-mscrh                     1/1  Running  restarts=0
+demo-7ffcc6b8f5-5x4pr                              1/1  Running  restarts=0
+git-server-764f8c755b-rrksh                        1/1  Running  restarts=0
+
+Теперь проверка, что метка не декоративная. Подаём ровно тот под, ради которого вся эта
+цепочка и затевалась бы — hostPath на корень узла плюс privileged:
+
+# cmd: kubectl -n cookbook-argocd apply -f -   (Pod psa-probe: hostPath / + privileged: true)
+Error from server (Forbidden): error when creating "STDIN": pods "psa-probe" is forbidden:
+violates PodSecurity "baseline:latest": hostPath volumes (volume "hostroot"),
+privileged (container "probe" must not set securityContext.privileged=true)
+
+Отказ приходит от admission — то есть отказ придёт и контроллеру ArgoCD, когда он попробует
+применить такой манифест из git. Именно это звено цепочки метка и закрывает.
+
+restricted не ставим: поды ArgoCD v3.x его не проходят без правки чужого securityContext
+(наш собственный git-сервер, для сравнения, restricted проходит — см. 05-git-server.yaml).
+
+
+================================================================================
+3. ЗАМОК ВТОРОЙ: NetworkPolicy к git-серверу
+================================================================================
+Замер ДО политики. Временный под в ЧУЖОМ namespace cookbook-k8s клонирует наш репозиторий:
+
+# cmd: kubectl -n cookbook-k8s run netprobe-before --image=alpine/git:v2.49.1 --restart=Never \
+#        --command -- sh -c 'time timeout 30 git clone git://git-server.cookbook-argocd.svc.cluster.local/demo.git /tmp/demo; echo "rc=$?"'
+# cmd: kubectl -n cookbook-k8s logs netprobe-before
+Cloning into '/tmp/demo'...
+real	0m 0.10s
+user	0m 0.00s
+sys	0m 0.00s
+rc=0
+
+Сто миллисекунд из чужого namespace. Дыра не теоретическая.
+
+Ставим политику (manifests/05-git-server.yaml: podSelector app=git-server, ingress 9418/TCP
+только из namespace с меткой kubernetes.io/metadata.name=cookbook-argocd):
+
+# cmd: bash apply.sh manifests/05-git-server.yaml
+configmap/git-seed unchanged
+deployment.apps/git-server unchanged
+service/git-server unchanged
+networkpolicy.networking.k8s.io/git-server-allow-stand-only created
+applied: manifests/05-git-server.yaml
+
+# cmd: kubectl -n cookbook-argocd get netpol git-server-allow-stand-only -o yaml
+spec:
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          kubernetes.io/metadata.name: cookbook-argocd
+    ports:
+    - port: 9418
+      protocol: TCP
+  podSelector:
+    matchLabels:
+      app: git-server
+  policyTypes:
+  - Ingress
+
+Замер ПОСЛЕ, оба направления, одной и той же командой. Датаплейн здесь Cilium (eBPF),
+поэтому «политика создана» и «политика работает» проверяются отдельно:
+
+--- из ЧУЖОГО namespace (cookbook-k8s) ---
+# cmd: kubectl -n cookbook-k8s run netprobe-after --image=alpine/git:v2.49.1 --restart=Never \
+#        --command -- sh -c 'time timeout 30 git clone git://git-server…/demo.git /tmp/demo; echo "rc=$?"'
+# cmd: kubectl -n cookbook-k8s logs netprobe-after
+Cloning into '/tmp/demo'...
+Command terminated by signal 15
+real	0m 30.00s
+user	0m 0.00s
+sys	0m 0.00s
+rc=15
+
+--- из СВОЕГО namespace (cookbook-argocd) ---
+# cmd: kubectl -n cookbook-argocd run netprobe-own --image=alpine/git:v2.49.1 --restart=Never \
+#        --command -- sh -c 'time timeout 30 git clone git://git-server…/demo.git /tmp/demo; echo "rc=$?"'
+# cmd: kubectl -n cookbook-argocd logs netprobe-own
+Cloning into '/tmp/demo'...
+real	0m 0.10s
+user	0m 0.00s
+sys	0m 0.00s
+rc=0
+
+0.10 s против 30.00 s и rc=15 (SIGTERM от `timeout`) — характерная картина именно
+для NetworkPolicy: пакеты не отбиваются RST, а молча дропаются, и клиент висит на
+connect до собственного таймаута. Отказа в доступе клиент не видит — он видит тишину.
+
+Временные поды после снятия вывода удалены:
+# cmd: kubectl -n cookbook-k8s delete pod netprobe-before netprobe-after
+# cmd: kubectl -n cookbook-argocd delete pod netprobe-own
+
+Egress политикой не ограничен намеренно: git daemon сам никуда не ходит, а запрет egress
+сломал бы ему DNS. Пробы у контейнера exec, а не tcpSocket, — kubelet в ingress не нуждается.
+
+
+================================================================================
+4. ПРАВА argocd-server СУЖЕНЫ ДО АПСТРИМНОГО НАБОРА
+================================================================================
+Было: широкая Role `*/*/*` привязана к ОБОИМ ServiceAccount с обоснованием «те же права,
+что даёт боевая ClusterRole». Для контроллера это правда; для argocd-server — нет.
+Разбор install.yaml v3.4.1 (fixtures/10-argocd.txt, раздел 3) показывает у ClusterRole
+argocd-server на `*/*` глаголы delete,get,patch — без create и update.
+
+Стало: отдельная Role cookbook-argocd-server-ns с тем же набором и отдельный RoleBinding.
+
+# cmd: bash apply.sh manifests/11-rbac.yaml
+role.rbac.authorization.k8s.io/cookbook-argocd-manage-ns unchanged
+rolebinding.rbac.authorization.k8s.io/cookbook-argocd-manage-ns configured
+role.rbac.authorization.k8s.io/cookbook-argocd-server-ns created
+rolebinding.rbac.authorization.k8s.io/cookbook-argocd-server-ns created
+applied: manifests/11-rbac.yaml
+
+# cmd: kubectl -n cookbook-argocd get rolebinding cookbook-argocd-manage-ns -o jsonpath='{.subjects}'
+[{"kind":"ServiceAccount","name":"argocd-application-controller","namespace":"cookbook-argocd"}]
+# cmd: kubectl -n cookbook-argocd get rolebinding cookbook-argocd-server-ns -o jsonpath='{.subjects}'
+[{"kind":"ServiceAccount","name":"argocd-server","namespace":"cookbook-argocd"}]
+
+Разница в правах, замер:
+
+# cmd: kubectl auth can-i <verb> deployments -n cookbook-argocd --as=system:serviceaccount:cookbook-argocd:<sa>
+create  deployments  controller=yes  server=no
+update  deployments  controller=yes  server=no
+delete  deployments  controller=yes  server=yes
+get     deployments  controller=yes  server=yes
+patch   deployments  controller=yes  server=yes
+list    deployments  controller=yes  server=no
+
+Узкие правила апстрима на месте:
+get     pods/log     server=yes
+create  jobs         server=yes
+list    events       server=yes
+
+Два уточнения, чтобы вывод не читался шире, чем есть.
+
+а) `create secrets --as=…:argocd-server` тоже даёт yes — но НЕ от нашей роли. Это Role
+   argocd-server из namespace-install, права на собственное хозяйство сервера:
+   # cmd: kubectl -n cookbook-argocd get role argocd-server -o jsonpath='{range .rules[*]}…{end}'
+   [""] ["secrets","configmaps"] ["create","get","list","watch","update","patch","delete"]
+   ["argoproj.io"] ["applications","appprojects","applicationsets"] ["create","get","list","watch","update","delete","patch"]
+   [""] ["events"] ["create","list"]
+
+б) Граница по namespace никуда не делась:
+   # cmd: kubectl auth can-i delete deployments -n argocd --as=…:argocd-server
+   no
+
+Почему server беднее контроллера и при этом работает: живое состояние он берёт из кэша
+контроллера, а к API ходит только за действиями из UI и CLI.
+
+
+================================================================================
+5. ПРОВЕРКА ЖИВЬЁМ: ArgoCD после всех трёх правок
+================================================================================
+argocd-server перезапущен принудительно — чтобы новый под поднялся уже с суженными правами,
+а не донашивал старую авторизацию:
+
+# cmd: kubectl -n cookbook-argocd rollout restart deploy/argocd-server
+# cmd: kubectl -n cookbook-argocd rollout status deploy/argocd-server --timeout=180s
+deployment "argocd-server" successfully rolled out
+
+Application после hard refresh:
+
+# cmd: kubectl -n cookbook-argocd get app demo -o custom-columns='SYNC:…,HEALTH:…,REV:…'
+SYNC     HEALTH    REV
+Synced   Healthy   d049270d788de26273d85992c271c5994a6d7ca8
+
+Отказов в логах нет ни у сервера, ни у контроллера:
+
+# cmd: kubectl -n cookbook-argocd logs deploy/argocd-server | grep -ci forbidden
+0
+# cmd: kubectl -n cookbook-argocd logs argocd-application-controller-0 | grep -ci forbidden
+0
+
+Отдельно — путь, который у сервера теперь единственный: собственные обращения к API из UI
+и CLI. Проверены живьём через argocd CLI (временный под с образом quay.io/argoproj/argocd:v3.4.1,
+логин к argocd-server внутри кластера):
+
+# cmd: argocd app get demo --grpc-web
+Sync Policy:        Manual
+Sync Status:        Synced to HEAD (d049270)
+Health Status:      Healthy
+GROUP  KIND        NAMESPACE        NAME  STATUS  HEALTH   MESSAGE
+       Service     cookbook-argocd  demo  Synced  Healthy  service/demo created
+apps   Deployment  cookbook-argocd  demo  Synced  Healthy  deployment.apps/demo created
+
+# cmd: argocd app logs demo --tail 5 --grpc-web       (это путь pods/log через argocd-server)
+logs_rc=0
+
+# cmd: argocd app actions run demo restart --kind Deployment --resource-name demo --grpc-web
+rc=0
+# cmd: kubectl -n cookbook-argocd get deploy demo -o jsonpath='{.spec.template.metadata.annotations}'
+{"kubectl.kubernetes.io/restartedAt":"2026-07-24T16:48:30Z"}
+
+Restart из UI — это patch аннотации, то есть ровно тот глагол, который у сервера остался.
+Прошёл. Аннотация после проверки снята, под demo пересоздан, стенд возвращён к состоянию git.
+
+Финальное состояние стенда:
+
+# cmd: kubectl -n cookbook-argocd get pods
+argocd-application-controller-0                    1/1  Running  restarts=0
+argocd-applicationset-controller-bff79b5d9-ktxn6   1/1  Running  restarts=0
+argocd-dex-server-78bf889848-p4895                 1/1  Running  restarts=0
+argocd-notifications-controller-585d78df9c-rh5sp   1/1  Running  restarts=0
+argocd-redis-6469595fd7-xftf9                      1/1  Running  restarts=0
+argocd-repo-server-6b75cff94-mcwzx                 1/1  Running  restarts=0
+argocd-server-678bbbd9b4-7b6dw                     1/1  Running  restarts=0
+demo-7ffcc6b8f5-whjbb                              1/1  Running  restarts=0
+git-server-764f8c755b-rrksh                        1/1  Running  restarts=0
+
+# cmd: kubectl -n cookbook-argocd get quota cookbook-gitops-quota
+PODS   CPU-LIM
+9      4500m
+
+
+================================================================================
+6. ГРАНИЦЫ: что осталось нетронутым
+================================================================================
+# cmd: kubectl get applications.argoproj.io -A
+NAMESPACE         NAME   SYNC STATUS   HEALTH STATUS
+cookbook-argocd   demo   Synced        Healthy
+
+Единственный Application в кластере — наш. Боевых как было ноль, так и осталось.
+
+# cmd: kubectl -n argocd get pods
+argocd-application-controller-0                     1/1  Running  restarts=0
+argocd-applicationset-controller-5b86b54c9f-wx7p4   1/1  Running  restarts=0
+argocd-image-updater-controller-6bddcf4696-7f66b    1/1  Running  restarts=0
+argocd-notifications-controller-697bb8cd89-l2wqn    1/1  Running  restarts=0
+argocd-redis-c8886b48c-xrrgp                        1/1  Running  restarts=0
+argocd-repo-server-5bf9c59969-s7xl5                 1/1  Running  restarts=0
+argocd-server-5b8cbf6fcd-cgn86                      1/1  Running  restarts=0
+
+# cmd: kubectl -n <ns> get pods   (стенды фаз 1-4)
+cookbook-k8s:  13 Running
+cookbook-net:   3 Running
+
+# cmd: kubectl get clusterrole,clusterrolebinding -l stand=cookbook-gitops
+No resources found
+
+Ни одной кластерной роли стенд по-прежнему не создаёт. Единственный временный след за
+пределами cookbook-argocd — два пода-пробы в cookbook-k8s, оба удалены (раздел 3).

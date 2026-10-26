@@ -1,0 +1,64 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 60-canary
+# demo 4 (progressive delivery): первичная раскатка + пошаговое продвижение canary + успешный анализ
+# ---
+### 0. доступность Prometheus фазы 1 из cookbook-argocd (egress не заблокирован) ###
+# в cookbook-k8s нет NetworkPolicy/CiliumNetworkPolicy, под контроллера Rollouts не селектится политиками cookbook-argocd -> default-allow
+No resources found in cookbook-k8s namespace.
+# проба egress (под в cookbook-argocd -> prometheus.cookbook-k8s:9090):
+{"status":"success",...,"result":[{"metric":{},"value":[...,"1"]}]}  rc=0   # снято отдельным probe-подом, см. отчёт M4
+
+### 1. первичная раскатка Rollout (создание -> сразу 100%, canary-шаги пропускаются) ###
+-- поды нагрузки:
+NAME                           READY   STATUS    RESTARTS   AGE   IP             NODE             NOMINATED NODE   READINESS GATES
+canary-demo-775cc6ccf4-hdqhj   1/1     Running   0          26s   10.244.4.154   k8s-volga-wk02   <none>           <none>
+canary-demo-775cc6ccf4-nhs7q   1/1     Running   0          26s   10.244.6.107   k8s-volga-wk03   <none>           <none>
+-- статус Rollout:
+phase=Healthy
+replicas=2 ready=2 updated=2 available=2
+stableRS=775cc6ccf4 currentPodHash=775cc6ccf4
+currentStepIndex=7
+-- ReplicaSet'ы (revision):
+NAME                     DESIRED   READY   HASH         REV
+canary-demo-775cc6ccf4   2         2       775cc6ccf4   1
+-- версия в подах (env/label): v1
+canary-demo-775cc6ccf4-hdqhj version=v1
+canary-demo-775cc6ccf4-nhs7q version=v1
+
+### 2. пошаговое продвижение canary v1->v2 (date -u, шаги, версии подов, анализ) ###
+# веса шагов заданы в spec (setWeight 25/50/75/100); .status.canary.weights для
+# репликового canary (без traffic-router) не заполняется — фактический вес виден по
+# числу подов v2 против v1 и по currentStepIndex.
+20:47:33.659733200 TRIGGER: version v1->v2 (patch label+env)
+rollout.argoproj.io/canary-demo patched
+--- пошаговый мониторинг ---
+20:47:35.457277200 phase=Progressing step=0 canaryWeight= stableWeight= AR=[] podVersions=[v1 v1 v2 ]
+20:47:38.039987900 phase=Paused step=1 canaryWeight= stableWeight= AR=[] podVersions=[v1 v1 v2 ]
+20:47:55.982100600 phase=Progressing step=3 canaryWeight= stableWeight= AR=[canary-demo-777fc94cf6-2-3=Running,] podVersions=[v1 v2 ]
+20:48:16.280548700 phase=Paused step=5 canaryWeight= stableWeight= AR=[canary-demo-777fc94cf6-2-3=Successful,] podVersions=[v1 v2 v2 ]
+20:48:36.777074900 phase=Healthy step=7 canaryWeight= stableWeight= AR=[canary-demo-777fc94cf6-2-3=Successful,] podVersions=[v2 v2 ]
+20:48:36.825706200 РАСКАТКА ЗАВЕРШЕНА (100%, Healthy)
+
+# ИТОГ времени: триггер 20:47:33.659 -> 100%/Healthy 20:48:36.777 = 63.1 s
+# (из них два pause по 20 s заданы явно; анализ шёл ~20 s между ними)
+
+### 3. УСПЕШНЫЙ анализ: AnalysisRun (analysisrun.argoproj.io/canary-demo-777fc94cf6-2-3) ###
+-- phase и что реально измерил провайдер Prometheus:
+name=canary-demo-777fc94cf6-2-3
+phase=Successful
+metric=phase1-up
+successCount=3 failedCount=
+measurements(value/phase):
+  value=[1] phase=Successful at=2026-07-24T20:47:54Z
+  value=[1] phase=Successful at=2026-07-24T20:48:04Z
+  value=[1] phase=Successful at=2026-07-24T20:48:14Z
+-- условие успеха (из шаблона, threshold=1):
+result[0] >= {{args.threshold}}
+-- провайдер и запрос:
+address=http://prometheus.cookbook-k8s.svc.cluster.local:9090
+query=max(up{job="cookbook-k8s-pods"})
+
+-- финальные поды (обе v2), Rollout Healthy на новой ревизии:
+NAME                           VERSION   STATUS
+canary-demo-777fc94cf6-99mfd   v2        Running
+canary-demo-777fc94cf6-vftxd   v2        Running
+phase=Healthy stableRS=777fc94cf6 currentPodHash=777fc94cf6

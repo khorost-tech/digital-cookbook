@@ -1,0 +1,42 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 80-bluegreen
+# demo 4, шаг 6: blue-green (вторая стратегия). СНЯТ на живом стенде.
+# ---
+### A. окно 'обе версии целиком': green на preview, blue на active ###
+# (снято в редакции autoPromotionEnabled:false + autoPromotionSeconds:20)
+20:52:48.526250300 TRIGGER: version v1->v2 (green поднимается на preview)
+20:52:49.368087600 phase=Progressing active=758f744c89 preview=75bddbdff pods=[v1 v1 v2 v2 ]
+20:52:51.103747200 phase=Paused active=758f744c89 preview=75bddbdff pods=[v1 v1 v2 v2 ]
+
+### B. autoPromotionSeconds:20 при autoPromotionEnabled:false active не переключил — как и документировано ###
+# Контроллер встал в BlueGreenPause (startTime 20:52:49) и на каждой сверке — включая
+# сверку спустя ~3,5 минуты (20:56:15, дедлайн 20:53:09 давно прошёл) — печатал 'pause
+# incomplete', active так и остался на blue (758f744c89). Строки лога контроллера:
+#   20:52:49  reconciling pause (autoPromotionSeconds: 20) -> pause incomplete
+#   20:52:49  Enqueueing Rollout in 19.315s   <- requeue назначен ДО дедлайна (20 s)
+#   20:53:09  reconciling pause (autoPromotionSeconds: 20) -> pause incomplete  (нового requeue НЕТ)
+#   20:56:15  reconciling pause (autoPromotionSeconds: 20) -> pause incomplete  (по событию update)
+# Вывод: это ошибка конфигурации, а не расхождение с документацией. При
+# autoPromotionEnabled:false параметр autoPromotionSeconds игнорируется (docs/features/
+# bluegreen.md, v1.9.1), пауза снимается только явным promote. Для переключения с
+# задержкой нужен autoPromotionEnabled:true + autoPromotionSeconds. В манифест взят
+# autoPromotionEnabled:true без задержки (см. C).
+
+### C. чистое переключение active (autoPromotionEnabled:true, самоедущее) ###
+20:59:15.807281100 TRIGGER v1->v2 (autoPromotionEnabled:true -> авто-switch active на green)
+20:59:17.050059700 phase=Progressing active=758f744c89 preview=75bddbdff runningPods=4 versions=[v1 v1 v2 v2 ]
+20:59:19.033357400 phase=Healthy active=75bddbdff preview=75bddbdff runningPods=4 versions=[v1 v1 v2 v2 ]
+20:59:48.416406400 phase=Healthy active=75bddbdff preview=75bddbdff runningPods=2 versions=[v2 v2 ]
+
+# ЗАМЕРЫ (часы хоста):
+#   триггер 20:59:15.807 -> preview=green, active ещё blue (20:59:17.050)
+#   active переключён blue->green 20:59:19.033  => ~3.2 s от триггера (как только green Healthy)
+#   blue (v1) держался под scaleDownDelay (дефолт 30 s) и снят в 20:59:48.416 => ~29 s после switch
+#   в окне 20:59:17..20:59:48 в кластере ЖИВЫ обе версии (4 пода) — это и есть запас на откат.
+
+### события контроллера (switch + scale-down) ###
+2026-07-24T20:59:13Z   ScalingReplicaSet        Scaled up ReplicaSet bluegreen-demo-758f744c89 (revision 1) from 0 to 2
+2026-07-24T20:59:14Z   SwitchService            Switched selector for service 'bluegreen-active' from '' to '758f744c89'
+2026-07-24T20:59:16Z   SwitchService            Switched selector for service 'bluegreen-preview' from '758f744c89' to '75bddbdff'
+2026-07-24T20:59:16Z   ScalingReplicaSet        Scaled up ReplicaSet bluegreen-demo-75bddbdff (revision 2) from 0 to 2
+2026-07-24T20:59:16Z   SwitchService            Switched selector for service 'bluegreen-active' from '758f744c89' to '75bddbdff'
+2026-07-24T20:59:47Z   ScalingReplicaSet        Scaled down ReplicaSet bluegreen-demo-758f744c89 (revision 1) from 2 to 0

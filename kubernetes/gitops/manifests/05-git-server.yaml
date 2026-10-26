@@ -1,0 +1,297 @@
+# Герметичный источник правды стенда: git-сервер внутри кластера.
+#
+# Зачем: стенд должен воспроизводиться читателем целиком, без внешнего репозитория, без
+# аккаунта на хостинге и без токенов. ArgoCD (M1) будет тянуть манифесты отсюда — из
+# git://git-server.cookbook-argocd.svc.cluster.local/demo.git.
+# В проде источник правды, разумеется, внешний; это упрощение стенда, а не рекомендация.
+#
+# ПРО ОБРАЗ. Здесь пришлось выбирать не по вкусу, а по факту наличия `git daemon`
+# (замеры — в fixtures/00-git-server.txt, блок «поиск образа с git daemon»):
+#   * alpine/git:v2.49.1          — `git: 'daemon' is not a git command`.
+#                                    В Alpine git-daemon вынесен в ОТДЕЛЬНЫЙ пакет git-daemon.
+#   * registry.k8s.io/git-sync/git-sync:v4.4.0 — то же самое, daemon не собран.
+#   * bitnami/git:2.49.0          — образа больше нет: `docker.io/bitnami/git:2.49.0: not found`.
+#   * buildpack-deps:bookworm-scm — git 2.39.5, /usr/lib/git-core/git-daemon на месте. Выбран.
+# Образ пинуется ПО ДАЙДЖЕСТУ, а не по тегу: `bookworm-scm` — плавающий тег, а стенд про
+# воспроизводимость. Дайджест снят с этого же кластера.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: git-seed
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+data:
+  # Начальное содержимое репозитория. Namespace в манифестах НЕ указан намеренно:
+  # его подставит destination Application-а (M1).
+  deployment.yaml: |
+    apiVersion: apps/v1
+    kind: Deployment
+    metadata:
+      name: demo
+      labels:
+        app: demo
+        stand: cookbook-gitops
+    spec:
+      replicas: 1
+      selector:
+        matchLabels:
+          app: demo
+      template:
+        metadata:
+          labels:
+            app: demo
+            stand: cookbook-gitops
+        spec:
+          containers:
+            - name: app
+              image: registry.k8s.io/pause:3.10
+              ports:
+                - containerPort: 80
+                  name: http
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 16Mi
+  service.yaml: |
+    apiVersion: v1
+    kind: Service
+    metadata:
+      name: demo
+      labels:
+        app: demo
+        stand: cookbook-gitops
+    spec:
+      selector:
+        app: demo
+      ports:
+        - name: http
+          port: 80
+          targetPort: http
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: git-server
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+    app: git-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: git-server
+  template:
+    metadata:
+      labels:
+        app: git-server
+        stand: cookbook-gitops
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        # fsGroup нужен, чтобы emptyDir /srv/git был записываемым для uid 1000:
+        # без него том принадлежит root, и init-контейнер падает на `git init --bare`.
+        fsGroup: 1000
+      volumes:
+        - name: repos
+          emptyDir: {}
+        - name: seed
+          configMap:
+            name: git-seed
+      initContainers:
+        # Создаёт bare-репозиторий и кладёт в него первый коммит. Работает только с
+        # локальной ФС: сети на этом шаге не требуется вовсе.
+        - name: seed-repo
+          image: buildpack-deps:bookworm-scm@sha256:877e9e4d949edfbcbedabc3a2d7ab593955fee5d6d0777adf3a991eb30c750d8
+          env:
+            - name: HOME
+              value: /tmp
+            # ВОСПРОИЗВОДИМОСТЬ SEED-ХЕША. Хеш коммита в git — SHA-1 от заголовка объекта:
+            # дерево, родители, автор+дата, коммиттер+дата, сообщение. Всё, кроме дат, здесь
+            # уже зафиксировано: содержимое лежит в ConfigMap, личность задана git config,
+            # сообщение — константа. Недетерминизм давали ТОЛЬКО метки времени: без этих двух
+            # переменных git берёт стенные часы, и каждое пересоздание пода (emptyDir — репо
+            # создаётся заново) давало НОВЫЙ хеш seed-коммита.
+            # С фиксированными датами два независимых `git init` + `commit` дают ОДИН И ТОТ ЖЕ
+            # SHA — проверено пересозданием пода, замер в fixtures/00-git-server.txt,
+            # блок «воспроизводимость seed-коммита».
+            # Это важно не ради красоты: на seed-хеш ссылаются фикстуры M1/M2/M4 (revision
+            # в Application, diff при self-heal, откат после prune).
+            - name: GIT_AUTHOR_DATE
+              value: "2026-07-24T12:00:00+00:00"
+            - name: GIT_COMMITTER_DATE
+              value: "2026-07-24T12:00:00+00:00"
+          command:
+            - bash
+            - -euo
+            - pipefail
+            - -c
+            - |
+              git config --global user.email "stand@khorost.tech"
+              git config --global user.name  "digital-cookbook stand"
+              git config --global init.defaultBranch main
+              git config --global --add safe.directory '*'
+
+              if [ -d /srv/git/demo.git ]; then
+                echo "repo already exists, nothing to seed"
+                exit 0
+              fi
+
+              git init --bare --initial-branch=main /srv/git/demo.git
+              # receive-pack разрешается и в конфиге репозитория, не только флагом демона:
+              # в M2 понадобится push коммита, чтобы показать prune удалённого ресурса.
+              git --git-dir=/srv/git/demo.git config daemon.receivepack true
+
+              work=/tmp/work
+              mkdir -p "$work/apps/demo"
+              cp /seed/deployment.yaml "$work/apps/demo/deployment.yaml"
+              cp /seed/service.yaml    "$work/apps/demo/service.yaml"
+
+              cd "$work"
+              git init --initial-branch=main .
+              git add apps
+              git commit -m "seed: demo Deployment и Service"
+              git push /srv/git/demo.git main
+
+              echo "--- seeded ---"
+              git --git-dir=/srv/git/demo.git log --oneline
+              git --git-dir=/srv/git/demo.git ls-tree -r --name-only main
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: repos
+              mountPath: /srv/git
+            - name: seed
+              mountPath: /seed
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+      containers:
+        # Голый git-протокол на 9418. --export-all снимает требование файла
+        # git-daemon-export-ok, --enable=receive-pack разрешает анонимный push
+        # (нужен в M2). Аутентификации у git:// нет — поэтому сервер и живёт
+        # внутри кластера, за ClusterIP, и наружу не выставляется.
+        - name: git-daemon
+          image: buildpack-deps:bookworm-scm@sha256:877e9e4d949edfbcbedabc3a2d7ab593955fee5d6d0777adf3a991eb30c750d8
+          env:
+            - name: HOME
+              value: /tmp
+          command:
+            - git
+            - daemon
+            - --verbose
+            - --export-all
+            - --base-path=/srv/git
+            - --enable=receive-pack
+            - --reuseaddr
+          ports:
+            - name: git
+              containerPort: 9418
+          # Пробы — exec, а не tcpSocket, сознательно: tcpSocket открывает и рвёт
+          # соединение, git daemon на каждую такую пробу пишет в лог
+          # «fatal: the remote end hung up unexpectedly», и лог сервера становится
+          # нечитаемым. `git ls-remote` проходит протокол целиком и заодно проверяет,
+          # что репозиторий реально отдаётся, а не что порт просто открыт.
+          readinessProbe:
+            exec:
+              command: ["git", "ls-remote", "git://127.0.0.1/demo.git"]
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["git", "ls-remote", "git://127.0.0.1/demo.git"]
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+            seccompProfile:
+              type: RuntimeDefault
+          volumeMounts:
+            - name: repos
+              mountPath: /srv/git
+          resources:
+            requests:
+              cpu: 20m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: git-server
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+    app: git-server
+spec:
+  type: ClusterIP
+  selector:
+    app: git-server
+  ports:
+    - name: git
+      port: 9418
+      targetPort: git
+---
+# КТО ИМЕЕТ ПРАВО ГОВОРИТЬ С ИСТОЧНИКОМ ПРАВДЫ. Добавлено после ревью M1, до automated sync.
+#
+# git daemon выше поднят с --enable=receive-pack, а у протокола git:// нет ни аутентификации,
+# ни авторизации — принимается любой push от любого, кто дотянулся до порта 9418. До этой
+# политики дотянуться мог ЛЮБОЙ под кластера: NetworkPolicy из namespace-install селектят
+# только поды самого ArgoCD (app.kubernetes.io/name=argocd-*), git-server не попадал ни под
+# одну, а под, не выбранный ни одной политикой, в Kubernetes открыт всем.
+#
+# Почему это не «теоретически». Источник правды GitOps — это и есть право на запись в
+# кластер, отложенное во времени. В M1 между чужим коммитом и подом стоит ручной sync;
+# в M2 (automated + selfHeal) не стоит никто. Пара «кто может писать в git» + «что вообще
+# разрешено запускать» (метка baseline на namespace, 00-namespace.yaml) закрывает цепочку
+# с двух сторон.
+#
+# Политика ingress-only и намеренно узкая: 9418/TCP и только из СВОЕГО namespace. Внутри
+# cookbook-argocd клиентов двое — argocd-repo-server (клонирует) и временные поды-пробы
+# из демо; отбирать их podSelector-ом смысла нет, границей здесь служит namespace.
+# Egress не ограничиваем: git daemon сам никуда не ходит, а отказ egress сломал бы DNS.
+#
+# namespaceSelector требует метки на namespace. Берём kubernetes.io/metadata.name — её
+# ставит сам API-сервер каждому namespace начиная с 1.21, подделать её изнутри пода нельзя.
+#
+# Cilium в этом кластере обслуживает NetworkPolicy своим eBPF-датаплейном, поэтому «политика
+# создана» и «политика работает» — разные утверждения. Проверено обоими направлениями:
+# клон из cookbook-argocd проходит, клон из cookbook-k8s виснет на connect и падает по
+# таймауту. Замеры — в fixtures/30-hardening.txt.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: git-server-allow-stand-only
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+    app: git-server
+spec:
+  podSelector:
+    matchLabels:
+      app: git-server
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: cookbook-argocd
+      ports:
+        - protocol: TCP
+          port: 9418

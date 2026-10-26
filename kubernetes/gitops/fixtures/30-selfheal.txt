@@ -1,0 +1,750 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 30-selfheal
+# Демо 2 — self-heal, граница механизма и prune. ArgoCD стенда v3.4.1, ns cookbook-argocd.
+# Все три замера времени — НАСТОЯЩИЕ: снимались с отметками date -u, а не взяты из документации.
+# ===============================================================================
+#
+# ТРИ ЗАМЕРА ВРЕМЕНИ — КОРОТКО (подробности и сырые выводы ниже по блокам):
+#   1. Возврат после ручного дрейфа (scale 1 -> 3, self-heal):        1.6 s
+#      ...и он же при дрейфах ПОДРЯД, из-за backoff:                  54.4 s (и дальше 162 s)
+#   2. Задержка prune (коммит удаления -> объект удалён из кластера): ~120.6 s по логу
+#      (наблюдение циклом дало 121.8 s — это ВЕРХНЯЯ ГРАНИЦА: шаг цикла 3.5 s),
+#      при том, что фактическая длина цикла опроса гуляет 125..403 s
+#   3. Фактические таймауты этого экземпляра (сняты командой, не по документации):
+#      appResyncPeriod = 2m0s, appResyncJitter = 1m0s, appHardResyncPeriod = 0s,
+#      self-heal backoff: ПОСЛЕ попытки N контроллер ждёт 2 s x 3^(N-1) до следующей,
+#      потолок 300 s (виден в логе строкой «retrying in 4m59.4s»), --sync-timeout = 0
+#
+# КАК ЧИТАТЬ ЗАМЕРЫ ВОЗВРАТА. Все они — СЫРАЯ РАЗНОСТЬ двух отметок, снятых одними и теми
+# же часами хоста: «date перед kubectl scale» и «date в той итерации цикла, где уже видно
+# откаченное значение». Это ВЕРХНЯЯ ГРАНИЦА: цикл опроса ходит раз в ~1.2 s, а сам apply
+# по логу контроллера занимает 0.486 s. Никаких поправок к этим числам не применяется —
+# что вычиталось, показано на месте.
+#   Коммит удаления (даты прибиты): 41e857605e9bf396f20966470d0dea259c4336b4
+#   Возврат к seed:                 d049270d788de26273d85992c271c5994a6d7ca8
+#
+
+# ==============================================================================
+# 0. ИСХОДНОЕ СОСТОЯНИЕ (конец M1: ручной режим, syncPolicy отсутствует)
+# ==============================================================================
+# cmd: date -u +%FT%TZ
+2026-07-24T17:04:00Z
+
+# cmd: kubectl -n cookbook-argocd get application demo -o wide
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         d049270d788de26273d85992c271c5994a6d7ca8   default
+
+# cmd: kubectl -n cookbook-argocd get application demo -o jsonpath='{.spec.syncPolicy}'
+''   <- пусто: ручной режим
+
+# cmd: kubectl -n cookbook-argocd get deploy demo -o jsonpath='{.spec.replicas}'
+1   <- в git тоже 1
+
+# cmd: kubectl -n cookbook-argocd get deploy,svc -l app=demo
+NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/demo   1/1     1            1           49m
+
+NAME           TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE
+service/demo   ClusterIP   10.105.220.154   <none>        80/TCP    49m
+
+# ==============================================================================
+# 1. ВКЛЮЧЕНИЕ automated + selfHeal + prune (правкой манифеста, не кнопкой)
+# ==============================================================================
+# cmd: bash apply.sh manifests/20-application.yaml
+application.argoproj.io/demo configured
+applied: manifests/20-application.yaml
+
+# cmd: kubectl -n cookbook-argocd get application demo -o jsonpath='{.spec.syncPolicy}'
+{"automated":{"prune":true,"selfHeal":true}}
+# cmd: kubectl -n cookbook-argocd get application demo -o yaml | grep -A5 'syncPolicy:'
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+status:
+  controllerNamespace: cookbook-argocd
+
+# cmd: kubectl -n cookbook-argocd get application demo -o wide
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         d049270d788de26273d85992c271c5994a6d7ca8   default
+
+# ------------------------------------------------------------------------------
+# 1a. ФАКТИЧЕСКИЙ ИНТЕРВАЛ ОПРОСА: timeout.reconciliation в argocd-cm НАШЕГО ns
+# ------------------------------------------------------------------------------
+# Ключа нет — значит работает значение по умолчанию. Но «по умолчанию» из документации
+# нам не годится: снимаем, чему он равен ФАКТИЧЕСКИ у этого экземпляра.
+
+# cmd: kubectl -n cookbook-argocd get cm argocd-cm -o jsonpath='{.data.timeout\.reconciliation}'
+''   <- ключа нет
+
+# cmd: kubectl -n cookbook-argocd get cm argocd-cm -o jsonpath='{.data}' | tr ',' '\n' | grep -c timeout
+0   <- ни одного ключа timeout.* в argocd-cm нет
+
+# cmd: kubectl -n cookbook-argocd get cm argocd-cmd-params-cm -o jsonpath='{.data}'
+''   <- ConfigMap пуст целиком (DATA 0)
+
+# Контроллер читает эти ключи через configMapKeyRef с optional: true. Раз ключей нет —
+# переменных окружения в поде тоже нет, проверяем это прямо в поде:
+# cmd: kubectl -n cookbook-argocd exec argocd-application-controller-0 -- sh -c 'env | grep -Ei "RECONCIL|SELF_HEAL" | sort'
+(пусто — ни одной переменной; значит в силе значения по умолчанию самого бинарника)
+
+# Значения по умолчанию берём не из документации, а из бинарника в этом самом поде:
+# cmd: kubectl -n cookbook-argocd exec argocd-application-controller-0 -- argocd-application-controller --help | grep -Ei 'app-resync|self-heal|sync-timeout'
+      --app-resync int                                            Time period in seconds for application resync. (default 120)
+      --app-resync-jitter int                                     Maximum time period in seconds to add as a delay jitter for application resync. (default 60)
+      --self-heal-backoff-cap-seconds int                         Specifies max timeout of exponential backoff between application self heal attempts (default 300)
+      --self-heal-backoff-factor int                              Specifies factor of exponential timeout between application self heal attempts (default 3)
+      --self-heal-backoff-timeout-seconds int                     Specifies initial timeout of exponential backoff between self heal attempts (default 2)
+      --self-heal-timeout-seconds int                             Specifies timeout between application self heal attempts
+      --sync-timeout int                                          Specifies the timeout after which a sync would be terminated. 0 means no timeout (default 0).
+
+# И, самое надёжное, — контроллер печатает вычисленные значения в лог при старте:
+# cmd: kubectl -n cookbook-argocd logs argocd-application-controller-0 | grep appResyncPeriod
+{"level":"info","msg":"appResyncPeriod=2m0s, appHardResyncPeriod=0s, appResyncJitter=1m0s","time":"2026-07-24T16:10:42Z"}
+
+# ИТОГ ПО КОНФИГУРАЦИИ (всё снято командами выше, ни одного значения из документации):
+#   timeout.reconciliation      : ключа в argocd-cm НЕТ -> фактически appResyncPeriod = 2m0s
+#   timeout.reconciliation.jitter: ключа НЕТ            -> фактически appResyncJitter = 1m0s
+#   timeout.hard.reconciliation : ключа НЕТ             -> appHardResyncPeriod = 0s (выключен)
+#   controller.self.heal.timeout.seconds : ключа НЕТ, у флага --self-heal-timeout-seconds
+#     значения по умолчанию не напечатано вовсе -> int 0, то есть фиксированная задержка
+#     self-heal ОТКЛЮЧЕНА, работает экспоненциальный backoff:
+#       --self-heal-backoff-timeout-seconds = 2   (база паузы)
+#       --self-heal-backoff-factor          = 3   (2 -> 6 -> 18 -> 54 s ...)
+#       --self-heal-backoff-cap-seconds     = 300 (потолок)
+#     ПРАВИЛО: ПОСЛЕ попытки self-heal номер N контроллер выдерживает паузу
+#     2 s x 3^(N-1) (но не больше 300 s) и только потом разрешает попытку N+1.
+#     Перед ПЕРВОЙ попыткой паузы нет — не от чего отсчитывать, предыдущей попытки не было.
+#     Это правило не выведено из документации: контроллер сам печатает остаток паузы
+#     строками «retrying in ...», все девять таких строк приведены целиком в §2a.
+#   --sync-timeout = 0 (sync не прерывается по таймауту)
+#
+# ВАЖНО ДЛЯ ЧТЕНИЯ ЗАМЕРОВ. Опрос репозитория (2m0s + джиттер до 1m0s) и реакция на
+# расхождение в кластере — РАЗНЫЕ пути. Расхождение контроллер видит через watch над
+# кластером, поэтому self-heal быстрый; новую ревизию в git — только по опросу, поэтому
+# prune медленный. Ниже это видно в цифрах: 1.6 s против ~120.6 s.
+
+# ==============================================================================
+# 2. ★ ДРЕЙФ, КОТОРЫЙ ArgoCD ЧИНИТ — С ЗАМЕРОМ ВРЕМЕНИ ВОЗВРАТА
+# ==============================================================================
+# В git у Deployment demo стоит replicas: 1. Правим руками на 3 и снимаем состояние
+# с отметками времени, пока не вернётся.
+
+# cmd: date -u +%T.%3N; kubectl -n cookbook-argocd scale deploy/demo --replicas=3
+17:07:27.775
+deployment.apps/demo scaled
+
+# cmd: for i in $(seq 1 40); do printf '%s ' "$(date -u +%T.%3N)"; kubectl -n cookbook-argocd get deploy demo -o jsonpath='{.spec.replicas} ready={.status.readyReplicas}'; echo; sleep 1; done
+17:07:27.989 spec.replicas=3 ready=1
+17:07:29.349 spec.replicas=1 ready=1
+
+# ВЕРНУЛОСЬ. Замер (обе отметки — часы хоста, вычитание сырое):
+#   правка   (scale --replicas=3): 17:07:27.775
+#   возврат  (spec.replicas == 1): 17:07:29.349
+#   17:07:29.349 - 17:07:27.775 = 1.574 s
+#   ФАКТИЧЕСКИ: 1.6 секунды (верхняя граница)
+
+# Что при этом делал контроллер — его собственный лог (отфильтрован по времени правки).
+# cmd: kubectl -n cookbook-argocd logs argocd-application-controller-0 | grep -E '17:07:(2|3)' | grep -Ei 'automated sync|Already attempted|Applying resource|Adding resource result|sync/terminate|Refreshing app status'
+{"application":"demo","level":"info","msg":"Refreshing app status (comparison expired, requesting refresh. reconciledAt: 2026-07-24 17:04:47 +0000 UTC, expiry: 2m0s), level (2)","time":"2026-07-24T17:07:21Z"}
+{"application":"demo","level":"info","msg":"Skipping auto-sync: application status is Synced","time":"2026-07-24T17:07:21Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (1)","time":"2026-07-24T17:07:29Z"}
+{"application":"demo","level":"info","msg":"Already attempted sync: comparing synced revisions to [d049270d788de26273d85992c271c5994a6d7ca8]","time":"2026-07-24T17:07:29Z"}
+{"application":"demo","dest-namespace":"cookbook-argocd","dest-server":"https://kubernetes.default.svc","level":"info","msg":"Initiated automated sync to 'd049270d788de26273d85992c271c5994a6d7ca8'","reason":"OperationStarted","time":"2026-07-24T17:07:29Z","type":"Normal"}
+{"application":"demo","level":"info","msg":"Initiated automated sync to 'd049270d788de26273d85992c271c5994a6d7ca8'","time":"2026-07-24T17:07:29Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (0)","time":"2026-07-24T17:07:29Z"}
+{"dry-run":"none","level":"info","manager":"argocd-controller","msg":"Applying resource Deployment/demo in cluster: https://10.96.0.1:443, namespace: cookbook-argocd","serverSideApply":false,"serverSideDiff":true,"time":"2026-07-24T17:07:29Z"}
+{"application":"demo","kind":"Deployment","level":"info","msg":"Adding resource result, status: 'Synced', phase: 'Running', message: 'deployment.apps/demo configured'","name":"demo","namespace":"cookbook-argocd","phase":"Sync","syncId":"00002-CFpUl","time":"2026-07-24T17:07:29Z"}
+{"application":"demo","duration":485507072,"level":"info","msg":"sync/terminate complete","syncId":"00002-CFpUl","time":"2026-07-24T17:07:29Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (2)","time":"2026-07-24T17:07:30Z"}
+{"application":"demo","level":"info","msg":"Skipping auto-sync: application status is Synced","time":"2026-07-24T17:07:30Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (1)","time":"2026-07-24T17:07:30Z"}
+{"application":"demo","level":"info","msg":"Skipping auto-sync: application status is Synced","time":"2026-07-24T17:07:30Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (0)","time":"2026-07-24T17:07:30Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (0)","time":"2026-07-24T17:07:30Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (0)","time":"2026-07-24T17:07:30Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (0)","time":"2026-07-24T17:07:30Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (0)","time":"2026-07-24T17:07:30Z"}
+
+# РАЗБОР ЗАМЕРА (все отметки — из вывода выше, ни одной «примерно»).
+# ⚠️ ЧАСЫ. Отметки контроллера — часы КЛАСТЕРА, отметки date/kubectl — часы ХОСТА, и они
+# расходятся на +1.53 s (измерено в §5a). Ниже часы источника подписаны у каждой строки;
+# вычитать друг из друга можно только однородные.
+#   17:07:21    (кластер)  плановый цикл опроса: «comparison expired ... expiry: 2m0s» и
+#                   сразу «Skipping auto-sync: application status is Synced» — расхождения
+#                   ещё нет. По часам ХОСТА это 17:07:19.47, то есть опрос прошёл за
+#                   ~8.3 s до правки (лог печатает целые секунды, отсюда ±1 s).
+#   17:07:27.775 (хост)  kubectl scale deploy/demo --replicas=3  (правка руками)
+#   17:07:29    (кластер)  «Refreshing app status (controller refresh requested), level (1)»
+#                   — это НЕ плановый опрос: предыдущий прошёл в 17:07:21, следующий был бы
+#                   не раньше чем через 2m0s. Расхождение в кластере приходит через watch.
+#   17:07:29    (кластер)  «Initiated automated sync to 'd049270d...'», SelfHealAttemptsCount:1,
+#                   ревизия та же самая — синхронизация вызвана дрейфом, а не новым коммитом.
+#   17:07:29    (кластер)  «Applying resource Deployment/demo» -> «deployment.apps/demo configured»,
+#                   sync/terminate complete: duration 485507072 ns = 0.486 s.
+#   17:07:29.349 (хост)  первое наблюдение spec.replicas=1 в цикле опроса.
+#
+#   ФАКТИЧЕСКОЕ ВРЕМЯ ВОЗВРАТА: 1.6 s (17:07:29.349 - 17:07:27.775 = 1.574 s, обе отметки
+#   хостовые, поправка на часы не нужна и не применялась). Это ВЕРХНЯЯ ГРАНИЦА: цикл
+#   наблюдения ходит раз в ~1.2 s, а сам apply по логу занял 0.486 s.
+#
+#   Паузы перед этой попыткой не было и быть не могло: backoff отсчитывается ОТ ПРЕДЫДУЩЕЙ
+#   попытки self-heal, а предыдущей не было вовсе (в логе SelfHealAttemptsCount:1). Пауза
+#   появляется ПОСЛЕ попытки и гейтит следующую — это видно на дрейфах подряд:
+
+# cmd: date -u +%T.%3N; kubectl -n cookbook-argocd scale deploy/demo --replicas=4  (второй дрейф подряд)
+17:09:14.512
+deployment.apps/demo scaled
+17:09:14.720 spec.replicas=4
+17:09:15.915 spec.replicas=1
+#   ВТОРОЙ ДРЕЙФ, фактическое время возврата: 1.4 s (17:09:15.915 - 17:09:14.512 = 1.403 s)
+#   cmd: kubectl -n cookbook-argocd logs argocd-application-controller-0 | grep '17:09:1' | grep -Eo 'SelfHealAttemptsCount:[0-9]+'
+#   SelfHealAttemptsCount:2   <- счётчик попыток вырос, а задержка не появилась
+#
+#   Объяснение (и оно проверяется третьим замером ниже): backoff отсчитывается от
+#   ПРЕДЫДУЩЕЙ попытки self-heal, а не от момента дрейфа. После попытки 1 (17:07:29)
+#   контроллер выдерживает 2 s x 3^0 = 2 s, и только потом разрешает попытку 2. Между
+#   попытками прошло 107 s (17:07:29 -> 17:09:16), 107 > 2 — ждать было нечего.
+#   Backoff душит только дрейфы, идущие ПОДРЯД.
+
+# ------------------------------------------------------------------------------
+# 2a. ГДЕ ЖЕ ТОГДА BACKOFF: третий и четвёртый дрейф — и пятый, СРАЗУ следом
+# ------------------------------------------------------------------------------
+# Третий дрейф — снова с большим отрывом от предыдущего (318 s: 17:09:16 -> 17:14:34).
+# Счётчик попыток при этом вырос до 3, а время возврата не изменилось:
+# cmd: date -u +%T.%3N; kubectl -n cookbook-argocd scale deploy/demo --replicas=5; <тот же цикл>
+17:14:32.542
+deployment.apps/demo scaled
+17:14:32.745 spec.replicas=5
+17:14:33.943 spec.replicas=1
+#   ТРЕТИЙ ДРЕЙФ: возврат за 1.4 s (17:14:33.943 - 17:14:32.542 = 1.401 s),
+#   SelfHealAttemptsCount:3. Гейт для этой попытки — пауза после попытки 2:
+#   2 s x 3^1 = 6 s, а прошло 318 s.
+#
+# Теперь два дрейфа ПОДРЯД, без пауз между ними: второй запускается через доли секунды
+# после того, как отработал self-heal первого.
+# cmd: kubectl -n cookbook-argocd scale deploy/demo --replicas=2   # дрейф A, ждём возврата
+17:15:39.187
+17:15:39.551 spec.replicas=2
+17:15:40.743 spec.replicas=1
+#   ДРЕЙФ A: возврат за 1.6 s (17:15:40.743 - 17:15:39.187 = 1.556 s),
+#   SelfHealAttemptsCount:4. Гейт — пауза после попытки 3: 2 s x 3^2 = 18 s, прошло 66 s.
+# cmd: kubectl -n cookbook-argocd scale deploy/demo --replicas=2   # дрейф B, СРАЗУ ЖЕ
+17:15:40.843
+17:15:41.181 spec.replicas=2
+17:15:42.391 spec.replicas=2
+17:15:43.582 spec.replicas=2
+17:15:44.770 spec.replicas=2
+17:15:45.965 spec.replicas=2
+...                       (полный цикл — по секунде, 45 итераций, все spec.replicas=2)
+17:16:32.875 spec.replicas=2
+17:16:34.072 spec.replicas=2
+17:16:35.285 spec.replicas=1
+#   ДРЕЙФ B (сразу после A): возврат за 54.4 s
+#   (17:16:35.285 - 17:15:40.843 = 54.442 s), SelfHealAttemptsCount:5
+#
+# И вот теперь контроллер прямо пишет, чего он ждёт. Вывод ПОЛНЫЙ, все девять строк за
+# прогон — ни одна не отброшена (в них же лежит доказательство потолка, см. последнюю):
+# cmd: kubectl -n cookbook-argocd logs argocd-application-controller-0 | grep 'retrying in'
+{"app-namespace":"cookbook-argocd","application":"demo","level":"info","msg":"Skipping auto-sync: already attempted sync to [d049270d788de26273d85992c271c5994a6d7ca8] with timeout 0s (retrying in 5.314861668s)","project":"default","time":"2026-07-24T17:09:16Z"}
+{"app-namespace":"cookbook-argocd","application":"demo","level":"info","msg":"Skipping auto-sync: already attempted sync to [d049270d788de26273d85992c271c5994a6d7ca8] with timeout 0s (retrying in 17.182684415s)","project":"default","time":"2026-07-24T17:14:34Z"}
+{"app-namespace":"cookbook-argocd","application":"demo","level":"info","msg":"Skipping auto-sync: already attempted sync to [d049270d788de26273d85992c271c5994a6d7ca8] with timeout 0s (retrying in 53.639418159s)","project":"default","time":"2026-07-24T17:15:41Z"}
+{"app-namespace":"cookbook-argocd","application":"demo","level":"info","msg":"Skipping auto-sync: already attempted sync to [d049270d788de26273d85992c271c5994a6d7ca8] with timeout 0s (retrying in 52.455927351s)","project":"default","time":"2026-07-24T17:15:42Z"}
+{"app-namespace":"cookbook-argocd","application":"demo","level":"info","msg":"Skipping auto-sync: already attempted sync to [d049270d788de26273d85992c271c5994a6d7ca8] with timeout 0s (retrying in 51.857316418s)","project":"default","time":"2026-07-24T17:15:43Z"}
+{"app-namespace":"cookbook-argocd","application":"demo","level":"info","msg":"Skipping auto-sync: already attempted sync to [d049270d788de26273d85992c271c5994a6d7ca8] with timeout 0s (retrying in 2m41.493841217s)","project":"default","time":"2026-07-24T17:16:35Z"}
+{"app-namespace":"cookbook-argocd","application":"demo","level":"info","msg":"Skipping auto-sync: already attempted sync to [d049270d788de26273d85992c271c5994a6d7ca8] with timeout 0s (retrying in 33.35495625s)","project":"default","time":"2026-07-24T17:18:43Z"}
+{"app-namespace":"cookbook-argocd","application":"demo","level":"info","msg":"Skipping auto-sync: already attempted sync to [d049270d788de26273d85992c271c5994a6d7ca8] with timeout 0s (retrying in 32.653670262s)","project":"default","time":"2026-07-24T17:18:44Z"}
+{"app-namespace":"cookbook-argocd","application":"demo","level":"info","msg":"Skipping auto-sync: already attempted sync to [d049270d788de26273d85992c271c5994a6d7ca8] with timeout 0s (retrying in 4m59.40073637s)","project":"default","time":"2026-07-24T17:19:17Z"}
+#
+# То же самое компактно, чтобы было видно соответствие «попытка -> её пауза»:
+# cmd: kubectl -n cookbook-argocd logs argocd-application-controller-0 | grep 'retrying in' | grep -oE 'retrying in [^)]+|"time":"[^"]+"' | paste - -
+retrying in 5.314861668s	"time":"2026-07-24T17:09:16Z"
+retrying in 17.182684415s	"time":"2026-07-24T17:14:34Z"
+retrying in 53.639418159s	"time":"2026-07-24T17:15:41Z"
+retrying in 52.455927351s	"time":"2026-07-24T17:15:42Z"
+retrying in 51.857316418s	"time":"2026-07-24T17:15:43Z"
+retrying in 2m41.493841217s	"time":"2026-07-24T17:16:35Z"
+retrying in 33.35495625s	"time":"2026-07-24T17:18:43Z"
+retrying in 32.653670262s	"time":"2026-07-24T17:18:44Z"
+retrying in 4m59.40073637s	"time":"2026-07-24T17:19:17Z"
+
+# Отметки времени самих попыток — оттуда же, без пересчёта:
+# cmd: kubectl -n cookbook-argocd logs argocd-application-controller-0 | grep SelfHealAttemptsCount | grep -oE 'SelfHealAttemptsCount:[0-9]+|"time":"[^"]+"' | paste - -
+SelfHealAttemptsCount:0	"time":"2026-07-24T16:14:56Z"
+SelfHealAttemptsCount:1	"time":"2026-07-24T17:07:29Z"
+SelfHealAttemptsCount:2	"time":"2026-07-24T17:09:16Z"
+SelfHealAttemptsCount:3	"time":"2026-07-24T17:14:34Z"
+SelfHealAttemptsCount:4	"time":"2026-07-24T17:15:40Z"
+SelfHealAttemptsCount:5	"time":"2026-07-24T17:16:35Z"
+SelfHealAttemptsCount:6	"time":"2026-07-24T17:19:17Z"
+SelfHealAttemptsCount:0	"time":"2026-07-24T17:23:25Z"
+SelfHealAttemptsCount:0	"time":"2026-07-24T17:25:36Z"
+#   ^ два последних нуля — не self-heal: это синхронизации на НОВУЮ ревизию (§4 prune и
+#     §5 возврат), там счётчик попыток self-heal сбрасывается.
+#
+# ПРАВИЛО, КОТОРОЕ ПЕЧАТАЕТ САМ КОНТРОЛЛЕР. ПОСЛЕ попытки self-heal номер N он ждёт
+#   --self-heal-backoff-timeout-seconds x (--self-heal-backoff-factor ^ (N-1)) = 2 x 3^(N-1),
+# но не больше --self-heal-backoff-cap-seconds = 300 s, и только после этого разрешает
+# попытку N+1. Строки «retrying in ...» — это ОСТАТОК текущей паузы на момент печати; каждая
+# из них снята в ту же или следующую секунду после соответствующей попытки, поэтому её
+# значение чуть меньше полной паузы:
+#
+#   пауза ПОСЛЕ попытки 1 (17:07:29) = 2 x 3^0 =   2 s   в лог не попала: за 2 s контроллер
+#                                                        ни разу не переоценивал приложение
+#   пауза ПОСЛЕ попытки 2 (17:09:16) = 2 x 3^1 =   6 s   лог: «retrying in 5.31s» в 17:09:16
+#   пауза ПОСЛЕ попытки 3 (17:14:34) = 2 x 3^2 =  18 s   лог: «retrying in 17.18s» в 17:14:34
+#   пауза ПОСЛЕ попытки 4 (17:15:40) = 2 x 3^3 =  54 s   лог: «retrying in 53.64s» в 17:15:41
+#   пауза ПОСЛЕ попытки 5 (17:16:35) = 2 x 3^4 = 162 s   лог: «retrying in 2m41.49s» в 17:16:35
+#                                                        и её же остаток «33.35s» в 17:18:43
+#   пауза ПОСЛЕ попытки 6 (17:19:17) = 2 x 3^5 = 486 s   ОБРЕЗАНА ПОТОЛКОМ до 300 s —
+#                                                        лог: «retrying in 4m59.40s» в 17:19:17
+#
+# Потолок 300 s тем самым не взят из --help, а ПОКАЗАН: формула требовала 486 s, контроллер
+# напечатал 299.4 s. Это и есть --self-heal-backoff-cap-seconds в действии.
+#
+# ТЕПЕРЬ ЗАМЕРЫ. Гейт для попытки N — пауза, назначенная ПОСЛЕ попытки N-1:
+#
+#   попытка | требовалось выждать | фактически прошло с прошлой попытки | замер возврата
+#   --------|---------------------|-------------------------------------|---------------
+#      1    | ничего (предыдущей попытки нет) | —                       | 1.6 s
+#      2    | 2 s   (пауза после 1)           | 107 s (17:07:29->17:09:16) | 1.4 s
+#      3    | 6 s   (пауза после 2)           | 318 s (17:09:16->17:14:34) | 1.4 s
+#      4    | 18 s  (пауза после 3)           |  66 s (17:14:34->17:15:40) | 1.6 s
+#      5    | 54 s  (пауза после 4)           |  55 s (17:15:40->17:16:35) | 54.4 s — ЖДАЛИ
+#      6    | 162 s (пауза после 5)           | 162 s (17:16:35->17:19:17) | 35.8 s — ЖДАЛИ
+#
+# Первые четыре дрейфа разносило по времени случайно, и каждый раз запас над требуемой
+# паузой был кратным (107 против 2, 318 против 6, 66 против 18) — ждать было нечего.
+# Дрейф B запускался через 0.1 s после того, как отработал self-heal дрейфа A, и уткнулся
+# ровно в 54 s — паузу, назначенную после четвёртой попытки. Шестой дрейф (§3 ниже) сделан
+# в середине 162-секундной паузы, поэтому ждал только её остаток — 35.8 s; конец паузы
+# совпал секунда в секунду: 17:16:35 + 162 s = 17:19:17, и ровно в 17:19:17 replicas
+# вернулись. То есть 162 s подтверждены не «замером возврата», а точкой, в которой
+# контроллер снова получил право на попытку.
+#
+# ВЫВОД ДЛЯ СТАТЬИ. «ArgoCD откатывает правку за пару секунд» верно ровно один раз. Если
+# кто-то правит один и тот же объект раз за разом (или это делает не человек, а другой
+# контроллер), окно, в котором кластер живёт с ЧУЖИМ состоянием, растёт экспоненциально:
+# 2 s, 6 s, 18 s, 54 s, 162 s — и упирается в потолок 300 s (--self-heal-backoff-cap-seconds),
+# что в этом же логе и напечатано строкой «retrying in 4m59.40073637s».
+# Пять минут расхождения — это уже не «мгновенный self-heal».
+
+# ==============================================================================
+# 3. ДРЕЙФ, КОТОРЫЙ ArgoCD НЕ ЧИНИТ — ГРАНИЦА МЕХАНИЗМА
+# ==============================================================================
+# Проверяем две разные границы сразу, одним циклом, чтобы было видно: в ОДНОМ И ТОМ ЖЕ
+# проходе self-heal одно откатывается, а другое — нет.
+#   (а) ЧУЖОЙ ОБЪЕКТ: ConfigMap, созданный руками в том же namespace. Его нет в git и
+#       нет tracking-id — Application им не владеет. Внимание: prune: true уже включён.
+#   (б) НЕОБЪЯВЛЕННОЕ ПОЛЕ у СВОЕГО объекта: метка, дописанная руками к Deployment demo.
+#       Объектом Application владеет, но этой метки в git нет вовсе.
+#   (в) контроль: replicas — поле, которое в git ОБЪЯВЛЕНО. Оно должно откатиться.
+
+# cmd: date -u +%T.%3N
+17:18:41.463
+
+# cmd: kubectl -n cookbook-argocd create configmap manual-not-in-git --from-literal=who=human
+configmap/manual-not-in-git created
+
+# cmd: kubectl -n cookbook-argocd label deploy demo drift-probe=manual
+deployment.apps/demo labeled
+# cmd: kubectl -n cookbook-argocd annotate deploy demo drift-probe=manual
+deployment.apps/demo annotated
+
+# cmd: kubectl -n cookbook-argocd scale deploy/demo --replicas=2   # (в) объявленное поле
+deployment.apps/demo scaled
+
+# cmd: for i in $(seq 1 30); do printf '%s ' "$(date -u +%T.%3N)"; printf 'spec.replicas=%s ' "$(kubectl -n cookbook-argocd get deploy demo -o jsonpath='{.spec.replicas}')"; printf 'labels.drift-probe=%s ' "$(kubectl -n cookbook-argocd get deploy demo -o jsonpath='{.metadata.labels.drift-probe}')"; printf 'cm=%s\n' "$(kubectl -n cookbook-argocd get cm manual-not-in-git -o jsonpath='{.metadata.name}')"; sleep 1; done
+17:18:42.337 spec.replicas=2 labels.drift-probe=manual cm=manual-not-in-git
+17:18:45.806 spec.replicas=2 labels.drift-probe=manual cm=manual-not-in-git
+17:18:49.283 spec.replicas=2 labels.drift-probe=manual cm=manual-not-in-git
+17:18:52.824 spec.replicas=2 labels.drift-probe=manual cm=manual-not-in-git
+17:18:56.312 spec.replicas=2 labels.drift-probe=manual cm=manual-not-in-git
+17:18:59.830 spec.replicas=2 labels.drift-probe=manual cm=manual-not-in-git
+17:19:03.312 spec.replicas=2 labels.drift-probe=manual cm=manual-not-in-git
+17:19:06.777 spec.replicas=2 labels.drift-probe=manual cm=manual-not-in-git
+17:19:10.260 spec.replicas=2 labels.drift-probe=manual cm=manual-not-in-git
+17:19:13.753 spec.replicas=2 labels.drift-probe=manual cm=manual-not-in-git
+17:19:17.265 spec.replicas=1 labels.drift-probe=manual cm=manual-not-in-git
+#   (в) replicas откатились за 35.8 s — это ВЕРХНЯЯ ГРАНИЦА: 17:19:17.265 минус отметка
+#   17:18:41.463, снятая ПЕРЕД тремя правками; сам scale прошёл где-то между ней и первым
+#   наблюдением 17:18:42.337, так что настоящее значение лежит в 34.9…35.8 s.
+#   (Заодно ещё один живой замер backoff, и он точнее замера возврата: пауза, назначенная
+#    ПОСЛЕ попытки №5 (17:16:35), равна 2 x 3^4 = 162 s — контроллер напечатал её как
+#    «retrying in 2m41.49s». 17:16:35 + 162 s = 17:19:17, и попытка №6 в логе стоит ровно
+#    на 17:19:17. Ждали не 162 s от правки, а остаток паузы: правка попала в её середину.)
+
+# --- ЧТО ОСТАЛОСЬ ИЗМЕНЁННЫМ ПОСЛЕ ТОГО, КАК SELF-HEAL ОТРАБОТАЛ ---
+# cmd: kubectl -n cookbook-argocd get deploy demo -o jsonpath='{.spec.replicas} {.metadata.labels} {.metadata.annotations.drift-probe}'
+1
+{"app":"demo","drift-probe":"manual","stand":"cookbook-gitops"}
+drift-probe annotation = manual
+# cmd: kubectl -n cookbook-argocd get cm manual-not-in-git -o jsonpath='{.metadata.annotations}{"\n"}{.data}'
+
+{"who":"human"}
+#   ^ у ConfigMap НЕТ аннотации argocd.argoproj.io/tracking-id — сравните с объектами из git:
+# cmd: kubectl -n cookbook-argocd get deploy demo svc demo -o jsonpath='{range .items[*]}{.kind}/{.metadata.name} {.metadata.annotations.argocd\.argoproj\.io/tracking-id}{"\n"}{end}'
+Deployment/demo demo:apps/Deployment:cookbook-argocd/demo
+Service/demo    demo:/Service:cookbook-argocd/demo
+
+# Список ресурсов, которыми Application владеет — в его же статусе. Ровно два:
+# cmd: kubectl -n cookbook-argocd get application demo -o jsonpath='{range .status.resources[*]}{.group}/{.kind} {.name} {.status}{"\n"}{end}'
+/Service demo Synced
+apps/Deployment demo Synced
+
+# cmd: kubectl -n cookbook-argocd get application demo -o wide
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         d049270d788de26273d85992c271c5994a6d7ca8   default
+
+# ВЫВОД ПО ГРАНИЦЕ МЕХАНИЗМА. В одном и том же проходе self-heal:
+#   откатилось     spec.replicas 2 -> 1      — поле ОБЪЯВЛЕНО в git;
+#   НЕ откатилось  метка   drift-probe=manual — поля нет в git, хотя объект «свой»;
+#   НЕ откатилось  аннотация drift-probe=manual — то же самое;
+#   НЕ удалён      ConfigMap manual-not-in-git — объект вообще не принадлежит Application,
+#                  и prune: true его не касается: prune удаляет только то, что было в git
+#                  и оттуда пропало, а «не было никогда» — это не то же самое.
+# При этом Application показывает Synced. То есть diff у ArgoCD — не «объект в кластере равен
+# объекту в git», а «всё ОБЪЯВЛЕННОЕ в git присутствует в кластере в этом виде». Лишнее в
+# живом объекте в сравнение не входит.
+#
+# Почему это важнее, чем кажется. Ровно на этом свойстве работает совместимость с другими
+# контроллерами: HPA правит replicas, service mesh дописывает аннотации, admission-вебхуки
+# добавляют метки — и всё это выживает, потому что в git не объявлено. И ровно здесь же
+# дыра в ожиданиях: «GitOps гарантирует, что в кластере то же, что в git» — неверно.
+# Гарантия ровно одна: в кластере ЕСТЬ то, что в git. Чего в git нет — не гарантируется
+# ничего, включая целые объекты в том же namespace.
+
+# ==============================================================================
+# 4. ★ PRUNE: УДАЛЕНИЕ МАНИФЕСТА ИЗ GIT УДАЛЯЕТ ОБЪЕКТ ИЗ КЛАСТЕРА
+# ==============================================================================
+# Коммит делается ИЗ ПОДА ВНУТРИ cookbook-argocd (git-push.sh): NetworkPolicy
+# git-server-allow-stand-only пускает к 9418 только из этого namespace, и ослаблять её
+# ради демо нельзя — она один из двух замков, закрытых в M1. Под проходит baseline.
+# Даты коммита прибиты (GIT_AUTHOR_DATE/GIT_COMMITTER_DATE = 2026-07-24T13:00:00+00:00),
+# иначе хеш в фикстуре был бы плавающим.
+
+# состояние до:
+# cmd: kubectl -n cookbook-argocd get svc demo -o wide; kubectl -n cookbook-argocd get application demo -o wide
+NAME   TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+demo   ClusterIP   10.105.220.154   <none>        80/TCP    66m   app=demo
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         d049270d788de26273d85992c271c5994a6d7ca8   default
+
+# cmd: bash git-push.sh <<'EOF'
+#        git rm --quiet apps/demo/service.yaml
+#        git commit --quiet -m "remove: Service demo — демо prune"
+#        git push --quiet origin main
+#        echo "новый HEAD: $(git rev-parse HEAD)"
+#        git log --oneline
+#        echo "дерево после коммита:"; git ls-tree -r --name-only HEAD
+#        echo "МОМЕНТ PUSH (UTC, часы пода): $(date -u +%T.%3N)"
+#      EOF
+новый HEAD: 41e857605e9bf396f20966470d0dea259c4336b4
+41e8576 remove: Service demo — демо prune
+d049270 seed: demo Deployment и Service
+дерево после коммита:
+apps/demo/deployment.yaml
+МОМЕНТ PUSH (UTC, часы пода): 17:21:24.905
+pod phase: Succeeded (под удалён)
+
+# Отсчёт: push произошёл в 17:21:24.905 (часы пода = часы узла, оба UTC).
+# cmd: for i in $(seq 1 90); do printf '%s ' "$(date -u +%T.%3N)"; printf 'revision=%s ' "$(kubectl -n cookbook-argocd get application demo -o jsonpath='{.status.sync.revision}' | cut -c1-7)"; printf 'sync=%s ' "$(kubectl -n cookbook-argocd get application demo -o jsonpath='{.status.sync.status}')"; printf 'Service/demo=%s\n' "$(kubectl -n cookbook-argocd get svc demo -o jsonpath='{.metadata.name}' 2>/dev/null || echo НЕТ)"; sleep 3; done
+17:21:39.216 revision=d049270 sync=Synced Service/demo=demo
+17:21:42.757 revision=d049270 sync=Synced Service/demo=demo
+17:21:46.258 revision=d049270 sync=Synced Service/demo=demo
+17:21:49.803 revision=d049270 sync=Synced Service/demo=demo
+17:21:53.304 revision=d049270 sync=Synced Service/demo=demo
+17:21:56.800 revision=d049270 sync=Synced Service/demo=demo
+17:22:00.354 revision=d049270 sync=Synced Service/demo=demo
+17:22:03.877 revision=d049270 sync=Synced Service/demo=demo
+17:22:07.438 revision=d049270 sync=Synced Service/demo=demo
+17:22:10.976 revision=d049270 sync=Synced Service/demo=demo
+17:22:14.514 revision=d049270 sync=Synced Service/demo=demo
+17:22:18.073 revision=d049270 sync=Synced Service/demo=demo
+17:22:21.623 revision=d049270 sync=Synced Service/demo=demo
+17:22:25.169 revision=d049270 sync=Synced Service/demo=demo
+17:22:28.821 revision=d049270 sync=Synced Service/demo=demo
+17:22:32.386 revision=d049270 sync=Synced Service/demo=demo
+17:22:35.927 revision=d049270 sync=Synced Service/demo=demo
+17:22:39.448 revision=d049270 sync=Synced Service/demo=demo
+17:22:42.968 revision=d049270 sync=Synced Service/demo=demo
+17:22:46.482 revision=d049270 sync=Synced Service/demo=demo
+17:22:50.007 revision=d049270 sync=Synced Service/demo=demo
+17:22:53.537 revision=d049270 sync=Synced Service/demo=demo
+17:22:57.040 revision=d049270 sync=Synced Service/demo=demo
+17:23:00.545 revision=d049270 sync=Synced Service/demo=demo
+17:23:04.041 revision=d049270 sync=Synced Service/demo=demo
+17:23:07.627 revision=d049270 sync=Synced Service/demo=demo
+17:23:11.135 revision=d049270 sync=Synced Service/demo=demo
+17:23:14.644 revision=d049270 sync=Synced Service/demo=demo
+17:23:18.136 revision=d049270 sync=Synced Service/demo=demo
+17:23:21.631 revision=d049270 sync=Synced Service/demo=demo
+17:23:25.190 revision=41e8576 sync=Synced Service/demo=НЕТ
+# --- Service исчез ---
+
+# ★ ЗАМЕР ЗАДЕРЖКИ PRUNE — ДВА ЧИСЛА, И ИХ НЕЛЬЗЯ ПУТАТЬ
+#
+#   (а) ВЕРХНЯЯ ГРАНИЦА ПО НАБЛЮДЕНИЮ — 121.8 s.
+#       push коммита 41e8576        : 17:21:24.905 (часы пода = часы кластера)
+#       первое наблюдение «Service/demo=НЕТ» : 17:23:25.190 по часам ХОСТА
+#                                     = 17:23:26.72 по часам кластера (+1.53 s, §5a)
+#       17:23:26.72 - 17:21:24.905 = 121.8 s
+#       Это НЕ момент удаления, а момент, когда цикл ВПЕРВЫЕ на него посмотрел: шаг цикла
+#       3.5 s (предыдущая итерация — 17:23:21.6), значит истинное значение где-то в
+#       118.3…121.8 s. Как и замеры self-heal, это число честно только как верхняя граница.
+#
+#   (б) ПО ЛОГУ КОНТРОЛЛЕРА — ~120.6 s, и это точнее.
+#       push                        : 17:21:24.905 (часы кластера)
+#       sync начат                  : 17:23:25     (часы кластера) => 120.1 s
+#       sync/terminate complete     : duration 487411970 ns = 0.487 s
+#       17:21:24.905 -> ~17:23:25.5 = ~120.6 s от push до отработавшего prune
+#       (лог печатает целые секунды, отсюда ±1 s).
+#
+#   ДАЛЬШЕ В ТЕКСТЕ используется ~120.6 s как замер и 121.8 s — как верхняя граница.
+
+# Что делал контроллер — его лог:
+# cmd: kubectl -n cookbook-argocd logs argocd-application-controller-0 | grep -E '17:23:2' | grep -Ei 'comparison expired|Initiated automated sync|Adding resource result|sync/terminate'
+{"application":"demo","level":"info","msg":"Refreshing app status (comparison expired, requesting refresh. reconciledAt: 2026-07-24 17:19:17 +0000 UTC, expiry: 2m0s), level (2)","time":"2026-07-24T17:23:25Z"}
+{"application":"demo","level":"info","msg":"Initiated automated sync to '41e857605e9bf396f20966470d0dea259c4336b4'","time":"2026-07-24T17:23:25Z"}
+{"application":"demo","kind":"Service","level":"info","msg":"Adding resource result, status: 'Pruned', phase: 'Succeeded', message: 'pruned'","name":"demo","namespace":"cookbook-argocd","phase":"Sync","syncId":"00008-DEVCf","time":"2026-07-24T17:23:25Z"}
+{"application":"demo","kind":"Deployment","level":"info","msg":"Adding resource result, status: 'Synced', phase: 'Running', message: 'deployment.apps/demo unchanged'","name":"demo","namespace":"cookbook-argocd","phase":"Sync","syncId":"00008-DEVCf","time":"2026-07-24T17:23:25Z"}
+{"application":"demo","duration":487411970,"level":"info","msg":"sync/terminate complete","syncId":"00008-DEVCf","time":"2026-07-24T17:23:25Z"}
+
+# РАЗБОР. Ждали не удаления — ждали ОПРОСА. В 17:23:25 контроллер впервые после push
+# заглянул в репозиторий («comparison expired ... reconciledAt: 17:19:17, expiry: 2m0s»),
+# увидел новую ревизию 41e8576 и в ту же секунду отработал: Service — 'Pruned',
+# Deployment — 'unchanged', sync/terminate complete duration 487411970 ns = 0.487 s.
+# То есть из ~120.6 s работы было 0.5 s, остальные ~120.1 s — ожидание следующего опроса.
+
+# ★ СОПОСТАВЛЕНИЕ С ФАКТИЧЕСКИМ timeout.reconciliation. Настройка — 2m0s + джиттер до
+# 1m0s, то есть окно ожидания в теории 0..180 s. Наши ~120.6 s в него попадают. Но
+# фактические интервалы между плановыми опросами у этого же экземпляра шире (первые
+# двадцать сверок с момента старта контроллера — на момент съёмки фикстуры):
+# cmd: kubectl -n cookbook-argocd logs argocd-application-controller-0 | grep 'comparison expired' | grep -oE '"time":"[^"]+"' | cut -d'"' -f4 | cut -dT -f2 | tr -d Z | awk -F: '{s=$1*3600+$2*60+$3; if(p) printf "  %s  (+%d s)\n",$0,s-p; else printf "  %s\n",$0; p=s}'
+  16:13:06
+  16:17:37  (+271 s)
+  16:20:49  (+192 s)
+  16:23:40  (+171 s)
+  16:27:25  (+225 s)
+  16:31:14  (+229 s)
+  16:35:33  (+259 s)
+  16:39:04  (+211 s)
+  16:41:09  (+125 s)
+  16:43:35  (+146 s)
+  16:46:47  (+192 s)
+  16:53:30  (+403 s)
+  16:57:33  (+243 s)
+  17:01:10  (+217 s)
+  17:03:22  (+132 s)
+  17:07:21  (+239 s)
+  17:11:40  (+259 s)
+  17:14:34  (+174 s)
+  17:18:43  (+249 s)
+  17:23:25  (+282 s)
+
+# Двадцать подряд идущих плановых опросов: от 125 s до 403 s, медиана около 220 s.
+# Часть разброса объясняется тем, что таймер отсчитывается от ПОСЛЕДНЕЙ сверки любой
+# природы (в том числе вызванной self-heal), а не от предыдущего планового опроса. Но и
+# сам по себе конкретный случай выходит за 2m0s+1m0s: в логе выше видно, что при
+# reconciledAt 17:19:17 и expiry 2m0s сверка случилась в 17:23:25 — через 248 s.
+#
+# ВЫВОД ДЛЯ СТАТЬИ. «Задержка prune равна timeout.reconciliation» — неверно дважды.
+# Во-первых, коммит попадает в случайную точку цикла: ждать можно от нуля до полной
+# длины цикла. Во-вторых, фактическая длина цикла у ненастроенного экземпляра — не
+# «2 минуты», а 2..7 минут по замеру. Наши ~120.6 s — это удачный жребий, а не константа.
+
+# ==============================================================================
+# 5. ВОЗВРАТ РЕПОЗИТОРИЯ К SEED — И ЧЕСТНОЕ РАЗДЕЛЕНИЕ «САМИ» / «С ПИНКОМ»
+# ==============================================================================
+# Откат делаем тем же способом — из пода внутри cookbook-argocd, git reset --hard до
+# seed-коммита и push --force. И сразу же пинаем контроллер аннотацией refresh, чтобы
+# показать, сколько стоит опрос: выше без пинка ждали ~120.6 s.
+
+# cmd: bash git-push.sh <<'EOF'
+#        git reset --hard d049270d788de26273d85992c271c5994a6d7ca8
+#        git push --quiet --force origin main
+#        echo "HEAD после отката: $(git rev-parse HEAD)"
+#        git log --oneline
+#        git ls-tree -r --name-only HEAD
+#        echo "МОМЕНТ FORCE-PUSH (UTC, часы пода): $(date -u +%T.%3N)"
+#      EOF
+HEAD is now at d049270 seed: demo Deployment и Service
+HEAD после отката: d049270d788de26273d85992c271c5994a6d7ca8
+d049270 seed: demo Deployment и Service
+apps/demo/deployment.yaml
+apps/demo/service.yaml
+МОМЕНТ FORCE-PUSH (UTC, часы пода): 17:25:21.281
+pod phase: Succeeded (под удалён)
+
+# cmd: date -u +%T.%3N; kubectl -n cookbook-argocd patch application demo --type merge -p '{"metadata":{"annotations":{"argocd.argoproj.io/refresh":"normal"}}}'
+17:25:34.450
+application.argoproj.io/demo patched
+
+# cmd: for i in $(seq 1 60); do printf '%s ' "$(date -u +%T.%3N)"; printf 'revision=%s ' "$(kubectl -n cookbook-argocd get application demo -o jsonpath='{.status.sync.revision}' | cut -c1-7)"; printf 'Service/demo=%s\n' "$(kubectl -n cookbook-argocd get svc demo -o jsonpath='{.metadata.name}' 2>/dev/null || echo НЕТ)"; sleep 1; done
+17:25:34.925 revision=d049270 Service/demo=demo
+#   Service уже на месте в первой же итерации цикла — разбор ниже, в §5a и §5b
+
+# ------------------------------------------------------------------------------
+# 5a. ПОПРАВКА НА РАСХОЖДЕНИЕ ЧАСОВ (иначе замер prune был бы занижен)
+# ------------------------------------------------------------------------------
+# Часть отметок снята часами хоста (kubectl запускается с ноутбука), часть — часами
+# кластера (лог контроллера, date внутри пода). Прежде чем вычитать одно из другого,
+# расхождение надо ИЗМЕРИТЬ, а не предположить, что его нет.
+# cmd: for i in 1 2 3; do h=$(date -u +%s.%3N); c=$(kubectl -n cookbook-argocd exec argocd-application-controller-0 -- date -u +%s.%3N); h2=$(date -u +%s.%3N); awk ... 'cluster - (h+h2)/2'; done
+  cluster - host = +1.53 s   (RTT замера 0.22 s)
+  cluster - host = +1.53 s   (RTT замера 0.23 s)
+  cluster - host = +1.53 s   (RTT замера 0.21 s)
+
+# Часы кластера идут на 1.53 s ВПЕРЁД относительно хоста. На какие замеры это влияет:
+#   §2, §2a (self-heal, backoff) — НЕТ, пока вычитаются ОДНОРОДНЫЕ отметки: и правка, и
+#     наблюдение сняты часами хоста, сдвиг сокращается. 1.6 / 1.4 / 1.4 / 1.6 / 54.4 s
+#     остаются как есть.
+#     НО: как только рядом ставится отметка из ЛОГА, поправка нужна. Пример — «плановый
+#     опрос прошёл незадолго до правки»: опрос в 17:07:21 по КЛАСТЕРУ = 17:07:19.47 по
+#     ХОСТУ, правка в 17:07:27.775 по хосту, разрыв ~8.3 s (а не 6.3 s, как получилось бы
+#     при вычитании часов разных источников). Лог печатает целые секунды: ±1 s.
+#   §4 (prune) — ДА: момент push снят часами ПОДА, момент исчезновения — часами ХОСТА.
+#     Сырое вычитание давало 120.3 s, с поправкой 121.8 s — и это ВЕРХНЯЯ ГРАНИЦА, момент
+#     первого наблюдения (шаг цикла 3.5 s). Замер по логу — ~120.6 s, см. §4.
+#     (17:23:25.190 по хосту = 17:23:26.72 по кластеру; 17:23:26.72 - 17:21:24.905)
+#   §5 (возврат) — ДА, и без поправки вывод получился бы прямо противоположный:
+#     Service наблюдался в 17:25:34.925 по хосту, а контроллер записал 'service/demo
+#     created' в 17:25:36 по кластеру. Выглядит как «объект появился раньше, чем его
+#     создали»; с поправкой 17:25:34.925 + 1.53 = 17:25:36.46 — всё сходится.
+
+# ------------------------------------------------------------------------------
+# 5b. СКОЛЬКО ЖДАЛИ БЫ САМИ И СКОЛЬКО ПОЛУЧИЛОСЬ С ПИНКОМ
+# ------------------------------------------------------------------------------
+# Отметки (всё приведено к часам кластера):
+#   17:24:17      последняя сверка ПЕРЕД push — за 64 s до него
+#   17:25:21.281  force-push seed-ревизии в репозиторий (часы пода). После этого и до пинка
+#                 контроллер в репозиторий не заглядывал ни разу — ждать оставались минуты
+#   17:25:35.98   аннотация argocd.argoproj.io/refresh=normal (17:25:34.450 по хосту)
+#   17:25:36      контроллер: «Refreshing app status (normal refresh requested)» —
+#                 РЕАКЦИЯ НА АННОТАЦИЮ, а не плановый опрос (в тексте не 'comparison
+#                 expired', а 'normal refresh requested')
+#   17:25:36      «Initiated automated sync to d049270…», «service/demo created»,
+#                 sync/terminate complete: duration 629023259 ns = 0.629 s
+#   17:25:36.46   Service/demo наблюдается в кластере (17:25:34.925 по хосту)
+#
+# ЧЕСТНОЕ РАЗДЕЛЕНИЕ:
+#   сами (без пинка)  — ждали бы до следующего планового опроса. По замеру §4 это
+#                       ~120.6 s, а по таблице длин циклов там же — от 125 до 403 s;
+#   с пинком          — от аннотации до созданного объекта меньше секунды
+#                       (0.629 s самого sync, объект виден через ~0.5 s после этого).
+# Пинок не ускоряет ArgoCD — он его будит. Тот же эффект в проде даёт webhook от
+# хостинга репозитория: без него GitOps работает опросом, и цена опроса — вот эта.
+
+# cmd: kubectl -n cookbook-argocd logs argocd-application-controller-0 | grep -E '17:25:3' | grep -Ei 'refresh requested|Initiated automated sync to|resource result|sync/terminate'
+{"application":"demo","level":"info","msg":"Refreshing app status (normal refresh requested), level (3)","time":"2026-07-24T17:25:36Z"}
+{"application":"demo","level":"info","msg":"Initiated automated sync to 'd049270d788de26273d85992c271c5994a6d7ca8'","time":"2026-07-24T17:25:36Z"}
+{"application":"demo","kind":"Service","level":"info","msg":"Adding resource result, status: 'Synced', phase: 'Running', message: 'service/demo created'","name":"demo","namespace":"cookbook-argocd","phase":"Sync","syncId":"00009-oZgxI","time":"2026-07-24T17:25:36Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (1)","time":"2026-07-24T17:25:36Z"}
+{"application":"demo","kind":"Deployment","level":"info","msg":"Adding resource result, status: 'Synced', phase: 'Running', message: 'deployment.apps/demo unchanged'","name":"demo","namespace":"cookbook-argocd","phase":"Sync","syncId":"00009-oZgxI","time":"2026-07-24T17:25:36Z"}
+{"application":"demo","duration":629023259,"level":"info","msg":"sync/terminate complete","syncId":"00009-oZgxI","time":"2026-07-24T17:25:36Z"}
+{"application":"demo","level":"info","msg":"Refreshing app status (controller refresh requested), level (2)","time":"2026-07-24T17:25:36Z"}
+
+# ==============================================================================
+# 6. УБОРКА ЗА ДЕМО И ИТОГОВОЕ СОСТОЯНИЕ
+# ==============================================================================
+# Всё, что демо оставило в кластере, убираем РУКАМИ — потому что ArgoCD этого не сделает
+# (см. §3): ни чужой ConfigMap, ни необъявленные метку с аннотацией он не трогает.
+# cmd: kubectl -n cookbook-argocd delete configmap manual-not-in-git
+configmap "manual-not-in-git" deleted from cookbook-argocd namespace
+# cmd: kubectl -n cookbook-argocd label deploy demo drift-probe- ; kubectl -n cookbook-argocd annotate deploy demo drift-probe-
+deployment.apps/demo unlabeled
+deployment.apps/demo annotated
+# cmd: kubectl -n cookbook-argocd get pod -l role=git-client
+No resources found in cookbook-argocd namespace.
+(временных подов не осталось — git-push.sh удаляет свой под сам)
+
+# --- РЕПОЗИТОРИЙ ВЕРНУЛСЯ К SEED ---
+# cmd: bash git-push.sh <<'EOF'
+#        git log --oneline
+#        git ls-tree -r --name-only HEAD
+#        echo "HEAD = $(git rev-parse HEAD)"
+#      EOF
+d049270 seed: demo Deployment и Service
+apps/demo/deployment.yaml
+apps/demo/service.yaml
+HEAD = d049270d788de26273d85992c271c5994a6d7ca8
+pod phase: Succeeded (под удалён)
+
+# --- ИТОГОВОЕ СОСТОЯНИЕ СТЕНДА ---
+# cmd: kubectl -n cookbook-argocd get application demo -o wide
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         d049270d788de26273d85992c271c5994a6d7ca8   default
+
+# cmd: kubectl -n cookbook-argocd get application demo -o jsonpath='{.status.sync.status} {.status.health.status} {.status.sync.revision} {.status.operationState.phase}'
+sync=Synced health=Healthy revision=d049270d788de26273d85992c271c5994a6d7ca8 operation=Succeeded
+
+# cmd: kubectl -n cookbook-argocd get deploy,svc,cm -l app=demo; kubectl -n cookbook-argocd get deploy demo -o jsonpath='{.spec.replicas} {.metadata.labels}'
+NAME                   READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/demo   1/1     1            1           72m
+
+NAME           TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE
+service/demo   ClusterIP   10.97.138.219   <none>        80/TCP    2m20s
+1 {"app":"demo","stand":"cookbook-gitops"}
+
+# cmd: kubectl -n cookbook-argocd get cm | grep -c manual
+0   <- ручного ConfigMap больше нет
+
+# ⚠️ PRUNE НЕ БЕСПЛАТЕН: Service пересоздан, ClusterIP ДРУГОЙ.
+#   было  10.105.220.154 (возраст 66m на момент удаления)
+#   стало 10.97.138.219  (возраст 2m20s)
+# Удаление манифеста из git и возврат его обратно — это НЕ «ничего не изменилось».
+# Для Service это потерянный ClusterIP (и все, кто закешировал его вместо DNS-имени),
+# для PVC это был бы потерянный том, для Secret — пересозданный секрет. Именно поэтому
+# prune: true в проде обычно идут в паре с финализаторами и аннотацией
+# argocd.argoproj.io/sync-options: Prune=false на объектах, потеря которых необратима.
+
+# ==============================================================================
+# 7. ГРАНИЦЫ БЕЗОПАСНОСТИ: ЧТО НЕ БЫЛО ТРОНУТО (проверка после демо)
+# ==============================================================================
+# Демо включало automated+selfHeal+prune и делало push в источник правды — то есть
+# ровно ту цепочку, ради которой в M1 закрывались два замка. Замки НЕ ослаблялись:
+
+# cmd: kubectl get ns cookbook-argocd -o jsonpath='{.metadata.labels}'
+{"kubernetes.io/metadata.name":"cookbook-argocd","pod-security.kubernetes.io/audit":"baseline","pod-security.kubernetes.io/enforce":"baseline","pod-security.kubernetes.io/warn":"baseline","purpose":"digital-cookbook","stand":"cookbook-gitops"}
+#   ^ pod-security.kubernetes.io/enforce: baseline на месте. Под git-push.sh проходил
+#     baseline честно: runAsNonRoot, drop ALL, seccomp RuntimeDefault, без hostPath.
+
+# cmd: kubectl -n cookbook-argocd get netpol git-server-allow-stand-only -o jsonpath='{.spec}'
+{"ingress":[{"from":[{"namespaceSelector":{"matchLabels":{"kubernetes.io/metadata.name":"cookbook-argocd"}}}],"ports":[{"port":9418,"protocol":"TCP"}]}],"podSelector":{"matchLabels":{"app":"git-server"}},"policyTypes":["Ingress"]}
+#   ^ политика не менялась: ingress 9418/TCP только из namespaceSelector cookbook-argocd.
+#     Push в демо-репозиторий шёл ИЗ пода в этом namespace именно поэтому.
+
+# cmd: kubectl -n argocd get application -o name | wc -l   (боевой ArgoCD — только чтение)
+Application в ns argocd: 0
+
+# cmd: kubectl get crd applications.argoproj.io appprojects.argoproj.io applicationsets.argoproj.io -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp
+NAME                          CREATED
+applications.argoproj.io      2026-07-19T09:08:17Z
+appprojects.argoproj.io       2026-07-19T09:08:17Z
+applicationsets.argoproj.io   2026-07-19T09:08:17Z
+#   ^ те же creationTimestamp 2026-07-19, что и до стенда: CRD не переписывались.
+
+# cmd: kubectl get clusterrole,clusterrolebinding -o json | jq -r ... | grep cookbook-argocd
+ClusterRole/ClusterRoleBinding, ссылающихся на cookbook-argocd: 0
+
+# cmd: kubectl -n cookbook-argocd get pods
+NAME                                               READY   STATUS    RESTARTS   AGE
+argocd-application-controller-0                    1/1     Running   0          77m
+argocd-applicationset-controller-bff79b5d9-ktxn6   1/1     Running   0          87m
+argocd-dex-server-78bf889848-p4895                 1/1     Running   0          87m
+argocd-notifications-controller-585d78df9c-rh5sp   1/1     Running   0          87m
+argocd-redis-6469595fd7-xftf9                      1/1     Running   0          80m
+argocd-repo-server-6b75cff94-mcwzx                 1/1     Running   0          84m
+argocd-server-678bbbd9b4-7b6dw                     1/1     Running   0          42m
+demo-7ffcc6b8f5-98xd7                              1/1     Running   0          13m
+git-server-764f8c755b-rrksh                        1/1     Running   0          175m
+#   ^ девять подов стенда, временных нет.
+
+# cmd: kubectl -n argocd get deploy,statefulset -o wide --no-headers | awk '{print $1, $2}'
+  deployment.apps/argocd-applicationset-controller 1/1
+  deployment.apps/argocd-image-updater-controller 1/1
+  deployment.apps/argocd-notifications-controller 1/1
+  deployment.apps/argocd-redis 1/1
+  deployment.apps/argocd-repo-server 1/1
+  deployment.apps/argocd-server 1/1
+  statefulset.apps/argocd-application-controller 1/1
+#   ^ боевой ArgoCD в ns argocd работает как работал; стенд его только читал.

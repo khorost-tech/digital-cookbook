@@ -1,0 +1,37 @@
+# AnalysisTemplate — источник истины для «здоров ли canary» на этом стенде.
+#
+# Метрику берём из СОБСТВЕННОГО Prometheus фазы 1 (ns cookbook-k8s, svc prometheus:9090) —
+# того же, что поднят в стендах resources/autoscaling. Проверено (fixtures/60-canary.txt):
+#   - DNS-имя prometheus.cookbook-k8s.svc.cluster.local резолвится;
+#   - egress cookbook-argocd -> cookbook-k8s:9090 НЕ заблокирован: в cookbook-k8s нет ни
+#     NetworkPolicy, ни CiliumNetworkPolicy, а под контроллера Rollouts в cookbook-argocd не
+#     селектится ни одной из восьми политик стенда -> default-allow. Чужие политики НЕ
+#     ослаблялись, своя egress-политика не понадобилась.
+#
+# Запрос — max(up{job="cookbook-k8s-pods"}): реально измеримый на этом стенде сигнал
+# (единственная цель job'а — metricgen фазы 1, up=1, когда цель жива). Порог параметризован
+# аргументом threshold: тот же шаблон даёт УСПЕШНЫЙ анализ при threshold=1 (1>=1) и заведомо
+# ПРОВАЛЬНЫЙ при threshold=5 (1>=5 ложно) — так автооткат в демо 5 запускается настоящей
+# метрикой с настоящим числом, а не фальшивкой.
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: prometheus-up
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+spec:
+  args:
+    - name: threshold
+  metrics:
+    - name: phase1-up
+      # три замера с шагом 10 s — анализ длится ~20-30 s, число снимается вживую
+      interval: 10s
+      count: 3
+      successCondition: "result[0] >= {{args.threshold}}"
+      # первый же провал условия завершает анализ неуспехом (без запаса на флап)
+      failureLimit: 0
+      provider:
+        prometheus:
+          address: http://prometheus.cookbook-k8s.svc.cluster.local:9090
+          query: max(up{job="cookbook-k8s-pods"})

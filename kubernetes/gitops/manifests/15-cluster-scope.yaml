@@ -1,0 +1,46 @@
+# Описание кластера для НАШЕГО ArgoCD — и это не формальность, без него стенд не работает.
+#
+# ЧТО СЛОМАЛОСЬ. После установки namespace-install первый же Application встал в
+# SYNC STATUS Unknown с condition ComparisonError (дословно, fixtures/20-application.txt):
+#
+#   Failed to load live state: failed to get cluster info for "https://kubernetes.default.svc":
+#   error synchronizing cache state : failed to sync cluster https://10.96.0.1:443:
+#   failed to load initial state of resource ClusterTriggerAuthentication.keda.sh:
+#   failed to list resources: clustertriggerauthentications.keda.sh is forbidden:
+#   User "system:serviceaccount:cookbook-argocd:argocd-application-controller" cannot list
+#   resource "clustertriggerauthentications" in API group "keda.sh" at the cluster scope
+#
+# ПОЧЕМУ. namespace-install даёт контроллеру только Role в своём namespace — это ровно то,
+# чего мы хотели. Но сам контроллер по умолчанию считает, что управляет кластером ЦЕЛИКОМ,
+# и на старте строит кэш всех типов ресурсов, включая кластерные. В общем кластере таких
+# типов полно (здесь он споткнулся о CRD KEDA), прав на них нет — и кэш не собирается.
+# То есть «namespace-scoped» — это ДВА независимых решения: урезанный RBAC (манифест) и
+# урезанная область наблюдения (вот этот секрет). Первое без второго даёт неработающую
+# установку, а не безопасную.
+#
+# ЧТО ДЕЛАЕТ СЕКРЕТ. ArgoCD описывает подключённые кластеры секретами с меткой
+# argocd.argoproj.io/secret-type: cluster. Для собственного кластера такой секрет обычно
+# не нужен (in-cluster подразумевается), но он же — единственное место, где можно сказать:
+#   namespaces: cookbook-argocd  — следить только за этим namespace;
+#   clusterResources: "false"    — кластерные ресурсы не трогать вовсе.
+# Учётных данных в секрете нет намеренно: для server https://kubernetes.default.svc ArgoCD
+# берёт свой же ServiceAccount, и никаких токенов в стенде не заводится.
+#
+# Побочный эффект ровно тот, который нужен границам стенда: даже при ошибке в Application
+# наш ArgoCD физически не полезет за пределы cookbook-argocd — ни правами, ни кэшем.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cluster-in-cluster
+  namespace: cookbook-argocd
+  labels:
+    argocd.argoproj.io/secret-type: cluster
+    stand: cookbook-gitops
+type: Opaque
+stringData:
+  name: in-cluster
+  server: https://kubernetes.default.svc
+  namespaces: cookbook-argocd
+  clusterResources: "false"
+  config: |
+    {"tlsClientConfig":{"insecure":false}}

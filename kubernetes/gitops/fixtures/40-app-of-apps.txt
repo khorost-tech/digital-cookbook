@@ -1,0 +1,971 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 40-app-of-apps
+# Демо 3 — app-of-apps: дерево приложений и ФАКТИЧЕСКОЕ поведение при удалении корневого.
+# ArgoCD стенда v3.4.1, ns cookbook-argocd. Боевой ArgoCD (ns argocd) не трогался: только чтение.
+# ===============================================================================
+#
+# КОРОТКО — ЧТО ЗАМЕРЕНО (подробности и сырые выводы ниже по блокам):
+#   1. Коммит с дочерними Application (даты прибиты): da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb
+#   2. Раскатка «применили один объект -> работают два приложения»: 3.1 s до последнего
+#      Synced/Healthy, 2.5 s до готовности обоих подов (повторные прогоны в блоках 6 и 7
+#      дали 2.6 s и 2.6 s). БЕЗ пинка refresh. Блок 1.
+#   3. Чем связан корневой с дочерними ФАКТИЧЕСКИ: ownerReferences НЕТ ни у дочерних
+#      Application, ни у их объектов; связь — только аннотация
+#      argocd.argoproj.io/tracking-id (метки app.kubernetes.io/instance тоже нет). Блок 2.
+#   4. Финалайзеров нет НИ НА ОДНОМ Application: ArgoCD их не навешивает сам. Блок 3.
+#   5. ★ Удаление корневого БЕЗ финалайзера (как есть по умолчанию): корневой исчез за
+#      0.9 s, дочерние Application и вся их нагрузка ОСТАЛИСЬ и продолжили работать —
+#      150 s наблюдения, изменений ноль. Сироты живые: дрейф replicas у нагрузки
+#      осиротевшего приложения откатился за 0.6 s. Блок 4.
+#   6. Тот же корневой С финалайзером: дочерние удалились за 1.0/1.1 s, а их Deployment
+#      ОСТАЛИСЬ — сироты переехали на уровень ниже. Блок 6.
+#   7. Финалайзер на всех уровнях: удалилось всё, за 2.5 s. Блок 7. Сводка — блок 9.
+#   8. ★ Чем закрыть отдельный объект от каскада: проверены ОБЕ опции на одном и том же
+#      каскаде, с контролем в каждом прогоне. Помеченный Delete=false ПЕРЕЖИЛ каскад
+#      (жив через 90 s), помеченный Prune=false — НЕ пережил (удалён за 1.8 s, ровно
+#      как непомеченный за 1.7 s). Блок 10. Состояние стенда после добора — блок 11.
+#   9. Содержимое демо 3 воспроизводится блоком из README (шаг 8) БАЙТ В БАЙТ: пересборка
+#      дала тот же хеш da7ecdf..., git diff против содержимого в кластере пуст. Блок 12.
+#
+# ПРО ЗАДЕРЖКУ ОПРОСА (и почему её здесь нет). В M2 замерено, что фактическая длина цикла
+# опроса у этого экземпляра гуляет 125..403 s (appResyncPeriod=2m0s + appResyncJitter=1m0s),
+# и prune ждал ~120.6 s. Та задержка относится к обнаружению НОВОЙ РЕВИЗИИ уже
+# синхронизированного приложения. Здесь ситуация другая: и корневой, и дочерние — НОВЫЕ
+# объекты, контроллер получает их появление watch-событием, а не опросом, и потому
+# укладывается в секунды. Пинок argocd.argoproj.io/refresh НЕ применялся НИ РАЗУ: делить
+# числа на «сколько ждали бы сами» и «сколько с пинком» не потребовалось — всё, что ниже,
+# это «как само». Видно это и на соседнем приложении: demo, синхронизированное ещё в M2,
+# новую ревизию da7ecdf увидело только через несколько минут после пуша, по своему опросу
+# (блок 4), — тот самый разрыв между «новый объект» и «новый коммит».
+
+# cmd: date -u +%FT%T.%3NZ
+2026-07-24T18:05:16.074Z
+
+# ==============================================================================
+# 0. ИСХОДНОЕ СОСТОЯНИЕ (конец M2) И СОДЕРЖИМОЕ РЕПОЗИТОРИЯ
+# ==============================================================================
+# cmd: kubectl -n cookbook-argocd get applications.argoproj.io -o wide
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         d049270d788de26273d85992c271c5994a6d7ca8   default
+
+# cmd: kubectl -n argocd get applications.argoproj.io 2>&1 | head -3
+No resources found in argocd namespace.
+
+# cmd: kubectl -n cookbook-argocd get appproject -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp
+NAME      CREATED
+default   2026-07-24T16:00:46Z
+
+
+# ------------------------------------------------------------------------------
+# 0a. ЧТО ЛЕЖИТ В ДЕМО-РЕПОЗИТОРИИ ПОСЛЕ ПУША (шаг 1)
+# ------------------------------------------------------------------------------
+# Push сделан ИЗ ПОДА внутри cookbook-argocd (git-push.sh): NetworkPolicy пускает к
+# git-серверу только из этого namespace, снаружи кластера хода нет — политика не
+# ослаблялась. Даты коммита прибиты (GIT_AUTHOR_DATE/GIT_COMMITTER_DATE в git-push.sh),
+# поэтому хеш воспроизводим и на него можно ссылаться.
+
+# cmd: bash git-push.sh <<'BODY'
+git log --oneline
+echo "--- дерево репозитория ---"
+git ls-tree -r --name-only main
+echo "--- apps/children/child-a.yaml ---"
+cat apps/children/child-a.yaml
+echo "--- apps/children/child-b.yaml (различия с child-a) ---"
+diff apps/children/child-a.yaml apps/children/child-b.yaml || true
+echo "--- apps/payload-a/deployment.yaml ---"
+cat apps/payload-a/deployment.yaml
+echo "--- apps/payload-b/deployment.yaml (различия с payload-a) ---"
+diff apps/payload-a/deployment.yaml apps/payload-b/deployment.yaml || true
+BODY
+da7ecdf app-of-apps: два дочерних Application и их полезная нагрузка
+d049270 seed: demo Deployment и Service
+--- дерево репозитория ---
+apps/children/child-a.yaml
+apps/children/child-b.yaml
+apps/demo/deployment.yaml
+apps/demo/service.yaml
+apps/payload-a/deployment.yaml
+apps/payload-b/deployment.yaml
+--- apps/children/child-a.yaml ---
+# Дочерний Application. Лежит В GIT, а не применяется руками: его создаст корневой
+# Application, для которого этот каталог — обычная полезная нагрузка.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: child-a
+  # Namespace задан явно: Application читает тот контроллер, в чьём namespace он лежит.
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+    tier: child
+spec:
+  project: default
+  source:
+    repoURL: git://git-server.cookbook-argocd.svc.cluster.local/demo.git
+    path: apps/payload-a
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cookbook-argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+--- apps/children/child-b.yaml (различия с child-a) ---
+6c6
+<   name: child-a
+---
+>   name: child-b
+16c16
+<     path: apps/payload-a
+---
+>     path: apps/payload-b
+--- apps/payload-a/deployment.yaml ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: payload-a
+  labels:
+    app: payload-a
+    stand: cookbook-gitops
+    tier: payload
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: payload-a
+  template:
+    metadata:
+      labels:
+        app: payload-a
+        stand: cookbook-gitops
+        tier: payload
+    spec:
+      containers:
+        - name: app
+          image: registry.k8s.io/pause:3.10
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+--- apps/payload-b/deployment.yaml (различия с payload-a) ---
+4c4
+<   name: payload-a
+---
+>   name: payload-b
+6c6
+<     app: payload-a
+---
+>     app: payload-b
+13c13
+<       app: payload-a
+---
+>       app: payload-b
+17c17
+<         app: payload-a
+---
+>         app: payload-b
+pod phase: Succeeded (под удалён)
+
+
+# ==============================================================================
+# 1. КОРНЕВОЙ APPLICATION (шаг 2) И РАСКАТКА С ОТМЕТКАМИ ВРЕМЕНИ (шаг 3)
+# ==============================================================================
+# Применяется РОВНО ОДИН объект. Дальше руками не делается ничего: ни дочерние
+# Application, ни их полезная нагрузка вручную не применяются.
+#
+# Цикл наблюдения (полный текст — scratch-скрипт; здесь суть): раз в итерацию
+# спрашиваются два списка,
+#   kubectl -n cookbook-argocd get applications.argoproj.io -o jsonpath='{range .items[*]}{.metadata.name}={.status.sync.status}/{.status.health.status} {end}'
+#   kubectl -n cookbook-argocd get deploy -o jsonpath='{range .items[*]}{.metadata.name}={.status.readyReplicas} {end}'
+# и на ПЕРВОМ появлении каждого признака печатается date -u. Все отметки — ВЕРХНИЕ
+# ГРАНИЦЫ: точность равна шагу цикла, он напечатан последней строкой.
+
+# cmd: bash 'C:/Users/ak/AppData/Local/Temp/claude/G--7-Projects-Khorost-khorost-tech/12ff65ab-7129-4f22-ba83-33d77cfa28cc/scratchpad/rollout.sh'
+T0 (перед kubectl apply корневого): 2026-07-24T18:06:38.080Z
+application.argoproj.io/root created
+apply вернулся:                    2026-07-24T18:06:38.283Z  (+0.3 s)
+Application child-a появился: 2026-07-24T18:06:39.224Z  (+1.2 s)
+Application child-b появился: 2026-07-24T18:06:39.300Z  (+1.3 s)
+Deployment payload-a появился: 2026-07-24T18:06:39.370Z  (+1.4 s)
+Deployment payload-b появился: 2026-07-24T18:06:39.886Z  (+1.9 s)
+payload-a готов (1/1):          2026-07-24T18:06:39.958Z  (+1.9 s)
+root Synced/Healthy:                 2026-07-24T18:06:40.030Z  (+2.0 s)
+payload-b готов (1/1):          2026-07-24T18:06:40.505Z  (+2.5 s)
+child-a Synced/Healthy:              2026-07-24T18:06:40.577Z  (+2.6 s)
+child-b Synced/Healthy:              2026-07-24T18:06:41.094Z  (+3.1 s)
+все отметки сняты, выход из цикла:   2026-07-24T18:06:41.188Z  (+3.2 s)
+итераций цикла: 5, суммарно 3.2 s -> шаг цикла 0.64 s (это и есть точность отметок выше: они ВЕРХНИЕ границы)
+
+
+# ------------------------------------------------------------------------------
+# 1a. ПРОВЕРКА ОТМЕТОК ПО ЧАСАМ КЛАСТЕРА (часы хоста и кластера — разные источники)
+# ------------------------------------------------------------------------------
+# Отметки выше сняты часами ХОСТА. Ниже — creationTimestamp тех же объектов, их
+# ставит API-сервер: если раскатка действительно уложилась в секунды, это видно и там.
+
+# cmd: kubectl -n cookbook-argocd get applications.argoproj.io,deploy,pod -l stand=cookbook-gitops -o custom-columns=KIND:.kind,NAME:.metadata.name,CREATED:.metadata.creationTimestamp --sort-by=.metadata.creationTimestamp
+KIND          NAME                          CREATED
+Deployment    git-server                    2026-07-24T14:12:02Z
+Pod           git-server-764f8c755b-rrksh   2026-07-24T14:32:28Z
+Application   demo                          2026-07-24T16:09:19Z
+Deployment    demo                          2026-07-24T16:14:57Z
+Pod           demo-7ffcc6b8f5-98xd7         2026-07-24T17:14:34Z
+Application   child-a                       2026-07-24T18:06:38Z
+Application   child-b                       2026-07-24T18:06:38Z
+Application   root                          2026-07-24T18:06:38Z
+Deployment    payload-a                     2026-07-24T18:06:39Z
+Deployment    payload-b                     2026-07-24T18:06:39Z
+Pod           payload-a-dfd585f6c-fdprh     2026-07-24T18:06:39Z
+Pod           payload-b-7954876d66-hz9fq    2026-07-24T18:06:39Z
+
+# cmd: kubectl -n cookbook-argocd get pod -l tier=payload -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp,READY_AT:'.status.conditions[?(@.type=="Ready")].lastTransitionTime',NODE:.spec.nodeName
+NAME                         CREATED                READY_AT               NODE
+payload-a-dfd585f6c-fdprh    2026-07-24T18:06:39Z   2026-07-24T18:06:39Z   k8s-volga-wk01
+payload-b-7954876d66-hz9fq   2026-07-24T18:06:39Z   2026-07-24T18:06:39Z   k8s-volga-wk02
+
+
+# ИТОГОВОЕ СОСТОЯНИЕ ПОСЛЕ РАСКАТКИ: четыре Application, все Synced/Healthy
+# cmd: kubectl -n cookbook-argocd get applications.argoproj.io -o wide
+NAME      SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+child-a   Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+child-b   Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+demo      Synced        Healthy         d049270d788de26273d85992c271c5994a6d7ca8   default
+root      Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+
+
+# ==============================================================================
+# 2. ДЕРЕВО ВЛАДЕНИЯ: ЧЕМ ФАКТИЧЕСКИ СВЯЗАНЫ КОРНЕВОЙ, ДОЧЕРНИЕ И ОБЪЕКТЫ
+# ==============================================================================
+# Вопрос не праздный: от ответа зависит, снесёт ли сборщик мусора Kubernetes дочерние
+# вместе с корневым. Снимаем ФАКТИЧЕСКИ, а не по ожиданию.
+
+# 2a. ownerReferences у дочерних Application и у объектов полезной нагрузки
+# cmd: kubectl -n cookbook-argocd get application child-a -o jsonpath='{.metadata.ownerReferences}'; echo
+
+
+# cmd: kubectl -n cookbook-argocd get application child-b -o jsonpath='{.metadata.ownerReferences}'; echo
+
+
+# cmd: kubectl -n cookbook-argocd get deploy payload-a -o jsonpath='{.metadata.ownerReferences}'; echo
+
+
+
+# 2b. метод отслеживания владения у ЭТОГО экземпляра (не из документации)
+# cmd: kubectl -n cookbook-argocd get cm argocd-cm -o jsonpath='{.data.application\.resourceTrackingMethod}'; echo "   <- пусто = ключ не задан"
+   <- пусто = ключ не задан
+
+
+# 2c. что ФАКТИЧЕСКИ навешано на дочерний Application: метки и аннотации целиком
+# cmd: kubectl -n cookbook-argocd get application child-a -o jsonpath='{.metadata.labels}{"\n"}{.metadata.annotations}'; echo
+{"stand":"cookbook-gitops","tier":"child"}
+{"argocd.argoproj.io/tracking-id":"root:argoproj.io/Application:cookbook-argocd/child-a","kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"argoproj.io/v1alpha1\",\"kind\":\"Application\",\"metadata\":{\"annotations\":{\"argocd.argoproj.io/tracking-id\":\"root:argoproj.io/Application:cookbook-argocd/child-a\"},\"labels\":{\"stand\":\"cookbook-gitops\",\"tier\":\"child\"},\"name\":\"child-a\",\"namespace\":\"cookbook-argocd\"},\"spec\":{\"destination\":{\"namespace\":\"cookbook-argocd\",\"server\":\"https://kubernetes.default.svc\"},\"project\":\"default\",\"source\":{\"path\":\"apps/payload-a\",\"repoURL\":\"git://git-server.cookbook-argocd.svc.cluster.local/demo.git\",\"targetRevision\":\"HEAD\"},\"syncPolicy\":{\"automated\":{\"prune\":true,\"selfHeal\":true}}}}\n"}
+
+# cmd: kubectl -n cookbook-argocd get deploy payload-a -o jsonpath='{.metadata.labels}{"\n"}{.metadata.annotations}'; echo
+{"app":"payload-a","stand":"cookbook-gitops","tier":"payload"}
+{"argocd.argoproj.io/tracking-id":"child-a:apps/Deployment:cookbook-argocd/payload-a","deployment.kubernetes.io/revision":"1","kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{\"argocd.argoproj.io/tracking-id\":\"child-a:apps/Deployment:cookbook-argocd/payload-a\"},\"labels\":{\"app\":\"payload-a\",\"stand\":\"cookbook-gitops\",\"tier\":\"payload\"},\"name\":\"payload-a\",\"namespace\":\"cookbook-argocd\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"payload-a\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"payload-a\",\"stand\":\"cookbook-gitops\",\"tier\":\"payload\"}},\"spec\":{\"containers\":[{\"image\":\"registry.k8s.io/pause:3.10\",\"name\":\"app\",\"resources\":{\"requests\":{\"cpu\":\"10m\",\"memory\":\"16Mi\"}}}]}}}}\n"}
+
+
+# 2d. ДЕРЕВО ЦЕЛИКОМ — по status.resources каждого Application
+# cmd: kubectl -n cookbook-argocd get application root -o jsonpath='{range .status.resources[*]}{.group}/{.kind} {.namespace}/{.name} {.status}/{.health.status}{"\n"}{end}'
+argoproj.io/Application cookbook-argocd/child-a Synced/
+argoproj.io/Application cookbook-argocd/child-b Synced/
+
+# cmd: kubectl -n cookbook-argocd get application child-a -o jsonpath='{range .status.resources[*]}{.group}/{.kind} {.namespace}/{.name} {.status}/{.health.status}{"\n"}{end}'
+apps/Deployment cookbook-argocd/payload-a Synced/
+
+# cmd: kubectl -n cookbook-argocd get application child-b -o jsonpath='{range .status.resources[*]}{.group}/{.kind} {.namespace}/{.name} {.status}/{.health.status}{"\n"}{end}'
+apps/Deployment cookbook-argocd/payload-b Synced/
+
+
+# 2e. те же связи, собранные по аннотации tracking-id — «кто чей»
+# cmd: kubectl -n cookbook-argocd get application,deploy,svc -o custom-columns=KIND:.kind,NAME:.metadata.name,TRACKED_BY:'.metadata.annotations.argocd\.argoproj\.io/tracking-id',OWNERREFS:.metadata.ownerReferences 2>&1 | grep -v '^ConfigMap' | head -30
+KIND          NAME                                      TRACKED_BY                                             OWNERREFS
+Application   child-a                                   root:argoproj.io/Application:cookbook-argocd/child-a   <none>
+Application   child-b                                   root:argoproj.io/Application:cookbook-argocd/child-b   <none>
+Application   demo                                      <none>                                                 <none>
+Application   root                                      <none>                                                 <none>
+Deployment    argocd-applicationset-controller          <none>                                                 <none>
+Deployment    argocd-dex-server                         <none>                                                 <none>
+Deployment    argocd-notifications-controller           <none>                                                 <none>
+Deployment    argocd-redis                              <none>                                                 <none>
+Deployment    argocd-repo-server                        <none>                                                 <none>
+Deployment    argocd-server                             <none>                                                 <none>
+Deployment    demo                                      demo:apps/Deployment:cookbook-argocd/demo              <none>
+Deployment    git-server                                <none>                                                 <none>
+Deployment    payload-a                                 child-a:apps/Deployment:cookbook-argocd/payload-a      <none>
+Deployment    payload-b                                 child-b:apps/Deployment:cookbook-argocd/payload-b      <none>
+Service       argocd-applicationset-controller          <none>                                                 <none>
+Service       argocd-dex-server                         <none>                                                 <none>
+Service       argocd-metrics                            <none>                                                 <none>
+Service       argocd-notifications-controller-metrics   <none>                                                 <none>
+Service       argocd-redis                              <none>                                                 <none>
+Service       argocd-repo-server                        <none>                                                 <none>
+Service       argocd-server                             <none>                                                 <none>
+Service       argocd-server-metrics                     <none>                                                 <none>
+Service       demo                                      demo:/Service:cookbook-argocd/demo                     <none>
+Service       git-server                                <none>                                                 <none>
+
+
+# ==============================================================================
+# 3. ФИНАЛАЙЗЕРЫ: ЕСТЬ ЛИ ОНИ — ФАКТ ДО УДАЛЕНИЯ (шаг 4, первая половина)
+# ==============================================================================
+# Поведение при удалении корневого зависит от финалайзера
+# resources-finalizer.argocd.argoproj.io. Ключевое: ArgoCD НЕ навешивает его сам —
+# ни на применённый руками корневой, ни на созданные им дочерние. Проверяем.
+
+# cmd: kubectl -n cookbook-argocd get application root    -o jsonpath='{.metadata.finalizers}'; echo '   <- корневой'
+   <- корневой
+
+# cmd: kubectl -n cookbook-argocd get application child-a -o jsonpath='{.metadata.finalizers}'; echo '   <- child-a'
+   <- child-a
+
+# cmd: kubectl -n cookbook-argocd get application child-b -o jsonpath='{.metadata.finalizers}'; echo '   <- child-b'
+   <- child-b
+
+# cmd: kubectl -n cookbook-argocd get application demo    -o jsonpath='{.metadata.finalizers}'; echo '   <- demo (для сравнения, M1/M2)'
+   <- demo (для сравнения, M1/M2)
+
+# cmd: grep -c 'finalizer' manifests/30-app-of-apps.yaml
+2
+
+# cmd: grep -n 'finalizer' manifests/30-app-of-apps.yaml
+27:  #   finalizers:
+28:  #     - resources-finalizer.argocd.argoproj.io
+
+
+# ==============================================================================
+# 4. ★ УДАЛЕНИЕ КОРНЕВОГО БЕЗ ФИНАЛАЙЗЕРА — ЧТО СТАЛО С ДОЧЕРНИМИ (шаг 4)
+# ==============================================================================
+# Наблюдение: 150 s после удаления, каждой итерацией спрашиваются три списка —
+# Application, Deployment и поды с меткой tier=payload. Отметка ставится на ПЕРВОЙ
+# итерации, где объект уже НЕ виден.
+
+# cmd: bash 'C:/Users/ak/AppData/Local/Temp/claude/G--7-Projects-Khorost-khorost-tech/12ff65ab-7129-4f22-ba83-33d77cfa28cc/scratchpad/delroot.sh' 150
+T0 (перед kubectl delete application root): 2026-07-24T18:08:33.410Z
+application.argoproj.io "root" deleted from cookbook-argocd namespace
+delete вернулся (--wait=false):             2026-07-24T18:08:33.578Z  (+0.2 s)
+объект Application root исчез:  2026-07-24T18:08:34.262Z  (+0.9 s)
+конец наблюдения (150 s):                2026-07-24T18:11:03.619Z  (+150.3 s), итераций 253
+--- что осталось на момент конца наблюдения ---
+NAME      SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+child-a   Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+child-b   Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+demo      Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/payload-a   1/1     1            1           4m25s
+deployment.apps/payload-b   1/1     1            1           4m25s
+
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/payload-a-dfd585f6c-fdprh    1/1     Running   0          4m25s
+pod/payload-b-7954876d66-hz9fq   1/1     Running   0          4m25s
+
+
+# ФАКТ (а не ожидание): корневой Application исчез за 0.9 s, дочерние ОСТАЛИСЬ.
+# Ни один из дочерних Application не удалён, их полезная нагрузка работает, поды живы.
+# За 150 s наблюдения (253 итерации) не изменилось ничего. Это и есть сиротство:
+# сборщику мусора Kubernetes не за что зацепиться — ownerReferences у дочерних нет,
+# а связь через аннотацию tracking-id ему неизвестна.
+#
+# Побочно видно: demo за это же время догнал новую ревизию da7ecdf (было d049270) —
+# тот самый опрос из M2. Содержимое apps/demo не менялось, поэтому в кластере это
+# ничего не поменяло.
+
+# 4a. АННОТАЦИЯ У СИРОТ: указывает на корневой, которого больше нет
+# cmd: kubectl -n cookbook-argocd get application child-a -o jsonpath='{.metadata.annotations.argocd\.argoproj\.io/tracking-id}'; echo
+root:argoproj.io/Application:cookbook-argocd/child-a
+
+# cmd: kubectl -n cookbook-argocd get application root -o name 2>&1
+Error from server (NotFound): applications.argoproj.io "root" not found
+
+
+# 4b. СИРОТЫ НЕ «ЗАМОРОЖЕНЫ», А ПРОДОЛЖАЮТ РАБОТАТЬ: проверка self-heal на payload-a
+# (осиротел только корневой; сами дочерние Application контроллером обслуживаются как
+#  и раньше — их некому было выключить)
+# cmd: date -u +%FT%T.%3NZ; kubectl -n cookbook-argocd scale deploy payload-a --replicas=3; T0=$(date +%s.%N); for i in $(seq 1 200); do r=$(kubectl -n cookbook-argocd get deploy payload-a -o jsonpath='{.spec.replicas}'); if [ "$r" = "1" ]; then echo "replicas вернулись к 1: $(date -u +%FT%T.%3NZ), спустя $(awk -v a=$(date +%s.%N) -v b=$T0 'BEGIN{printf "%.1f", a-b}') s (верхняя граница, шаг цикла ~0.6 s)"; break; fi; done
+2026-07-24T18:12:01.942Z
+deployment.apps/payload-a scaled
+replicas вернулись к 1: 2026-07-24T18:12:02.778Z, спустя 0.7 s (верхняя граница, шаг цикла ~0.6 s)
+
+# Тот же замер ещё раз, но с ПЕЧАТЬЮ каждого прочитанного значения — чтобы видеть, что
+# дрейф вообще успел появиться в API, а не был «откачен» раньше, чем прочитан.
+# (Это вторая попытка self-heal у этого Application, но backoff из M2 здесь ничего не
+#  гейтит, и по замеру ниже видно, что и не гейтил: пауза отсчитывается ОТ ПРЕДЫДУЩЕЙ
+#  попытки, предыдущая была в 18:12:01, назначенная после неё пауза — 2 s, а этот дрейф
+#  наведён в 18:12:19, через 18 s. Гейт истёк задолго до правки, возврат ожидаем такой же
+#  быстрый, как в первом замере.)
+# cmd: date -u +%FT%T.%3NZ; kubectl -n cookbook-argocd scale deploy payload-a --replicas=3; T0=$(date +%s.%N); for i in $(seq 1 400); do r=$(kubectl -n cookbook-argocd get deploy payload-a -o jsonpath='{.spec.replicas}'); echo "  итерация $i: replicas=$r  (+$(awk -v a=$(date +%s.%N) -v b=$T0 'BEGIN{printf "%.1f", a-b}') s)"; if [ "$r" = "1" ]; then break; fi; done
+2026-07-24T18:12:19.841Z
+deployment.apps/payload-a scaled
+  итерация 1: replicas=3  (+0.2 s)
+  итерация 2: replicas=3  (+0.4 s)
+  итерация 3: replicas=1  (+0.6 s)
+
+
+# ПРО 0.6 s ПРОТИВ 1.6 s ИЗ M2 — это НЕ разные скорости, а разные линейки. Оба числа —
+# верхние границы клиентского цикла опроса, и шаг цикла разный: в M2 он ходил раз в
+# ~1.2 s (30-selfheal.txt), здесь — раз в ~0.2 s. Сам apply в M2 по логу контроллера
+# занял 0.486 s, что с 0.6 s согласуется, а с 1.6 s разошлось бы. Сравнивать 0.6 и 1.6
+# как «стало быстрее» нельзя: измеряли с разной точностью одно и то же.
+
+# ВЫВОД БЛОКА 4: осиротевший дочерний Application — не мусор в etcd, а РАБОТАЮЩИЙ
+# контроллер приложения: он по-прежнему держит свою нагрузку в состоянии git и
+# откатывает ручные правки (дрейф replicas=3 виден в API и откачен за 0.6 s).
+# Управляется он теперь ничем: файла, из которого он появился, в кластере больше не
+# представлено — корневого Application нет, а git о его удалении ничего не знает.
+#
+# ПОЧЕМУ 150 s НАБЛЮДЕНИЯ ЗДЕСЬ ДОСТАТОЧНО, хотя цикл опроса гуляет до 403 s (M2).
+# Свидетельство сильнее простого «за 150 s ничего не исчезло»: дочерние всё это время
+# были не «замороженными остатками», а Synced/Healthy НА РЕВИЗИИ da7ecdf — то есть
+# контроллер их активно обслуживал, а не игнорировал. Сверх того они пережили замер
+# self-heal в 18:12:01/18:12:19 (+208 s от удаления корневого, дрейф откачен — значит
+# сверка шла) и были убраны РУКАМИ в 18:12:42 (+249 s). Ни одного признака отложенного
+# каскада за это время не появилось; удалить их пришлось самому.
+
+# ==============================================================================
+# 5. ЯВНАЯ ПРИБОРКА СИРОТ — И ВТОРОЙ УРОВЕНЬ ТОГО ЖЕ ЭФФЕКТА
+# ==============================================================================
+# Удаляем дочерние руками. У них финалайзера тоже нет (блок 3), поэтому проверяем
+# ФАКТИЧЕСКИ, что станет с их полезной нагрузкой.
+
+# cmd: date -u +%FT%T.%3NZ; kubectl -n cookbook-argocd delete application child-a child-b; date -u +%FT%T.%3NZ
+2026-07-24T18:12:42.398Z
+application.argoproj.io "child-a" deleted from cookbook-argocd namespace
+application.argoproj.io "child-b" deleted from cookbook-argocd namespace
+2026-07-24T18:12:42.572Z
+
+# cmd: sleep 20; date -u +%FT%T.%3NZ; kubectl -n cookbook-argocd get applications.argoproj.io; kubectl -n cookbook-argocd get deploy,pod -l tier=payload
+2026-07-24T18:13:02.698Z
+NAME   SYNC STATUS   HEALTH STATUS
+demo   Synced        Healthy
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/payload-a   1/1     1            1           6m24s
+deployment.apps/payload-b   1/1     1            1           6m24s
+
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/payload-a-dfd585f6c-fdprh    1/1     Running   0          6m24s
+pod/payload-b-7954876d66-hz9fq   1/1     Running   0          6m24s
+
+
+# ФАКТ ВТОРОГО УРОВНЯ: удаление дочерних Application НЕ забрало их полезную нагрузку.
+# Deployment payload-a и payload-b живы через 20 s после удаления обоих Application.
+# Поды не перезапускались — это доказывают ИМЕНА и счётчик рестартов, а не AGE:
+# payload-a-dfd585f6c-fdprh и payload-b-7954876d66-hz9fq — те же самые поды, что в
+# блоке 4, RESTARTS 0. AGE как раз ИЗМЕНИЛСЯ и не мог не измениться: он считается от
+# создания пода, 4m25s в блоке 4 (18:11:03) -> 6m24s здесь (18:13:02), рост ровно на
+# прошедшие ~2 минуты. Теперь этой нагрузкой не управляет уже никто: ни git, ни ArgoCD.
+
+# Прибираем нагрузку руками — иначе она останется в namespace навсегда.
+# cmd: kubectl -n cookbook-argocd delete deploy -l tier=payload
+deployment.apps "payload-a" deleted from cookbook-argocd namespace
+deployment.apps "payload-b" deleted from cookbook-argocd namespace
+
+# cmd: kubectl -n cookbook-argocd get applications.argoproj.io,deploy,pod -l stand=cookbook-gitops
+NAME                           SYNC STATUS   HEALTH STATUS
+application.argoproj.io/demo   Synced        Healthy
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/demo         1/1     1            1           118m
+deployment.apps/git-server   1/1     1            1           4h1m
+
+NAME                              READY   STATUS      RESTARTS   AGE
+pod/demo-7ffcc6b8f5-98xd7         1/1     Running     0          58m
+pod/git-server-764f8c755b-rrksh   1/1     Running     0          3h40m
+pod/payload-b-7954876d66-hz9fq    0/1     Completed   0          6m39s
+
+
+# ==============================================================================
+# 6. ВТОРОЙ ВАРИАНТ: ТОТ ЖЕ КОРНЕВОЙ, НО С ФИНАЛАЙЗЕРОМ
+# ==============================================================================
+# Раскатываем всё заново тем же манифестом и добавляем корневому финалайзер
+# resources-finalizer.argocd.argoproj.io. Здесь он ставится kubectl patch, чтобы
+# сравнение шло на ОДНОМ И ТОМ ЖЕ манифесте стенда; в git это ровно две строки в
+# metadata.finalizers (закомментированы в manifests/30-app-of-apps.yaml).
+
+# cmd: bash 'C:/Users/ak/AppData/Local/Temp/claude/G--7-Projects-Khorost-khorost-tech/12ff65ab-7129-4f22-ba83-33d77cfa28cc/scratchpad/rollout.sh'
+T0 (перед kubectl apply корневого): 2026-07-24T18:13:37.855Z
+application.argoproj.io/root created
+apply вернулся:                    2026-07-24T18:13:38.069Z  (+0.3 s)
+Application child-a появился: 2026-07-24T18:13:38.996Z  (+1.2 s)
+Application child-b появился: 2026-07-24T18:13:39.072Z  (+1.3 s)
+Deployment payload-a появился: 2026-07-24T18:13:39.144Z  (+1.3 s)
+Deployment payload-b появился: 2026-07-24T18:13:39.217Z  (+1.4 s)
+root Synced/Healthy:                 2026-07-24T18:13:39.290Z  (+1.5 s)
+payload-a готов (1/1):          2026-07-24T18:13:39.781Z  (+2.0 s)
+payload-b готов (1/1):          2026-07-24T18:13:39.855Z  (+2.1 s)
+child-a Synced/Healthy:              2026-07-24T18:13:40.330Z  (+2.5 s)
+child-b Synced/Healthy:              2026-07-24T18:13:40.403Z  (+2.6 s)
+все отметки сняты, выход из цикла:   2026-07-24T18:13:40.475Z  (+2.7 s)
+итераций цикла: 4, суммарно 2.7 s -> шаг цикла 0.68 s (это и есть точность отметок выше: они ВЕРХНИЕ границы)
+
+# cmd: kubectl -n cookbook-argocd patch application root --type merge -p '{"metadata":{"finalizers":["resources-finalizer.argocd.argoproj.io"]}}'
+Warning: metadata.finalizers: "resources-finalizer.argocd.argoproj.io": prefer a domain-qualified finalizer name including a path (/) to avoid accidental conflicts with other finalizer writers
+application.argoproj.io/root patched
+
+# cmd: kubectl -n cookbook-argocd get application root    -o jsonpath='{.metadata.finalizers}'; echo '   <- корневой: финалайзер есть'
+["resources-finalizer.argocd.argoproj.io"]   <- корневой: финалайзер есть
+
+# cmd: kubectl -n cookbook-argocd get application child-a -o jsonpath='{.metadata.finalizers}'; echo '   <- child-a: по-прежнему пусто'
+   <- child-a: по-прежнему пусто
+
+# cmd: kubectl -n cookbook-argocd get application child-b -o jsonpath='{.metadata.finalizers}'; echo '   <- child-b: по-прежнему пусто'
+   <- child-b: по-прежнему пусто
+
+
+# 6a. УДАЛЕНИЕ КОРНЕВОГО С ФИНАЛАЙЗЕРОМ — наблюдение 90 s
+# cmd: bash 'C:/Users/ak/AppData/Local/Temp/claude/G--7-Projects-Khorost-khorost-tech/12ff65ab-7129-4f22-ba83-33d77cfa28cc/scratchpad/delroot.sh' 90
+T0 (перед kubectl delete application root): 2026-07-24T18:13:49.189Z
+application.argoproj.io "root" deleted from cookbook-argocd namespace
+delete вернулся (--wait=false):             2026-07-24T18:13:49.362Z  (+0.2 s)
+объект Application root исчез:  2026-07-24T18:13:50.035Z  (+0.9 s)
+Application child-a исчез:            2026-07-24T18:13:50.127Z  (+1.0 s)
+Application child-b исчез:            2026-07-24T18:13:50.198Z  (+1.1 s)
+конец наблюдения (90 s):                2026-07-24T18:15:19.117Z  (+90.0 s), итераций 151
+--- что осталось на момент конца наблюдения ---
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/payload-a   1/1     1            1           101s
+deployment.apps/payload-b   1/1     1            1           101s
+
+NAME                             READY   STATUS    RESTARTS   AGE
+pod/payload-a-dfd585f6c-jft7s    1/1     Running   0          101s
+pod/payload-b-7954876d66-x9cm7   1/1     Running   0          101s
+
+
+# ФАКТ ВАРИАНТА 2: финалайзер на корневом каскад ОБРЫВАЕТ НА ПЕРВОМ УРОВНЕ.
+# Дочерние Application удалились за 1.0 и 1.1 s — их удалил сам ArgoCD, потому что для
+# корневого они и есть «его ресурсы». А ВОТ ПОЛЕЗНАЯ НАГРУЗКА ОСТАЛАСЬ: Deployment
+# payload-a и payload-b живы и через 90 s. Причина ровно та же, что в блоке 5 —
+# у дочерних Application финалайзера нет, и их удаление свою нагрузку не забирает.
+# То есть «поставил финалайзер корневому» проблему сирот НЕ решает: сироты просто
+# переезжают на уровень ниже.
+
+# cmd: kubectl -n cookbook-argocd delete deploy -l tier=payload
+deployment.apps "payload-a" deleted from cookbook-argocd namespace
+deployment.apps "payload-b" deleted from cookbook-argocd namespace
+
+
+# ==============================================================================
+# 7. ТРЕТИЙ ВАРИАНТ: ФИНАЛАЙЗЕР НА КОРНЕВОМ И НА ДОЧЕРНИХ — ПОЛНЫЙ КАСКАД
+# ==============================================================================
+# cmd: bash 'C:/Users/ak/AppData/Local/Temp/claude/G--7-Projects-Khorost-khorost-tech/12ff65ab-7129-4f22-ba83-33d77cfa28cc/scratchpad/rollout.sh'
+T0 (перед kubectl apply корневого): 2026-07-24T18:15:46.513Z
+application.argoproj.io/root created
+apply вернулся:                    2026-07-24T18:15:46.720Z  (+0.3 s)
+Application child-a появился: 2026-07-24T18:15:47.650Z  (+1.2 s)
+Application child-b появился: 2026-07-24T18:15:47.722Z  (+1.3 s)
+Deployment payload-a появился: 2026-07-24T18:15:47.794Z  (+1.3 s)
+Deployment payload-b появился: 2026-07-24T18:15:47.866Z  (+1.4 s)
+root Synced/Healthy:                 2026-07-24T18:15:47.936Z  (+1.5 s)
+payload-a готов (1/1):          2026-07-24T18:15:48.420Z  (+2.0 s)
+payload-b готов (1/1):          2026-07-24T18:15:48.494Z  (+2.0 s)
+child-a Synced/Healthy:              2026-07-24T18:15:48.961Z  (+2.5 s)
+child-b Synced/Healthy:              2026-07-24T18:15:49.035Z  (+2.6 s)
+все отметки сняты, выход из цикла:   2026-07-24T18:15:49.109Z  (+2.7 s)
+итераций цикла: 4, суммарно 2.7 s -> шаг цикла 0.68 s (это и есть точность отметок выше: они ВЕРХНИЕ границы)
+
+# cmd: kubectl -n cookbook-argocd patch application root    --type merge -p '{"metadata":{"finalizers":["resources-finalizer.argocd.argoproj.io"]}}' 2>&1 | tail -1
+application.argoproj.io/root patched
+
+# cmd: kubectl -n cookbook-argocd patch application child-a --type merge -p '{"metadata":{"finalizers":["resources-finalizer.argocd.argoproj.io"]}}' 2>&1 | tail -1
+application.argoproj.io/child-a patched
+
+# cmd: kubectl -n cookbook-argocd patch application child-b --type merge -p '{"metadata":{"finalizers":["resources-finalizer.argocd.argoproj.io"]}}' 2>&1 | tail -1
+application.argoproj.io/child-b patched
+
+# Проверка, что финалайзер на дочерних ДЕРЖИТСЯ: его нет в git, а корневой работает
+# с selfHeal — вдруг откатит. Смотрим спустя 20 s.
+# cmd: sleep 20; kubectl -n cookbook-argocd get application root,child-a,child-b -o custom-columns=NAME:.metadata.name,FINALIZERS:.metadata.finalizers,SYNC:.status.sync.status
+Error from server (NotFound): applications.argoproj.io "root,child-a,child-b" not found
+
+# cmd: kubectl -n cookbook-argocd get application root child-a child-b -o custom-columns=NAME:.metadata.name,FINALIZERS:.metadata.finalizers,SYNC:.status.sync.status,HEALTH:.status.health.status
+NAME      FINALIZERS                                 SYNC     HEALTH
+root      [resources-finalizer.argocd.argoproj.io]   Synced   Healthy
+child-a   [resources-finalizer.argocd.argoproj.io]   Synced   Healthy
+child-b   [resources-finalizer.argocd.argoproj.io]   Synced   Healthy
+
+# Финалайзер держится на всех трёх, и корневой при этом остаётся Synced: дописанный
+# в metadata финалайзер selfHeal расхождением не считает (в git его нет, но и в
+# last-applied-configuration его нет — трёхстороннее слияние это поле не трогает).
+
+# 7a. УДАЛЕНИЕ КОРНЕВОГО ПРИ ФИНАЛАЙЗЕРАХ НА ВСЕХ УРОВНЯХ — наблюдение 90 s
+# cmd: bash 'C:/Users/ak/AppData/Local/Temp/claude/G--7-Projects-Khorost-khorost-tech/12ff65ab-7129-4f22-ba83-33d77cfa28cc/scratchpad/delroot.sh' 90
+T0 (перед kubectl delete application root): 2026-07-24T18:16:29.895Z
+application.argoproj.io "root" deleted from cookbook-argocd namespace
+delete вернулся (--wait=false):             2026-07-24T18:16:30.072Z  (+0.2 s)
+Application child-a исчез:            2026-07-24T18:16:31.342Z  (+1.5 s)
+Deployment payload-a исчез:           2026-07-24T18:16:31.444Z  (+1.6 s)
+Deployment payload-b исчез:           2026-07-24T18:16:31.561Z  (+1.7 s)
+поды полезной нагрузки исчезли: 2026-07-24T18:16:31.634Z  (+1.8 s)
+объект Application root исчез:  2026-07-24T18:16:32.264Z  (+2.4 s)
+Application child-b исчез:            2026-07-24T18:16:32.336Z  (+2.5 s)
+конец наблюдения (90 s):                2026-07-24T18:18:00.190Z  (+90.4 s), итераций 150
+--- что осталось на момент конца наблюдения ---
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+No resources found in cookbook-argocd namespace.
+
+
+# ФАКТ ВАРИАНТА 3: каскад проходит НАСКВОЗЬ, но только когда финалайзер стоит на
+# КАЖДОМ уровне. Дочерние ушли за 1.5 и 2.5 s, их Deployment — за 1.6 и 1.7 s, поды —
+# за 1.8 s, сам корневой (он держался финалайзером, пока чистил своё) — за 2.4 s.
+# Порядок исчезновения внутри этих двух секунд читать не стоит: шаг цикла 0.6 s.
+# В namespace не осталось ничего от демо 3 — приборка сделана самим ArgoCD.
+
+# ==============================================================================
+# 8. ИТОГОВОЕ СОСТОЯНИЕ СТЕНДА (шаг 5) И ПРОВЕРКА ГРАНИЦ
+# ==============================================================================
+# Решение: стенд оставлен с ОДНИМ Application — demo, как было к концу M2. Корневой
+# и дочерние сняты полностью. Причина: в M4 в стенд приезжают Argo Rollouts со своими
+# CRD и контроллером, и стартовать они должны с понятной картины; квота namespace
+# считает поды штуками (16), лишние две единицы нагрузки там не нужны. Демо 3
+# воспроизводится одной командой: bash apply.sh manifests/30-app-of-apps.yaml
+
+# cmd: kubectl -n cookbook-argocd get applications.argoproj.io -o wide
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+
+# cmd: kubectl -n argocd get applications.argoproj.io 2>&1 | head -3
+No resources found in argocd namespace.
+
+# cmd: kubectl -n cookbook-argocd get deploy,svc,pod -l stand=cookbook-gitops
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/demo         1/1     1            1           123m
+deployment.apps/git-server   1/1     1            1           4h6m
+
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/demo         ClusterIP   10.97.138.219    <none>        80/TCP     52m
+service/git-server   ClusterIP   10.101.197.185   <none>        9418/TCP   4h6m
+
+NAME                              READY   STATUS    RESTARTS   AGE
+pod/demo-7ffcc6b8f5-98xd7         1/1     Running   0          63m
+pod/git-server-764f8c755b-rrksh   1/1     Running   0          3h46m
+
+# cmd: kubectl -n cookbook-argocd get pod
+NAME                                               READY   STATUS    RESTARTS   AGE
+argocd-application-controller-0                    1/1     Running   0          127m
+argocd-applicationset-controller-bff79b5d9-ktxn6   1/1     Running   0          137m
+argocd-dex-server-78bf889848-p4895                 1/1     Running   0          137m
+argocd-notifications-controller-585d78df9c-rh5sp   1/1     Running   0          137m
+argocd-redis-6469595fd7-xftf9                      1/1     Running   0          130m
+argocd-repo-server-6b75cff94-mcwzx                 1/1     Running   0          135m
+argocd-server-678bbbd9b4-7b6dw                     1/1     Running   0          92m
+demo-7ffcc6b8f5-98xd7                              1/1     Running   0          63m
+git-server-764f8c755b-rrksh                        1/1     Running   0          3h46m
+
+
+# 8a. ГРАНИЦЫ БЕЗОПАСНОСТИ — проверка после всей работы
+# cmd: kubectl get ns cookbook-argocd -o jsonpath='{.metadata.labels}'; echo
+{"kubernetes.io/metadata.name":"cookbook-argocd","pod-security.kubernetes.io/audit":"baseline","pod-security.kubernetes.io/enforce":"baseline","pod-security.kubernetes.io/warn":"baseline","purpose":"digital-cookbook","stand":"cookbook-gitops"}
+
+# cmd: kubectl -n cookbook-argocd get networkpolicy
+NAME                                              POD-SELECTOR                                              AGE
+argocd-application-controller-network-policy      app.kubernetes.io/name=argocd-application-controller      138m
+argocd-applicationset-controller-network-policy   app.kubernetes.io/name=argocd-applicationset-controller   137m
+argocd-dex-server-network-policy                  app.kubernetes.io/name=argocd-dex-server                  137m
+argocd-notifications-controller-network-policy    app.kubernetes.io/name=argocd-notifications-controller    137m
+argocd-redis-network-policy                       app.kubernetes.io/name=argocd-redis                       137m
+argocd-repo-server-network-policy                 app.kubernetes.io/name=argocd-repo-server                 137m
+argocd-server-network-policy                      app.kubernetes.io/name=argocd-server                      137m
+git-server-allow-stand-only                       app=git-server                                            94m
+
+# cmd: kubectl get clusterrole,clusterrolebinding -l stand=cookbook-gitops 2>&1
+No resources found
+
+# cmd: kubectl get crd -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp | grep argoproj
+applications.argoproj.io                                2026-07-19T09:08:17Z
+applicationsets.argoproj.io                             2026-07-19T09:08:17Z
+appprojects.argoproj.io                                 2026-07-19T09:08:17Z
+imageupdaters.argocd-image-updater.argoproj.io          2026-07-19T09:08:42Z
+
+# cmd: kubectl -n argocd get deploy,statefulset -o name | head -10
+deployment.apps/argocd-applicationset-controller
+deployment.apps/argocd-image-updater-controller
+deployment.apps/argocd-notifications-controller
+deployment.apps/argocd-redis
+deployment.apps/argocd-repo-server
+deployment.apps/argocd-server
+statefulset.apps/argocd-application-controller
+
+# cmd: kubectl -n cookbook-argocd get pod git-client 2>&1
+Error from server (NotFound): pods "git-client" not found
+
+# ГРАНИЦЫ ПОДТВЕРЖДЕНЫ:
+#   * метка pod-security enforce/audit/warn = baseline на месте, не ослаблялась;
+#   * восемь NetworkPolicy на месте, включая git-server-allow-stand-only (M1) — push в
+#     демо-репозиторий делался ИЗ ПОДА внутри namespace, политика не правилась;
+#   * ни одного ClusterRole/ClusterRoleBinding стенда не создано;
+#   * CRD argoproj.io — те же объекты, что были до работы (creationTimestamp 2026-07-19,
+#     день установки боевого ArgoCD): их не трогали;
+#   * боевой ArgoCD в ns argocd цел, Application там 0 — читали, не писали;
+#   * временный под git-client удалён (его удаляет сам git-push.sh).
+
+# ==============================================================================
+# 9. ЧТО ИЗ ЭТОГО СЛЕДУЕТ — ТРИ ВАРИАНТА РЯДОМ
+# ==============================================================================
+# Один и тот же корневой Application, одно и то же содержимое git, разница только в том,
+# где стоит финалайзер resources-finalizer.argocd.argoproj.io:
+#
+#   финалайзер          корневой   дочерние Application   полезная нагрузка
+#   -----------------   --------   --------------------   ----------------------------
+#   нигде (по умолч.)   удалён     ОСТАЛИСЬ работать      осталась работать
+#                       0.9 s      (150 s наблюдения)     (поды не перезапускались)
+#   только на корневом  удалён     удалены 1.0 / 1.1 s    ОСТАЛАСЬ работать (90 s)
+#                       0.9 s
+#   на всех уровнях     удалён     удалены 1.5 / 2.5 s    удалена 1.6 / 1.7 s,
+#                       2.4 s                             поды исчезли 1.8 s
+#
+# Практический вывод: «удалил корневой — удалилось приложение» неверно ни в одном из
+# вариантов по умолчанию. По умолчанию удаляется РОВНО ОДИН объект — тот, который удалили.
+# Каскад — это не свойство паттерна app-of-apps, а свойство финалайзера, и он идёт ровно
+# на ту глубину, на которую этот финалайзер проставлен.
+
+
+# ==============================================================================
+# 10. ДОБОР: ЧЕМ ЗАКРЫТЬ ОТДЕЛЬНЫЙ ОБЪЕКТ ОТ КАСКАДА — Delete=false ПРОТИВ Prune=false
+# ==============================================================================
+# Вариант 3 (блок 7) сносит весь набор одной командой. Практический вопрос: чем закрыть
+# от такого каскада объект, потеря которого необратима (PVC, Secret, база данных).
+# Кандидатов два, и это РАЗНЫЕ опции:
+#   Prune=false  — не удалять объект при СИНХРОНИЗАЦИИ, когда он пропал из git
+#                  (это случай M2, фикстура 30-selfheal.txt);
+#   Delete=false — не удалять объект при КАСКАДНОМ УДАЛЕНИИ самого Application.
+# Оба проверяются ниже на одном и том же каскаде варианта 3, с контролем: в каждом
+# прогоне один объект нагрузки помечен, второй — нет.
+#
+# Аннотация ставится kubectl annotate на ЖИВОЙ объект — ровно как финалайзер в блоке 7,
+# чтобы сравнение шло на ОДНОМ И ТОМ ЖЕ содержимом git. Что selfHeal её не снимает,
+# проверяется отдельным шагом ниже (причина та же, что у финалайзера: в git её нет, но
+# и в last-applied-configuration её нет — трёхстороннее слияние это поле не трогает).
+
+# ------------------------------------------------------------------------------
+# 10a. ПРОГОН 1: payload-a помечен Delete=false, payload-b НЕ помечен (контроль)
+# ------------------------------------------------------------------------------
+# cmd: bash 'C:/Users/ak/AppData/Local/Temp/claude/G--7-Projects-Khorost-khorost-tech/12ff65ab-7129-4f22-ba83-33d77cfa28cc/scratchpad/rollout.sh'
+T0 (перед kubectl apply корневого): 2026-07-24T18:32:49.486Z
+application.argoproj.io/root created
+apply вернулся:                    2026-07-24T18:32:49.687Z  (+0.3 s)
+Application child-a появился: 2026-07-24T18:32:50.604Z  (+1.2 s)
+Application child-b появился: 2026-07-24T18:32:50.678Z  (+1.2 s)
+Deployment payload-b появился: 2026-07-24T18:32:50.750Z  (+1.3 s)
+root Synced/Healthy:                 2026-07-24T18:32:50.824Z  (+1.4 s)
+Deployment payload-a появился: 2026-07-24T18:32:51.303Z  (+1.9 s)
+payload-b готов (1/1):          2026-07-24T18:32:51.383Z  (+2.0 s)
+payload-a готов (1/1):          2026-07-24T18:32:51.886Z  (+2.5 s)
+child-b Synced/Healthy:              2026-07-24T18:32:51.966Z  (+2.5 s)
+child-a Synced/Healthy:              2026-07-24T18:32:52.529Z  (+3.1 s)
+все отметки сняты, выход из цикла:   2026-07-24T18:32:52.604Z  (+3.2 s)
+итераций цикла: 5, суммарно 3.2 s -> шаг цикла 0.64 s (это и есть точность отметок выше: они ВЕРХНИЕ границы)
+
+# (третий прогон той же раскатки: 3.1 s до последнего Synced/Healthy — то же число, что
+#  и в блоке 1; ряд прогонов теперь 3.1 / 2.6 / 2.6 / 3.1 / 2.8 s, см. и 10b ниже)
+
+# cmd: date -u +%FT%T.%3NZ; kubectl -n cookbook-argocd annotate deploy payload-a argocd.argoproj.io/sync-options=Delete=false; kubectl -n cookbook-argocd get deploy payload-a -o jsonpath='{.metadata.annotations.argocd\.argoproj\.io/sync-options}'; echo '   <- payload-a'; kubectl -n cookbook-argocd get deploy payload-b -o jsonpath='{.metadata.annotations.argocd\.argoproj\.io/sync-options}'; echo '   <- payload-b (пусто = не помечен)'
+2026-07-24T18:33:13.062Z
+deployment.apps/payload-a annotated
+Delete=false   <- payload-a
+   <- payload-b (пусто = не помечен)
+
+# Держится ли аннотация под selfHeal (в git её нет, а child-a работает с selfHeal: true)
+# cmd: sleep 30; date -u +%FT%T.%3NZ; kubectl -n cookbook-argocd get application root child-a child-b -o custom-columns=NAME:.metadata.name,SYNC:.status.sync.status,HEALTH:.status.health.status; kubectl -n cookbook-argocd get deploy payload-a -o jsonpath='{.metadata.annotations.argocd\.argoproj\.io/sync-options}'; echo '   <- аннотация на месте, selfHeal её не снял'
+2026-07-24T18:33:51.306Z
+NAME      SYNC     HEALTH
+root      Synced   Healthy
+child-a   Synced   Healthy
+child-b   Synced   Healthy
+Delete=false   <- аннотация на месте, selfHeal её не снял
+
+# Финалайзер на ВСЕ уровни — воспроизводим вариант 3 из блока 7
+# cmd: for a in root child-a child-b; do kubectl -n cookbook-argocd patch application $a --type merge -p '{"metadata":{"finalizers":["resources-finalizer.argocd.argoproj.io"]}}' 2>&1 | tail -1; done; kubectl -n cookbook-argocd get application root child-a child-b -o custom-columns=NAME:.metadata.name,FINALIZERS:.metadata.finalizers,SYNC:.status.sync.status
+application.argoproj.io/root patched
+application.argoproj.io/child-a patched
+application.argoproj.io/child-b patched
+NAME      FINALIZERS                                 SYNC
+root      [resources-finalizer.argocd.argoproj.io]   Synced
+child-a   [resources-finalizer.argocd.argoproj.io]   Synced
+child-b   [resources-finalizer.argocd.argoproj.io]   Synced
+
+# cmd: bash 'C:/Users/ak/AppData/Local/Temp/claude/G--7-Projects-Khorost-khorost-tech/12ff65ab-7129-4f22-ba83-33d77cfa28cc/scratchpad/delroot.sh' 90
+T0 (перед kubectl delete application root): 2026-07-24T18:34:05.996Z
+application.argoproj.io "root" deleted from cookbook-argocd namespace
+delete вернулся (--wait=false):             2026-07-24T18:34:06.170Z  (+0.2 s)
+Application child-a исчез:            2026-07-24T18:34:06.900Z  (+1.0 s)
+Application child-b исчез:            2026-07-24T18:34:07.570Z  (+1.6 s)
+Deployment payload-b исчез:           2026-07-24T18:34:07.642Z  (+1.7 s)
+объект Application root исчез:  2026-07-24T18:34:08.300Z  (+2.4 s)
+конец наблюдения (90 s):                2026-07-24T18:35:36.515Z  (+90.6 s), итераций 142
+--- что осталось на момент конца наблюдения ---
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+NAME                        READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/payload-a   1/1     1            1           2m46s
+
+NAME                            READY   STATUS    RESTARTS   AGE
+pod/payload-a-dfd585f6c-wlddv   1/1     Running   0          2m46s
+
+
+# ★ ФАКТ ПРОГОНА 1: тот же самый каскад варианта 3, что в блоке 7, — но payload-a ВЫЖИЛ.
+# Ушло всё остальное: оба дочерних Application (1.0 / 1.6 s), корневой (2.4 s) и НЕ
+# помеченный payload-b (1.7 s). Помеченный payload-a жив и через 90 s наблюдения, под
+# под ним не перезапускался (RESTARTS 0, имя то же, что после раскатки).
+# Сравнение с блоком 7 прямое: там при тех же финалайзерах ОБА Deployment исчезли, за
+# 1.6 и 1.7 s. Единственное отличие — аннотация на одном объекте.
+
+# Чем стал выживший объект: сиротой того же рода, что в блоке 4, только уровнем ниже.
+# cmd: kubectl -n cookbook-argocd get applications.argoproj.io,deploy,pod -l stand=cookbook-gitops
+NAME                           SYNC STATUS   HEALTH STATUS
+application.argoproj.io/demo   Synced        Healthy
+
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/demo         1/1     1            1           140m
+deployment.apps/git-server   1/1     1            1           4h23m
+deployment.apps/payload-a    1/1     1            1           3m3s
+
+NAME                              READY   STATUS    RESTARTS   AGE
+pod/demo-7ffcc6b8f5-98xd7         1/1     Running   0          81m
+pod/git-server-764f8c755b-rrksh   1/1     Running   0          4h3m
+pod/payload-a-dfd585f6c-wlddv     1/1     Running   0          3m3s
+
+# cmd: kubectl -n cookbook-argocd get deploy payload-a -o jsonpath='{.metadata.annotations}'; echo
+{"argocd.argoproj.io/sync-options":"Delete=false","argocd.argoproj.io/tracking-id":"child-a:apps/Deployment:cookbook-argocd/payload-a","deployment.kubernetes.io/revision":"1","kubectl.kubernetes.io/last-applied-configuration":"{\"apiVersion\":\"apps/v1\",\"kind\":\"Deployment\",\"metadata\":{\"annotations\":{\"argocd.argoproj.io/tracking-id\":\"child-a:apps/Deployment:cookbook-argocd/payload-a\"},\"labels\":{\"app\":\"payload-a\",\"stand\":\"cookbook-gitops\",\"tier\":\"payload\"},\"name\":\"payload-a\",\"namespace\":\"cookbook-argocd\"},\"spec\":{\"replicas\":1,\"selector\":{\"matchLabels\":{\"app\":\"payload-a\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"payload-a\",\"stand\":\"cookbook-gitops\",\"tier\":\"payload\"}},\"spec\":{\"containers\":[{\"image\":\"registry.k8s.io/pause:3.10\",\"name\":\"app\",\"resources\":{\"requests\":{\"cpu\":\"10m\",\"memory\":\"16Mi\"}}}]}}}}\n"}
+
+# Аннотация tracking-id по-прежнему указывает на child-a, которого в кластере уже нет.
+# То есть Delete=false не «сохраняет приложение» — он сохраняет ОБЪЕКТ, и объект этот
+# остаётся неуправляемым ровно так же, как сироты из блока 4. Убирать руками.
+
+# ------------------------------------------------------------------------------
+# 10b. ПРОГОН 2 (контроль опции): payload-b помечен Prune=false, payload-a НЕ помечен
+# ------------------------------------------------------------------------------
+# Это и есть проверка формулировки «от каскада закрывает Prune=false».
+# cmd: kubectl -n cookbook-argocd delete deploy -l tier=payload
+deployment.apps "payload-a" deleted from cookbook-argocd namespace
+
+# cmd: bash 'C:/Users/ak/AppData/Local/Temp/claude/G--7-Projects-Khorost-khorost-tech/12ff65ab-7129-4f22-ba83-33d77cfa28cc/scratchpad/rollout.sh'
+T0 (перед kubectl apply корневого): 2026-07-24T18:36:49.655Z
+application.argoproj.io/root created
+apply вернулся:                    2026-07-24T18:36:49.855Z  (+0.3 s)
+Application child-a появился: 2026-07-24T18:36:50.846Z  (+1.3 s)
+Application child-b появился: 2026-07-24T18:36:50.939Z  (+1.3 s)
+Deployment payload-b появился: 2026-07-24T18:36:51.019Z  (+1.4 s)
+root Synced/Healthy:                 2026-07-24T18:36:51.096Z  (+1.5 s)
+Deployment payload-a появился: 2026-07-24T18:36:51.605Z  (+2.0 s)
+payload-a готов (1/1):          2026-07-24T18:36:51.681Z  (+2.1 s)
+payload-b готов (1/1):          2026-07-24T18:36:51.761Z  (+2.2 s)
+child-a Synced/Healthy:              2026-07-24T18:36:52.242Z  (+2.7 s)
+child-b Synced/Healthy:              2026-07-24T18:36:52.359Z  (+2.8 s)
+все отметки сняты, выход из цикла:   2026-07-24T18:36:52.446Z  (+2.8 s)
+итераций цикла: 4, суммарно 2.9 s -> шаг цикла 0.72 s (это и есть точность отметок выше: они ВЕРХНИЕ границы)
+
+# cmd: kubectl -n cookbook-argocd annotate deploy payload-b argocd.argoproj.io/sync-options=Prune=false; for a in root child-a child-b; do kubectl -n cookbook-argocd patch application $a --type merge -p '{"metadata":{"finalizers":["resources-finalizer.argocd.argoproj.io"]}}' 2>&1 | tail -1; done; sleep 15; kubectl -n cookbook-argocd get deploy payload-a payload-b -o custom-columns=NAME:.metadata.name,SYNCOPTS:'.metadata.annotations.argocd\.argoproj\.io/sync-options'
+deployment.apps/payload-b annotated
+application.argoproj.io/root patched
+application.argoproj.io/child-a patched
+application.argoproj.io/child-b patched
+NAME        SYNCOPTS
+payload-a   <none>
+payload-b   Prune=false
+
+# cmd: bash 'C:/Users/ak/AppData/Local/Temp/claude/G--7-Projects-Khorost-khorost-tech/12ff65ab-7129-4f22-ba83-33d77cfa28cc/scratchpad/delroot.sh' 60
+T0 (перед kubectl delete application root): 2026-07-24T18:37:29.284Z
+application.argoproj.io "root" deleted from cookbook-argocd namespace
+delete вернулся (--wait=false):             2026-07-24T18:37:29.468Z  (+0.2 s)
+Application child-b исчез:            2026-07-24T18:37:30.863Z  (+1.6 s)
+Deployment payload-a исчез:           2026-07-24T18:37:30.939Z  (+1.7 s)
+Deployment payload-b исчез:           2026-07-24T18:37:31.013Z  (+1.8 s)
+поды полезной нагрузки исчезли: 2026-07-24T18:37:31.092Z  (+1.9 s)
+объект Application root исчез:  2026-07-24T18:37:31.725Z  (+2.5 s)
+Application child-a исчез:            2026-07-24T18:37:31.799Z  (+2.6 s)
+конец наблюдения (60 s):                2026-07-24T18:38:29.317Z  (+60.1 s), итераций 99
+--- что осталось на момент конца наблюдения ---
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+No resources found in cookbook-argocd namespace.
+
+
+# ★ ФАКТ ПРОГОНА 2: Prune=false от каскада НЕ ЗАКРЫЛ. Помеченный payload-b удалён за
+# 1.8 s — на 0.1 s позже непомеченного payload-a (1.7 s), то есть разницы нет вовсе:
+# 0.1 s меньше шага цикла наблюдения 0.6 s. Namespace после каскада пуст.
+#
+# ВЫВОД БЛОКА 10 (две опции, один и тот же каскад, контроль в каждом прогоне):
+#   объект помечен Delete=false  -> ПЕРЕЖИЛ каскад (жив через 90 s), 10a;
+#   объект помечен Prune=false   -> удалён каскадом за 1.8 s, 10b;
+#   объект не помечен            -> удалён каскадом за 1.7 s, оба прогона.
+# Опции решают разные задачи: Prune=false — про удаление объекта, ПРОПАВШЕГО ИЗ GIT при
+# синхронизации (это M2), Delete=false — про удаление объекта вместе с самим Application.
+# Чтобы одна команда kubectl delete application root не унесла базу, нужен ровно
+# Delete=false; Prune=false здесь бесполезен.
+
+# ==============================================================================
+# 11. СОСТОЯНИЕ СТЕНДА ПОСЛЕ ДОБОРНОГО ЗАМЕРА (то же, что в блоке 8)
+# ==============================================================================
+# cmd: kubectl -n cookbook-argocd get applications.argoproj.io -o wide; kubectl -n cookbook-argocd get deploy,svc,pod -l stand=cookbook-gitops
+NAME   SYNC STATUS   HEALTH STATUS   REVISION                                   PROJECT
+demo   Synced        Healthy         da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb   default
+NAME                         READY   UP-TO-DATE   AVAILABLE   AGE
+deployment.apps/demo         1/1     1            1           145m
+deployment.apps/git-server   1/1     1            1           4h28m
+
+NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)    AGE
+service/demo         ClusterIP   10.97.138.219    <none>        80/TCP     75m
+service/git-server   ClusterIP   10.101.197.185   <none>        9418/TCP   4h28m
+
+NAME                              READY   STATUS    RESTARTS   AGE
+pod/demo-7ffcc6b8f5-98xd7         1/1     Running   0          86m
+pod/git-server-764f8c755b-rrksh   1/1     Running   0          4h8m
+
+# cmd: kubectl -n argocd get applications.argoproj.io 2>&1 | head -3
+No resources found in argocd namespace.
+
+# cmd: kubectl get ns cookbook-argocd -o jsonpath='{.metadata.labels}'; echo
+{"kubernetes.io/metadata.name":"cookbook-argocd","pod-security.kubernetes.io/audit":"baseline","pod-security.kubernetes.io/enforce":"baseline","pod-security.kubernetes.io/warn":"baseline","purpose":"digital-cookbook","stand":"cookbook-gitops"}
+
+# cmd: kubectl -n cookbook-argocd get networkpolicy --no-headers | wc -l
+8
+
+# cmd: kubectl get clusterrole,clusterrolebinding -l stand=cookbook-gitops 2>&1
+No resources found
+
+# cmd: kubectl get crd -o custom-columns=NAME:.metadata.name,CREATED:.metadata.creationTimestamp | grep argoproj
+applications.argoproj.io                                2026-07-19T09:08:17Z
+applicationsets.argoproj.io                             2026-07-19T09:08:17Z
+appprojects.argoproj.io                                 2026-07-19T09:08:17Z
+imageupdaters.argocd-image-updater.argoproj.io          2026-07-19T09:08:42Z
+
+# cmd: kubectl -n cookbook-argocd get pod git-client 2>&1
+Error from server (NotFound): pods "git-client" not found
+
+# ГРАНИЦЫ ПОСЛЕ ДОБОРА — ТЕ ЖЕ, что в блоке 8a: метка pod-security baseline на месте,
+# восемь NetworkPolicy на месте, ClusterRole/ClusterRoleBinding стенда — ноль, CRD
+# argoproj.io с прежним creationTimestamp 2026-07-19, Application в ns argocd — ноль,
+# под git-client отсутствует. Стенд к M4: ОДИН Application demo, объектов демо 3 нет.
+
+# ==============================================================================
+# 12. ПРОВЕРКА ВОСПРОИЗВОДИМОСТИ СОДЕРЖИМОГО ДЕМО 3 (шаг 8 в README)
+# ==============================================================================
+# Содержимое apps/children и apps/payload-* живёт в emptyDir git-сервера: пересоздали
+# под — и корневой Application смотрит в несуществующий путь. Поэтому в README, шаг 8,
+# лежит ГОТОВЫЙ блок для git-push.sh, который доливает всё обратно. Здесь проверено,
+# что этот блок даёт РОВНО тот же коммит, на который ссылаются замеры выше.
+#
+# Тело взято НЕ из черновика, а ВЫРЕЗАНО ИЗ README: строки между ```bash и ``` шага 8,
+# со снятым отступом списка в три пробела — ровно то, что получит читатель, скопировав
+# блок из отрендеренного markdown. Изменений в теле два, оба служебные:
+#   * в начало добавлен git reset --hard d049270... — чтобы коммит лёг на тот же
+#     родитель, что и оригинальный (после пересоздания git-сервера HEAD там и так
+#     на seed-коммите; клон эфемерный, живёт внутри пода);
+#   * вместо git push origin main — печать хеша и git diff --stat против da7ecdf.
+# PUSH НЕ ДЕЛАЛСЯ: репозиторий стенда не менялся, вся проверка идёт в клоне внутри пода.
+
+# cmd: bash git-push.sh < <блок README, шаг 8, дедентованный>
+HEAD is now at d049270 seed: demo Deployment и Service
+--- ХЕШ ИЗ БЛОКА README ---
+da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb
+--- DIFF ПРОТИВ da7ecdf (пусто = байт в байт) ---
+--- push НЕ делался ---
+pod phase: Succeeded (под удалён)
+
+# ФАКТ: хеш совпал с da7ecdfe23b84d59e34ad836ef0c69ffa28e17bb, git diff --stat против
+# коммита, который сейчас в git-сервере стенда, пуст. Значит блок из README шага 8
+# восстанавливает содержимое ДОСЛОВНО, до байта, и хеш при этом воспроизводится —
+# потому что даты прибиты в git-push.sh, а личность и сообщение коммита фиксированы.
+# Ссылаться на da7ecdf после пересоздания git-сервера по-прежнему можно.

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Тот же агрегат «резервуар», что и в go/aggregate.go, но на Axon Framework:
+  задача не «переписать Go на Java», а показать контраст — что фреймворк
+  берёт на себя (загрузка стрима, применение событий, тестовый фикстур
+  given-when-then), а что взамен требует своей модели жизненного цикла
+  (аннотированный класс-агрегат, конструктор без аргументов для
+  восстановления, `apply()` вместо ручного накопления событий).
+
+  Версия Axon — 4.13.2 (последняя в ветке 4.x на момент прогона), а не
+  Axon 5: brief просит именно аннотации @AggregateIdentifier/
+  @CommandHandler/@EventSourcingHandler над простым POJO-агрегатом — это
+  стиль Axon 4 (axon-modelling + AggregateTestFixture из axon-test). В
+  Axon 5 модель агрегата и API фикстуров переписаны заново и не совпадают
+  с тем, что просит задача; смешивать было бы нечестной заменой контраста.
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>tech.khorost.esdeep</groupId>
+    <artifactId>esdeep-axon</artifactId>
+    <version>0.1.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Фактическая Java в WSL на момент прогона (2026-08-13) — 17.0.19
+             (OpenJDK, Ubuntu-сборка), не 21, как в брифе изначально. Проверено
+             `java -version`; brief прямо разрешает поправить под фактическую
+             версию и записать её в README/FIXTURES вместо той, что в задаче. -->
+        <maven.compiler.release>17</maven.compiler.release>
+        <axon.version>4.13.2</axon.version>
+        <junit.version>5.11.4</junit.version>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.axonframework</groupId>
+            <artifactId>axon-modelling</artifactId>
+            <version>${axon.version}</version>
+        </dependency>
+        <!-- @EventSourcingHandler и EventSourcingRepository живут в
+             отдельном модуле axon-eventsourcing, не в axon-modelling
+             (выяснено эмпирически: brief называл только axon-modelling,
+             сборка упала с "package org.axonframework.eventsourcing does
+             not exist" до добавления этой зависимости). -->
+        <dependency>
+            <groupId>org.axonframework</groupId>
+            <artifactId>axon-eventsourcing</artifactId>
+            <version>${axon.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.axonframework</groupId>
+            <artifactId>axon-test</artifactId>
+            <version>${axon.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <!-- axon-test использует Hamcrest matchers внутри своего
+             ResultValidator, но объявляет зависимость как optional —
+             без явного добавления сборка падает на testCompile
+             ("cannot access org.hamcrest.Matcher"). -->
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.13.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.5.2</version>
+            </plugin>
+        </plugins>
+    </build>
+</project>

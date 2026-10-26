@@ -1,0 +1,76 @@
+# Стенд серии «Event Sourcing: глубокое погружение».
+#
+# ОТДЕЛЬНЫЙ стенд, а не подкаталог в architecture/event-sourcing: промоутер
+# копирует по первым двум сегментам пути и работает add-only, а тот путь уже
+# уехал в публичный репозиторий вместе с практической статьёй 10.08.2026.
+#
+# name: обязателен — иначе имя проекта берётся из имени папки compose и
+# сталкивается с другими стендами репозитория.
+#
+# Порты хоста 15453/12113/49092 проверены свободными во всех compose
+# репозитория на 2026-08-13. При конфликте меняйте левую часть проброса.
+name: es-deep
+services:
+  postgres:
+    image: postgres:18.4
+    container_name: esd-postgres
+    environment:
+      POSTGRES_USER: esdemo
+      POSTGRES_PASSWORD: esdemo
+      POSTGRES_DB: esdemo
+      # Postgres 18 монтирует том на /var/lib/postgresql, старый путь
+      # /var/lib/postgresql/data он отвергает.
+      PGDATA: /var/lib/postgresql/pgdata
+    ports:
+      - "15453:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U esdemo -d esdemo"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pgdata:/var/lib/postgresql
+
+  kurrentdb:
+    # Продукт переименован: EventStoreDB -> KurrentDB. Старые образы лежат под
+    # eventstore/eventstore (LTS 24.10.x), актуальные — под kurrentplatform.
+    # В статьях назвать оба имени: читатель ищет по старому.
+    image: kurrentplatform/kurrentdb:26.1.2
+    container_name: esd-kurrentdb
+    environment:
+      KURRENTDB_INSECURE: "true"
+      KURRENTDB_RUN_PROJECTIONS: All
+      KURRENTDB_START_STANDARD_PROJECTIONS: "true"
+    ports:
+      - "12113:2113"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:2113/health/live || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  kafka:
+    image: apache/kafka:4.3.1
+    container_name: esd-kafka
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://esd-kafka:9092,EXTERNAL://127.0.0.1:49092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@esd-kafka:9093
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+    ports:
+      - "49092:9094"
+    healthcheck:
+      test: ["CMD-SHELL", "/opt/kafka/bin/kafka-broker-api-versions.sh --bootstrap-server localhost:9092 >/dev/null 2>&1 || exit 1"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+volumes:
+  pgdata:

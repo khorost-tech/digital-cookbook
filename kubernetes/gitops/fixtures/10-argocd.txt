@@ -1,0 +1,559 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 10-argocd
+# Свой namespace-scoped ArgoCD v3.4.1 в ns cookbook-argocd рядом с боевым ArgoCD в ns argocd.
+# Все выводы ниже — вывод настоящих команд, снятый 2026-07-24.
+
+
+================================================================================
+1. ПРЕДПОЛЁТНАЯ ПРОВЕРКА (снята ДО любых изменений, 2026-07-24 ~15:55 UTC)
+================================================================================
+Смысл: прежде чем ставить второй ArgoCD в общий кластер, надо знать три вещи —
+какая версия у боевого, кому принадлежат общие CRD и не смотрит ли боевой контроллер
+в чужие namespace.
+
+--- версия боевого ArgoCD (образы в ns argocd) ---
+$ kubectl -n argocd get deploy,statefulset -o jsonpath='...'
+Deployment/argocd-applicationset-controller	quay.io/argoproj/argocd:v3.4.1
+Deployment/argocd-image-updater-controller	quay.io/argoprojlabs/argocd-image-updater:v1.2.2
+Deployment/argocd-notifications-controller	quay.io/argoproj/argocd:v3.4.1
+Deployment/argocd-redis	library/redis:8.6.3-alpine
+Deployment/argocd-repo-server	quay.io/argoproj/argocd:v3.4.1
+Deployment/argocd-server	quay.io/argoproj/argocd:v3.4.1
+StatefulSet/argocd-application-controller	quay.io/argoproj/argocd:v3.4.1
+
+Отсюда пин нашей установки: v3.4.1, ровно та же. CRD в кластере одни на всех, и читать
+их будут два контроллера сразу — расхождение версий означало бы расхождение схем.
+
+--- владелец CRD argoproj.io ---
+$ kubectl get crd -o custom-columns='NAME:...,CREATED:...,MANAGED-BY:...,PART-OF:...,HELM-NS:...,HELM-REL:...'
+NAME                                                    CREATED                MANAGED-BY   PART-OF         HELM-NS            HELM-REL
+applications.argoproj.io                                2026-07-19T09:08:17Z   Helm         argocd          argocd             argocd
+applicationsets.argoproj.io                             2026-07-19T09:08:17Z   Helm         argocd          argocd             argocd
+appprojects.argoproj.io                                 2026-07-19T09:08:17Z   Helm         argocd          argocd             argocd
+imageupdaters.argocd-image-updater.argoproj.io          2026-07-19T09:08:42Z   Helm         <none>          argocd             argocd-image-updater
+
+CRD — объекты кластерного уровня, у них уже есть хозяин: Helm-релиз боевого ArgoCD.
+Применить манифест, который их содержит, значит отобрать их у Helm.
+
+--- application.namespaces у боевого: НЕ ЗАДАН ---
+$ kubectl -n argocd get cm argocd-cmd-params-cm -o jsonpath='{.data}'
+{"applicationsetcontroller.enable.leader.election":"false",
+ "applicationsetcontroller.log.format":"text",
+ "applicationsetcontroller.log.level":"info",
+ "commitserver.log.format":"text","commitserver.log.level":"info",
+ "controller.log.format":"text","controller.log.level":"info",
+ "dexserver.log.format":"text","dexserver.log.level":"info",
+ "notificationscontroller.log.format":"text","notificationscontroller.log.level":"info",
+ "redis.server":"argocd-redis:6379","repo.server":"argocd-repo-server:8081",
+ "reposerver.log.format":"text","reposerver.log.level":"info",
+ "server":"map[insecure:true]","server.log.format":"text","server.log.level":"info",
+ "server.repo.server.strict.tls":"false"}
+
+$ kubectl -n argocd get cm argocd-cmd-params-cm -o jsonpath='{.data.application\.namespaces}'
+[конец значения]        <- пусто, ключа нет
+
+Флагом его тоже не передают:
+$ kubectl -n argocd get statefulset argocd-application-controller -o jsonpath='{...command}{...args}'
+["/usr/local/bin/argocd-application-controller","--metrics-port=8082"]
+$ kubectl -n argocd get pods -o yaml | grep -c 'application-namespaces'
+0
+
+Это и есть разрешение продолжать. Если бы ключ был задан и включал `*` или наш
+namespace — боевой контроллер начал бы управлять нашими Application, и ставить второй
+ArgoCD было бы нельзя.
+
+--- Application в кластере: ноль ---
+$ kubectl get applications.argoproj.io -A
+No resources found
+$ kubectl get appprojects.argoproj.io -A
+NAMESPACE   NAME      AGE
+argocd      default   5d6h
+
+
+================================================================================
+2. ГЛАВНЫЙ РИСК: понимает ли ArgoCD схему git://
+================================================================================
+Проверено ДО написания Application, временным подом с тем же образом, что у ArgoCD.
+
+$ kubectl -n cookbook-argocd run gitcheck --image=quay.io/argoproj/argocd:v3.4.1 --command -- sleep 600
+$ kubectl -n cookbook-argocd exec gitcheck -- sh -c '...'
+
+--- git version в образе ArgoCD:
+git version 2.51.0
+
+--- git remote-helpers в образе:
+git-remote
+git-remote-ext
+git-remote-fd
+git-remote-ftp
+git-remote-ftps
+git-remote-http
+git-remote-https
+
+git-remote-git в списке нет — и это не признак отсутствия транспорта: git:// вкомпилирован
+в сам git, внешний помощник ему не нужен. Проверяется это единственным способом — пробой:
+
+--- git ls-remote git://git-server.cookbook-argocd.svc.cluster.local/demo.git
+d049270d788de26273d85992c271c5994a6d7ca8	HEAD
+d049270d788de26273d85992c271c5994a6d7ca8	refs/heads/main
+rc=0
+
+Второй вопрос — не завернёт ли схему сам ArgoCD при нормализации URL. Тот же образ,
+клиентская утилита, которая эту нормализацию и выполняет:
+
+$ argocd version --client
+argocd: v3.4.1
+  BuildDate: 2026-05-06T07:49:34Z
+  GitCommit: bafd59bd37138ed731d3c3aad8e18731d72aed46
+  GitTag: v3.4.1
+  GoVersion: go1.26.0
+
+$ argocd admin repo generate-spec git://git-server.cookbook-argocd.svc.cluster.local/demo.git
+apiVersion: v1
+kind: Secret
+metadata:
+  annotations:
+    managed-by: argocd.argoproj.io
+  labels:
+    argocd.argoproj.io/secret-type: repository
+  name: repo-3867733668
+stringData:
+  type: git
+  url: git://git-server.cookbook-argocd.svc.cluster.local/demo.git
+
+URL принят как есть, тип определён как git, ошибок нет.
+
+ОТВЕТ: git:// работает, переделывать git-сервер на smart HTTP не потребовалось.
+Окончательное подтверждение — уже после установки, из настоящего argocd-repo-server,
+то есть из того самого компонента, который и клонирует репозиторий:
+
+$ kubectl -n cookbook-argocd exec deploy/argocd-repo-server -- sh -c '...'
+версия git в образе ArgoCD:
+git version 2.51.0
+проба протокола до нашего сервера:
+d049270d788de26273d85992c271c5994a6d7ca8	HEAD
+d049270d788de26273d85992c271c5994a6d7ca8	refs/heads/main
+
+
+================================================================================
+3. ЧТО ИМЕННО ПРИМЕНЯЕМ: install.yaml против namespace-install.yaml
+================================================================================
+Оба файла версии v3.4.1, скачаны и посчитаны:
+
+$ curl -o install.yaml https://raw.githubusercontent.com/argoproj/argo-cd/v3.4.1/manifests/install.yaml
+install.yaml http=200 size=1890674
+$ grep -E '^kind: ' install.yaml | sort | uniq -c
+      3 kind: ClusterRole
+      3 kind: ClusterRoleBinding
+      7 kind: ConfigMap
+      3 kind: CustomResourceDefinition
+      6 kind: Deployment
+      7 kind: NetworkPolicy
+      6 kind: Role
+      6 kind: RoleBinding
+      2 kind: Secret
+      8 kind: Service
+      7 kind: ServiceAccount
+      1 kind: StatefulSet
+$ имена CRD в install.yaml:
+applications.argoproj.io
+applicationsets.argoproj.io
+appprojects.argoproj.io
+
+Вот они — те самые три CRD, которые уже принадлежат Helm-релизу боевого ArgoCD.
+Обычный `kubectl apply -f install.yaml` перехватил бы их и вдобавок положил в кластер
+три ClusterRole. Насколько они широкие — не предположение, а разбор того же файла:
+
+$ python - <<'PY'   # разбор правил ClusterRole в install.yaml (pyyaml)
+import yaml
+for d in yaml.safe_load_all(open('install.yaml', encoding='utf-8')):
+    if d and d.get('kind') == 'ClusterRole':
+        print('ClusterRole/' + d['metadata']['name'])
+        for r in d.get('rules') or []:
+            print('  apiGroups=%-16s resources=%-11s nonResourceURLs=%-6s verbs=%s' % (
+                r.get('apiGroups'), r.get('resources'), r.get('nonResourceURLs'), r.get('verbs')))
+PY
+ClusterRole/argocd-application-controller
+  apiGroups=['*']            resources=['*']       nonResourceURLs=None   verbs=['*']
+  apiGroups=None             resources=None        nonResourceURLs=['*']  verbs=['*']
+ClusterRole/argocd-applicationset-controller
+  apiGroups=['argoproj.io']  resources=['applications', 'applicationsets', 'applicationsets/finalizers'] nonResourceURLs=None   verbs=['create', 'delete', 'get', 'list', 'patch', 'update', 'watch']
+  apiGroups=['argoproj.io']  resources=['appprojects'] nonResourceURLs=None   verbs=['get', 'list', 'watch']
+  apiGroups=['argoproj.io']  resources=['applicationsets/status'] nonResourceURLs=None   verbs=['get', 'patch', 'update']
+  apiGroups=['']             resources=['events']  nonResourceURLs=None   verbs=['create', 'get', 'list', 'patch', 'watch']
+  apiGroups=['']             resources=['secrets', 'configmaps'] nonResourceURLs=None   verbs=['get', 'list', 'watch']
+  apiGroups=['coordination.k8s.io'] resources=['leases']  nonResourceURLs=None   verbs=['create']
+  apiGroups=['coordination.k8s.io'] resources=['leases']  nonResourceURLs=None   verbs=['get', 'update', 'create']
+ClusterRole/argocd-server
+  apiGroups=['*']            resources=['*']       nonResourceURLs=None   verbs=['delete', 'get', 'patch']
+  apiGroups=['']             resources=['events']  nonResourceURLs=None   verbs=['list']
+  apiGroups=['']             resources=['pods', 'pods/log'] nonResourceURLs=None   verbs=['get']
+  apiGroups=['argoproj.io']  resources=['applications', 'applicationsets'] nonResourceURLs=None   verbs=['get', 'list', 'watch']
+  apiGroups=['batch']        resources=['jobs']    nonResourceURLs=None   verbs=['create']
+  apiGroups=['argoproj.io']  resources=['workflows'] nonResourceURLs=None   verbs=['create']
+
+Читается так. Звёздочка по ВСЕМ трём осям — ["*"]/["*"]/["*"] — здесь ровно одна, у
+argocd-application-controller, и это буквально админ кластера: любой ресурс любой группы
+любым глаголом, плюс второе правило на любые nonResourceURLs. argocd-server берёт
+["*"]/["*"], но глаголами delete,get,patch — без create и update, дальше идут узкие
+правила (pods и pods/log get, jobs create, events list). У argocd-applicationset-controller
+звёздочек нет вовсе: argoproj.io, events, secrets/configmaps get,list,watch и leases.
+
+То есть «три ClusterRole со звёздочкой во всём» было бы неверно — а вывод от этого не
+меняется: в общем кластере хватает и ОДНОЙ тотальной роли, и в этом файле она есть.
+Плюс перехват трёх чужих CRD.
+
+namespace-install.yaml того же тега — принципиально другой файл:
+
+$ curl -o namespace-install.yaml https://raw.githubusercontent.com/argoproj/argo-cd/v3.4.1/manifests/namespace-install.yaml
+http=200 size=88049
+$ grep -E '^kind: ' namespace-install.yaml | sort | uniq -c
+      7 kind: ConfigMap
+      6 kind: Deployment
+      7 kind: NetworkPolicy
+      6 kind: Role
+      6 kind: RoleBinding
+      2 kind: Secret
+      8 kind: Service
+      7 kind: ServiceAccount
+      1 kind: StatefulSet
+
+Ни одного CustomResourceDefinition, ни одной ClusterRole/ClusterRoleBinding. Разница
+в размере — 1 890 674 байта против 88 049: почти весь install.yaml это схемы CRD.
+
+
+================================================================================
+4. УСТАНОВКА: manifests/10-argocd.sh, первый прогон
+================================================================================
+Фильтр CRD в скрипте оставлен, хотя на v3.4.1 он вырезает ноль документов. Смысл не в
+том, чтобы «на всякий случай», а в том, чтобы утверждение «CRD не применялись» было
+проверяемым числом в выводе, а не обещанием. И чтобы установка сломалась громко, если
+в другой версии CRD в этот манифест вернутся.
+
+$ ./manifests/10-argocd.sh
+== 1. манифест ArgoCD v3.4.1 ==
+источник: https://raw.githubusercontent.com/argoproj/argo-cd/v3.4.1/manifests/namespace-install.yaml
+размер: 88049 байт, sha256: baf0520c3dfd1a43974ff600099377237cf38155b63c767b7339edb9af53380d
+
+== 2. фильтр: вырезаем ВСЕ документы kind: CustomResourceDefinition ==
+документов в исходном манифесте: 50
+вырезано kind: CustomResourceDefinition: 0 (имён нет)
+осталось к применению: 50
+состав того, что применяем:
+      7 kind: ConfigMap
+      6 kind: Deployment
+      7 kind: NetworkPolicy
+      6 kind: Role
+      6 kind: RoleBinding
+      2 kind: Secret
+      8 kind: Service
+      7 kind: ServiceAccount
+      1 kind: StatefulSet
+
+== 2a. подмена реестра для redis ==
+вхождений public.ecr.aws/docker/library/redis:8.2.3-alpine: 1 -> заменено на docker.io/library/redis:8.2.3-alpine
+образы, которые применяем:
+image: docker.io/library/redis:8.2.3-alpine
+image: ghcr.io/dexidp/dex:v2.45.0
+image: quay.io/argoproj/argocd:v3.4.1
+
+ПРОВЕРКА: CRD в применяемом манифесте = 0
+ПРОВЕРКА: ClusterRole/ClusterRoleBinding в применяемом манифесте = 0
+
+== 3. применяем в ns cookbook-argocd ==
+serviceaccount/argocd-application-controller created
+... (7 ServiceAccount, 6 Role, 6 RoleBinding, 7 ConfigMap, 2 Secret, 8 Service,
+     6 Deployment, 1 StatefulSet, 7 NetworkPolicy) ...
+statefulset.apps/argocd-application-controller created
+
+== 4. контроль границ сразу после применения ==
+-- кластерные роли с argocd в имени (ожидаются ТОЛЬКО боевые, из ns argocd):
+KIND                 NAME                              CREATED
+ClusterRole          argocd-application-controller     2026-07-19T09:08:17Z
+ClusterRole          argocd-image-updater              2026-07-19T09:08:42Z
+ClusterRole          argocd-notifications-controller   2026-07-19T09:08:17Z
+ClusterRole          argocd-server                     2026-07-19T09:08:17Z
+ClusterRoleBinding   argocd-application-controller     2026-07-19T09:08:17Z
+ClusterRoleBinding   argocd-image-updater              2026-07-19T09:08:42Z
+ClusterRoleBinding   argocd-notifications-controller   2026-07-19T09:08:17Z
+ClusterRoleBinding   argocd-server                     2026-07-19T09:08:17Z
+
+Восемь штук — ровно те же восемь, что были до установки, все с датой 2026-07-19.
+Наших среди них нет.
+
+-- CRD argoproj.io: creationTimestamp обязан остаться прежним (2026-07-19):
+applications.argoproj.io                         2026-07-19T09:08:17Z   Helm
+applicationsets.argoproj.io                      2026-07-19T09:08:17Z   Helm
+appprojects.argoproj.io                          2026-07-19T09:08:17Z   Helm
+imageupdaters.argocd-image-updater.argoproj.io   2026-07-19T09:08:42Z   Helm
+
+
+================================================================================
+5. КВОТА: седьмой компонент не влез
+================================================================================
+Первая редакция квоты стенда: limits.cpu 4, limits.memory 6Gi, pods 25.
+Через минуту после установки:
+
+$ kubectl -n cookbook-argocd get events --field-selector reason=FailedCreate
+2026-07-24T16:00:44Z   argocd-repo-server-6b75cff94   Error creating: pods "argocd-repo-server-6b75cff94-dwhxt" is forbidden: exceeded quota: cookbook-gitops-quota, requested: limits.cpu=500m, used: limits.cpu=4, limited: limits.cpu=4
+2026-07-24T16:01:25Z   argocd-repo-server-6b75cff94   (combined from similar events): Error creating: pods "argocd-repo-server-6b75cff94-qsz9d" is forbidden: exceeded quota: cookbook-gitops-quota, requested: limits.cpu=500m, used: limits.cpu=4, limited: limits.cpu=4
+
+$ kubectl -n cookbook-argocd describe quota cookbook-gitops-quota
+Resource         Used    Hard
+limits.cpu       4       4
+limits.memory    3840Mi  6Gi
+pods             8       25
+requests.cpu     370m    2
+requests.memory  480Mi   3Gi
+
+Ключ к арифметике: в манифестах ArgoCD ресурсы не заданы ВООБЩЕ.
+
+$ kubectl -n cookbook-argocd get deploy argocd-repo-server -o jsonpath='{...containers[0].resources}'
+{}
+
+Значит их проставляет LimitRange стенда — по 500m/512Mi на каждый под, независимо от
+реального аппетита:
+
+$ kubectl -n cookbook-argocd get pods -o custom-columns='POD:...,CPU-LIM:...,MEM-LIM:...,CPU-REQ:...'
+POD                                                CPU-LIM   MEM-LIM   CPU-REQ
+argocd-application-controller-0                    500m      512Mi     50m
+argocd-applicationset-controller-bff79b5d9-ktxn6   500m      512Mi     50m
+argocd-dex-server-78bf889848-p4895                 500m      512Mi     50m
+argocd-notifications-controller-585d78df9c-rh5sp   500m      512Mi     50m
+argocd-redis-6cbfdb464d-2kgg2                      500m      512Mi     50m
+argocd-server-84445584cc-mscrh                     500m      512Mi     50m
+git-server-764f8c755b-rrksh                        200m      256Mi     20m
+
+Квота на limits в такой конфигурации считает не потребление, а штуки подов:
+4 CPU / 500m = 8 подов. Восемь и было занято. При этом requests — 370m из 2 CPU и
+480Mi из 3Gi, то есть реальная заявка на узлы была вчетверо меньше потолка.
+Потолок pods: 25 при этом разрешал двадцать пять — два ограничителя противоречили друг другу.
+
+РЕШЕНИЕ (осознанное, квота НЕ отключена): limits.cpu 4 -> 8, limits.memory 6Gi -> 8Gi,
+pods 25 -> 16. Восемь CPU по 500m — это ровно 16 подов, все три потолка теперь согласованы.
+requests не менялись (2 CPU / 3Gi) — именно они остаются настоящим ограничителем нагрузки
+на кластер. Обоснование записано в manifests/00-namespace.yaml.
+
+После подъёма repo-server поднялся сам, без пересоздания Deployment:
+$ kubectl -n cookbook-argocd get events
+116s  Normal  SuccessfulCreate  replicaset/argocd-repo-server-6b75cff94  Created pod: argocd-repo-server-6b75cff94-mcwzx
+
+
+================================================================================
+6. REDIS: недоступный реестр
+================================================================================
+$ kubectl -n cookbook-argocd describe pod -l app.kubernetes.io/name=argocd-redis
+  Warning  Failed   spec.containers{redis}: Failed to pull image "public.ecr.aws/docker/library/redis:8.2.3-alpine": rpc error: code = Canceled desc = failed to pull and unpack image "public.ecr.aws/docker/library/redis:8.2.3-alpine": context canceled
+  Warning  Failed   spec.containers{redis}: Error: ErrImagePull
+  Normal   BackOff  spec.containers{redis}: Back-off pulling image "public.ecr.aws/docker/library/redis:8.2.3-alpine"
+  Warning  Failed   spec.containers{redis}: Error: ImagePullBackOff
+
+Шесть минут на попытку, затем ImagePullBackOff: из этого кластера public.ecr.aws
+недоступен. Остальные реестры в порядке — quay.io и ghcr.io в этой же установке
+скачались (argocd и dex), docker.io тоже, и это видно на боевом ArgoCD:
+
+$ kubectl -n argocd get deploy argocd-redis -o jsonpath='{...image}'
+library/redis:8.6.3-alpine
+$ kubectl -n argocd get pods -l app.kubernetes.io/name=argocd-redis -o jsonpath='{...imageID}'
+docker.io/library/redis@sha256:d146f83b1e0f02fc27c26a50cee39338c736674c5959db84363e6ae3cd9e02d2
+
+Поэтому в скрипте меняется ТОЛЬКО реестр, версия остаётся апстримная (8.2.3-alpine).
+После подмены:
+$ kubectl -n cookbook-argocd rollout status deploy/argocd-redis
+deployment "argocd-redis" successfully rolled out
+
+
+================================================================================
+7. СОСТАВ ПОСЛЕ УСТАНОВКИ
+================================================================================
+$ kubectl -n cookbook-argocd get pods -o wide
+NAME                                               READY   STATUS    RESTARTS   AGE     IP             NODE
+argocd-application-controller-0                    1/1     Running   0          5m36s   10.244.4.200   k8s-volga-wk02
+argocd-applicationset-controller-bff79b5d9-ktxn6   1/1     Running   0          15m     10.244.3.162   k8s-volga-wk01
+argocd-dex-server-78bf889848-p4895                 1/1     Running   0          15m     10.244.6.102   k8s-volga-wk03
+argocd-notifications-controller-585d78df9c-rh5sp   1/1     Running   0          15m     10.244.6.105   k8s-volga-wk03
+argocd-redis-6469595fd7-xftf9                      1/1     Running   0          8m4s    10.244.4.250   k8s-volga-wk02
+argocd-repo-server-6b75cff94-mcwzx                 1/1     Running   0          12m     10.244.3.119   k8s-volga-wk01
+argocd-server-84445584cc-mscrh                     1/1     Running   0          15m     10.244.4.165   k8s-volga-wk02
+demo-7ffcc6b8f5-5x4pr                              1/1     Running   0          80s     10.244.3.7     k8s-volga-wk01
+git-server-764f8c755b-rrksh                        1/1     Running   0          103m    10.244.6.191   k8s-volga-wk03
+
+--- образы, которые реально запущены ---
+argocd-application-controller-0                    quay.io/argoproj/argocd:v3.4.1
+argocd-applicationset-controller-bff79b5d9-ktxn6   quay.io/argoproj/argocd:v3.4.1
+argocd-dex-server-78bf889848-p4895                 ghcr.io/dexidp/dex:v2.45.0
+argocd-notifications-controller-585d78df9c-rh5sp   quay.io/argoproj/argocd:v3.4.1
+argocd-redis-6469595fd7-xftf9                      docker.io/library/redis:8.2.3-alpine
+argocd-repo-server-6b75cff94-mcwzx                 quay.io/argoproj/argocd:v3.4.1
+argocd-server-84445584cc-mscrh                     quay.io/argoproj/argocd:v3.4.1
+demo-7ffcc6b8f5-5x4pr                              registry.k8s.io/pause:3.10
+git-server-764f8c755b-rrksh                        sha256:8572bdb198152c8f8a3df05ff8dc9d0d4d53575e84fa1d067b924f141f1809b2
+
+Тег argocd v3.4.1 совпадает с боевым — как и планировалось.
+git-server показан дайджестом, потому что и запинован дайджестом (см. 05-git-server.yaml).
+
+
+================================================================================
+8. ДОКАЗАТЕЛЬСТВО: установка namespace-scoped
+================================================================================
+--- в нашем namespace только Role/RoleBinding ---
+$ kubectl -n cookbook-argocd get role,rolebinding
+KIND          NAME                               CREATED
+Role          argocd-application-controller      2026-07-24T16:00:43Z
+Role          argocd-applicationset-controller   2026-07-24T16:00:43Z
+Role          argocd-dex-server                  2026-07-24T16:00:43Z
+Role          argocd-notifications-controller    2026-07-24T16:00:43Z
+Role          argocd-redis                       2026-07-24T16:00:43Z
+Role          argocd-server                      2026-07-24T16:00:43Z
+Role          cookbook-argocd-manage-ns          2026-07-24T16:13:06Z
+RoleBinding   argocd-application-controller      2026-07-24T16:00:43Z
+RoleBinding   argocd-applicationset-controller   2026-07-24T16:00:43Z
+RoleBinding   argocd-dex-server                  2026-07-24T16:00:43Z
+RoleBinding   argocd-notifications-controller    2026-07-24T16:00:43Z
+RoleBinding   argocd-redis                       2026-07-24T16:00:43Z
+RoleBinding   argocd-server                      2026-07-24T16:00:43Z
+RoleBinding   cookbook-argocd-manage-ns          2026-07-24T16:13:06Z
+
+Шесть пар — из namespace-install, седьмая (cookbook-argocd-manage-ns) добавлена нами,
+см. manifests/11-rbac.yaml и раздел 9 ниже.
+
+--- кластерных ролей у нас НЕТ ---
+$ kubectl get clusterrole,clusterrolebinding | grep -i argocd
+ClusterRole          argocd-application-controller     2026-07-19T09:08:17Z
+ClusterRole          argocd-image-updater              2026-07-19T09:08:42Z
+ClusterRole          argocd-notifications-controller   2026-07-19T09:08:17Z
+ClusterRole          argocd-server                     2026-07-19T09:08:17Z
+ClusterRoleBinding   argocd-application-controller     2026-07-19T09:08:17Z
+ClusterRoleBinding   argocd-image-updater              2026-07-19T09:08:42Z
+ClusterRoleBinding   argocd-notifications-controller   2026-07-19T09:08:17Z
+ClusterRoleBinding   argocd-server                     2026-07-19T09:08:17Z
+
+Как отличить чужое от своего, если имена одинаковые. Два признака, оба видны в выводе:
+  1) время создания: 2026-07-19 — это боевой Helm-релиз; наша установка сделана 2026-07-24
+     (сравните с датами Role выше — 2026-07-24T16:00:43Z);
+  2) кому они выданы — subjects указывают namespace:
+$ kubectl get clusterrolebinding <name> -o jsonpath='{...subjects}'
+argocd-application-controller      -> ServiceAccount argocd-application-controller в ns argocd
+argocd-server                      -> ServiceAccount argocd-server в ns argocd
+argocd-notifications-controller    -> ServiceAccount argocd-notifications-controller в ns argocd
+
+Все три смотрят в ns argocd. Наши ServiceAccount из cookbook-argocd не упомянуты
+ни в одной кластерной привязке:
+$ kubectl -n cookbook-argocd get rolebinding cookbook-argocd-manage-ns -o jsonpath='{...subjects}'
+ServiceAccount argocd-application-controller в ns cookbook-argocd; ServiceAccount argocd-server в ns cookbook-argocd
+
+--- и то же самое, спрошенное у API напрямую ---
+$ kubectl auth can-i <verb> <res> -n <ns> --as=system:serviceaccount:cookbook-argocd:argocd-application-controller
+can-i list deployments -n cookbook-argocd : yes
+can-i create deployments -n cookbook-argocd: yes
+can-i list deployments -n argocd          : no
+can-i list deployments -n kube-system     : no
+can-i list nodes (кластерный ресурс)      : no
+can-i list applications -n argocd         : no
+
+Для сравнения, тот же вопрос боевому контроллеру:
+$ kubectl auth can-i list clustertriggerauthentications.keda.sh --as=system:serviceaccount:argocd:argocd-application-controller
+yes
+$ kubectl auth can-i list clustertriggerauthentications.keda.sh --as=system:serviceaccount:cookbook-argocd:argocd-application-controller
+no
+
+--- CRD не изменились ---
+$ kubectl get crd | grep argoproj
+applications.argoproj.io                         2026-07-19T09:08:17Z   Helm   argocd   argocd
+applicationsets.argoproj.io                      2026-07-19T09:08:17Z   Helm   argocd   argocd
+appprojects.argoproj.io                          2026-07-19T09:08:17Z   Helm   argocd   argocd
+imageupdaters.argocd-image-updater.argoproj.io   2026-07-19T09:08:42Z   Helm   <none>   argocd
+
+Тот же creationTimestamp, те же метки Helm, тот же release-namespace.
+
+
+================================================================================
+9. ЧЕГО НЕ ХВАТАЕТ NAMESPACE-INSTALL, ЧТОБЫ РАБОТАТЬ
+================================================================================
+Установка встала и запустилась, но первый же Application показал Unknown. Две отдельные
+причины, обе видны в логах и обе лечатся не тем, чем кажется. Подробности и дословные
+ошибки — в fixtures/20-application.txt, разделы 2 и 3. Здесь только итог:
+
+  1) контроллер по умолчанию строит кэш ВСЕГО кластера, включая кластерные ресурсы,
+     а прав на них у него (правильно) нет -> manifests/15-cluster-scope.yaml
+     ограничивает его область одним namespace;
+  2) Role из namespace-install не даёт права ничего создавать, кроме своих же CRD:
+$ kubectl -n cookbook-argocd get role argocd-application-controller -o jsonpath='{...rules}'
+[""]            ["secrets","configmaps"]                        ["get","list","watch"]
+["argoproj.io"] ["applications","applicationsets","appprojects"] ["create","get","list","watch","update","patch","delete"]
+[""]            ["events"]                                      ["create","list"]
+["apps"]        ["deployments"]                                 ["get","list","watch"]
+
+     Для сравнения — ClusterRole боевого, которую мы ставить не имеем права:
+$ kubectl get clusterrole argocd-application-controller -o jsonpath='{...rules}'
+["*"] ["*"] ["*"]
+
+     -> manifests/11-rbac.yaml выдаёт те же полномочия, но Ролью в одном namespace.
+
+Вывод, который стоит запомнить: «namespace-scoped» — это ДВА решения (урезанный RBAC и
+урезанная область наблюдения), и штатный манифест закрывает только первое.
+
+
+================================================================================
+10. ИДЕМПОТЕНТНОСТЬ СКРИПТА
+================================================================================
+$ ./manifests/10-argocd.sh   # третий прогон подряд
+      2 configured
+     48 unchanged
+$ какие объекты не 'unchanged'
+networkpolicy.networking.k8s.io/argocd-application-controller-network-policy configured
+networkpolicy.networking.k8s.io/argocd-repo-server-network-policy configured
+
+Два NetworkPolicy показывают configured на каждом прогоне, и это не изменение объекта.
+Причина — умолчание API-сервера: в манифесте порт объявлен без protocol,
+$ grep -A1 'port: 8084' namespace-install.yaml
+    ports:
+    - port: 8084
+  podSelector:
+а в кластере он лежит уже с протоколом:
+$ kubectl -n cookbook-argocd get netpol argocd-repo-server-network-policy -o jsonpath='{.spec.ingress[1].ports}'
+[{"port":8084,"protocol":"TCP"}]
+
+kubectl видит расхождение с last-applied и каждый раз считает патч. Объект при этом
+остаётся прежним — до и после ещё одного прогона:
+generation:      1 -> 1
+resourceVersion: 2256819 -> 2256819
+
+Поды после трёх прогонов — без единого рестарта:
+argocd-application-controller-0                    1/1  Running  restarts=0
+argocd-applicationset-controller-bff79b5d9-ktxn6   1/1  Running  restarts=0
+argocd-dex-server-78bf889848-p4895                 1/1  Running  restarts=0
+argocd-notifications-controller-585d78df9c-rh5sp   1/1  Running  restarts=0
+argocd-redis-6469595fd7-xftf9                      1/1  Running  restarts=0
+argocd-repo-server-6b75cff94-mcwzx                 1/1  Running  restarts=0
+argocd-server-84445584cc-mscrh                     1/1  Running  restarts=0
+demo-7ffcc6b8f5-5x4pr                              1/1  Running  restarts=0
+git-server-764f8c755b-rrksh                        1/1  Running  restarts=0
+
+
+================================================================================
+11. ФАКТИЧЕСКОЕ ПОТРЕБЛЕНИЕ
+================================================================================
+$ kubectl -n cookbook-argocd describe quota cookbook-gitops-quota
+Resource         Used    Hard
+limits.cpu       4500m   8
+limits.memory    4352Mi  8Gi
+pods             9       16
+requests.cpu     380m    2
+requests.memory  496Mi   3Gi
+
+$ kubectl -n cookbook-argocd top pods
+NAME                                               CPU(cores)   MEMORY(bytes)
+argocd-application-controller-0                    2m           149Mi
+argocd-applicationset-controller-bff79b5d9-ktxn6   1m           18Mi
+argocd-dex-server-78bf889848-p4895                 1m           15Mi
+argocd-notifications-controller-585d78df9c-rh5sp   1m           15Mi
+argocd-redis-6469595fd7-xftf9                      3m           4Mi
+argocd-repo-server-6b75cff94-mcwzx                 1m           30Mi
+argocd-server-84445584cc-mscrh                     1m           22Mi
+demo-7ffcc6b8f5-5x4pr                              0m           0Mi
+git-server-764f8c755b-rrksh                        4m           0Mi
+
+Весь стенд в покое — 14m CPU и ~253Mi памяти на девять подов. Квота по limits при этом
+считает 4500m: разрыв в триста раз. Это не ошибка квоты, это её устройство — она считает
+объявленные потолки, а объявляет их за молчаливые манифесты LimitRange. Ровно из-за
+этого разрыва и не влез repo-server (раздел 5), хотя свободного CPU на узлах было в избытке.

@@ -1,0 +1,104 @@
+# Собственный namespace стенда gitops.
+#
+# Почему не общий cookbook-k8s (как у стендов фаз 1-3): в M1 сюда встанет ОТДЕЛЬНЫЙ,
+# namespace-scoped ArgoCD со своим RBAC и своими CRD-потребителями. Держать его в общем
+# namespace нельзя: он полез бы за объектами соседних стендов, а teardown этого стенда
+# сносит namespace ЦЕЛИКОМ.
+#
+# POD SECURITY: baseline. Добавлено после ревью M1, ДО перехода к automated sync в M2.
+#
+# В первой редакции метки не было вовсе, с рассуждением «restricted ArgoCD v3.x не проходит,
+# а baseline не даёт ничего сверх дефолта». Первая половина верна, вторая — нет, и вот почему.
+#
+# У стенда герметичный git-сервер, и он принимает АНОНИМНЫЙ push (--enable=receive-pack,
+# аутентификации у протокола git:// нет вообще). Пока Application синхронизируется вручную,
+# это безобидно: между чужим коммитом и подом на узле стоит человек. С M2 включается
+# automated + selfHeal, и человек из цепочки уходит:
+#   любой под кластера -> push в наш git -> манифест с hostPath или privileged ->
+#   ArgoCD применяет его сам -> под с этими признаками на узле.
+# Права ArgoCD ограничены одним namespace (11-rbac.yaml), но hostPath и privileged — это
+# выход ЗА namespace, на узел. Namespace-граница их не держит; держит их Pod Security.
+#
+# baseline запрещает ровно эти признаки: hostPath, hostNetwork, hostPID/hostIPC, privileged,
+# добавленные capabilities, hostPort. restricted не ставим по прежней причине — поды ArgoCD
+# v3.x его не проходят без правки чужого securityContext. Соседние стенды (cookbook-k8s,
+# cookbook-net) стоят под baseline — этот теперь тоже.
+#
+# Второй замок на той же цепочке — NetworkPolicy к git-серверу (05-git-server.yaml): туда
+# пускаются только поды из cookbook-argocd. Замки разные: политика решает, КТО может
+# запушить, метка — что будет, ЕСЛИ всё-таки запушил.
+#
+# enforce/audit/warn выставлены вместе: enforce отклоняет, audit пишет в аудит-лог, warn
+# возвращает предупреждение в kubectl. Проверка живьём — метка навешена на namespace с уже
+# работающими девятью подами, ни одного предупреждения; и отдельно замер отказа на поде с
+# hostPath. Оба в fixtures/30-hardening.txt.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+    purpose: digital-cookbook
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/warn: baseline
+---
+# Потолок стенда. Первая редакция считалась под пять компонентов ArgoCD v3.4.1 и давала
+# limits.cpu: 4 / limits.memory: 6Gi / pods: 25.
+#
+# ПОЧЕМУ ЦИФРЫ ИЗМЕНИЛИСЬ (M1, установка ArgoCD). Компонентов у namespace-install семь,
+# а не пять (плюс dex-server и notifications-controller), и — главное — в манифестах
+# ArgoCD `resources` пустые: `kubectl get deploy argocd-repo-server -o jsonpath=…` даёт `{}`.
+# Значит limits проставляет LimitRange, по 500m/512Mi на КАЖДЫЙ под, независимо от того,
+# сколько под реально ест. Квота на limits при этом считает не потребление, а эти
+# проставленные числа, то есть превращается в потолок ШТУК подов: 4 CPU / 500m = 8 подов.
+# Седьмой компонент в этот потолок не влез, живьём:
+#
+#   Error creating: pods "argocd-repo-server-6b75cff94-jcltq" is forbidden: exceeded quota:
+#   cookbook-gitops-quota, requested: limits.cpu=500m, used: limits.cpu=4, limited: limits.cpu=4
+#
+# При этом requests в тот момент были заняты на 370m из 2 CPU и 480Mi из 3Gi — то есть
+# реальная нагрузка на узлы была смешной, упёрлись исключительно в арифметику limits.
+# Потолок `pods: 25` противоречил потолку limits, разрешавшему восемь.
+#
+# Поднято ОСОЗНАННО и до внутренней непротиворечивости: 8 CPU / 8Gi по limits — это ровно
+# 16 подов по 500m/512Mi, и `pods` выставлен в те же 16. Квота НЕ отключена, а настоящим
+# ограничителем нагрузки на кластер остаются requests (2 CPU / 3Gi) — они не менялись.
+# Фактическое потребление после установки — в fixtures/10-argocd.txt.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: cookbook-gitops-quota
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+spec:
+  hard:
+    requests.cpu: "2"
+    requests.memory: 3Gi
+    limits.cpu: "8"
+    limits.memory: 8Gi
+    pods: "16"
+---
+# LimitRange нужен именно из-за квоты: при заданных requests.* в квоте под без явных
+# requests в namespace вообще не создастся. defaultRequest закрывает эту дыру, max —
+# страховка от одного пода, съедающего весь потолок.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cookbook-gitops-limits
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 50m
+        memory: 64Mi
+      default:
+        cpu: 500m
+        memory: 512Mi
+      max:
+        cpu: "1"
+        memory: 1Gi

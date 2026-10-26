@@ -1,0 +1,73 @@
+# ДЕМО 3. app-of-apps: одним объектом описан целый набор приложений.
+#
+# Идея паттерна: руками применяется РОВНО ОДИН Application — этот. Он смотрит не на
+# каталог с Deployment-ами, а на каталог с ДРУГИМИ Application (apps/children в демо-репо).
+# Для ArgoCD дочерний Application — такой же объект синхронизации, как ConfigMap: он его
+# создаёт в namespace назначения. Дальше каждый дочерний Application подхватывает уже свой
+# контроллером и раскатывает свою полезную нагрузку (apps/payload-a, apps/payload-b).
+#
+# Граница ответственности проходит по одной черте: корневой — манифест СТЕНДА (apply.sh),
+# дочерние — СОДЕРЖИМОЕ GIT. Добавить приложение = положить в git ещё один файл в
+# apps/children; ничего применять руками больше не нужно.
+#
+# ⚠️ Все Application живут в cookbook-argocd, и destination.namespace у всех — тот же
+# namespace. Иначе дочерние достались бы чужому контроллеру (Application читает тот
+# контроллер, в чьём namespace объект лежит), а прав писать за пределы своего namespace
+# у нашего ArgoCD нет вовсе (11-rbac.yaml — Role, не ClusterRole).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: cookbook-argocd
+  labels:
+    stand: cookbook-gitops
+    tier: root
+  # ⚠️ ФИНАЛАЙЗЕРА ЗДЕСЬ НЕТ — И ЭТО ОСОЗНАННО.
+  #
+  #   finalizers:
+  #     - resources-finalizer.argocd.argoproj.io
+  #
+  # Две строки выше закомментированы намеренно: без них стенд показывает ровно то
+  # поведение, ради которого демо и сделано. ArgoCD НЕ навешивает этот финалайзер сам —
+  # ни на корневой, ни на дочерние (снято фактически, fixtures/40-app-of-apps.txt, блок 3).
+  #
+  # ЧТО ЗАМЕРЕНО ПРИ УДАЛЕНИИ КОРНЕВОГО (пять замеров, один и тот же git, блоки 4, 6, 7, 10):
+  #   финалайзера нет нигде  -> корневой исчез за 0.9 s, дочерние Application и вся их
+  #                             нагрузка ОСТАЛИСЬ работать; 150 s наблюдения — без изменений.
+  #                             Сироты не «замерли»: дрейф replicas у нагрузки осиротевшего
+  #                             приложения был откачен за 0.6 s — приложение живо, но им
+  #                             больше ничто не управляет.
+  #   финалайзер на корневом -> дочерние Application удалены за 1.0 и 1.1 s, а их Deployment
+  #                             ОСТАЛИСЬ: сироты просто переехали на уровень ниже.
+  #   финалайзер на всех     -> удалилось всё: дочерние 1.5/2.5 s, Deployment 1.6/1.7 s,
+  #                             поды 1.8 s, сам корневой 2.4 s.
+  # Отсюда правило: каскад — свойство не паттерна app-of-apps, а финалайзера, и идёт он
+  # ровно на ту глубину, на которую финалайзер проставлен. Хотите каскад до нагрузки —
+  # ставьте финалайзер и дочерним (в apps/children/*.yaml), а не только корневому.
+  #
+  # ЧЕМ ЗАКРЫТЬ ОТ ЭТОГО КАСКАДА ОТДЕЛЬНЫЙ ОБЪЕКТ (блок 10, замер с контролем):
+  #   argocd.argoproj.io/sync-options: Delete=false на объекте -> объект ПЕРЕЖИЛ каскад;
+  #   argocd.argoproj.io/sync-options: Prune=false  на объекте -> НЕ пережил, удалён за
+  #                                    1.8 s наравне с непомеченным (1.7 s).
+  # Опции разные: Prune=false — про удаление объекта, ПРОПАВШЕГО ИЗ GIT, при синхронизации;
+  # Delete=false — про удаление объекта вместе с самим Application. Для «kubectl delete
+  # application root не должен унести базу» нужен именно Delete=false.
+spec:
+  project: default
+  source:
+    repoURL: git://git-server.cookbook-argocd.svc.cluster.local/demo.git
+    # Каталог с дочерними Application. Рекурсия по подкаталогам ArgoCD по умолчанию
+    # выключена, поэтому сюда попадают ровно два файла из apps/children и ничего больше:
+    # apps/payload-a и apps/payload-b корневой не видит — их читают дочерние.
+    path: apps/children
+    targetRevision: HEAD
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: cookbook-argocd
+  # Тот же набор флагов, что у demo (20-application.yaml): новые файлы в apps/children
+  # раскатываются сами, удалённые — прунятся, ручные правки дочерних Application
+  # откатываются к git.
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
