@@ -1,0 +1,13 @@
+name: shop_dim
+version: "1.0"
+profile: shop_dim
+model-paths: ["models"]
+snapshot-paths: ["snapshots"]
+models:
+  shop_dim:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table

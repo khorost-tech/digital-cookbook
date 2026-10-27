@@ -1,0 +1,10 @@
+{
+ "fixtures": {
+  "scd.jsonl": "fddb2f474b63791243e656ab33c0907349e645ff14d5daaac1fcebdf479fab3b",
+  "grain.jsonl": "87308fbd585280387981905d8ba3b3d39361b1f8b68adf86e53c4a03cb8a2068",
+  "additivity.jsonl": "99ab0d76ec6fa4ff7b852ea1036795a81f62875a1cbac2c529da7b98fe83ea37",
+  "keys.jsonl": "ec3d0fc3affc9f6b71369485717edd48bd83443a89b990fb1889e6c8b8c08afd"
+ },
+ "tests": 16,
+ "sabotages": 11
+}

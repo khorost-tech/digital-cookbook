@@ -1,0 +1,135 @@
+{
+ "session": "20261009T130921Z",
+ "published": {
+  "scd": {
+   "asof-scd1": {
+    "outcome": "mismatch",
+    "misattributed": 13631840,
+    "wrong_orders": 451,
+    "wrong_amount": 55935320,
+    "got_total": 470204870
+   },
+   "asof-scd3": {
+    "outcome": "mismatch",
+    "misattributed": 13631840,
+    "wrong_orders": 451,
+    "wrong_amount": 55935320,
+    "got_total": 470204870
+   },
+   "asof-scd2": {
+    "outcome": "match",
+    "misattributed": 0,
+    "wrong_orders": 0,
+    "wrong_amount": 0,
+    "got_total": 470204870
+   },
+   "current-scd1": {
+    "outcome": "mismatch",
+    "misattributed": 569460,
+    "wrong_orders": 7,
+    "wrong_amount": 569460,
+    "got_total": 470204870
+   },
+   "current-scd2": {
+    "outcome": "mismatch",
+    "misattributed": 569460,
+    "wrong_orders": 7,
+    "wrong_amount": 569460,
+    "got_total": 470204870
+   },
+   "first-scd3": {
+    "outcome": "mismatch",
+    "wrong_once": 0,
+    "wrong_twice": 10
+   }
+  },
+  "grain": {
+   "category-item": {
+    "outcome": "match",
+    "misattributed": 0,
+    "got_total": 470776260,
+    "ratio": 1.0
+   },
+   "category-order": {
+    "outcome": "mismatch",
+    "misattributed": 471031990,
+    "got_total": 1412840240,
+    "ratio": 3.001
+   },
+   "orders-distinct": {
+    "outcome": "match",
+    "misattributed": 0,
+    "got_total": 4249,
+    "ratio": 1.0
+   },
+   "orders-count": {
+    "outcome": "mismatch",
+    "misattributed": 3194,
+    "got_total": 10638,
+    "ratio": 2.504
+   }
+  },
+  "additivity": {
+   "stock-last": {
+    "outcome": "match",
+    "ratio": 1.0,
+    "got": 7230.0
+   },
+   "stock-avg": {
+    "outcome": "match",
+    "ratio": 1.0,
+    "got": 7554.0
+   },
+   "stock-sum": {
+    "outcome": "mismatch",
+    "ratio": 7.3137,
+    "got": 52878.0
+   },
+   "cancel-ratio": {
+    "outcome": "match",
+    "ratio": 1.0,
+    "got": 0.104024
+   },
+   "cancel-avg": {
+    "outcome": "mismatch",
+    "ratio": 0.9937,
+    "got": 0.103371
+   }
+  },
+  "keys": {
+   "late-inner": {
+    "outcome": "mismatch",
+    "got_total": 470204870,
+    "missing": 571390,
+    "late_orders_kept": 0,
+    "late_regions": []
+   },
+   "late-unknown": {
+    "outcome": "mismatch",
+    "got_total": 470776260,
+    "missing": 0,
+    "late_orders_kept": 5,
+    "late_regions": [
+     "unknown"
+    ]
+   },
+   "late-reassign": {
+    "outcome": "match",
+    "got_total": 470776260,
+    "missing": 0,
+    "late_orders_kept": 5,
+    "late_regions": [
+     "center"
+    ]
+   },
+   "recycled-scd1": {
+    "outcome": "mismatch",
+    "got_orders": 18
+   },
+   "recycled-scd2": {
+    "outcome": "match",
+    "got_orders": 8
+   }
+  }
+ }
+}

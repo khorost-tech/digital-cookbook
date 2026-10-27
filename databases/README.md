@@ -6,7 +6,7 @@
 |---|---|---|
 | [`citus/`](citus/) | Шардирование PostgreSQL через Citus: scatter-gather, колокация против репартиции, референсные таблицы, пагинация, ребаланс | [статья](https://khorost.tech/databases/sharding-in-production/) |
 | [`clickhouse/`](clickhouse/) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | [статья](https://khorost.tech/databases/clickhouse-when-olap/) |
-| [`cockroachdb/`](cockroachdb/) | Распределённый SQL вживую: диапазоны и Raft, HLC и uncertainty, contention и retry, DistSQL-планы, survival goals, апгрейд и миграция с PostgreSQL | 🔜 скоро |
+| [`cockroachdb/`](cockroachdb/) | Распределённый SQL вживую: диапазоны и Raft, HLC и uncertainty, contention и retry, DistSQL-планы, survival goals, апгрейд и миграция с PostgreSQL | [статья](https://khorost.tech/databases/cockroachdb-architecture-ranges-raft/) |
 | [`distributed-sql/`](distributed-sql/) | CockroachDB, YugabyteDB, TiDB и OceanBase под одними замерами: цена операции в раунд-трипах при назначенном RTT между узлами, write skew под уровнем по умолчанию и SERIALIZABLE, совместимость штатным драйвером, отказ узла с лидером | [статья](https://khorost.tech/databases/distributed-sql-newsql/) |
 | [`db-indexes/`](db-indexes/) | Индексы в БД: PostgreSQL, MongoDB, Tarantool | [статья](https://khorost.tech/databases/) |
 | [`graph/`](graph/) | Графовые БД и Go: один и тот же граф платформы в трёх углах (Neo4j, Apache AGE, baseline на PostgreSQL) и одинаковые графовые запросы к каждому | [статья](https://khorost.tech/databases/graph-databases-and-go/) |

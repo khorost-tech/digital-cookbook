@@ -1,0 +1,27 @@
+# Стенд data-engineering/dimensional: PostgreSQL (источник-реплика app и
+# хранилище в базе dwh) и контейнер tools с генератором и dbt.
+name: de-dimensional
+services:
+  postgres:
+    image: postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+    environment:
+      POSTGRES_PASSWORD: stand
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 30
+  tools:
+    build: ./tools
+    image: de-dimensional-tools
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      STAND_DWH_DSN: postgresql://postgres:stand@postgres/dwh
+    volumes:
+      - .:/opt/stand
+volumes:
+  pgdata:

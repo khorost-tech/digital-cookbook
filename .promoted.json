@@ -68,6 +68,9 @@
       "architecture/testing-distributed-systems.md",
       "architecture/writing-testable-code.md"
     ],
+    "data-engineering/dimensional": [
+      "databases/dimensional-modeling-warehouse.md"
+    ],
     "data-engineering/pipelines": [
       "databases/data-batch-pipelines-orchestration.md"
     ],
@@ -87,7 +90,8 @@
     "databases/cockroachdb": [
       "databases/cockroachdb-architecture-ranges-raft.md",
       "databases/cockroachdb-distributed-transactions.md",
-      "databases/cockroachdb-mvcc-time-clocks.md"
+      "databases/cockroachdb-mvcc-time-clocks.md",
+      "databases/cockroachdb-sql-layer-optimizer.md"
     ],
     "databases/db-indexes": [
       "databases/db-indexes-across-databases.md",

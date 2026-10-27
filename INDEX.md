@@ -29,7 +29,7 @@
 |---|---|---|
 | [`databases/citus`](databases/citus) | Шардирование PostgreSQL через Citus: scatter-gather, колокация против репартиции, референсные таблицы, пагинация, ребаланс | [статья](https://khorost.tech/databases/sharding-in-production/) |
 | [`databases/clickhouse`](databases/clickhouse) | ClickHouse и аналитические БД: MergeTree, MV, кластер, S3 | [статья](https://khorost.tech/databases/clickhouse-when-olap/) |
-| [`databases/cockroachdb`](databases/cockroachdb) | Распределённый SQL вживую: диапазоны и Raft, HLC и uncertainty, contention и retry, DistSQL-планы, survival goals, апгрейд и миграция с PostgreSQL | 🔜 скоро |
+| [`databases/cockroachdb`](databases/cockroachdb) | Распределённый SQL вживую: диапазоны и Raft, HLC и uncertainty, contention и retry, DistSQL-планы, survival goals, апгрейд и миграция с PostgreSQL | [статья](https://khorost.tech/databases/cockroachdb-architecture-ranges-raft/) |
 | [`databases/distributed-sql`](databases/distributed-sql) | CockroachDB, YugabyteDB, TiDB и OceanBase под одними замерами: цена операции в раунд-трипах при назначенном RTT между узлами, write skew под уровнем по умолчанию и SERIALIZABLE, совместимость штатным драйвером, отказ узла с лидером | [статья](https://khorost.tech/databases/distributed-sql-newsql/) |
 | [`databases/db-indexes`](databases/db-indexes) | Индексы в БД: PostgreSQL, MongoDB, Tarantool | [статья](https://khorost.tech/databases/) |
 | [`databases/graph`](databases/graph) | Графовые БД и Go: один и тот же граф платформы в трёх углах (Neo4j, Apache AGE, baseline на PostgreSQL) и одинаковые графовые запросы к каждому | [статья](https://khorost.tech/databases/graph-databases-and-go/) |
@@ -52,6 +52,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`data-engineering/pipelines`](data-engineering/pipelines) | Батч-пайплайн Airflow 3 + dbt + PostgreSQL против эталона генератора: ETL против ELT при смене правила, идемпотентность загрузки и падение посреди неё, интервал данных и ручной запуск в Airflow 3, backfill и depends_on_past, поздние данные и окно пересмотра, повторы задач | 🔜 скоро |
+| [`data-engineering/dimensional`](data-engineering/dimensional) | Звёздная схема на dbt + PostgreSQL против эталона генератора: SCD1/2/3 на переездах клиентов (dbt snapshot), гранулярность факта и двойной счёт, полуаддитивные и неаддитивные меры, поздний клиент и переиспользованный id | 🔜 скоро |
 
 ## Messaging
 
@@ -148,7 +149,7 @@
 | [`kubernetes/autoscaling`](kubernetes/autoscaling) | Автоскейлинг: HPA, VPA и KEDA на управляемой бизнес-метрике — от источника метрики до решения о масштабировании | [статья](https://khorost.tech/kubernetes/k8s-autoscaling-hpa-vpa-keda/) |
 | [`kubernetes/gitops`](kubernetes/gitops) | GitOps с ArgoCD: sync, self-heal и progressive delivery — со своим ArgoCD и своим git-сервером как источником правды | 🔜 скоро |
 | [`kubernetes/networking`](kubernetes/networking) | Сеть в Kubernetes: датаплейн Cilium без kube-proxy, сетевые политики L3/L4 и L7, наблюдаемость через Hubble | [статья](https://khorost.tech/kubernetes/k8s-networking-cilium-mesh/) |
-| [`kubernetes/operators`](kubernetes/operators) | Операторы и CRD на живом production-операторе cert-manager: цепочка Certificate → CertificateRequest → Secret и поддержание желаемого состояния | 🔜 скоро |
+| [`kubernetes/operators`](kubernetes/operators) | Операторы и CRD на живом production-операторе cert-manager: цепочка Certificate → CertificateRequest → Secret и поддержание желаемого состояния | [статья](https://khorost.tech/kubernetes/k8s-operators-crd/) |
 | [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |
 | [`kubernetes/scheduling`](kubernetes/scheduling) | Планирование подов: фильтрация и скоринг узлов, affinity, тейнты и приоритеты — продолжение стенда architecture | [статья](https://khorost.tech/kubernetes/k8s-pod-scheduling-affinity-taints/) |
 | [`kubernetes/secrets`](kubernetes/secrets) | Секреты в Kubernetes: чем base64 не является, и какие механизмы закрывают разрыв — Sealed Secrets и External Secrets | [статья](https://khorost.tech/kubernetes/k8s-secrets-sealed-external/) |
