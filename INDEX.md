@@ -13,7 +13,7 @@
 | [`architecture/event-payload`](architecture/event-payload) | Notification vs event-carried state transfer | [статья](https://khorost.tech/architecture/event-notification-vs-state-transfer/) |
 | [`architecture/event-sourcing`](architecture/event-sourcing) | Event Sourcing на практике: store, агрегаты, проекции | [статья](https://khorost.tech/architecture/event-sourcing-in-practice/) |
 | [`architecture/event-sourcing-deep`](architecture/event-sourcing-deep) | Event store вглубь: Postgres, KurrentDB и Kafka на одном домене; границы агрегата, проекции с чекпоинтами, upcasting, given-when-then | 🔜 скоро |
-| [`architecture/grpc`](architecture/grpc) | gRPC на Go и Java перекрёстно, за Angie и Envoy: доходит ли deadline до нижнего звена, останавливается ли стрим после отмены, коды ошибок и паника, порядок интерсепторов, встроенные ретраи, keepalive и GOAWAY, балансировка долгого HTTP/2-соединения за L4 и L7, gRPC-Gateway — счётом исходов | 🔜 скоро |
+| [`architecture/grpc`](architecture/grpc) | gRPC на Go и Java перекрёстно, за Angie и Envoy: доходит ли deadline до нижнего звена, останавливается ли стрим после отмены, коды ошибок и паника, порядок интерсепторов, встроенные ретраи, keepalive и GOAWAY, балансировка долгого HTTP/2-соединения за L4 и L7, gRPC-Gateway — счётом исходов | [статья](https://khorost.tech/architecture/grpc-deep-dive/) |
 | [`architecture/idempotency`](architecture/idempotency) | Гарантии доставки и идемпотентность (effectively-once) | [статья](https://khorost.tech/architecture/delivery-guarantees-idempotency/) |
 | [`architecture/realtime`](architecture/realtime) | WebSocket, SSE и polling на Go и Java за Angie, fan-out через Redis и NATS: байты на событие, буферизация и таймауты прокси, доставка между инстансами, потери при разрыве и догон по Last-Event-ID, медленный клиент, память на соединение — счётом исходов | [статья](https://khorost.tech/architecture/realtime-websockets-sse/) |
 | [`architecture/resilience`](architecture/resilience) | Backpressure и load shedding: bounded-очередь, AIMD-лимитер | [статья](https://khorost.tech/architecture/backpressure-load-shedding/) |
@@ -51,7 +51,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`data-engineering/pipelines`](data-engineering/pipelines) | Батч-пайплайн Airflow 3 + dbt + PostgreSQL против эталона генератора: ETL против ELT при смене правила, идемпотентность загрузки и падение посреди неё, интервал данных и ручной запуск в Airflow 3, backfill и depends_on_past, поздние данные и окно пересмотра, повторы задач | 🔜 скоро |
+| [`data-engineering/pipelines`](data-engineering/pipelines) | Батч-пайплайн Airflow 3 + dbt + PostgreSQL против эталона генератора: ETL против ELT при смене правила, идемпотентность загрузки и падение посреди неё, интервал данных и ручной запуск в Airflow 3, backfill и depends_on_past, поздние данные и окно пересмотра, повторы задач | [статья](https://khorost.tech/databases/data-batch-pipelines-orchestration/) |
 | [`data-engineering/dimensional`](data-engineering/dimensional) | Звёздная схема на dbt + PostgreSQL против эталона генератора: SCD1/2/3 на переездах клиентов (dbt snapshot), гранулярность факта и двойной счёт, полуаддитивные и неаддитивные меры, поздний клиент и переиспользованный id | 🔜 скоро |
 
 ## Messaging

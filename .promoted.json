@@ -89,6 +89,7 @@
     ],
     "databases/cockroachdb": [
       "databases/cockroachdb-architecture-ranges-raft.md",
+      "databases/cockroachdb-data-placement-geo.md",
       "databases/cockroachdb-distributed-transactions.md",
       "databases/cockroachdb-mvcc-time-clocks.md",
       "databases/cockroachdb-sql-layer-optimizer.md"
