@@ -21,6 +21,7 @@
       "architecture/event-sourcing-in-practice.md"
     ],
     "architecture/event-sourcing-deep": [
+      "architecture/es-aggregate-event-design.md",
       "architecture/es-event-store-internals.md"
     ],
     "architecture/grpc": [

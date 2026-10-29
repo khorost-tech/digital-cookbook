@@ -23,6 +23,11 @@
 #   D. Противоречие между event_type и data->>'type' — ограничение схемы не
 #      даёт его записать, а на снятом ограничении (данные старой схемы)
 #      проектор обязан отказаться применять такое событие.
+#   E. xid разной длины: 9, 10, 100. Курсор сортирует по xid8, и порядок
+#      обязан быть числовым. Запрос проектора выбирал xid::text без
+#      псевдонима, и ORDER BY xid сортировал по этому ТЕКСТОВОМУ столбцу:
+#      «10, 100, 9». Контроль — тот же запрос в прежней форме обязан дать
+#      текстовый порядок на этих данных, иначе сюжет ничего не проверяет.
 #
 # Запуск (из architecture/event-sourcing-deep/):  bash scripts/07-projector-safety.sh
 
@@ -192,6 +197,31 @@ psql_c -c "ALTER TABLE events ADD CONSTRAINT events_type_matches_payload
          psql_c -c "ALTER TABLE events ADD CONSTRAINT events_type_matches_payload
                     CHECK (data ? 'type' AND data->>'type' = event_type);" >/dev/null; }
 log "ограничение возвращено на место"
+
+reset
+echo
+echo "=== E. xid разной длины: порядок курсора числовой, а не текстовый ==="
+for spec in "1 TankRegistered 0 9" "2 OxygenAdded 5 10" "3 OxygenAdded 7 100"; do
+    set -- $spec
+    psql_c -c "INSERT INTO events (stream_id, version, event_type, data, xid)
+               VALUES ('e', $1, '$2', '{\"type\":\"$2\",\"liters\":$3}', '$4'::xid8);" >/dev/null
+done
+old_order="$(psql_c --tuples-only --no-align -c "SELECT string_agg(xid, ',') FROM (
+    SELECT xid::text FROM events WHERE xid < '1000'::xid8 ORDER BY xid, global_pos) s;")"
+if [ "$old_order" = "10,100,9" ]; then
+    echo "  ok: контроль — прежняя форма запроса даёт текстовый порядок: $old_order"
+else
+    echo "  ПРОВАЛ: контроль не воспроизвёл текстовый порядок (получено $old_order) — сюжет ничего не проверяет"
+    fails=$((fails + 1))
+fi
+expect_ok "проектор на xid 9, 10, 100" "$OUT/loadgen" -mode project -duration 5s
+state="$(sql_value "SELECT version || '/' || liters FROM balances WHERE stream_id = 'e';")"
+if [ "$state" = "3/12.000" ]; then
+    echo "  ok: стрим применён по порядку версий: версия/литры = $state"
+else
+    echo "  ПРОВАЛ: ожидалось 3/12.000, получено ${state:-пусто}"
+    fails=$((fails + 1))
+fi
 
 reset
 echo
