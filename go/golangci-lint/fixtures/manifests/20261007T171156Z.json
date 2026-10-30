@@ -1,0 +1,527 @@
+{
+ "session": "20261007T171156Z",
+ "published": {
+  "default": {
+   "standard": [
+    7,
+    13,
+    2,
+    0,
+    {
+     "rowserrcheck": 1,
+     "sqlclosecheck": 1,
+     "errorlint": 2,
+     "bodyclose": 1,
+     "noctx": 1,
+     "prealloc": 1,
+     "perfsprint": 1,
+     "gocritic": 1,
+     "gosec": 2,
+     "govet": 2
+    },
+    5,
+    4,
+    1,
+    0
+   ],
+   "curated": [
+    20,
+    0,
+    0,
+    0,
+    {},
+    18,
+    15,
+    1,
+    2
+   ],
+   "all": [
+    18,
+    2,
+    5,
+    66,
+    {
+     "govet": 2
+    },
+    16,
+    13,
+    1,
+    2
+   ],
+   "fixed-curated": [
+    0,
+    0,
+    0,
+    0,
+    {},
+    0,
+    0,
+    0,
+    0
+   ]
+  },
+  "truncate": {
+   "same/no-limits": [
+    5,
+    5,
+    1
+   ],
+   "same/default": [
+    3,
+    5,
+    1
+   ],
+   "local/no-limits": [
+    60,
+    60,
+    1
+   ],
+   "local/default": [
+    3,
+    60,
+    1
+   ],
+   "many/no-limits": [
+    60,
+    60,
+    1
+   ],
+   "many/default": [
+    50,
+    60,
+    1
+   ],
+   "line/no-limits": [
+    2,
+    2,
+    1
+   ],
+   "line/default": [
+    1,
+    2,
+    1
+   ]
+  },
+  "exclude": {
+   "base": [
+    [],
+    []
+   ],
+   "preset-comments": [
+    [],
+    []
+   ],
+   "preset-std-error-handling": [
+    [
+     "excl/danger/danger.go:35 errcheck",
+     "excl/gen/auto.go:9 errcheck",
+     "excl/gen/std.go:10 errcheck",
+     "excl/svc/svc_test.go:9 errcheck",
+     "sample/errs/errs.go:14 errcheck"
+    ],
+    [
+     "excl/danger/danger.go:18 errcheck",
+     "sample/db/db.go:15 errcheck",
+     "sample/httpx/httpx.go:29 errcheck"
+    ]
+   ],
+   "preset-common-false-positives": [
+    [],
+    [
+     "sample/errs/errs.go:24 gosec"
+    ]
+   ],
+   "preset-legacy": [
+    [],
+    [
+     "excl/gen/auto.go:9 gosec",
+     "excl/gen/std.go:10 gosec",
+     "excl/svc/svc_test.go:9 gosec",
+     "sample/errs/errs.go:14 gosec"
+    ]
+   ],
+   "path-tests": [
+    [
+     "excl/svc/svc_test.go:9 errcheck"
+    ],
+    []
+   ],
+   "generated-lax": [
+    [
+     "excl/gen/auto.go:9 errcheck",
+     "excl/gen/std.go:10 errcheck"
+    ],
+    [
+     "excl/gen/auto.go:9 gosec",
+     "excl/gen/std.go:10 gosec"
+    ]
+   ],
+   "generated-strict": [
+    [
+     "excl/gen/std.go:10 errcheck"
+    ],
+    [
+     "excl/gen/std.go:10 gosec"
+    ]
+   ],
+   "curated-broad": [
+    [
+     "excl/danger/danger.go:35 errcheck"
+    ],
+    [
+     "excl/danger/danger.go:18 errcheck",
+     "excl/gen/auto.go:9 gosec",
+     "excl/gen/std.go:10 gosec",
+     "excl/svc/svc_test.go:9 gosec",
+     "sample/db/db.go:15 errcheck",
+     "sample/errs/errs.go:14 gosec",
+     "sample/errs/errs.go:24 gosec",
+     "sample/httpx/httpx.go:25 gosec",
+     "sample/httpx/httpx.go:29 errcheck"
+    ]
+   ],
+   "curated": [
+    [],
+    [
+     "excl/danger/danger.go:18 errcheck",
+     "excl/gen/auto.go:9 gosec",
+     "excl/gen/std.go:10 gosec",
+     "excl/svc/svc_test.go:9 gosec",
+     "sample/db/db.go:15 errcheck",
+     "sample/errs/errs.go:14 gosec",
+     "sample/errs/errs.go:24 gosec",
+     "sample/httpx/httpx.go:25 gosec",
+     "sample/httpx/httpx.go:29 errcheck"
+    ]
+   ]
+  },
+  "nolint": {
+   "control/bare": [
+    [
+     "errcheck"
+    ],
+    [],
+    []
+   ],
+   "control/no-reason": [
+    [
+     "errcheck"
+    ],
+    [],
+    []
+   ],
+   "control/with-reason": [
+    [
+     "errcheck"
+    ],
+    [],
+    []
+   ],
+   "control/wrong-linter": [
+    [
+     "errcheck"
+    ],
+    [],
+    []
+   ],
+   "control/two-bare": [
+    [
+     "errcheck",
+     "noctx"
+    ],
+    [],
+    []
+   ],
+   "control/two-specific": [
+    [
+     "errcheck",
+     "noctx"
+    ],
+    [],
+    []
+   ],
+   "plain/bare": [
+    [],
+    [
+     "errcheck"
+    ],
+    []
+   ],
+   "plain/no-reason": [
+    [],
+    [
+     "errcheck"
+    ],
+    []
+   ],
+   "plain/with-reason": [
+    [],
+    [
+     "errcheck"
+    ],
+    []
+   ],
+   "plain/wrong-linter": [
+    [
+     "errcheck"
+    ],
+    [],
+    []
+   ],
+   "plain/two-bare": [
+    [],
+    [
+     "errcheck",
+     "noctx"
+    ],
+    []
+   ],
+   "plain/two-specific": [
+    [
+     "noctx"
+    ],
+    [
+     "errcheck"
+    ],
+    []
+   ],
+   "strict/bare": [
+    [],
+    [
+     "errcheck"
+    ],
+    [
+     "без имени линтера",
+     "без причины"
+    ]
+   ],
+   "strict/no-reason": [
+    [],
+    [
+     "errcheck"
+    ],
+    [
+     "без причины"
+    ]
+   ],
+   "strict/with-reason": [
+    [],
+    [
+     "errcheck"
+    ],
+    []
+   ],
+   "strict/wrong-linter": [
+    [
+     "errcheck"
+    ],
+    [],
+    [
+     "не используется"
+    ]
+   ],
+   "strict/two-bare": [
+    [],
+    [
+     "errcheck",
+     "noctx"
+    ],
+    [
+     "без имени линтера",
+     "без причины"
+    ]
+   ],
+   "strict/two-specific": [
+    [
+     "noctx"
+    ],
+    [
+     "errcheck"
+    ],
+    []
+   ]
+  },
+  "legacy": {
+   "full": [
+    [
+     "legacy/a.go:8",
+     "legacy/a.go:9",
+     "legacy/a.go:14",
+     "legacy/b.go:7"
+    ],
+    "637c851e2dd7fc412c088a2643c36802543c09c4",
+    "d4abe6615a8ea2900f53885e2b77a33a76252451"
+   ],
+   "new-from-rev": [
+    [
+     "legacy/a.go:8",
+     "legacy/a.go:14"
+    ],
+    "637c851e2dd7fc412c088a2643c36802543c09c4",
+    "d4abe6615a8ea2900f53885e2b77a33a76252451"
+   ],
+   "new-from-merge-base": [
+    [
+     "legacy/a.go:8",
+     "legacy/a.go:14"
+    ],
+    "637c851e2dd7fc412c088a2643c36802543c09c4",
+    "d4abe6615a8ea2900f53885e2b77a33a76252451"
+   ],
+   "whole-files": [
+    [
+     "legacy/a.go:8",
+     "legacy/a.go:9",
+     "legacy/a.go:14"
+    ],
+    "637c851e2dd7fc412c088a2643c36802543c09c4",
+    "d4abe6615a8ea2900f53885e2b77a33a76252451"
+   ]
+  },
+  "custom": {
+   "analysistest": "scored",
+   "custom": {
+    "ctxloss": {
+     "caught": [
+      "Audit",
+      "Enqueue",
+      "Get",
+      "GetTimeout",
+      "Poll"
+     ],
+     "missed": [],
+     "false": []
+    },
+    "contextcheck": {
+     "caught": [
+      "Audit",
+      "Get",
+      "GetTimeout"
+     ],
+     "missed": [
+      "Enqueue",
+      "Poll"
+     ],
+     "false": []
+    },
+    "noctx": {
+     "caught": [],
+     "missed": [
+      "Audit",
+      "Enqueue",
+      "Get",
+      "GetTimeout",
+      "Poll"
+     ],
+     "false": []
+    }
+   },
+   "builtin": {
+    "contextcheck": {
+     "caught": [
+      "Audit",
+      "Get",
+      "GetTimeout"
+     ],
+     "missed": [
+      "Enqueue",
+      "Poll"
+     ],
+     "false": []
+    },
+    "noctx": {
+     "caught": [],
+     "missed": [
+      "Audit",
+      "Enqueue",
+      "Get",
+      "GetTimeout",
+      "Poll"
+     ],
+     "false": []
+    }
+   },
+   "plain-binary": "scored"
+  },
+  "semantics": {
+   "TestDrainedRowsReleaseConnection": {
+    "in_use": 0
+   },
+   "TestSampleFirstHoldsConnection": {
+    "in_use": 1
+   },
+   "TestFixedFirstReleasesConnection": {
+    "in_use": 0
+   },
+   "TestEncodeFailsBeforeWrite": {
+    "encode_failed": 1,
+    "body_bytes": 0,
+    "header_written": 0,
+    "status_after": 500
+   },
+   "TestMergeAliasing": {
+    "sample_aliases": 1,
+    "fixed_aliases": 0
+   },
+   "TestNormalizeTrims": {
+    "sample_trims": 0,
+    "fixed_trims": 1
+   },
+   "TestIDsEmptyContract": {
+    "sample_null": 1,
+    "fixed_null": 1,
+    "naive_null": 0
+   }
+  },
+  "trainer": {
+   "l1/start": [
+    "red",
+    [
+     "bodyclose",
+     "errcheck",
+     "ineffassign"
+    ]
+   ],
+   "l1/solution": [
+    "green",
+    []
+   ],
+   "l2/start": [
+    "red",
+    [
+     "gosec:G101",
+     "gosec:G404",
+     "govet:shadow",
+     "govet:shadow",
+     "rowserrcheck"
+    ]
+   ],
+   "l2/solution": [
+    "green",
+    []
+   ],
+   "l3/start": [
+    "red",
+    [
+     "errcheck",
+     "l3:no-linter",
+     "l3:no-nolint"
+    ]
+   ],
+   "l3/solution": [
+    "green",
+    []
+   ],
+   "l4/start": [
+    "red",
+    [
+     "l4:test"
+    ]
+   ],
+   "l4/solution": [
+    "green",
+    []
+   ]
+  }
+ }
+}

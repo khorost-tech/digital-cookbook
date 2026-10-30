@@ -1,0 +1,9 @@
+# Ось 7: обычный бинарь — только готовые линтеры про контекст.
+version: "2"
+run:
+  relative-path-mode: gomod
+linters:
+  default: none
+  enable: [contextcheck, noctx]
+  exclusions:
+    presets: []

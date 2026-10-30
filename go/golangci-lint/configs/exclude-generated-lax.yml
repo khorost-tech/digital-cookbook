@@ -1,0 +1,13 @@
+# Ось 4: сгенерированный код — по умолчанию (lax).
+version: "2"
+run:
+  relative-path-mode: gomod
+linters:
+  default: standard
+  enable: [bodyclose, errorlint, gocritic, gosec, noctx, perfsprint, prealloc, rowserrcheck, sqlclosecheck]
+  settings:
+    govet:
+      enable: [nilness, shadow]
+  exclusions:
+    generated: lax
+    presets: []

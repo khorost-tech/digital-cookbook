@@ -1,0 +1,6 @@
+{
+ "golangci-lint": {
+  "ref": "golangci/golangci-lint:v2.14.0",
+  "digest": "sha256:ad862ba6b3798cbe0fd9fd7408d498fd74fbd2623a92406b2fd3898faf0bf98f"
+ }
+}

@@ -1,0 +1,14 @@
+{
+ "fixtures": {
+  "default.jsonl": "f8d4f94d8187da83c375685a9e46b0d2a3bd925f59f91f1642591d1a2f6501b0",
+  "truncate.jsonl": "b46ec00dc2fd232b4c3450c2d0fd02bf4356fcfdfb1b4a6102ec792413c4da9e",
+  "exclude.jsonl": "399a7131694b2fff67b1b70aa9971922fce629857dfad223b585ae831e3ac3d8",
+  "nolint.jsonl": "28b5b894331b064cddccb738e7f876864bec7c87c55e963b53cd6be97fa8b037",
+  "legacy.jsonl": "aecfa0fd6f0605ebc6a2464f27f7659456cb5b11909dea699e471348ca02a53e",
+  "custom.jsonl": "e8bf06c4a751fa6f961c81ecd0c446f2c833c0faabb8bc363d897423130e5450",
+  "semantics.jsonl": "4f6ad93b0320c0f410e7487aed48b13fb1b8f73d9f5c37a92f5b815f5b40a718",
+  "trainer.jsonl": "50db681e95527d649d2ed0de8c3df38294f9deaef00594c3dd0521155c51a6a2"
+ },
+ "tests": 45,
+ "sabotages": 35
+}

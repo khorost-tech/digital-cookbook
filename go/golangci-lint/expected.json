@@ -1,0 +1,138 @@
+{
+  "written": "2026-10-07",
+  "note": "Гипотезы записаны до прогона оси. Для осей 1–2 пробы прошли раньше записи — их результаты отделены в known_from_pre_run_probes, гипотеза — то, что проверяет полный прогон.",
+  "default": {
+    "hypothesis_before_run": "Набор по умолчанию (standard) находит только дефекты своих пяти линтеров и пропускает bodyclose, rowserrcheck, sqlclosecheck, errorlint, gosec, noctx, prealloc, perfsprint, gocritic и анализаторы govet shadow и nilness, которые выключены даже внутри включённого govet. Курируемый конфиг находит все размеченные дефекты, весь шум погашен, лишнего ноль. --default all находит больше всего и в основном вне разметки — от линтеров оформления; govet shadow и nilness не включает и он. Исправленные пары под курируемым конфигом — ноль находок.",
+    "confidence": "высокая",
+    "control": "fixed/ под курируемым конфигом — ноль находок",
+    "known_from_pre_run_probes": [
+      {
+        "fact": "по умолчанию golangci-lint оставляет одну находку на строку (uniq-by-line): noctx на http.Get пропал из вывода, потому что на той же строке gosec дал G107",
+        "source": "проба 07.10"
+      },
+      {
+        "fact": "в v2 пути в выводе по умолчанию считаются от каталога конфига (run.relative-path-mode: cfg); конфиги стенда ставят gomod",
+        "source": "проба 07.10"
+      },
+      {
+        "fact": "один дефект даёт находки двух линтеров: staticcheck SA4006 рядом с ineffassign, staticcheck рядом с govet printf, gosec G104 рядом с errcheck",
+        "source": "проба 07.10"
+      },
+      {
+        "fact": "пресет std-error-handling прячет не только непроверенный Close, но и непроверенный os.Remove",
+        "source": "проба 07.10"
+      },
+      {
+        "fact": "--default all на sample/: 87 находок, из них wsl 20, wsl_v5 15, nlreturn 11, wrapcheck 8",
+        "source": "проба 07.10"
+      }
+    ],
+    "revision_after_review": {
+      "written": "2026-10-07",
+      "reason": "рецензия: 20 — не дефекты, а ожидаемые диагностики (пары место+линтер) на 18 местах; prealloc и perfsprint — предложения оптимизации, а не дефекты поведения; пример sqlclosecheck (Count) дочитывал выборку — rows закрывается сам, утечки нет",
+      "change": "счёт двух величин: ожидаемые диагностики и размеченные места (место найдено, если сработал хоть один ожидаемый линтер); места делятся на поведение и оптимизацию (prealloc, perfsprint); Count заменён на First — ранний выход после первой строки без Close",
+      "hypothesis_before_run": "По умолчанию: 7 диагностик из 20, 5 мест из 18 (поведение 5 из 16, оптимизация 0 из 2). Курируемый: все. «Всё»: 18 диагностик, 16 мест (пропущены shadow и nilness). Пример First по-прежнему ловит только sqlclosecheck."
+    },
+    "revision_after_review_2": {
+      "written": "2026-10-07",
+      "reason": "рецензия 2: «16 дефектов поведения» — слишком сильно: unused — мёртвый код, appendAssign корректен, если контракт допускает общий массив; исправленный IDs меняет результат на пустом входе (nil → пустой срез, null → [] в JSON)",
+      "change": "у мест — явный класс в разметке (// kind dead, // kind opt; без метки — ошибка по контракту из комментария функции); контракты Merge («результат не делит память с a») и Normalize («обрезает и приводит к нижнему регистру») записаны в комментариях и проверены тестами поведения; fixed IDs возвращает nil на пустом входе",
+      "hypothesis_before_run": "по умолчанию: ошибок 5 из 15, мёртвый код 0 из 1 (unused по умолчанию включён — значит 1 из 1), оптимизация 0 из 2; курируемый — все"
+    }
+  },
+  "truncate": {
+    "hypothesis_before_run": "Вывод по умолчанию: из 5 находок с одинаковым текстом показаны 3 (max-same-issues 3); из 60 находок одного линтера с разным текстом — 50 (max-issues-per-linter 50); из двух находок разных линтеров на одной строке — 1 (uniq-by-line). С нулевыми лимитами и uniq-by-line=false показаны все. Код выхода в обоих случаях 1 — CI падает, но число замечаний в отчёте занижено.",
+    "confidence": "высокая",
+    "control": "с нулевыми лимитами показаны все находки пакета",
+    "revision_after_probe": {
+      "written": "2026-10-07",
+      "reason": "первый прогон: у errcheck текст находки для вызова локальной функции не содержит её имени — 60 разных вызовов дали один текст и попали под max-same-issues (показано 3), а не под max-issues-per-linter",
+      "change": "пакет trunc/local — те же 60 вызовов как отдельный вариант; trunc/many — 60 неиспользуемых функций (unused, имя в тексте)",
+      "hypothesis_before_run": "local/default: показано 3 из 60; many/default: показано 50 из 60; остальное — как в исходной гипотезе"
+    }
+  },
+  "exclude": {
+    "hypothesis_before_run": "На конфиге без исключений: пресет std-error-handling прячет непроверенные Close и os.Remove (и размеченный дефект тоже); common-false-positives прячет gosec G304 (путь из переменной); comments и legacy на этом коде не прячут ничего. Правило по пути для _test.go прячет дефект в тесте. Сгенерированный файл по умолчанию (generated: lax) не линтуется — дефект в нём не виден; с generated: disable — виден.",
+    "confidence": "средняя",
+    "control": "конфиг без исключений находит всё размеченное, включая шум",
+    "observed_vs_hypothesis": {
+      "written": "2026-10-07",
+      "fact": "пресет legacy, вопреки гипотезе, спрятал gosec G104 (непроверенная ошибка) на всех четырёх строках с os.Remove; дефекты errcheck на тех же строках остались"
+    },
+    "revision_after_review": {
+      "written": "2026-10-07",
+      "reason": "рецензия: курируемый конфиг глобально отключал gosec G107/G304 и исключал (io.Closer).Close «на чтении» — шире обоснования; критика широких пресетов не проверяла широту собственных исключений",
+      "change": "excl/danger: URL и путь из запроса (G107, G304) и непроверенный Close после записи в файл — настоящие дефекты; вариант curated-broad (прежние исключения) против curated (узкие: правила по пути с допущением о доверенном входе, errcheck по тексту resp.Body.Close)",
+      "hypothesis_before_run": "curated-broad прячет все три опасные находки excl/danger (G107, G304, errcheck на Close после записи); curated — ни одной, а шум sample/ гасит так же."
+    }
+  },
+  "nolint": {
+    "hypothesis_before_run": "Любая форма //nolint подавляет находку. Без nolintlint ни одна форма не отмечается. С nolintlint (require-specific, require-explanation, allow-unused: false): голый //nolint отмечен за отсутствие имени линтера и причины, //nolint:errcheck без причины — за причину, с причиной — чисто, //nolint:gosec на строке без находки gosec — как неиспользуемый. Голый //nolint на строке с двумя дефектами прячет оба; nolintlint отмечает директиву, но о втором дефекте не говорит.",
+    "confidence": "средняя",
+    "control": "та же копия кода без директив — все размеченные дефекты найдены",
+    "observed_vs_hypothesis": {
+      "written": "2026-10-07",
+      "fact": "гипотеза «любая форма //nolint подавляет находку» неверна для директивы с чужим линтером: //nolint:noctx на строке с находкой errcheck её не подавил; nolintlint отметил директиву как неиспользуемую"
+    }
+  },
+  "legacy": {
+    "hypothesis_before_run": "Полный прогон: 4 находки (3 старых, 1 новая). --new-from-rev=HEAD~1 и --new-from-merge-base=main: 2 — новая и старая на изменённой строке; нетронутая старая строка в том же файле не показана. --whole-files: 3 — все находки в изменённом файле, нетронутый файл не показан.",
+    "confidence": "средняя",
+    "control": "полный прогон находит все размеченные дефекты репозитория"
+  },
+  "custom": {
+    "hypothesis_before_run": "Свой анализатор ctxloss находит размеченные случаи context.Background()/TODO() в функциях с параметром context.Context и молчит в функциях без него. Обычный бинарь его не знает. contextcheck ловит вызов функции без передачи контекста, но не создание нового context.Background() внутри функции с ctx; noctx — только вызовы без Context-варианта.",
+    "confidence": "низкая",
+    "control": "функции без параметра context.Context — ноль находок ctxloss; analysistest с отрицательными случаями",
+    "observed_vs_hypothesis": {
+      "written": "2026-10-07",
+      "fact": "гипотеза про contextcheck неверна: он ловит и создание нового корневого контекста в функции с ctx, если контекст передан дальше (3 из 5 функций), но ставит находку на месте использования — в WithTimeout-варианте на вызове с производным контекстом, в горутине — на замыкании. Не ловит корневой контекст, который не передан: ожидание <-bg.Done() и сохранение в поле структуры. Поэтому счёт ведётся по функциям, а не по строкам (решение принято по пробе до полного прогона)."
+    },
+    "revision_after_review": {
+      "written": "2026-10-07",
+      "reason": "рецензия: isContext принимал только *types.Named — для type Ctx = context.Context (types.Alias в Go 1.27) правило молчит",
+      "change": "types.Unalias перед проверкой; положительный случай с алиасом в analysistest",
+      "hypothesis_before_run": "до правки analysistest с алиасом падает (нет ожидаемой находки), после — проходит; на ctx/handler счёт прежний"
+    },
+    "revision_after_review_2": {
+      "written": "2026-10-07",
+      "reason": "рецензия 2: обход начинался с FuncDecl — литерал функции со своим параметром context.Context внутри функции без него пропускался",
+      "change": "обход по вызовам со стеком: вызов считается, если хоть одна объемлющая функция — объявление или литерал — имеет параметр context.Context; положительный случай FuncLit в analysistest",
+      "hypothesis_before_run": "до правки analysistest с FuncLit падает, после — проходит; на ctx/handler по-прежнему 5 из 5 без лишних"
+    }
+  },
+  "trainer": {
+    "hypothesis_before_run": "Каждый уровень на нетронутом старте красный, на эталоне solutions/ зелёный; у каждого кода замечания, которое может выдать уровень, есть подсказка.",
+    "confidence": "высокая",
+    "control": "эталон — зелёный",
+    "known_from_pre_run_probes": [
+      {
+        "fact": "gosec G101 зависит не только от имени переменной, но и от значения: const dbPassword = \"trainer-not-a-real-secret-5678\" не дал находки, то же имя со значением \"demo-not-a-real-secret-1234\" — дал",
+        "source": "проба 07.10"
+      }
+    ],
+    "revision_after_review": {
+      "written": "2026-10-07",
+      "reason": "рецензия: в L3 подавление ошибки json.Encoder.Encode обосновано неверно — Encode падает и до записи (неподдерживаемый тип, NaN, MarshalJSON), а Header().Set ничего не отправляет; Count в L3 — та же ошибка, что в sample",
+      "change": "L3: WriteBody — WriteHeader(200), затем Write готового тела, подавление ошибки Write; Count заменён на First с ранним выходом",
+      "hypothesis_before_run": "L3 старт красный (errcheck на Write, нет sqlclosecheck в конфиге, нет директивы), эталон зелёный"
+    },
+    "revision_after_review_2": {
+      "written": "2026-10-07",
+      "reason": "рецензия 2: «ошибка Write — только обрыв соединения» неверно для общего ResponseWriter (ErrContentLength, ErrHandlerTimeout)",
+      "change": "причина подавления: статус уже выбран, ошибку выдачи подготовленного тела здесь намеренно не обрабатываем",
+      "hypothesis_before_run": "L3: старт красный, эталон зелёный"
+    }
+  },
+  "semantics": {
+    "written": "2026-10-07",
+    "hypothesis_before_run": "Фиктивный драйвер database/sql, одно соединение: полный проход rows без Close — InUse 0 (rows закрыт сам); ранний выход sample/db.First — InUse 1; fixed/db.First — 0. json.Encoder.Encode(chan int) возвращает ошибку до записи: тело ответа пустое, статус можно ещё выставить.",
+    "confidence": "высокая",
+    "control": "полный проход без Close — InUse 0",
+    "revision_after_review_2": {
+      "written": "2026-10-07",
+      "change": "тесты: Merge sample делит память с a (запись в результат меняет a), fixed — нет; Normalize sample не обрезает пробелы, fixed — обрезает; IDs на пустом входе: sample и fixed дают null в JSON, наивное исправление make(…, 0, len) — []",
+      "hypothesis_before_run": "merge_aliases sample 1, fixed 0; normalize_trims sample 0, fixed 1; ids_null sample 1, fixed 1, naive 0"
+    }
+  }
+}

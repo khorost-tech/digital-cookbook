@@ -1,0 +1,13 @@
+version: "2"
+run:
+  relative-path-mode: gomod
+linters:
+  default: none
+  enable: [errcheck, nolintlint, sqlclosecheck]
+  settings:
+    nolintlint:
+      require-explanation: true
+      require-specific: true
+      allow-unused: false
+  exclusions:
+    presets: []

@@ -1,0 +1,3 @@
+{"kind": "partitions", "variant": "folder", "probe": "filter created_at on 2026-09-03", "cmd": "python3 scripts/run-partitions.py folder", "files_total": 14, "files_planned": 14, "rows": 285, "files_planned_by_dir": 1, "outcome": "mismatch", "detail": "фильтр по времени заказа: файлов в плане 14 из 14, строк 285"}
+{"kind": "partitions", "variant": "iceberg", "probe": "filter created_at on 2026-09-03", "cmd": "python3 scripts/run-partitions.py iceberg", "rows_total": 4049, "files_spec": {"1": 1, "0": 7}, "old_files": 7, "old_files_kept": 7, "files_total": 8, "files_planned": 1, "rows": 285, "outcome": "match", "detail": "фильтр по времени заказа: файлов в плане 1 из 8, строк 285"}
+COMPLETE

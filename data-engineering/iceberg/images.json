@@ -1,0 +1,6 @@
+{
+ "seaweedfs": {"ref": "chrislusf/seaweedfs:4.48", "digest": "sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d"},
+ "iceberg-rest": {"ref": "apache/iceberg-rest-fixture:1.10.1", "digest": "sha256:f7d679d30ac9c640bdeb2c015dff533cd3c8f1c7d491ebcb5d436f9a42db1d6f"},
+ "spark": {"ref": "apache/spark:4.1.3-scala2.13-java17-python3-r-ubuntu", "digest": "sha256:47442571b32723318fef98198c4d3f27d2804a86e2d4ef5d3eb62337c75abeb6"},
+ "python": {"ref": "python:3.12-slim", "digest": "sha256:05cda9777409a9c3ffddd94a4c476b79f0769a0b4857f0c7ed9226b6800b0d6f"}
+}

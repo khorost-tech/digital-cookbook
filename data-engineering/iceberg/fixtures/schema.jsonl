@@ -1,0 +1,3 @@
+{"kind": "schema", "variant": "folder", "probe": "old rows 01-07.09", "cmd": "python3 scripts/run-schema.py folder", "old_rows": 2076, "renamed_old_values": 0, "readded_old_values": 2076, "outcome": "mismatch", "detail": "у 2076 старых строк: значений под новым именем 0; «воскресших» значений 2076"}
+{"kind": "schema", "variant": "iceberg", "probe": "old rows 01-07.09", "cmd": "python3 scripts/run-schema.py iceberg", "old_rows": 2076, "control_values": 2076, "renamed_old_values": 2076, "readded_old_values": 0, "outcome": "match", "detail": "у 2076 старых строк: значений под новым именем 2076; «воскресших» значений 0"}
+COMPLETE

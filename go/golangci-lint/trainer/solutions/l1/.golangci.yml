@@ -1,0 +1,8 @@
+version: "2"
+run:
+  relative-path-mode: gomod
+linters:
+  default: none
+  enable: [errcheck, bodyclose, ineffassign]
+  exclusions:
+    presets: []

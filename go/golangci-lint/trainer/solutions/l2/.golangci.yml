@@ -1,0 +1,12 @@
+version: "2"
+run:
+  relative-path-mode: gomod
+linters:
+  default: none
+  enable: [gosec, rowserrcheck, govet]
+  settings:
+    govet:
+      disable-all: true
+      enable: [shadow]
+  exclusions:
+    presets: []

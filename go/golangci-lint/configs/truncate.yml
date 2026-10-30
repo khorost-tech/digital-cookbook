@@ -1,0 +1,13 @@
+# Ось 3: errcheck и noctx — две находки на одной строке; unused — 60 находок
+# одного линтера с разным текстом.
+version: "2"
+run:
+  relative-path-mode: gomod
+linters:
+  default: none
+  enable:
+    - errcheck
+    - noctx
+    - unused
+  exclusions:
+    presets: []

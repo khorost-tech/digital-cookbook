@@ -1,0 +1,9 @@
+# Ось 5: errcheck и noctx, nolintlint выключен — директивы никто не проверяет.
+version: "2"
+run:
+  relative-path-mode: gomod
+linters:
+  default: none
+  enable: [errcheck, noctx]
+  exclusions:
+    presets: []

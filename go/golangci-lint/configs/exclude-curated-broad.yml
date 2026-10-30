@@ -1,0 +1,20 @@
+# Ось 4: прежний курируемый конфиг — шум погашен широко: G107/G304 на весь
+# проект и любой Close через io.Closer.
+version: "2"
+run:
+  relative-path-mode: gomod
+linters:
+  default: standard
+  enable: [bodyclose, errorlint, gocritic, gosec, noctx, perfsprint, prealloc, rowserrcheck, sqlclosecheck]
+  settings:
+    govet:
+      enable: [nilness, shadow]
+    errcheck:
+      exclude-functions:
+        - (*database/sql.Rows).Close
+        - (io.Closer).Close
+    gosec:
+      excludes: [G104, G107, G304]
+  exclusions:
+    generated: disable
+    presets: []

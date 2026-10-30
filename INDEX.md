@@ -52,7 +52,8 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`data-engineering/pipelines`](data-engineering/pipelines) | Батч-пайплайн Airflow 3 + dbt + PostgreSQL против эталона генератора: ETL против ELT при смене правила, идемпотентность загрузки и падение посреди неё, интервал данных и ручной запуск в Airflow 3, backfill и depends_on_past, поздние данные и окно пересмотра, повторы задач | [статья](https://khorost.tech/databases/data-batch-pipelines-orchestration/) |
-| [`data-engineering/dimensional`](data-engineering/dimensional) | Звёздная схема на dbt + PostgreSQL против эталона генератора: SCD1/2/3 на переездах клиентов (dbt snapshot), гранулярность факта и двойной счёт, полуаддитивные и неаддитивные меры, поздний клиент и переиспользованный id | 🔜 скоро |
+| [`data-engineering/dimensional`](data-engineering/dimensional) | Звёздная схема на dbt + PostgreSQL против эталона генератора: SCD1/2/3 на переездах клиентов (dbt snapshot), гранулярность факта и двойной счёт, полуаддитивные и неаддитивные меры, поздний клиент и переиспользованный id | [статья](https://khorost.tech/databases/dimensional-modeling-warehouse/) |
+| [`data-engineering/iceberg`](data-engineering/iceberg) | «Паркет в папке» против Iceberg на одном S3 (SeaweedFS, REST-каталог, Spark и PyIceberg): два писателя, читатель во время записи, удаление строки copy-on-write и merge-on-read, time travel, переименование и повторное добавление колонки, эволюция и скрытое партиционирование, мелкие файлы и обслуживание | 🔜 скоро |
 
 ## Messaging
 
@@ -73,6 +74,7 @@
 | [`go/context`](go/context) | Контекст в Go: отмена, дедлайны, WithCancelCause, request-scoped values | [статья](https://khorost.tech/go/go-context/) |
 | [`go/fundamentals`](go/fundamentals) | Основы Go вглубь: ошибки, интерфейсы, слайсы/карты, методы/ресиверы | [статья](https://khorost.tech/go/go-interfaces/) |
 | [`go/generics`](go/generics) | Дженерики Go на бенчмарках: generic vs interface{} vs рукопись, dispatch, размер бинаря | [статья](https://khorost.tech/go/go-generics/) |
+| [`go/golangci-lint`](go/golangci-lint) | golangci-lint v2 счётом находок по размеченным дефектам: набор по умолчанию, курируемый конфиг, обрезка вывода, исключения, //nolint, new-from-rev, своё правило как module plugin; тренажёр L1–L4 | 🔜 скоро |
 | [`go/goroutine-leak-profile`](go/goroutine-leak-profile) | Пять классов утечек горутин и инструменты диагностики: pprof/goroutine, профиль goroutineleak из Go 1.27 и goleak; трейсбеки с pprof-метками | [статья](https://khorost.tech/go/go-goroutine-leak-profile/) |
 | [`go/iterators`](go/iterators) | Итераторы Go 1.23: iter.Seq/Seq2, iter.Pull, cleanup при break, бенчи | [статья](https://khorost.tech/go/go-iterators/) |
 | [`go/json-v2`](go/json-v2) | Три конфигурации JSON-движка Go 1.27 на одном payload: прежний движок (nojsonv2), encoding/json поверх v2 без правок кода и явный encoding/json/v2; строгость и стриминг через jsontext | [статья](https://khorost.tech/go/go-json-v2/) |

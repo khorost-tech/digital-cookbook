@@ -1,0 +1,9 @@
+# Ось 7: свой бинарь golangci-lint с плагином ctxloss.
+# Собирается командой `golangci-lint custom` в образе линтера той же версии.
+version: v2.14.0
+name: golangci-lint-ctx
+destination: ./bin
+plugins:
+  - module: tech.khorost/golangci/analyzer
+    import: tech.khorost/golangci/analyzer/plugin
+    path: ./analyzer

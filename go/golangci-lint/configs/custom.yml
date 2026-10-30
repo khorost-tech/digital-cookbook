@@ -1,0 +1,15 @@
+# Ось 7: свой бинарь (bin/golangci-lint-ctx) — ctxloss как module plugin
+# рядом с готовыми линтерами про контекст.
+version: "2"
+run:
+  relative-path-mode: gomod
+linters:
+  default: none
+  enable: [ctxloss, contextcheck, noctx]
+  settings:
+    custom:
+      ctxloss:
+        type: module
+        description: context.Background()/TODO() в функции с параметром context.Context
+  exclusions:
+    presets: []

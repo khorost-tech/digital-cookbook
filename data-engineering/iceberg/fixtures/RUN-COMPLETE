@@ -1,0 +1,13 @@
+{
+ "fixtures": {
+  "writers.jsonl": "c58dacb7223a7d6cac505cf8a6a8c3dc3116055a78bebfff2ff29838cfe1cc24",
+  "reader.jsonl": "daa82f8ffb024e96e088e6f94a4f4ec9718adb9cd00e771003a7eddb66aad255",
+  "delete.jsonl": "5c8d9fe30f70143b38686dbc888bba02a2a536e9457acf793600227b579232d4",
+  "erase.jsonl": "7d2372c9e1441ceb6e77d4b27575782d72e93ff8d908f9d35b6a583e8a4e460f",
+  "schema.jsonl": "2142208c4ac162c8f99b8438fea935c2d9aeeeef5538ba6903b085759c873efd",
+  "partitions.jsonl": "8a414f616b5243d1fe29bbe9bac32d4c1cbed1d6392476abfba6df41cf230db3",
+  "maintenance.jsonl": "830704207d9305daee6bd51d1f12f7d6e9fba6552837df2a4a95bb5e009460d7"
+ },
+ "tests": 16,
+ "sabotages": 12
+}

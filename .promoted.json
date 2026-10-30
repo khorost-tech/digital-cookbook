@@ -72,6 +72,9 @@
     "data-engineering/dimensional": [
       "databases/dimensional-modeling-warehouse.md"
     ],
+    "data-engineering/iceberg": [
+      "databases/open-table-formats-iceberg-delta.md"
+    ],
     "data-engineering/pipelines": [
       "databases/data-batch-pipelines-orchestration.md"
     ],
@@ -93,6 +96,7 @@
       "databases/cockroachdb-data-placement-geo.md",
       "databases/cockroachdb-distributed-transactions.md",
       "databases/cockroachdb-mvcc-time-clocks.md",
+      "databases/cockroachdb-operations-pg-migration.md",
       "databases/cockroachdb-sql-layer-optimizer.md"
     ],
     "databases/db-indexes": [
@@ -213,6 +217,9 @@
     "go/generics": [
       "architecture/generics-across-languages.md",
       "go/go-generics.md"
+    ],
+    "go/golangci-lint": [
+      "go/go-golangci-lint.md"
     ],
     "go/goroutine-leak-profile": [
       "go/go-goroutine-leak-profile.md"

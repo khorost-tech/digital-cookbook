@@ -1,0 +1,52 @@
+# Стенд data-engineering/iceberg: SeaweedFS (S3), Iceberg REST catalog, Spark с
+# Iceberg и tools (PyIceberg, pyarrow, boto3). Ключи S3 — заведомо тестовые.
+name: de-iceberg
+x-s3: &s3
+  AWS_ACCESS_KEY_ID: stand
+  AWS_SECRET_ACCESS_KEY: stand-only-not-a-secret
+  AWS_REGION: us-east-1
+services:
+  s3:
+    image: chrislusf/seaweedfs:4.48@sha256:4e61d15fd35994cb1e43e1e553dff106794841fd9a99ade2fc8c8bfce4d7872d
+    # Учётка S3 — заведомо тестовая (s3/s3.json): без неё SeaweedFS отвергает подписанные запросы.
+    command: ["server", "-s3", "-s3.port=8333", "-s3.config=/etc/seaweedfs/s3.json", "-dir=/data", "-volume.max=0",
+              "-master.volumeSizeLimitMB=64"]
+    volumes:
+      - s3data:/data
+      - ./s3/s3.json:/etc/seaweedfs/s3.json:ro
+    healthcheck:
+      # шлюз отвечает: анонимный запрос получает 403, это и есть признак жизни
+      test: ["CMD-SHELL", "wget -S -O /dev/null http://127.0.0.1:8333/ 2>&1 | grep -q 'HTTP/'"]
+      interval: 3s
+      retries: 40
+  rest:
+    image: apache/iceberg-rest-fixture:1.10.1@sha256:f7d679d30ac9c640bdeb2c015dff533cd3c8f1c7d491ebcb5d436f9a42db1d6f
+    depends_on:
+      s3:
+        condition: service_healthy
+    environment:
+      <<: *s3
+      CATALOG_WAREHOUSE: s3://warehouse/
+      CATALOG_IO__IMPL: org.apache.iceberg.aws.s3.S3FileIO
+      CATALOG_S3_ENDPOINT: http://s3:8333
+      CATALOG_S3_PATH__STYLE__ACCESS: "true"
+  spark:
+    build: ./spark
+    image: de-iceberg-spark
+    depends_on: [rest]
+    environment:
+      <<: *s3
+    volumes:
+      - .:/opt/stand
+  tools:
+    build: ./tools
+    image: de-iceberg-tools
+    depends_on: [rest]
+    environment:
+      <<: *s3
+      STAND_S3: http://s3:8333
+      STAND_REST: http://rest:8181
+    volumes:
+      - .:/opt/stand
+volumes:
+  s3data:

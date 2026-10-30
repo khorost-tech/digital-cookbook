@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "stand",
+      "credentials": [{"accessKey": "stand", "secretKey": "stand-only-not-a-secret"}],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

@@ -1,0 +1,43 @@
+# Курируемый набор: стандартные пять плюс линтеры, каждый из которых ловит
+# класс реальных дефектов; шум погашен узко — настройкой линтера или правилом
+# на конкретный файл, а не отключением правила на весь проект.
+version: "2"
+run:
+  relative-path-mode: gomod
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - gocritic
+    - gosec
+    - noctx
+    - perfsprint
+    - prealloc
+    - rowserrcheck
+    - sqlclosecheck
+  settings:
+    govet:
+      enable:
+        - nilness
+        - shadow
+    errcheck:
+      exclude-functions: # rows только читаются; ошибка закрытия после чтения ничего не меняет
+        - (*database/sql.Rows).Close
+    gosec:
+      excludes:
+        - G104 # непроверенная ошибка — это уже ловит errcheck
+  exclusions:
+    presets: []
+    rules:
+      # Допущение стенда: URL и путь здесь задаёт вызывающий код из доверенной
+      # конфигурации, а не запрос. Правило — на файл, а не на весь проект.
+      - path: (sample|fixed)/httpx/httpx\.go
+        linters: [gosec]
+        text: G107
+      - path: (sample|fixed)/errs/errs\.go
+        linters: [gosec]
+        text: G304
+      # Тело ответа HTTP-клиента: после чтения ошибка закрытия не меняет результат.
+      - linters: [errcheck]
+        text: "`resp\\.Body\\.Close`"

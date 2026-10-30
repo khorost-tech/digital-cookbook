@@ -1,0 +1,274 @@
+{
+ "session": "20261008T120648Z",
+ "published": {
+  "writers": {
+   "folder-single": {
+    "rows": 285,
+    "want_rows": 285,
+    "a_kept": 26,
+    "a_want": 26,
+    "b_kept": 0,
+    "b_want": 0,
+    "b_attempts": 0,
+    "b_rejected": 0,
+    "lost_a": 0,
+    "lost_b": 0,
+    "outcome": "match"
+   },
+   "folder": {
+    "rows": 285,
+    "want_rows": 285,
+    "a_kept": 0,
+    "a_want": 26,
+    "b_kept": 28,
+    "b_want": 28,
+    "b_attempts": 1,
+    "b_rejected": 0,
+    "lost_a": 26,
+    "lost_b": 0,
+    "outcome": "mismatch"
+   },
+   "iceberg-single": {
+    "rows": 285,
+    "want_rows": 285,
+    "a_kept": 26,
+    "a_want": 26,
+    "b_kept": 0,
+    "b_want": 0,
+    "b_attempts": 0,
+    "b_rejected": 0,
+    "snapshots": 3,
+    "lost_a": 0,
+    "lost_b": 0,
+    "outcome": "match"
+   },
+   "iceberg": {
+    "rows": 285,
+    "want_rows": 285,
+    "a_kept": 26,
+    "a_want": 26,
+    "b_kept": 28,
+    "b_want": 28,
+    "b_attempts": 2,
+    "b_rejected": 1,
+    "snapshots": 5,
+    "lost_a": 0,
+    "lost_b": 0,
+    "outcome": "match"
+   }
+  },
+  "reader": {
+   "folder": {
+    "new_rows": 259,
+    "seen_mid": 130,
+    "seen_end": 259,
+    "files_in_storage_mid": 2,
+    "outcome": "mismatch"
+   },
+   "iceberg": {
+    "new_rows": 259,
+    "seen_mid": 0,
+    "seen_end": 259,
+    "files_in_storage_mid": 2,
+    "outcome": "match"
+   }
+  },
+  "delete": {
+   "folder": {
+    "rows": 4049,
+    "after_delete": 4048,
+    "rewritten_rows": 284,
+    "rewritten_files": 1,
+    "versions_of_day_file": 1,
+    "added_delete_files": 0,
+    "history": false,
+    "outcome": "match"
+   },
+   "copy-on-write": {
+    "rows": 4049,
+    "day_rows": 285,
+    "after_delete": 4048,
+    "deleted_data_files": 1,
+    "added_data_files": 1,
+    "added_delete_files": 0,
+    "added_position_deletes": 0,
+    "rewritten_rows": 284,
+    "refunded_now": 488,
+    "asof_rows": 4049,
+    "asof_refunded": 194,
+    "snapshots": 3,
+    "after_rollback": 4049,
+    "rollback_refunded": 194,
+    "rewritten_files": 1,
+    "history": true,
+    "outcome": "match"
+   },
+   "merge-on-read": {
+    "rows": 4049,
+    "day_rows": 285,
+    "after_delete": 4048,
+    "deleted_data_files": 0,
+    "added_data_files": 0,
+    "added_delete_files": 1,
+    "added_position_deletes": 1,
+    "rewritten_rows": 0,
+    "refunded_now": 488,
+    "asof_rows": 4049,
+    "asof_refunded": 194,
+    "snapshots": 3,
+    "after_rollback": 4049,
+    "rollback_refunded": 194,
+    "rewritten_files": 0,
+    "history": true,
+    "outcome": "match"
+   }
+  },
+  "erase": {
+   "copy-on-write": {
+    "steps": [
+     {
+      "phase": "delete",
+      "current": 0,
+      "oldest_snapshot": 1,
+      "physical": 1,
+      "snapshots": 2,
+      "delete_files": 0
+     },
+     {
+      "phase": "expire",
+      "current": 0,
+      "oldest_snapshot": 0,
+      "physical": 0,
+      "snapshots": 1,
+      "delete_files": 0
+     },
+     {
+      "phase": "compact",
+      "current": 0,
+      "oldest_snapshot": 0,
+      "physical": 0,
+      "snapshots": 2,
+      "delete_files": 0
+     },
+     {
+      "phase": "expire",
+      "current": 0,
+      "oldest_snapshot": 0,
+      "physical": 0,
+      "snapshots": 1,
+      "delete_files": 0
+     }
+    ],
+    "physical_after_delete": 1,
+    "physical_after_expire": 0,
+    "physical_after_compact_expire": 0,
+    "first_gone_after": "delete → expire",
+    "outcome": "match"
+   },
+   "merge-on-read": {
+    "steps": [
+     {
+      "phase": "delete",
+      "current": 0,
+      "oldest_snapshot": 1,
+      "physical": 1,
+      "snapshots": 2,
+      "delete_files": 1
+     },
+     {
+      "phase": "expire",
+      "current": 0,
+      "oldest_snapshot": 0,
+      "physical": 1,
+      "snapshots": 1,
+      "delete_files": 1
+     },
+     {
+      "phase": "compact",
+      "current": 0,
+      "oldest_snapshot": 0,
+      "physical": 1,
+      "snapshots": 2,
+      "delete_files": 1
+     },
+     {
+      "phase": "expire",
+      "current": 0,
+      "oldest_snapshot": 0,
+      "physical": 0,
+      "snapshots": 1,
+      "delete_files": 1
+     }
+    ],
+    "physical_after_delete": 1,
+    "physical_after_expire": 1,
+    "physical_after_compact_expire": 0,
+    "first_gone_after": "delete → expire → compact → expire",
+    "outcome": "mismatch"
+   }
+  },
+  "schema": {
+   "folder": {
+    "old_rows": 2076,
+    "renamed_old_values": 0,
+    "readded_old_values": 2076,
+    "outcome": "mismatch"
+   },
+   "iceberg": {
+    "old_rows": 2076,
+    "control_values": 2076,
+    "renamed_old_values": 2076,
+    "readded_old_values": 0,
+    "outcome": "match"
+   }
+  },
+  "partitions": {
+   "folder": {
+    "files_total": 14,
+    "files_planned": 14,
+    "rows": 285,
+    "files_planned_by_dir": 1,
+    "outcome": "mismatch"
+   },
+   "iceberg": {
+    "rows_total": 4049,
+    "files_spec": {
+     "1": 1,
+     "0": 7
+    },
+    "old_files": 7,
+    "old_files_kept": 7,
+    "files_total": 8,
+    "files_planned": 1,
+    "rows": 285,
+    "outcome": "match"
+   }
+  },
+  "maintenance": {
+   "write": {
+    "rows": 50,
+    "data_files": 50,
+    "snapshots": 50,
+    "data_objects": 50,
+    "metadata_objects": 151,
+    "outcome": "match"
+   },
+   "compact": {
+    "rows": 50,
+    "data_files": 1,
+    "snapshots": 51,
+    "data_objects": 51,
+    "metadata_objects": 204,
+    "outcome": "match"
+   },
+   "expire": {
+    "rows": 50,
+    "data_files": 1,
+    "snapshots": 1,
+    "data_objects": 1,
+    "metadata_objects": 105,
+    "outcome": "match"
+   }
+  }
+ }
+}
