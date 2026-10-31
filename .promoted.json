@@ -22,7 +22,8 @@
     ],
     "architecture/event-sourcing-deep": [
       "architecture/es-aggregate-event-design.md",
-      "architecture/es-event-store-internals.md"
+      "architecture/es-event-store-internals.md",
+      "architecture/es-projections-deep.md"
     ],
     "architecture/grpc": [
       "architecture/grpc-deep-dive.md"
@@ -94,6 +95,7 @@
     "databases/cockroachdb": [
       "databases/cockroachdb-architecture-ranges-raft.md",
       "databases/cockroachdb-data-placement-geo.md",
+      "databases/cockroachdb-decision-map.md",
       "databases/cockroachdb-distributed-transactions.md",
       "databases/cockroachdb-mvcc-time-clocks.md",
       "databases/cockroachdb-operations-pg-migration.md",
@@ -280,6 +282,9 @@
     ],
     "kubernetes/gitops": [
       "kubernetes/k8s-gitops-argocd-progressive.md"
+    ],
+    "kubernetes/hardening": [
+      "kubernetes/k8s-pod-security-hardening.md"
     ],
     "kubernetes/networking": [
       "kubernetes/k8s-networking-cilium-mesh.md"

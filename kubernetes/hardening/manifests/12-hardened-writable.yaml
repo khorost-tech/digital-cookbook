@@ -1,0 +1,43 @@
+# Тот же hardened-под, но с явно объявленным местом для записи. readOnlyRootFilesystem: true
+# оставляет корень только на чтение — а приложению нужен временный каталог. Штатное решение:
+# смонтировать emptyDir в нужный путь (/tmp). Всё остальное — тот же restricted-набор, что и в
+# 11-hardened-pod.yaml. Смысл: readOnlyRootFilesystem не «ломает приложение», а требует явно
+# объявить, КУДА оно пишет.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hardened-writable
+  namespace: cookbook-hardening
+  labels:
+    stand: cookbook-hardening
+    demo: default-vs-hardened
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  volumes:
+    - name: tmp
+      emptyDir: {}
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      volumeMounts:
+        - name: tmp
+          mountPath: /tmp
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi

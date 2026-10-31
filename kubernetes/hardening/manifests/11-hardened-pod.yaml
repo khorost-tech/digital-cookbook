@@ -1,0 +1,45 @@
+# Hardened-под — полный набор restricted. Namespace cookbook-hardening (enforce: restricted).
+# Тот же busybox, что и в default-pod, но с явным securityContext, который отбирает у
+# контейнера всё, что тому не нужно:
+#   - runAsNonRoot + runAsUser/runAsGroup 1000 — процесс не root (uid 0 → 1000);
+#   - capabilities.drop: ["ALL"] — маска CapEff обнуляется (a80425fb → 0000000000000000);
+#   - allowPrivilegeEscalation: false — NoNewPrivs 0 → 1, setuid-бинарь не поднимет права;
+#   - readOnlyRootFilesystem: true — корень только на чтение (запись в / запрещена);
+#   - seccompProfile: RuntimeDefault — тот же фильтр, что узел ставит и так, но объявленный явно
+#     (restricted этого требует).
+#
+# Уровни: seccompProfile и runAsNonRoot/runAsUser/runAsGroup — на уровне пода; capabilities,
+# readOnlyRootFilesystem, allowPrivilegeEscalation — на контейнере. Именно такой набор проходит
+# admission restricted (см. 00-namespaces.yaml).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: hardened-pod
+  namespace: cookbook-hardening
+  labels:
+    stand: cookbook-hardening
+    demo: default-vs-hardened
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi

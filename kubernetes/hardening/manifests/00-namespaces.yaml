@@ -1,0 +1,118 @@
+# Два собственных namespace стенда hardening — полигоны с РАЗНЫМИ уровнями Pod Security.
+#
+# ПОЧЕМУ ДВА, А НЕ ОБЩИЙ cookbook-k8s. На cookbook-k8s (стенды фаз 1-5) стоит enforce:
+# baseline. Половина демо hardening строится на КОНТРАСТЕ «что baseline пропускает, а
+# restricted отклоняет», поэтому нужны оба уровня одновременно и на СВОИХ namespace, которые
+# teardown сносит целиком, не задев соседей.
+#   - cookbook-hardening          — enforce: restricted. Сюда встают «правильные» поды с
+#     полным securityContext; сюда же демо N2 будет подавать заведомо небезопасные поды и
+#     ловить ОТКАЗ admission (в самом namespace такие поды не запускаются).
+#   - cookbook-hardening-baseline — enforce: baseline. Тот же под, что restricted отклонил,
+#     здесь проходит — это и есть contrast.
+#
+# enforce/audit/warn выставлены вместе: enforce отклоняет под, audit пишет в аудит-лог,
+# warn возвращает предупреждение в kubectl. enforce-version: latest фиксирует, что правила
+# берутся из последней версии профиля, а не замораживаются на версии кластера.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cookbook-hardening
+  labels:
+    stand: cookbook-hardening
+    purpose: digital-cookbook
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: restricted
+    pod-security.kubernetes.io/warn-version: latest
+---
+# Скромный потолок: стенд крутит одиночные крошечные поды (busybox/pause, requests 10m/16Mi),
+# больше десятка одновременно ему не нужно. Квота — страховка от того, что демо оставит хвост
+# на общем живом кластере.
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: cookbook-hardening-quota
+  namespace: cookbook-hardening
+  labels:
+    stand: cookbook-hardening
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+    pods: "20"
+---
+# LimitRange нужен из-за квоты: при заданных requests.* в квоте под без явных requests в
+# namespace не создастся. defaultRequest закрывает эту дыру, max — страховка от одного пода,
+# съедающего весь потолок.
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cookbook-hardening-limits
+  namespace: cookbook-hardening
+  labels:
+    stand: cookbook-hardening
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 10m
+        memory: 16Mi
+      default:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "1"
+        memory: 1Gi
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cookbook-hardening-baseline
+  labels:
+    stand: cookbook-hardening
+    purpose: digital-cookbook
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/enforce-version: latest
+    pod-security.kubernetes.io/audit: baseline
+    pod-security.kubernetes.io/audit-version: latest
+    pod-security.kubernetes.io/warn: baseline
+    pod-security.kubernetes.io/warn-version: latest
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: cookbook-hardening-baseline-quota
+  namespace: cookbook-hardening-baseline
+  labels:
+    stand: cookbook-hardening
+spec:
+  hard:
+    requests.cpu: "1"
+    requests.memory: 1Gi
+    limits.cpu: "2"
+    limits.memory: 2Gi
+    pods: "20"
+---
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: cookbook-hardening-baseline-limits
+  namespace: cookbook-hardening-baseline
+  labels:
+    stand: cookbook-hardening
+spec:
+  limits:
+    - type: Container
+      defaultRequest:
+        cpu: 10m
+        memory: 16Mi
+      default:
+        cpu: 50m
+        memory: 64Mi
+      max:
+        cpu: "1"
+        memory: 1Gi

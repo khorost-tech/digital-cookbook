@@ -1,0 +1,146 @@
+# ГРУППА B — ОПАСНЫЕ поды-нарушители. ⛔⛔⛔ НИКОГДА НЕ ПРИМЕНЯТЬ ОБЫЧНЫМ `apply`. ⛔⛔⛔
+#
+# Кластер k8s-volga — ЖИВОЙ и ОБЩИЙ. hostPath на «/», hostNetwork, hostPID, privileged дают
+# контейнеру доступ к узлу. Эти поды показываются ТОЛЬКО через:
+#     kubectl apply -f 21-psa-dangerous.yaml --dry-run=server -n <ns>
+# `--dry-run=server` прогоняет admission (PodSecurity выдаёт вердикт), но НИЧЕГО не пишет в
+# etcd — рабочий под не создаётся, побега нет. НЕ `--dry-run=client` (client admission не
+# запускает). teardown ns целиком всё равно снёс бы хвост, но правильный способ — только dry-run.
+#
+# Каждый под, как и в группе A, совместим с restricted по всем ОСТАЛЬНЫМ пунктам и нарушает
+# РОВНО СВОЙ опасный атрибут — чтобы текст отказа указывал на него точечно. namespace не задан —
+# выбирается флагом `-n`. Все поды: busybox:1.37, sleep 3600, requests 10m/16Mi, лейбл стенда.
+---
+# host-path — том hostPath на корень узла «/». В restricted запрещён (restricted допускает лишь
+# configMap/emptyDir/projected/secret/…). В BASELINE РАЗРЕШЁН — baseline не ограничивает типы
+# томов. Это ключевой контраст демо (проверяется фактически dry-run в обоих ns).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: host-path
+  labels:
+    stand: cookbook-hardening
+    demo: psa-dangerous
+    group: b-dangerous
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  volumes:
+    - name: node-root
+      hostPath:
+        path: /
+        type: Directory
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      volumeMounts:
+        - name: node-root
+          mountPath: /host
+          readOnly: true
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+---
+# host-network — hostNetwork: true (сетевой namespace узла). Запрещён и в baseline, и в
+# restricted («Host Namespaces»).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: host-network
+  labels:
+    stand: cookbook-hardening
+    demo: psa-dangerous
+    group: b-dangerous
+spec:
+  restartPolicy: Never
+  hostNetwork: true
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+---
+# host-pid — hostPID: true (PID namespace узла: видны все процессы хоста). Запрещён и в baseline,
+# и в restricted («Host Namespaces»).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: host-pid
+  labels:
+    stand: cookbook-hardening
+    demo: psa-dangerous
+    group: b-dangerous
+spec:
+  restartPolicy: Never
+  hostPID: true
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+---
+# privileged-pod — privileged: true (полный доступ к устройствам узла, снятие изоляции).
+# Запрещён и в baseline, и в restricted. allowPrivilegeEscalation НЕ задаём: API-валидация
+# запрещает privileged:true ВМЕСТЕ с allowPrivilegeEscalation:false, поэтому restricted здесь
+# отметит и «privileged», и «allowPrivilegeEscalation != false» (оставлен незаданным).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: privileged-pod
+  labels:
+    stand: cookbook-hardening
+    demo: psa-dangerous
+    group: b-dangerous
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        privileged: true
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi

@@ -1,0 +1,42 @@
+# Демо 3, шаг 3: user namespaces как НЕДОСТУПНАЯ фича. Под с hostUsers: false просит у kubelet
+# отдельный user namespace для контейнеров (ремап uid: root внутри → не-root на узле). Поле
+# pod.spec.hostUsers есть в API 1.36, admission его пропускает — но узел (Talos, kernel
+# 6.18.x) создать user namespace НЕ может: /proc/sys/user/max_user_namespaces = 0. Поэтому под
+# не стартует: sandbox не создаётся, событие FailedCreatePodSandBox с дословным
+# «unshare: … no space left on device» (ENOSPC от лимита user namespaces).
+#
+# Под остаётся в namespace стенда (baseline), крошечный, без host-namespaces/hostPath. Он
+# СПЕЦИАЛЬНО не поднимется — это и есть демонстрируемый факт. Убирается в конце демо.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: userns-pod
+  namespace: cookbook-hardening-baseline
+  labels:
+    stand: cookbook-hardening
+    demo: userns
+spec:
+  restartPolicy: Never
+  hostUsers: false
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        readOnlyRootFilesystem: true
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi

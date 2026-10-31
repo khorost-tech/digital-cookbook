@@ -1,0 +1,128 @@
+# ГРУППА A — поды-нарушители restricted, но БЕЗОПАСНЫЕ.
+#
+# Каждый под нарушает РОВНО ОДИН пункт профиля restricted, оставаясь совместимым по остальным.
+# Так текст отказа admission указывает на один пункт, а не на пёстрый список — это и есть
+# учебная ценность. Все четыре БЕЗОПАСНЫ (root, дефолтные caps, seccomp по умолчанию узла,
+# разрешённое поднятие прав) — их МОЖНО реально создать в namespace с enforce: baseline
+# (baseline этих пунктов не требует), чтобы показать, что baseline их пропускает, а restricted
+# отвергает. namespace НЕ задан в манифесте — цель выбирается флагом `-n` при apply.
+#
+# ⚠️ Опасные нарушители (hostPath/hostNetwork/hostPID/privileged) вынесены в ОТДЕЛЬНЫЙ файл
+# 21-psa-dangerous.yaml, который применяется ТОЛЬКО через `--dry-run=server`.
+#
+# Все поды: busybox:1.37, sleep 3600, requests 10m/16Mi, лейбл стенда.
+---
+# run-as-root — нарушает «Running as Non-root». runAsNonRoot не задан → процесс идёт от root.
+# Остальное совместимо с restricted (seccomp, drop ALL, no-priv-escalation), поэтому restricted
+# ругается ровно на runAsNonRoot.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: run-as-root
+  labels:
+    stand: cookbook-hardening
+    demo: psa-violations
+    group: a-safe
+spec:
+  restartPolicy: Never
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+---
+# no-drop-caps — нарушает «Capabilities». capabilities.drop: ["ALL"] не задан → контейнер несёт
+# дефолтную маску capabilities. Остальное совместимо с restricted.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-drop-caps
+  labels:
+    stand: cookbook-hardening
+    demo: psa-violations
+    group: a-safe
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+---
+# allow-priv-esc — нарушает «Privilege Escalation». allowPrivilegeEscalation: true → setuid-бинарь
+# может поднять права. Остальное совместимо с restricted.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: allow-priv-esc
+  labels:
+    stand: cookbook-hardening
+    demo: psa-violations
+    group: a-safe
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: true
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+---
+# no-seccomp — нарушает «Seccomp». seccompProfile не задан ни на поде, ни на контейнере →
+# restricted требует явного RuntimeDefault/Localhost. Остальное совместимо с restricted.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: no-seccomp
+  labels:
+    stand: cookbook-hardening
+    demo: psa-violations
+    group: a-safe
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi

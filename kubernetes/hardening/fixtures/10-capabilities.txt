@@ -1,0 +1,112 @@
+# captured on k8s-volga (k8s 1.36.2, Talos v1.13.6, kernel 6.18.38-talos, containerd 2.2.5)
+# fixture: 10-capabilities — контейнер по умолчанию против hardened: маска capabilities,
+# NoNewPrivs, seccomp, запись в корень и разбор readOnlyRootFilesystem.
+# Поды крошечные (busybox:1.37, requests 10m/16Mi), удалены после снятия. Побег не
+# демонстрируется — снимаются ПРАВА (маска capabilities), а не их эксплуатация.
+# ========================================================================
+
+## ДЕМО 1а — ОБЫЧНЫЙ ПОД (namespace cookbook-hardening-baseline, enforce: baseline)
+#   default-pod: busybox без securityContext. baseline не требует ни non-root, ни drop caps,
+#   поэтому под поднимается «как обычно».
+
+# cmd: kubectl -n cookbook-hardening-baseline exec default-pod -- id
+uid=0(root) gid=0(root) groups=0(root),10(wheel)
+# uid 0 — процесс идёт от root, как и большинство образов по умолчанию.
+
+# cmd: kubectl -n cookbook-hardening-baseline exec default-pod -- grep -E 'Cap(Inh|Prm|Eff|Bnd|Amb)|NoNewPrivs|Seccomp' /proc/self/status
+CapInh:	0000000000000000
+CapPrm:	00000000a80425fb
+CapEff:	00000000a80425fb
+CapBnd:	00000000a80425fb
+CapAmb:	0000000000000000
+NoNewPrivs:	0
+Seccomp:	2
+Seccomp_filters:	1
+# CapEff = 00000000a80425fb — дефолтная маска, которую containerd даёт контейнеру. Это НЕ
+# «все capabilities» (полный набор был бы 000001ffffffffff), но и далеко не пусто.
+# NoNewPrivs: 0 — процесс МОЖЕТ поднять права через setuid-бинарь.
+# Seccomp: 2 — seccomp-фильтр применён и без явного профиля (SeccompDefault на узле, см. 00-).
+
+# cmd: kubectl -n cookbook-hardening-baseline exec default-pod -- sh -c 'touch /testfile && echo "запись в / разрешена" || echo "запись в / запрещена"'
+запись в / разрешена
+# Корневая ФС контейнера доступна на запись — приложение (или злоумышленник) может менять её.
+
+# cmd: kubectl -n cookbook-hardening-baseline exec default-pod -- sh -c 'command -v capsh || echo "no capsh"'
+no capsh
+# В busybox нет capsh — расшифровку маски даём ниже как РАЗБОР по документации ядра, а не как
+# вывод команды. Сама маска (a80425fb) — фактический вывод из /proc выше.
+
+## РАЗБОР МАСКИ CapEff = 00000000a80425fb (разбор по документации, НЕ вывод команды)
+#   Биты в маске сопоставлены с именами capabilities по порядку из ядерного
+#   include/uapi/linux/capability.h. 0xa80425fb = 14 установленных бит:
+#     bit  0  CAP_CHOWN            — менять владельца любых файлов
+#     bit  1  CAP_DAC_OVERRIDE     — обходить проверки прав чтения/записи/выполнения
+#     bit  3  CAP_FOWNER           — действовать как владелец файла (chmod, utime и т.п.)
+#     bit  4  CAP_FSETID           — сохранять setuid/setgid при изменении файла
+#     bit  5  CAP_KILL             — слать сигналы любым процессам
+#     bit  6  CAP_SETGID           — менять gid процесса
+#     bit  7  CAP_SETUID           — менять uid процесса (ключ к смене личности)
+#     bit  8  CAP_SETPCAP          — менять capabilities других процессов
+#     bit 10  CAP_NET_BIND_SERVICE — слушать привилегированные порты (<1024)
+#     bit 13  CAP_NET_RAW          — RAW/PACKET-сокеты (ping, спуфинг, сниффинг)
+#     bit 18  CAP_SYS_CHROOT       — chroot()
+#     bit 27  CAP_MKNOD            — создавать спец-файлы устройств
+#     bit 29  CAP_AUDIT_WRITE      — писать в аудит-лог ядра
+#     bit 31  CAP_SETFCAP          — назначать capabilities файлам
+#   ИТОГО 14 capabilities. Ключевые для атак: CAP_SETUID/CAP_SETGID (смена личности),
+#   CAP_DAC_OVERRIDE/CAP_CHOWN/CAP_FOWNER (обход прав ФС), CAP_NET_RAW (сеть, спуфинг).
+#   (Часто цитируемое «15 capabilities» — из памяти; фактический popcount маски a80425fb = 14.)
+
+## ДЕМО 1б — HARDENED-ПОД (namespace cookbook-hardening, enforce: restricted)
+#   hardened-pod: полный restricted-набор (runAsNonRoot 1000, drop ALL, no-priv-escalation,
+#   readOnlyRootFilesystem, seccomp RuntimeDefault). Тот же образ busybox:1.37.
+
+# cmd: kubectl -n cookbook-hardening exec hardened-pod -- id
+uid=1000 gid=1000 groups=1000
+# uid 1000 — процесс НЕ root (runAsNonRoot + runAsUser 1000).
+
+# cmd: kubectl -n cookbook-hardening exec hardened-pod -- grep -E 'Cap(Inh|Prm|Eff|Bnd|Amb)|NoNewPrivs|Seccomp' /proc/self/status
+CapInh:	0000000000000000
+CapPrm:	0000000000000000
+CapEff:	0000000000000000
+CapBnd:	0000000000000000
+CapAmb:	0000000000000000
+NoNewPrivs:	1
+Seccomp:	2
+Seccomp_filters:	1
+# CapEff = 0000000000000000 — capabilities.drop: ["ALL"] обнулил маску ПОЛНОСТЬЮ, включая
+# bounding set (CapBnd тоже 0 — вернуть отобранное уже нельзя).
+# NoNewPrivs: 1 — allowPrivilegeEscalation: false закрыл поднятие прав через setuid.
+# Seccomp: 2 — тот же фильтр, но теперь объявлен явно (restricted этого требует).
+
+# cmd: kubectl -n cookbook-hardening exec hardened-pod -- sh -c 'touch /testfile && echo "запись в / разрешена" || echo "запись в / запрещена"'
+touch: /testfile: Read-only file system
+запись в / запрещена
+# readOnlyRootFilesystem: true — корень контейнера только на чтение.
+
+## ДЕМО 1в — ЧТО ЛОМАЕТ readOnlyRootFilesystem И КАК ЧИНИТСЯ
+#   readOnlyRootFilesystem не «ломает приложение» — он требует явно объявить, куда оно пишет.
+
+# cmd: kubectl -n cookbook-hardening exec hardened-pod -- sh -c 'echo data > /tmp/cache.dat'
+sh: can't create /tmp/cache.dat: Read-only file system
+command terminated with exit code 1
+# Приложению, пишущему во временный каталог (/tmp — кэш, локи, сессии), read-only корень мешает.
+
+# cmd: kubectl -n cookbook-hardening exec hardened-writable -- sh -c 'echo data > /tmp/cache.dat && echo OK && cat /tmp/cache.dat'
+#   hardened-writable = тот же restricted-под + emptyDir, смонтированный в /tmp.
+OK
+data
+# Штатное решение: смонтировать emptyDir в нужный путь — запись в /tmp проходит.
+
+# cmd: kubectl -n cookbook-hardening exec hardened-writable -- sh -c 'touch /rootfile && echo "запись в / разрешена" || echo "запись в / по-прежнему запрещена (Read-only)"'
+touch: /rootfile: Read-only file system
+запись в / по-прежнему запрещена (Read-only)
+# При этом сам корень остаётся read-only — открыт ровно один явно объявленный путь, не вся ФС.
+
+## СВОДКА КОНТРАСТА
+#   Показатель            | default-pod (baseline) | hardened-pod (restricted)
+#   uid                   | 0 (root)               | 1000
+#   CapEff                | 00000000a80425fb (14)  | 0000000000000000 (0)
+#   NoNewPrivs            | 0                      | 1
+#   запись в /            | разрешена              | запрещена (Read-only)
+#   Seccomp               | 2 (по умолчанию узла)  | 2 (объявлен явно)

@@ -1,0 +1,6 @@
+# captured on k8s-volga (k8s 1.36.2), fixture: 00-ns-labels
+# cmd: kubectl get ns cookbook-hardening cookbook-hardening-baseline -o custom-columns=NAME:.metadata.name,ENFORCE:.metadata.labels.pod-security\.kubernetes\.io/enforce,AUDIT:.metadata.labels.pod-security\.kubernetes\.io/audit,WARN:.metadata.labels.pod-security\.kubernetes\.io/warn,ENFORCE_VER:.metadata.labels.pod-security\.kubernetes\.io/enforce-version
+# ---
+NAME                          ENFORCE      AUDIT        WARN         ENFORCE_VER
+cookbook-hardening            restricted   restricted   restricted   latest
+cookbook-hardening-baseline   baseline     baseline     baseline     latest

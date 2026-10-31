@@ -1,0 +1,68 @@
+# Демо 3, шаг 1а-1б: два «фильтрованных» режима seccomp на одном образе busybox в namespace
+# cookbook-hardening-baseline (enforce: baseline) — под БЕЗ явного профиля и под RuntimeDefault.
+# Оба ожидаемо дают Seccomp: 2. Третий режим — Unconfined (Seccomp: 0) — в baseline НЕ проходит
+# (см. фикстуру: baseline отклоняет Unconfined), поэтому он вынесен в отдельный namespace с
+# enforce=privileged: manifests/31-seccomp-unconfined.yaml. Там же живёт пара RuntimeDefault/
+# Unconfined для изоляции seccomp-блокировки (шаг 2).
+#
+# Оба пода роняют capabilities (drop: ["ALL"]) и allowPrivilegeEscalation: false — набор прав
+# одинаков, единственная переменная профиля видна на контрасте с Unconfined-подом из 31.
+---
+# Под БЕЗ явного seccompProfile. baseline его не требует. Ожидаем Seccomp: 2 — фильтр ставит
+# узел по умолчанию (SeccompDefault на Talos), а не «само собой».
+apiVersion: v1
+kind: Pod
+metadata:
+  name: seccomp-default
+  namespace: cookbook-hardening-baseline
+  labels:
+    stand: cookbook-hardening
+    demo: seccomp
+spec:
+  restartPolicy: Never
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi
+---
+# Под с ЯВНЫМ seccompProfile: RuntimeDefault. Ожидаем Seccomp: 2 — тот же фильтр, но объявлен
+# явно. Этот под — «строгая» половина пары для шага 2.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: seccomp-runtimedefault
+  namespace: cookbook-hardening-baseline
+  labels:
+    stand: cookbook-hardening
+    demo: seccomp
+spec:
+  restartPolicy: Never
+  securityContext:
+    seccompProfile:
+      type: RuntimeDefault
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi

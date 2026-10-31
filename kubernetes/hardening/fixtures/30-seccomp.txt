@@ -1,0 +1,126 @@
+# captured on k8s-volga (k8s 1.36.2, Talos v1.13.6, kernel 6.18.38-talos, containerd 2.2.5)
+# fixture: 30-seccomp — seccomp тремя режимами и его контраст (2/2/0 — все три сняты живьём),
+# реальная seccomp-блокировка (изолирована в паре RuntimeDefault/Unconfined) и user namespaces
+# как недоступная фича. Все значения — вывод команд и /proc, ничего по памяти. Поды крошечные
+# (busybox:1.37 и python:3.13-alpine, requests 10m/16-32Mi), удалены после снятия.
+# Побег не демонстрируется: снимаются профили и факты, а не их эксплуатация.
+# ========================================================================
+
+## ШАГ 1 — SECCOMP ТРЕМЯ РЕЖИМАМИ: 2 (дефолт) / 2 (RuntimeDefault) / 0 (Unconfined)
+#   Все поды — drop ALL caps, allowPrivilegeEscalation: false, runAsNonRoot. Единственное
+#   отличие пары RuntimeDefault/Unconfined — сам seccomp-профиль.
+
+## 1а — под БЕЗ явного seccompProfile (namespace cookbook-hardening-baseline, enforce: baseline)
+# cmd: kubectl -n cookbook-hardening-baseline exec seccomp-default -- sh -c 'grep -E "Seccomp|NoNewPrivs|CapEff" /proc/self/status'
+CapEff:	0000000000000000
+NoNewPrivs:	1
+Seccomp:	2
+Seccomp_filters:	1
+# Seccomp: 2 (SECCOMP_MODE_FILTER) БЕЗ явного профиля — узел ставит фильтр по умолчанию
+# (SeccompDefault на Talos). Не «Unconfined по умолчанию»: если бы профиля не было, было бы 0.
+
+## 1б — под с seccompProfile: RuntimeDefault (namespace cookbook-hardening-baseline)
+# cmd: kubectl -n cookbook-hardening-baseline exec seccomp-runtimedefault -- sh -c 'grep -E "Seccomp|NoNewPrivs|CapEff" /proc/self/status'
+CapEff:	0000000000000000
+NoNewPrivs:	1
+Seccomp:	2
+Seccomp_filters:	1
+# Тот же Seccomp: 2 — RuntimeDefault лишь объявляет явно тот фильтр, что узел ставит и так.
+
+## 1в — под с seccompProfile: Unconfined → Seccomp: 0 СНЯТ ЖИВЬЁМ.
+#   Дефолт baseline закрывает Unconfined только в непомеченных / baseline / restricted namespace.
+#   Чтобы снять фильтр, namespace надо ЯВНО опустить до privileged — PSA это штатно позволяет
+#   (namespace может явно объявить более слабый уровень, чем cluster-wide default).
+#
+#   Сначала — граница дефолта. На кластере включён cluster-wide PodSecurity default = baseline:
+#   даже namespace БЕЗ enforce-метки применяет baseline:latest и Unconfined отклоняет —
+# cmd: kubectl apply --dry-run=server -f -   # под с Unconfined в непомеченном namespace default
+Error from server (Forbidden): error when creating "STDIN": pods "unconf-probe" is forbidden: violates PodSecurity "baseline:latest": seccompProfile (pod must not set securityContext.seccompProfile.type to "Unconfined")
+# Тот же отказ в baseline-ns стенда:
+# cmd: kubectl -n cookbook-hardening-baseline apply --dry-run=server -f -
+Error from server (Forbidden): error when creating "STDIN": pods "unconf-test" is forbidden: violates PodSecurity "baseline:latest": seccompProfile (pod must not set securityContext.seccompProfile.type to "Unconfined")
+#
+#   Теперь — снятие фильтра. Создаём ВРЕМЕННЫЙ namespace cookbook-hardening-privileged с
+#   pod-security.kubernetes.io/enforce=privileged (manifests/31-seccomp-unconfined.yaml) и
+#   запускаем в нём тот же безопасный под (drop ALL caps, runAsNonRoot, БЕЗ host-ns/hostPath),
+#   но с seccompProfile: Unconfined:
+# cmd: kubectl get ns cookbook-hardening-privileged -o jsonpath='{.metadata.labels.pod-security\.kubernetes\.io/enforce}'
+privileged
+# cmd: kubectl -n cookbook-hardening-privileged exec seccomp-unconfined -- sh -c 'grep -E "Seccomp|NoNewPrivs|CapEff" /proc/self/status'
+CapEff:	0000000000000000
+NoNewPrivs:	1
+Seccomp:	0
+Seccomp_filters:	0
+# Seccomp: 0, Seccomp_filters: 0 — фильтра НЕТ. Контраст с шагами 1а/1б (Seccomp: 2) реальный:
+# та же машина, тот же образ, те же (пустые) caps — разница только в seccomp-профиле и в том,
+# что namespace явно помечен enforce=privileged. Значение 0 снято живьём, не выведено логикой.
+# Под безопасен: Unconfined снимает ТОЛЬКО seccomp-фильтр, доступа к узлу не даёт.
+
+## ШАГ 2 — РЕАЛЬНО ЗАБЛОКИРОВАННЫЙ ИМЕННО SECCOMP-ом ВЫЗОВ: ИЗОЛИРОВАН в паре RuntimeDefault/Unconfined
+#   Пара доступна (шаг 1в), поэтому эталонная методика работает: один и тот же syscall, те же
+#   (пустые) caps, разный только профиль. Оба пода — python:3.13-alpine, drop ALL caps,
+#   runAsNonRoot, в одном namespace cookbook-hardening-privileged. Caps у обоих ПУСТЫЕ:
+# cmd: kubectl -n cookbook-hardening-privileged exec syscall-runtimedefault -- sh -c 'grep -E "Seccomp|NoNewPrivs|CapEff|CapBnd" /proc/self/status'
+CapEff:	0000000000000000
+CapBnd:	0000000000000000
+NoNewPrivs:	1
+Seccomp:	2
+Seccomp_filters:	1
+# cmd: kubectl -n cookbook-hardening-privileged exec syscall-unconfined -- sh -c 'grep -E "Seccomp|NoNewPrivs|CapEff|CapBnd" /proc/self/status'
+CapEff:	0000000000000000
+CapBnd:	0000000000000000
+NoNewPrivs:	1
+Seccomp:	0
+Seccomp_filters:	0
+#
+#   Вызов get_mempolicy(2) (x86_64 syscall № 239): в дефолтном профиле containerd/moby он
+#   разрешён лишь при наличии соответствующей capability; под её сбросил, поэтому под
+#   RuntimeDefault фильтр возвращает EPERM. swapon(2) для этой цели НЕ годится — он cap-gated и
+#   даёт EPERM с обеих сторон. get_mempolicy caps не требует, поэтому под Unconfined проходит.
+# cmd: kubectl -n cookbook-hardening-privileged exec syscall-runtimedefault -- python3 -c 'import ctypes,os; l=ctypes.CDLL(None,use_errno=True); m=ctypes.c_int(-1); ctypes.set_errno(0); r=l.syscall(239,ctypes.byref(m),None,0,None,0); e=ctypes.get_errno(); print("get_mempolicy(NR=239) ret=%d errno=%d(%s) mode=%d"%(r,e,(os.strerror(e) if e else "OK"),m.value))'
+get_mempolicy(NR=239) ret=-1 errno=1(Operation not permitted) mode=-1
+# cmd: kubectl -n cookbook-hardening-privileged exec syscall-unconfined -- python3 -c 'import ctypes,os; l=ctypes.CDLL(None,use_errno=True); m=ctypes.c_int(-1); ctypes.set_errno(0); r=l.syscall(239,ctypes.byref(m),None,0,None,0); e=ctypes.get_errno(); print("get_mempolicy(NR=239) ret=%d errno=%d(%s) mode=%d"%(r,e,(os.strerror(e) if e else "OK"),m.value))'
+get_mempolicy(NR=239) ret=0 errno=0(OK) mode=0
+#
+#   ИЗОЛЯЦИЯ ДОКАЗАНА. Оба пода: CapEff=0, CapBnd=0 (ALL сброшены). Под Unconfined тот же
+#   get_mempolicy проходит (ret=0, mode=0) — значит capability для него НЕ нужна. Следовательно
+#   EPERM под RuntimeDefault даёт НЕ отсутствие capability, а seccomp-фильтр: единственная
+#   отличающаяся переменная — профиль (Seccomp: 2 против 0). Это и есть вызов, заблокированный
+#   ИМЕННО seccomp отдельно от caps.
+
+## ШАГ 3 — USER NAMESPACES: НЕДОСТУПНАЯ ФИЧА (дословная ошибка живого события)
+#   Поле pod.spec.hostUsers в API 1.36 есть, admission под с hostUsers: false пропускает — но
+#   узел создать user namespace не может.
+
+# cmd: kubectl -n cookbook-hardening-baseline get pod userns-pod -o wide
+NAME         READY   STATUS              RESTARTS   AGE   IP       NODE             NOMINATED NODE   READINESS GATES
+userns-pod   0/1     ContainerCreating   0          8s    <none>   k8s-volga-wk02   <none>           <none>
+# Под завис в ContainerCreating — sandbox не поднимается.
+
+# cmd: kubectl -n cookbook-hardening-baseline get events --field-selector involvedObject.name=userns-pod,reason=FailedCreatePodSandBox -o jsonpath='{range .items[*]}{.message}{"\n"}{end}'
+Failed to create pod sandbox: rpc error: code = Unknown desc = failed to create network namespace for sandbox "6fae8721193a8424c18de39f52f1e6b6a372baa33740121e81091f6f2015ba58": failed to start noop process for unshare: fork/exec /proc/self/exe: no space left on device
+# Дословно: «unshare: fork/exec /proc/self/exe: no space left on device» — ENOSPC на unshare
+# при попытке создать namespace. Причина — жёсткий лимит user namespaces на узле:
+
+# cmd: kubectl -n cookbook-hardening-baseline exec seccomp-default -- cat /proc/sys/user/max_user_namespaces
+0
+# max_user_namespaces = 0 — ядро запрещает создание user namespace вовсе, отсюда ENOSPC.
+
+# cmd: kubectl -n cookbook-hardening-baseline exec seccomp-default -- cat /proc/self/uid_map
+         0          0 4294967295
+# Обычный под делит user namespace с узлом: uid_map = «0 0 4294967295» — тождественная карта,
+# remap нет. Показать «uid внутри ≠ uid на узле» на этом кластере НЕЛЬЗЯ: user namespaces не
+# работают (нужна поддержка узла/Talos, которой нет). hostUsers — фича API, но фактически
+# неработоспособна на k8s-volga. Это зафиксировано фактом, а не предположением.
+
+## СВОДКА
+#   seccomp Seccomp (/proc/self/status):
+#     без профиля (baseline)     | 2 (SeccompDefault узла)
+#     RuntimeDefault             | 2 (тот же фильтр, объявлен явно)
+#     Unconfined (privileged-ns) | 0, filters 0 — СНЯТ ЖИВЬЁМ (namespace явно enforce=privileged;
+#                                | дефолт baseline закрывает Unconfined только вне privileged)
+#   реальная seccomp-блокировка  | ИЗОЛИРОВАНА: get_mempolicy(239) под RuntimeDefault → EPERM,
+#                                | под Unconfined с теми же пустыми caps → OK (mode=0). Разница
+#                                | только в профиле → EPERM даёт seccomp, а не отсутствие caps.
+#   user namespaces (hostUsers)  | НЕ работают: max_user_namespaces=0, unshare→ENOSPC,
+#                                | обычный под — uid_map 0 0 4294967295 (1:1, изоляции нет)

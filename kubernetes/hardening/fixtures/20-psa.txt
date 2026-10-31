@@ -1,0 +1,154 @@
+# captured on k8s-volga (k8s 1.36.2, Talos v1.13.6, kernel 6.18.38-talos, containerd 2.2.5)
+# fixture: 20-psa — Pod Security Standards: ДОСЛОВНЫЕ тексты отказов admission,
+# контраст baseline против restricted, разница enforce/warn.
+#
+# ⛔ ГРАНИЦА БЕЗОПАСНОСТИ. Кластер живой и общий. Опасные нарушители группы B
+# (hostPath/hostNetwork/hostPID/privileged) показаны ТОЛЬКО через `kubectl apply
+# --dry-run=server` — admission выносит вердикт, но НИЧЕГО не пишется в etcd, рабочий под с
+# доступом к узлу НЕ создаётся. `--dry-run=server` (не client!) — только server-side dry-run
+# прогоняет admission PodSecurity. Побег не демонстрируется. Проверено: ни одного пода
+# host-path/host-network/host-pid/privileged-pod во всём кластере (kubectl get pods -A).
+# Безопасные нарушители группы A (root, дефолтные caps и т.п.) для наглядности warn создавались
+# реально во ВРЕМЕННОМ namespace и убраны вместе с ним.
+# ========================================================================
+
+## КАРТА НАРУШИТЕЛЕЙ (каждый под нарушает РОВНО ОДИН пункт restricted)
+#   ГРУППА A (безопасны, baseline пропускает):
+#     run-as-root    — нет runAsNonRoot
+#     no-drop-caps   — нет capabilities.drop:[ALL]
+#     allow-priv-esc — allowPrivilegeEscalation: true
+#     no-seccomp     — нет seccompProfile
+#   ГРУППА B (опасны, только --dry-run=server):
+#     host-path      — hostPath на «/»
+#     host-network   — hostNetwork: true
+#     host-pid       — hostPID: true
+#     privileged-pod — privileged: true
+
+## ========================================================================
+## ШАГ 1 — ГРУППА A против RESTRICTED (namespace cookbook-hardening, enforce: restricted)
+##   Каждый под совместим с restricted по остальным пунктам → отказ точечный, на одном пункте.
+
+# cmd: kubectl apply -f manifests/20-psa-violations.yaml -n cookbook-hardening --dry-run=server
+Error from server (Forbidden): error when creating "manifests/20-psa-violations.yaml": pods "run-as-root" is forbidden: violates PodSecurity "restricted:latest": runAsNonRoot != true (pod or container "box" must set securityContext.runAsNonRoot=true)
+Error from server (Forbidden): error when creating "manifests/20-psa-violations.yaml": pods "no-drop-caps" is forbidden: violates PodSecurity "restricted:latest": unrestricted capabilities (container "box" must set securityContext.capabilities.drop=["ALL"])
+Error from server (Forbidden): error when creating "manifests/20-psa-violations.yaml": pods "allow-priv-esc" is forbidden: violates PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "box" must set securityContext.allowPrivilegeEscalation=false)
+Error from server (Forbidden): error when creating "manifests/20-psa-violations.yaml": pods "no-seccomp" is forbidden: violates PodSecurity "restricted:latest": seccompProfile (pod or container "box" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+# Четыре пода — четыре пункта restricted, каждый назван дословно: runAsNonRoot != true,
+# unrestricted capabilities, allowPrivilegeEscalation != false, seccompProfile. Отказ содержит
+# и ЧТО нарушено, и КАК починить (must set ...=...).
+
+## ========================================================================
+## ШАГ 2 — ГРУППА B против RESTRICTED (только --dry-run=server, объект в etcd НЕ создаётся)
+
+# cmd: kubectl apply -f manifests/21-psa-dangerous.yaml -n cookbook-hardening --dry-run=server
+Error from server (Forbidden): error when creating "manifests/21-psa-dangerous.yaml": pods "host-path" is forbidden: violates PodSecurity "restricted:latest": restricted volume types (volume "node-root" uses restricted volume type "hostPath")
+Error from server (Forbidden): error when creating "manifests/21-psa-dangerous.yaml": pods "host-network" is forbidden: violates PodSecurity "restricted:latest": host namespaces (hostNetwork=true)
+Error from server (Forbidden): error when creating "manifests/21-psa-dangerous.yaml": pods "host-pid" is forbidden: violates PodSecurity "restricted:latest": host namespaces (hostPID=true)
+Error from server (Forbidden): error when creating "manifests/21-psa-dangerous.yaml": pods "privileged-pod" is forbidden: violates PodSecurity "restricted:latest": privileged (container "box" must not set securityContext.privileged=true), allowPrivilegeEscalation != false (container "box" must set securityContext.allowPrivilegeEscalation=false)
+# restricted формулирует: restricted volume types (hostPath), host namespaces (hostNetwork/hostPID),
+# privileged. privileged-pod ловит СРАЗУ ДВА пункта: privileged и allowPrivilegeEscalation != false
+# (последний не задан явно, т.к. API-валидация запрещает privileged:true + allowPrivilegeEscalation:false).
+
+## ========================================================================
+## ШАГ 3 ★ — КОНТРАСТ BASELINE ПРОТИВ RESTRICTED
+##   Те же поды через --dry-run=server в namespace с enforce: baseline.
+
+## 3а — ГРУППА A против BASELINE (namespace cookbook-hardening-baseline)
+# cmd: kubectl apply -f manifests/20-psa-violations.yaml -n cookbook-hardening-baseline --dry-run=server
+pod/run-as-root created (server dry run)
+pod/no-drop-caps created (server dry run)
+pod/allow-priv-esc created (server dry run)
+pod/no-seccomp created (server dry run)
+# ВСЕ ЧЕТЫРЕ проходят baseline. root, дефолтные capabilities, отсутствие seccomp-профиля и
+# разрешённое поднятие прав — baseline их НЕ требует. Ровно это restricted отверг в шаге 1.
+# Это и есть суть контраста: baseline и restricted проверяют РАЗНОЕ.
+
+## 3б — ГРУППА B против BASELINE (namespace cookbook-hardening-baseline)
+# cmd: kubectl apply -f manifests/21-psa-dangerous.yaml -n cookbook-hardening-baseline --dry-run=server
+Error from server (Forbidden): error when creating "manifests/21-psa-dangerous.yaml": pods "host-path" is forbidden: violates PodSecurity "baseline:latest": hostPath volumes (volume "node-root")
+Error from server (Forbidden): error when creating "manifests/21-psa-dangerous.yaml": pods "host-network" is forbidden: violates PodSecurity "baseline:latest": host namespaces (hostNetwork=true)
+Error from server (Forbidden): error when creating "manifests/21-psa-dangerous.yaml": pods "host-pid" is forbidden: violates PodSecurity "baseline:latest": host namespaces (hostPID=true)
+Error from server (Forbidden): error when creating "manifests/21-psa-dangerous.yaml": pods "privileged-pod" is forbidden: violates PodSecurity "baseline:latest": privileged (container "box" must not set securityContext.privileged=true)
+#
+# ⚠️ ВАЖНАЯ ФАКТИЧЕСКАЯ ПОПРАВКА (проверено, не по памяти):
+#   На k8s-volga (k8s 1.36.2) baseline:latest ОТКЛОНЯЕТ hostPath — «hostPath volumes».
+#   Часто повторяемое «baseline разрешает hostPath, ограничивает только restricted» здесь НЕ
+#   подтвердилось. hostPath отвергают ОБА профиля, но РАЗНЫМИ правилами и текстами:
+#     baseline   : hostPath volumes (volume "node-root")
+#     restricted : restricted volume types (volume "node-root" uses restricted volume type "hostPath")
+#   host-network / host-pid / privileged — baseline и restricted отвергают одинаково по сути
+#   (host namespaces / privileged), формулировки почти совпадают.
+
+## ★ СВОДНАЯ ТАБЛИЦА (каждая ячейка — из реального вывода --dry-run=server выше)
+#   под             | baseline                         | restricted
+#   ----------------+----------------------------------+---------------------------------------
+#   run-as-root     | ПРОХОДИТ                          | ОТКАЗ: runAsNonRoot != true
+#   no-drop-caps    | ПРОХОДИТ                          | ОТКАЗ: unrestricted capabilities
+#   allow-priv-esc  | ПРОХОДИТ                          | ОТКАЗ: allowPrivilegeEscalation != false
+#   no-seccomp      | ПРОХОДИТ                          | ОТКАЗ: seccompProfile
+#   host-path       | ОТКАЗ: hostPath volumes          | ОТКАЗ: restricted volume types
+#   host-network    | ОТКАЗ: host namespaces           | ОТКАЗ: host namespaces
+#   host-pid        | ОТКАЗ: host namespaces           | ОТКАЗ: host namespaces
+#   privileged-pod  | ОТКАЗ: privileged                | ОТКАЗ: privileged + allowPrivilegeEsc.
+#   ВЫВОД: группа A — «мягкая гигиена» пода: baseline пропускает, restricted требует. Группа B —
+#   доступ к узлу: отвергают ОБА профиля (на этом кластере, включая hostPath).
+
+## ========================================================================
+## ШАГ 4 — РАЗНИЦА enforce / warn (и честно про audit)
+
+## 4а — ENFORCE (namespace cookbook-hardening, enforce: restricted): ЖЁСТКИЙ ОТКАЗ.
+#   См. шаг 1: apply возвращает «Error from server (Forbidden) ... violates PodSecurity» и под
+#   НЕ создаётся. Это enforce.
+
+## 4б — WARN: под СОЗДАЁТСЯ, но kubectl печатает предупреждение.
+#   Нужна комбинация enforce=baseline (пускает) + warn=restricted (предупреждает). Такой ns в
+#   стенде нет — создан ВРЕМЕННЫЙ namespace и удалён после снятия (метки боевых ns не тронуты).
+# cmd: kubectl create ns cookbook-hardening-warn
+namespace/cookbook-hardening-warn created
+# cmd: kubectl label ns cookbook-hardening-warn pod-security.kubernetes.io/enforce=baseline pod-security.kubernetes.io/warn=restricted pod-security.kubernetes.io/warn-version=latest stand=cookbook-hardening --overwrite
+namespace/cookbook-hardening-warn labeled
+# cmd: kubectl apply -f manifests/20-psa-violations.yaml -n cookbook-hardening-warn
+Warning: would violate PodSecurity "restricted:latest": runAsNonRoot != true (pod or container "box" must set securityContext.runAsNonRoot=true)
+pod/run-as-root created
+Warning: would violate PodSecurity "restricted:latest": unrestricted capabilities (container "box" must set securityContext.capabilities.drop=["ALL"])
+pod/no-drop-caps created
+Warning: would violate PodSecurity "restricted:latest": allowPrivilegeEscalation != false (container "box" must set securityContext.allowPrivilegeEscalation=false)
+pod/allow-priv-esc created
+Warning: would violate PodSecurity "restricted:latest": seccompProfile (pod or container "box" must set securityContext.seccompProfile.type to "RuntimeDefault" or "Localhost")
+pod/no-seccomp created
+# КОНТРАСТ С ENFORCE: тот же текст нарушения, но с «Warning:» и «would violate», и под СОЗДАЁТСЯ
+# (enforce=baseline пустил, warn=restricted лишь предупредил). enforce блокирует — warn пропускает
+# и сигналит. Один и тот же профиль (restricted) на разных ключах ведёт себя по-разному.
+# cmd: kubectl -n cookbook-hardening-warn get pods
+NAME             READY   STATUS              RESTARTS   AGE
+allow-priv-esc   0/1     ContainerCreating   0          0s
+no-drop-caps     0/1     ContainerCreating   0          0s
+no-seccomp       0/1     ContainerCreating   0          0s
+run-as-root      0/1     ContainerCreating   0          0s
+# Поды реально создались (warn не блокирует). Все — безопасная группа A. Убраны удалением ns:
+# cmd: kubectl delete ns cookbook-hardening-warn --wait=false
+namespace "cookbook-hardening-warn" deleted
+
+## 4в — AUDIT: честное ограничение, записи НЕ сняты.
+#   На apiserver аудит ВКЛЮЧЁН (проверено флагами static-pod kube-apiserver):
+# cmd: kubectl -n kube-system get pod kube-apiserver-k8s-volga-cp01 -o jsonpath='{.spec.containers[0].command}' | tr ',' '\n' | grep -iE 'audit'
+"--audit-log-maxage=30"
+"--audit-log-maxbackup=10"
+"--audit-log-maxsize=100"
+"--audit-log-path=/var/log/audit/kube/kube-apiserver.log"
+"--audit-policy-file=/system/config/kubernetes/kube-apiserver/auditpolicy.yaml"
+#   Значит, audit=restricted на ns пишет записи о нарушениях в ФАЙЛ /var/log/audit/kube/ на узле
+#   control-plane. НО: Talos не даёт SSH/node-shell, а файл не отдаётся через kubectl (это не
+#   stdout пода — kubectl logs apiserver показывает лишь операционный лог, не audit). Прочитать
+#   его можно было бы только hostPath/privileged-подом на control-plane — ровно то, что стенд
+#   ОТКАЗЫВАЕТСЯ создавать. Поэтому audit-записи ЧЕСТНО не сняты; выдумывать их нельзя.
+#   Показаны только enforce (отказ) и warn (предупреждение в ответе kubectl).
+
+## ========================================================================
+## ИТОГ ДЛЯ СТАТЬИ
+#   1. Отказ admission называет пункт ДОСЛОВНО и подсказывает фикс: «violates PodSecurity
+#      "restricted:latest": <пункт> (... must set ...)».
+#   2. baseline и restricted проверяют РАЗНОЕ: группа A (root, caps, seccomp, priv-esc) — только
+#      restricted; группа B (host*, privileged, а на этом кластере и hostPath) — оба профиля.
+#   3. Один профиль на трёх ключах: enforce блокирует, warn пропускает+предупреждает,
+#      audit пишет в лог (здесь недоступен без доступа к узлу Talos).

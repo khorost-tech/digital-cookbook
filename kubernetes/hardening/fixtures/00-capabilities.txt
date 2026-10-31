@@ -1,0 +1,55 @@
+# captured on k8s-volga (k8s 1.36.2, Talos v1.13.6, kernel 6.18.38-talos, containerd 2.2.5)
+# fixture: 00-capabilities — разведка возможностей кластера по безопасности контейнеров.
+# Только чтение и временные разведочные поды (удалены после снятия).
+# ========================================================================
+
+## SECCOMP
+# cmd: kubectl -n cookbook-hardening-baseline exec recon-seccomp -- grep -E 'Seccomp|NoNewPrivs' /proc/1/status
+#   под recon-seccomp объявил securityContext.seccompProfile.type: RuntimeDefault
+NoNewPrivs:	0
+Seccomp:	2
+Seccomp_filters:	1
+# Seccomp: 2 = SECCOMP_MODE_FILTER (профиль применён), Seccomp_filters: 1 = один активный фильтр.
+
+# cmd: kubectl -n cookbook-hardening-baseline exec recon-seccomp-default -- grep Seccomp /proc/1/status
+#   под recon-seccomp-default НЕ объявлял seccompProfile вовсе
+Seccomp:	2
+Seccomp_filters:	1
+# Тоже Seccomp: 2 — узел ставит seccomp-фильтр по умолчанию (поведение SeccompDefault на Talos),
+# а не оставляет под Unconfined (что дало бы Seccomp: 0).
+
+## APPARMOR
+# cmd: kubectl -n cookbook-hardening-baseline get pod recon-apparmor -o jsonpath='{.status.reason} {.status.message}'
+#   под recon-apparmor объявил securityContext.appArmorProfile.type: RuntimeDefault
+AppArmor: Pod was rejected: Cannot enforce AppArmor: AppArmor is not enabled on the host
+# cmd: kubectl -n cookbook-hardening-baseline exec recon-seccomp -- cat /sys/module/apparmor/parameters/enabled
+N
+# N = модуль apparmor в ядре есть, но ВЫКЛЮЧЕН. AppArmor на этом кластере недоступен.
+
+## SELINUX
+# cmd: kubectl -n cookbook-hardening-baseline exec recon-seccomp -- cat /proc/cmdline
+talos.platform=metal console=tty0 init_on_alloc=1 slab_nomerge pti=on consoleblank=0 nvme_core.io_timeout=4294967295 printk.devkmsg=on selinux=1 module.sig_enforce=1 proc_mem.force_override=never
+# cmd: kubectl -n cookbook-hardening-baseline exec recon-seccomp -- cat /proc/1/attr/current
+system_u:system_r:pod_t:s0
+# selinux=1 в cmdline ядра и процесс несёт SELinux-метку system_u:system_r:pod_t:s0 —
+# SELinux на хосте Talos ВКЛЮЧЁН и маркирует поды.
+# cmd: kubectl -n cookbook-hardening-baseline exec recon-seccomp -- cat /sys/fs/selinux/enforce
+cat: can't open '/sys/fs/selinux/enforce': No such file or directory
+command terminated with exit code 1
+# selinuxfs не смонтирован ВНУТРИ контейнера, поэтому режим (enforcing/permissive) изнутри
+# пода не читается. Talos по SSH недоступен, узлы — только чтение через API, а API режим
+# SELinux узла не отдаёт. Это честное ограничение разведки: факт включения снят, режим — нет.
+
+## USER NAMESPACES (hostUsers: false)
+# cmd: kubectl explain pod.spec.hostUsers  (поле в API 1.36 есть — см. вывод в README)
+# cmd: kubectl -n cookbook-hardening-baseline get pod recon-userns -o jsonpath (под с hostUsers: false)
+Pending: PodReadyToStartContainers=False Initialized=True Ready=False ContainersReady=False PodScheduled=True 
+# cmd: kubectl -n cookbook-hardening-baseline describe pod recon-userns | grep FailedCreatePodSandBox (первое событие)
+  Warning  FailedCreatePodSandBox  2m43s             kubelet            Failed to create pod sandbox: rpc error: code = Unknown desc = failed to create network namespace for sandbox "253035ccb64793b42dab2d8fca6e43ebffb967d1b163d0f0f993e0796b8eaaac": failed to start noop process for unshare: fork/exec /proc/self/exe: no space left on device
+# cmd: kubectl -n cookbook-hardening-baseline exec recon-seccomp -- cat /proc/sys/user/max_user_namespaces
+0
+# 0 = ядро запрещает создание user namespace. Отсюда ENOSPC на unshare при hostUsers: false.
+# cmd: kubectl -n cookbook-hardening-baseline exec recon-seccomp -- cat /proc/self/uid_map (обычный под, hostUsers=true)
+         0          0 4294967295
+# 0 0 4294967295 = тождественная карта: обычный под делит user namespace с хостом, remap нет.
+# Вывод: user namespaces (hostUsers: false) на этом кластере НЕ поддержаны.

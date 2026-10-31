@@ -1,0 +1,29 @@
+# «Обычный» под — без securityContext, каким его пишут по умолчанию. Namespace
+# cookbook-hardening-baseline (enforce: baseline). Baseline НЕ требует ни runAsNonRoot, ни
+# drop caps, ни readOnlyRootFilesystem — поэтому под поднимается «как обычно»: процесс идёт
+# от root (uid 0) и несёт дефолтную маску capabilities, которую даёт containerd. Это точка
+# отсчёта для контраста с 11-hardened-pod.yaml.
+#
+# requests 10m/16Mi заданы явно (LimitRange всё равно проставил бы дефолт, но так нагляднее и
+# под точно вписывается в ResourceQuota namespace).
+apiVersion: v1
+kind: Pod
+metadata:
+  name: default-pod
+  namespace: cookbook-hardening-baseline
+  labels:
+    stand: cookbook-hardening
+    demo: default-vs-hardened
+spec:
+  restartPolicy: Never
+  containers:
+    - name: box
+      image: busybox:1.37
+      command: ["sleep", "3600"]
+      resources:
+        requests:
+          cpu: 10m
+          memory: 16Mi
+        limits:
+          cpu: 50m
+          memory: 64Mi
