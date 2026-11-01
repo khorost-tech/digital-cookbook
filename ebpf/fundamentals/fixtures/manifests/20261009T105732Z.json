@@ -1,0 +1,264 @@
+{
+ "session": "20261009T105732Z",
+ "published": {
+  "hooks": {
+   "tracepoint": {
+    "hook": "tracepoint",
+    "mode": "open",
+    "n": 10000,
+    "counted": 10000,
+    "load_done": 10000,
+    "load_exit": "ok",
+    "load_crash": null,
+    "outcome": "match"
+   },
+   "kprobe": {
+    "hook": "kprobe",
+    "mode": "open",
+    "n": 10000,
+    "counted": 10000,
+    "load_done": 10000,
+    "load_exit": "ok",
+    "load_crash": null,
+    "outcome": "match"
+   },
+   "fentry": {
+    "hook": "fentry",
+    "mode": "open",
+    "n": 10000,
+    "counted": 10000,
+    "load_done": 10000,
+    "load_exit": "ok",
+    "load_crash": null,
+    "outcome": "match"
+   },
+   "uprobe": {
+    "hook": "uprobe",
+    "mode": "call",
+    "n": 10000,
+    "counted": 10000,
+    "load_done": 10000,
+    "load_exit": "ok",
+    "load_crash": null,
+    "outcome": "match"
+   },
+   "uretprobe": {
+    "hook": "uretprobe",
+    "mode": "call",
+    "n": 10000,
+    "counted": 10000,
+    "load_done": 10000,
+    "load_exit": "ok",
+    "load_crash": null,
+    "outcome": "match"
+   },
+   "uprobe-grow": {
+    "hook": "uprobe",
+    "mode": "callgrow",
+    "n": 10000,
+    "load_done": 10000,
+    "load_exit": "ok",
+    "load_crash": null,
+    "outcome": "mismatch",
+    "counted~": 20001,
+    "per_call": 2
+   },
+   "uretprobe-grow": {
+    "hook": "uretprobe",
+    "mode": "callgrow",
+    "n": 10000,
+    "counted": 0,
+    "load_done": null,
+    "load_exit": "exit status 2",
+    "load_crash": "runtime: unexpected return pc for main.targetGrow called from 0xfffffffff000",
+    "outcome": "mismatch"
+   }
+  },
+  "maps": {
+   "hash-racy": {
+    "n": 1000000,
+    "threads": 8,
+    "load_done": 1000000,
+    "lost": true,
+    "counted~": 331904,
+    "lost_count~": 668096,
+    "outcome": "mismatch"
+   },
+   "hash-atomic": {
+    "n": 1000000,
+    "threads": 8,
+    "load_done": 1000000,
+    "lost": false,
+    "counted": 1000000,
+    "lost_count": 0,
+    "outcome": "match"
+   },
+   "percpu": {
+    "n": 1000000,
+    "threads": 8,
+    "load_done": 1000000,
+    "lost": false,
+    "counted": 1000000,
+    "lost_count": 0,
+    "cpus_used": 8,
+    "outcome": "match"
+   },
+   "ring-small": {
+    "n": 1000000,
+    "threads": 8,
+    "load_done": 1000000,
+    "ring_bytes": 4096,
+    "lost": true,
+    "counted": 255,
+    "lost_count": 999745,
+    "dropped": 999745,
+    "accounted": true,
+    "outcome": "mismatch"
+   },
+   "ring-read": {
+    "n": 1000000,
+    "threads": 8,
+    "load_done": 1000000,
+    "ring_bytes": 4096,
+    "lost": true,
+    "counted~": 767924,
+    "lost_count~": 232076,
+    "dropped~": 232076,
+    "accounted": true,
+    "outcome": "mismatch"
+   },
+   "ring-big": {
+    "n": 1000000,
+    "threads": 8,
+    "load_done": 1000000,
+    "ring_bytes": 33554432,
+    "lost": false,
+    "counted": 1000000,
+    "lost_count": 0,
+    "dropped": 0,
+    "accounted": true,
+    "outcome": "match"
+   }
+  },
+  "verifier": {
+   "ok": {
+    "expect": "accepted",
+    "stage": "accepted",
+    "reason": null,
+    "outcome": "match"
+   },
+   "null_deref": {
+    "expect": "rejected",
+    "stage": "accepted",
+    "reason": null,
+    "outcome": "mismatch"
+   },
+   "null_deref_hash": {
+    "expect": "rejected",
+    "stage": "verifier",
+    "reason": "R0 invalid mem access 'map_value_or_null'",
+    "outcome": "match"
+   },
+   "loop_bounded": {
+    "expect": "accepted",
+    "stage": "accepted",
+    "reason": null,
+    "outcome": "match"
+   },
+   "loop_collapsed": {
+    "expect": "rejected",
+    "stage": "accepted",
+    "reason": null,
+    "outcome": "mismatch"
+   },
+   "loop_unbounded": {
+    "expect": "rejected",
+    "stage": "verifier",
+    "reason": "BPF program is too large. Processed 1000001 insn",
+    "outcome": "match"
+   },
+   "bpf_loop": {
+    "expect": "accepted",
+    "stage": "accepted",
+    "reason": null,
+    "outcome": "match",
+    "run_n": 100000,
+    "run_iterations": 100000,
+    "run_ret": 100000,
+    "run_complete": true
+   },
+   "packet_oob": {
+    "expect": "rejected",
+    "stage": "verifier",
+    "reason": "R1 offset is outside of the packet",
+    "outcome": "match"
+   },
+   "packet_checked": {
+    "expect": "accepted",
+    "stage": "accepted",
+    "reason": null,
+    "outcome": "match"
+   },
+   "stack_uninit": {
+    "expect": "rejected",
+    "stage": "accepted",
+    "reason": null,
+    "outcome": "mismatch"
+   },
+   "stack_big": {
+    "expect": "clang",
+    "stage": "clang",
+    "reason": "error: Looks like the BPF stack limit is exceeded. Please move large on stack variables into BPF per-cpu array map. For non-kernel uses, the stack can be increased using -mllvm -bpf-stack-size.",
+    "outcome": "match"
+   },
+   "gpl_helper": {
+    "expect": "rejected",
+    "stage": "verifier",
+    "reason": "cannot call GPL-restricted function from non-GPL compatible program",
+    "outcome": "match"
+   }
+  },
+  "core": {
+   "tgid": {
+    "stage": "loaded",
+    "value_matches": true,
+    "branch": null,
+    "outcome": "match"
+   },
+   "guarded": {
+    "stage": "loaded",
+    "value_matches": true,
+    "branch": "__state",
+    "outcome": "match"
+   },
+   "old": {
+    "stage": "load",
+    "reason": "bad CO-RE relocation: invalid func unknown#195896080",
+    "outcome": "mismatch"
+   }
+  },
+  "bpftrace": {
+   "open": {
+    "n": 10000,
+    "program": "tracepoint:syscalls:sys_enter_openat /pid == $PID/ { @n = count(); }",
+    "counted": 10000,
+    "load_done": 10000,
+    "outcome": "match"
+   },
+   "burst": {
+    "n": 1000000,
+    "program": "tracepoint:syscalls:sys_enter_getppid /pid == $PID/ { @n = count(); }",
+    "counted": 1000000,
+    "load_done": 1000000,
+    "outcome": "match"
+   },
+   "uprobe": {
+    "n": 10000,
+    "program": "uprobe:/opt/stand/bin/load:main.targetFunc /pid == $PID/ { @n = count(); }",
+    "counted": 10000,
+    "load_done": 10000,
+    "outcome": "match"
+   }
+  }
+ }
+}

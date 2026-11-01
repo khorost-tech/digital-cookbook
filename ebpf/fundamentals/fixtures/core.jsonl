@@ -1,0 +1,4 @@
+{"kind": "core", "variant": "tgid", "probe": "getppid x100, tgid", "cmd": "python3 scripts/run-core.py tgid", "stage": "loaded", "value_matches": true, "branch": null, "outcome": "match", "detail": "прочитанный tgid совпал с PID нагрузки"}
+{"kind": "core", "variant": "guarded", "probe": "getppid x100, guarded", "cmd": "python3 scripts/run-core.py guarded", "stage": "loaded", "value_matches": true, "branch": "__state", "outcome": "match", "detail": "ветка __state, прочитано 0, эталон 0 (TASK_RUNNING)"}
+{"kind": "core", "variant": "old", "probe": "getppid x100, old", "cmd": "python3 scripts/run-core.py old", "stage": "load", "reason": "bad CO-RE relocation: invalid func unknown#195896080", "outcome": "mismatch", "detail": "не загрузилась: bad CO-RE relocation: invalid func unknown#195896080"}
+COMPLETE

@@ -1,0 +1,9 @@
+{
+ "fixtures": {
+  "detect.jsonl": "bee7db0cfbc48d44e4577d35f536d912026a3f9b5ff4454ba8df8047ab6539cc",
+  "reaction.jsonl": "8c9c671f72bc590fa033467ac4437a2a600733273d3666ff81c3c62c69ba4843",
+  "contract.jsonl": "972b4a10fe4cf6c76480cb8a94944a9ebdfee6b6d680f9b4a83bc8be8b49d5d8"
+ },
+ "tests": 14,
+ "sabotages": 11
+}

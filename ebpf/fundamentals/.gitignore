@@ -1,0 +1,7 @@
+# Выход bpf2go и бинарники — собираются в контейнере при прогоне.
+*_bpfel.go
+*_bpfel.o
+*_bpfeb.go
+*_bpfeb.o
+/bin/
+bpf/vmlinux.h

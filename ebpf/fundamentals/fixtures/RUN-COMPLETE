@@ -1,0 +1,11 @@
+{
+ "fixtures": {
+  "hooks.jsonl": "bc4ebacb8b122578522e51f65c6dee98340c26c364482de173a9c93809cbaab6",
+  "maps.jsonl": "c794d01fb189d79da57e52b0435d3c0eeebf3332f1d2c4929aadc0ad2a8ae548",
+  "verifier.jsonl": "d463adf11b74a275036fb51661d424bdd2cdf198413c6562e9eb8a2967b98a90",
+  "core.jsonl": "506ace3605898446c22e5fed2f672fd86b87fd9727d508dcb79556265d4dacad",
+  "bpftrace.jsonl": "b4e5760221599856fdc1e6037f78d5cdb58ab89818a279167dd6e30c783466aa"
+ },
+ "tests": 17,
+ "sabotages": 12
+}

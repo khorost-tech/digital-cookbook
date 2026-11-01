@@ -1,0 +1,18 @@
+version: 2
+models:
+  - name: stg_orders
+    columns:
+      - name: id
+        data_tests:
+          - unique: {config: {severity: "{{ var('severity') }}"}}
+      - name: customer_id
+        data_tests:
+          - not_null: {config: {severity: "{{ var('severity') }}"}}
+          - relationships:
+              arguments: {to: ref('stg_customers'), field: customer_id}
+              config: {severity: "{{ var('severity') }}"}
+      - name: status
+        data_tests:
+          - accepted_values:
+              arguments: {values: ['paid', 'cancelled', 'refunded']}
+              config: {severity: "{{ var('severity') }}"}

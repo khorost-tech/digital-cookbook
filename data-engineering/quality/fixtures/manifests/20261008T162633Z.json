@@ -1,0 +1,760 @@
+{
+ "session": "20261008T162633Z",
+ "published": {
+  "detect": {
+   "clean": {
+    "bad": 0,
+    "rows": 287,
+    "dbt": {
+     "accepted_values": {
+      "failed": false,
+      "failures": 0
+     },
+     "amount_range": {
+      "failed": false,
+      "failures": 0
+     },
+     "not_null": {
+      "failed": false,
+      "failures": 0
+     },
+     "relationships": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique": {
+      "failed": false,
+      "failures": 0
+     },
+     "freshness": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "ge": {
+     "not_null:customer_id": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique:id": {
+      "failed": false,
+      "failures": 0
+     },
+     "in_set:status": {
+      "failed": false,
+      "failures": 0
+     },
+     "between:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "mean:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "rows:batch": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "dbt_caught": [],
+    "ge_caught": [],
+    "dbt_detected": false,
+    "ge_detected": false,
+    "outcome": "match"
+   },
+   "nulls": {
+    "bad": 15,
+    "rows": 287,
+    "dbt": {
+     "accepted_values": {
+      "failed": false,
+      "failures": 0
+     },
+     "amount_range": {
+      "failed": false,
+      "failures": 0
+     },
+     "not_null": {
+      "failed": true,
+      "failures": 15
+     },
+     "relationships": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique": {
+      "failed": false,
+      "failures": 0
+     },
+     "freshness": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "ge": {
+     "not_null:customer_id": {
+      "failed": true,
+      "failures": 15
+     },
+     "unique:id": {
+      "failed": false,
+      "failures": 0
+     },
+     "in_set:status": {
+      "failed": false,
+      "failures": 0
+     },
+     "between:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "mean:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "rows:batch": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "dbt_caught": [
+     "not_null"
+    ],
+    "ge_caught": [
+     "not_null:customer_id"
+    ],
+    "dbt_detected": true,
+    "ge_detected": true,
+    "outcome": "match"
+   },
+   "duplicates": {
+    "bad": 10,
+    "rows": 297,
+    "dbt": {
+     "accepted_values": {
+      "failed": false,
+      "failures": 0
+     },
+     "amount_range": {
+      "failed": false,
+      "failures": 0
+     },
+     "not_null": {
+      "failed": false,
+      "failures": 0
+     },
+     "relationships": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique": {
+      "failed": true,
+      "failures": 10
+     },
+     "freshness": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "ge": {
+     "not_null:customer_id": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique:id": {
+      "failed": true,
+      "failures": 20
+     },
+     "in_set:status": {
+      "failed": false,
+      "failures": 0
+     },
+     "between:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "mean:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "rows:batch": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "dbt_caught": [
+     "unique"
+    ],
+    "ge_caught": [
+     "unique:id"
+    ],
+    "dbt_detected": true,
+    "ge_detected": true,
+    "outcome": "match"
+   },
+   "range": {
+    "bad": 12,
+    "rows": 287,
+    "dbt": {
+     "accepted_values": {
+      "failed": false,
+      "failures": 0
+     },
+     "amount_range": {
+      "failed": true,
+      "failures": 12
+     },
+     "not_null": {
+      "failed": false,
+      "failures": 0
+     },
+     "relationships": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique": {
+      "failed": false,
+      "failures": 0
+     },
+     "freshness": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "ge": {
+     "not_null:customer_id": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique:id": {
+      "failed": false,
+      "failures": 0
+     },
+     "in_set:status": {
+      "failed": false,
+      "failures": 0
+     },
+     "between:amount": {
+      "failed": true,
+      "failures": 12
+     },
+     "mean:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "rows:batch": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "dbt_caught": [
+     "amount_range"
+    ],
+    "ge_caught": [
+     "between:amount"
+    ],
+    "dbt_detected": true,
+    "ge_detected": true,
+    "outcome": "match"
+   },
+   "enum": {
+    "bad": 8,
+    "rows": 287,
+    "dbt": {
+     "accepted_values": {
+      "failed": true,
+      "failures": 1
+     },
+     "amount_range": {
+      "failed": false,
+      "failures": 0
+     },
+     "not_null": {
+      "failed": false,
+      "failures": 0
+     },
+     "relationships": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique": {
+      "failed": false,
+      "failures": 0
+     },
+     "freshness": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "ge": {
+     "not_null:customer_id": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique:id": {
+      "failed": false,
+      "failures": 0
+     },
+     "in_set:status": {
+      "failed": true,
+      "failures": 8
+     },
+     "between:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "mean:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "rows:batch": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "dbt_caught": [
+     "accepted_values"
+    ],
+    "ge_caught": [
+     "in_set:status"
+    ],
+    "dbt_detected": true,
+    "ge_detected": true,
+    "outcome": "match"
+   },
+   "orphans": {
+    "bad": 9,
+    "rows": 287,
+    "dbt": {
+     "accepted_values": {
+      "failed": false,
+      "failures": 0
+     },
+     "amount_range": {
+      "failed": false,
+      "failures": 0
+     },
+     "not_null": {
+      "failed": false,
+      "failures": 0
+     },
+     "relationships": {
+      "failed": true,
+      "failures": 9
+     },
+     "unique": {
+      "failed": false,
+      "failures": 0
+     },
+     "freshness": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "ge": {
+     "not_null:customer_id": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique:id": {
+      "failed": false,
+      "failures": 0
+     },
+     "in_set:status": {
+      "failed": false,
+      "failures": 0
+     },
+     "between:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "mean:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "rows:batch": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "dbt_caught": [
+     "relationships"
+    ],
+    "ge_caught": [],
+    "dbt_detected": true,
+    "ge_detected": false,
+    "outcome": "match"
+   },
+   "stale": {
+    "bad": 287,
+    "rows": 287,
+    "dbt": {
+     "accepted_values": {
+      "failed": false,
+      "failures": 0
+     },
+     "amount_range": {
+      "failed": false,
+      "failures": 0
+     },
+     "not_null": {
+      "failed": false,
+      "failures": 0
+     },
+     "relationships": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique": {
+      "failed": false,
+      "failures": 0
+     },
+     "freshness": {
+      "failed": true,
+      "failures": 0
+     }
+    },
+    "ge": {
+     "not_null:customer_id": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique:id": {
+      "failed": false,
+      "failures": 0
+     },
+     "in_set:status": {
+      "failed": false,
+      "failures": 0
+     },
+     "between:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "mean:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "rows:batch": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "dbt_caught": [
+     "freshness"
+    ],
+    "ge_caught": [],
+    "dbt_detected": true,
+    "ge_detected": false,
+    "outcome": "match"
+   },
+   "shift": {
+    "bad": 95,
+    "rows": 287,
+    "dbt": {
+     "accepted_values": {
+      "failed": false,
+      "failures": 0
+     },
+     "amount_range": {
+      "failed": false,
+      "failures": 0
+     },
+     "not_null": {
+      "failed": false,
+      "failures": 0
+     },
+     "relationships": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique": {
+      "failed": false,
+      "failures": 0
+     },
+     "freshness": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "ge": {
+     "not_null:customer_id": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique:id": {
+      "failed": false,
+      "failures": 0
+     },
+     "in_set:status": {
+      "failed": false,
+      "failures": 0
+     },
+     "between:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "mean:amount": {
+      "failed": true,
+      "failures": 0
+     },
+     "rows:batch": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "dbt_caught": [],
+    "ge_caught": [
+     "mean:amount"
+    ],
+    "dbt_detected": false,
+    "ge_detected": true,
+    "outcome": "match"
+   },
+   "volume": {
+    "bad": 30,
+    "rows": 30,
+    "dbt": {
+     "accepted_values": {
+      "failed": false,
+      "failures": 0
+     },
+     "amount_range": {
+      "failed": false,
+      "failures": 0
+     },
+     "not_null": {
+      "failed": false,
+      "failures": 0
+     },
+     "relationships": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique": {
+      "failed": false,
+      "failures": 0
+     },
+     "freshness": {
+      "failed": false,
+      "failures": 0
+     }
+    },
+    "ge": {
+     "not_null:customer_id": {
+      "failed": false,
+      "failures": 0
+     },
+     "unique:id": {
+      "failed": false,
+      "failures": 0
+     },
+     "in_set:status": {
+      "failed": false,
+      "failures": 0
+     },
+     "between:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "mean:amount": {
+      "failed": false,
+      "failures": 0
+     },
+     "rows:batch": {
+      "failed": true,
+      "failures": 0
+     }
+    },
+    "dbt_caught": [],
+    "ge_caught": [
+     "rows:batch"
+    ],
+    "dbt_detected": false,
+    "ge_detected": true,
+    "outcome": "match"
+   }
+  },
+  "reaction": {
+   "clean-fail": {
+    "mode": "fail",
+    "defect": "clean",
+    "bad": 0,
+    "good_noncancelled": 259,
+    "mart_built": true,
+    "mart_orders": 259,
+    "bad_in_mart": 0,
+    "good_missing": 0,
+    "quarantined": null,
+    "outcome": "match"
+   },
+   "clean-quarantine": {
+    "mode": "quarantine",
+    "defect": "clean",
+    "bad": 0,
+    "good_noncancelled": 259,
+    "mart_built": true,
+    "mart_orders": 259,
+    "bad_in_mart": 0,
+    "good_missing": 0,
+    "quarantined": 0,
+    "outcome": "match"
+   },
+   "fail": {
+    "mode": "fail",
+    "defect": "mixed",
+    "bad": 15,
+    "good_noncancelled": 245,
+    "mart_built": false,
+    "mart_orders": 0,
+    "bad_in_mart": 0,
+    "good_missing": 245,
+    "quarantined": null,
+    "outcome": "mismatch"
+   },
+   "warn": {
+    "mode": "warn",
+    "defect": "mixed",
+    "bad": 15,
+    "good_noncancelled": 245,
+    "mart_built": true,
+    "mart_orders": 260,
+    "bad_in_mart": 15,
+    "good_missing": 0,
+    "quarantined": null,
+    "outcome": "mismatch"
+   },
+   "quarantine": {
+    "mode": "quarantine",
+    "defect": "mixed",
+    "bad": 15,
+    "good_noncancelled": 245,
+    "mart_built": true,
+    "mart_orders": 245,
+    "bad_in_mart": 0,
+    "good_missing": 0,
+    "quarantined": 15,
+    "outcome": "match"
+   },
+   "fail-kept": {
+    "mode": "fail",
+    "defect": "mixed",
+    "bad": 15,
+    "good_noncancelled": 245,
+    "mart_built": true,
+    "mart_rebuilt": false,
+    "mart_orders": 259,
+    "prev_mart_orders": 259,
+    "bad_in_mart": 0,
+    "good_missing": 0,
+    "quarantined": null,
+    "outcome": "mismatch"
+   },
+   "split-naive": {
+    "mode": "quarantine",
+    "defect": "nullfields",
+    "bad": 12,
+    "rows": 287,
+    "to_mart": 275,
+    "to_quarantine": 0,
+    "lost": 12,
+    "mart_orders": null,
+    "bad_quarantined": 0,
+    "quarantined": null,
+    "outcome": "mismatch"
+   },
+   "split-fixed": {
+    "mode": "quarantine",
+    "defect": "nullfields",
+    "bad": 12,
+    "rows": 287,
+    "to_mart": 275,
+    "to_quarantine": 12,
+    "lost": 0,
+    "mart_orders": 247,
+    "bad_quarantined": 12,
+    "quarantined": 12,
+    "outcome": "match"
+   }
+  },
+  "contract": {
+   "control": {
+    "status": {
+     "orders_contracted": "success",
+     "revenue_contracted": "success",
+     "orders_uncontracted": "success",
+     "revenue_uncontracted": "success"
+    },
+    "revenue": {
+     "contracted": 2763000,
+     "uncontracted": 2763000
+    },
+    "control_revenue": 2763000,
+    "ge_mean_failed": false,
+    "contracted_built": true,
+    "uncontracted_built": true,
+    "downstream_built": true,
+    "uncontracted_revenue_ratio": 1.0,
+    "outcome": "match"
+   },
+   "numeric": {
+    "status": {
+     "orders_contracted": "error",
+     "revenue_contracted": "skipped",
+     "orders_uncontracted": "success",
+     "revenue_uncontracted": "success"
+    },
+    "revenue": {
+     "contracted": null,
+     "uncontracted": 2763000
+    },
+    "control_revenue": 2763000,
+    "ge_mean_failed": false,
+    "contracted_built": false,
+    "uncontracted_built": true,
+    "downstream_built": true,
+    "uncontracted_revenue_ratio": 1.0,
+    "outcome": "match"
+   },
+   "dropped": {
+    "status": {
+     "orders_contracted": "error",
+     "revenue_contracted": "skipped",
+     "orders_uncontracted": "success",
+     "revenue_uncontracted": "error"
+    },
+    "revenue": {
+     "contracted": null,
+     "uncontracted": null
+    },
+    "control_revenue": 2763000,
+    "ge_mean_failed": null,
+    "contracted_built": false,
+    "uncontracted_built": true,
+    "downstream_built": false,
+    "uncontracted_revenue_ratio": null,
+    "outcome": "match"
+   },
+   "units": {
+    "status": {
+     "orders_contracted": "success",
+     "revenue_contracted": "success",
+     "orders_uncontracted": "success",
+     "revenue_uncontracted": "success"
+    },
+    "revenue": {
+     "contracted": 27630,
+     "uncontracted": 27630
+    },
+    "control_revenue": 2763000,
+    "ge_mean_failed": true,
+    "contracted_built": true,
+    "uncontracted_built": true,
+    "downstream_built": true,
+    "uncontracted_revenue_ratio": 0.01,
+    "outcome": "mismatch"
+   }
+  }
+ }
+}

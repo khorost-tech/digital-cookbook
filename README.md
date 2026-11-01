@@ -13,6 +13,7 @@
 - [**java/**](java/) — JVM/Java вглубь: многомодульный стенд к серии «Java: глубокое погружение».
 - [**performance/**](performance/) — Высокая нагрузка и низкая задержка, вероятностные структуры данных.
 - [**infrastructure/**](infrastructure/) — Инфраструктура как код и деплой: Ansible, Terraform, Proxmox.
+- [**ebpf/**](ebpf/) — Программы в ядре Linux: точки подключения, карты, verifier, CO-RE; наблюдаемость, сеть и рантайм-безопасность на eBPF.
 - [**rust/**](rust/) — Rust для backend: async/Tokio, web-фреймворки, production-практики, минимальные образы.
 - [**docker/**](docker/) — Контейнеризация: rootful vs rootless.
 - [**observability/**](observability/) — Наблюдаемость: конвейеры логов, сбор и доставка телеметрии.

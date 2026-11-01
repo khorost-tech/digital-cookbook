@@ -1,0 +1,19 @@
+# Стенд ebpf/fundamentals: один контейнер tools — сборка программ (bpf2go) и их запуск.
+# privileged: загрузка eBPF-программ и монтирование debugfs/tracefs требуют CAP_SYS_ADMIN/CAP_BPF;
+# pid: host — нагрузка и загрузчик видят PID в том же пространстве, что и ядро (bpf_get_current_pid_tgid).
+name: ebpf-fundamentals
+services:
+  tools:
+    build: ./tools
+    image: ebpf-fundamentals-tools
+    privileged: true
+    pid: host
+    volumes:
+      - .:/opt/stand
+      - gocache:/cache
+    healthcheck:
+      test: ["CMD-SHELL", "mountpoint -q /sys/kernel/tracing"]
+      interval: 2s
+      retries: 30
+volumes:
+  gocache:

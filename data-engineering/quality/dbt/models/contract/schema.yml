@@ -1,0 +1,11 @@
+version: 2
+models:
+  - name: orders_contracted
+    config:
+      contract: {enforced: true}
+    columns:
+      - {name: id, data_type: bigint}
+      - {name: customer_id, data_type: int}
+      - {name: status, data_type: text}
+      - {name: amount, data_type: bigint}
+      - {name: created_at, data_type: timestamp}

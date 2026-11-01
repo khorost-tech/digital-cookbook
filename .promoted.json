@@ -23,6 +23,7 @@
     "architecture/event-sourcing-deep": [
       "architecture/es-aggregate-event-design.md",
       "architecture/es-event-store-internals.md",
+      "architecture/es-event-versioning-upcasting.md",
       "architecture/es-projections-deep.md"
     ],
     "architecture/grpc": [
@@ -78,6 +79,9 @@
     ],
     "data-engineering/pipelines": [
       "databases/data-batch-pipelines-orchestration.md"
+    ],
+    "data-engineering/quality": [
+      "databases/data-quality-contracts.md"
     ],
     "databases/citus": [
       "databases/sharding-in-production.md"
@@ -193,6 +197,9 @@
     ],
     "docker/rootless": [
       "docker/rootless-docker.md"
+    ],
+    "ebpf/fundamentals": [
+      "infrastructure/ebpf-fundamentals.md"
     ],
     "go/asm": [
       "go/go-asm-avo-and-honest-benchmark.md",

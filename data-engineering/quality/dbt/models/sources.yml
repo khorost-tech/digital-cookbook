@@ -1,0 +1,11 @@
+version: 2
+sources:
+  - name: raw
+    schema: raw
+    loaded_at_field: loaded_at
+    freshness:
+      error_after: {count: 24, period: hour}
+    tables:
+      - name: orders
+      - name: customers
+        freshness: null

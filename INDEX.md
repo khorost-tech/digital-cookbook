@@ -54,6 +54,7 @@
 | [`data-engineering/pipelines`](data-engineering/pipelines) | Батч-пайплайн Airflow 3 + dbt + PostgreSQL против эталона генератора: ETL против ELT при смене правила, идемпотентность загрузки и падение посреди неё, интервал данных и ручной запуск в Airflow 3, backfill и depends_on_past, поздние данные и окно пересмотра, повторы задач | [статья](https://khorost.tech/databases/data-batch-pipelines-orchestration/) |
 | [`data-engineering/dimensional`](data-engineering/dimensional) | Звёздная схема на dbt + PostgreSQL против эталона генератора: SCD1/2/3 на переездах клиентов (dbt snapshot), гранулярность факта и двойной счёт, полуаддитивные и неаддитивные меры, поздний клиент и переиспользованный id | [статья](https://khorost.tech/databases/dimensional-modeling-warehouse/) |
 | [`data-engineering/iceberg`](data-engineering/iceberg) | «Паркет в папке» против Iceberg на одном S3 (SeaweedFS, REST-каталог, Spark и PyIceberg): два писателя, читатель во время записи, удаление строки copy-on-write и merge-on-read, time travel, переименование и повторное добавление колонки, эволюция и скрытое партиционирование, мелкие файлы и обслуживание | 🔜 скоро |
+| [`data-engineering/quality`](data-engineering/quality) | Качество данных на dbt + Great Expectations + PostgreSQL против эталона генератора: восемь видов дефектов партии и что каждый набор проверок ловит, fail / warn / карантин — сколько плохих и хороших строк доходит до витрины, контракт модели dbt против смены типа, удаления колонки и смены единиц | 🔜 скоро |
 
 ## Messaging
 
@@ -111,6 +112,12 @@
 | [`infrastructure/cicd`](infrastructure/cicd) | CI-пайплайн (кэш, reusable workflows, matrix, OIDC), zero-downtime миграции (expand-contract, блокирующий DDL) и release engineering (semver/changelog, DORA) | [статья](https://khorost.tech/infrastructure/ci-pipeline-github-actions/) |
 | [`infrastructure/proxmox`](infrastructure/proxmox) | Terraform для Proxmox: VM/LXC, cloud-init, for_each | [статья](https://khorost.tech/infrastructure/proxmox-terraform-vm-automation/) |
 | [`infrastructure/terraform`](infrastructure/terraform) | Стык Terraform → Ansible: docker-хост + firewall + inventory | [статья](https://khorost.tech/infrastructure/terraform-docker-hosts-and-networks/) |
+
+## eBPF
+
+| Пример | Описание | Статья |
+|---|---|---|
+| [`ebpf/fundamentals`](ebpf/fundamentals) | Основы eBPF на cilium/ebpf (Go) и bpftrace против счёта нагрузки: tracepoint, kprobe, fentry, uprobe и uretprobe (ловушки Go — двойной uprobe и падение uretprobe при росте стека), карты под конкуренцией (гонка в hash, per-CPU, потери ring buffer), вердикты verifier на 12 программах, CO-RE на переименованном поле task_struct | 🔜 скоро |
 
 ## Rust
 

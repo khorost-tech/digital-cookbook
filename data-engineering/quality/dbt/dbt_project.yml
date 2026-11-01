@@ -1,0 +1,21 @@
+name: shop_quality
+version: "1.0"
+profile: shop_quality
+model-paths: ["models"]
+test-paths: ["tests"]
+vars:
+  severity: error   # ось 2: error — провал теста останавливает витрину; warn — только предупреждение
+models:
+  shop_quality:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table
+    quarantine:
+      +schema: quarantine
+      +materialized: table
+    contract:
+      +schema: contract
+      +materialized: table
