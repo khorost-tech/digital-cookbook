@@ -1,0 +1,12 @@
+name: shop_obs
+version: "1.0"
+profile: shop_obs
+model-paths: ["models"]
+models:
+  shop_obs:
+    staging:
+      +schema: staging
+      +materialized: view
+    marts:
+      +schema: marts
+      +materialized: table

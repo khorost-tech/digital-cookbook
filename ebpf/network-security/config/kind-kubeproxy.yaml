@@ -1,0 +1,8 @@
+# kind с kube-proxy в режиме iptables и штатным CNI — контроль оси Cilium.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+networking:
+  kubeProxyMode: iptables
+nodes:
+  - role: control-plane
+  - role: worker

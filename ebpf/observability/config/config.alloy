@@ -1,0 +1,30 @@
+// eBPF-профилировщик Alloy: процессы burn-go12* по пути исполняемого файла,
+// service_name — имя файла; профили — в Pyroscope стенда.
+discovery.process "all" { }
+
+discovery.relabel "burn" {
+  targets = discovery.process.all.targets
+  rule {
+    source_labels = ["__meta_process_exe"]
+    regex         = ".*/(burn-go12[67](-stripped)?)$"
+    action        = "keep"
+  }
+  rule {
+    source_labels = ["__meta_process_exe", "__meta_process_commandline"]
+    separator     = ";"
+    regex         = ".*/(burn-go12[67](-stripped)?);\\S+ ([\\w-]+)( \\d+)?$"
+    target_label  = "service_name"
+    replacement   = "$1-$3"
+  }
+}
+
+pyroscope.ebpf "burn" {
+  targets    = discovery.relabel.burn.output
+  forward_to = [pyroscope.write.local.receiver]
+}
+
+pyroscope.write "local" {
+  endpoint {
+    url = "http://pyroscope:4040"
+  }
+}

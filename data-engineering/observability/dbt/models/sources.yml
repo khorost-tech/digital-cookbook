@@ -1,0 +1,17 @@
+version: 2
+sources:
+  - name: raw
+    schema: raw
+    tables:
+      - name: orders
+        columns:
+          - {name: id}
+          - {name: customer_id}
+          - {name: status}
+          - {name: amount}
+          - {name: created_at}
+          - {name: loaded_at}
+      - name: customers
+        columns:
+          - {name: id}
+          - {name: region}

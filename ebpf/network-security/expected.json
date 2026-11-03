@@ -1,0 +1,47 @@
+{
+  "written": "2026-10-09",
+  "note": "Гипотезы записаны до прогона оси. Эталон — счёт отправителя пакетов, сценарии атак и число созданных сервисов и эндпоинтов, не eBPF-инструменты.",
+  "known_from_pre_run_probes": [
+    {
+      "fact": "kind 0.33.0 на Docker Desktop (aarch64, ядро 7.0.12-linuxkit): узлы kindest с Kubernetes 1.37.0; Cilium 1.20.2 из helm-чарта с kubeProxyReplacement=true, без kube-proxy и штатного CNI — оба узла Ready, cilium status зелёный; образы quay.io/cilium скачиваются без входа",
+      "source": "проба 09.10"
+    },
+    {
+      "fact": "память: control-plane ~1,0 ГБ, worker ~0,5 ГБ из 7,7 ГБ VM — два узла помещаются",
+      "source": "проба 09.10"
+    }
+  ],
+  "decision_task16": "ось Cilium — два узла (control-plane + worker), контроль — тот же состав с kube-proxy (iptables) и штатным CNI kind; кластеры создаются по очереди",
+  "filter": {
+    "hypothesis_before_run": "отправитель шлёт по 10 000 UDP-пакетов с 10.99.0.1–4, блокируются .2 и .3. Без фильтра (контроль) доходят все 40 000. XDP native, XDP generic, tc ingress и iptables INPUT — от .1 и .4 доходит по 10 000, от .2 и .3 — 0; счётчики программы: 20 000 отброшено, 20 000 пропущено (не-IPv4 не считается). Обновление карты на работающей программе: первая фаза без блокировки — всё доходит, вторая — .2 и .3 отброшены. tcpdump на приёмнике: при XDP (native и generic) отброшенных пакетов не видит — XDP срабатывает раньше перехвата; при tc ingress и iptables — видит все 20 000: перехват стоит до них",
+    "confidence": "высокая для счёта, средняя для tcpdump при XDP generic",
+    "control": "без фильтра — 40 000 из 40 000",
+    "probes": "проба 09.10 без tcpdump: все режимы совпали с эталоном (от .2 и .3 — 0, от .1 и .4 — 10 000; счётчики 20 000 / 20 000; xdp-update — вторая фаза отброшена)",
+    "observed_vs_hypothesis": {
+      "written": "2026-10-09",
+      "observed": "сессия 09.10: при tc и iptables программа/правило пропустили все 20 000 разрешённых пакетов, а приложение получило 19 821 и 19 861",
+      "explanation": "потери после фильтра — очередь UDP-сокета приёмника (при tc и iptables отбрасываемые пакеты проходят стек дальше и отнимают время приёмника). Приёмный буфер увеличен до 16 МБ; счётчик ядра UdpRcvbufErrors пространства имён приёмника записывается, контроль разбора — ноль потерь в очереди"
+    }
+  },
+  "cilium": {
+    "hypothesis_before_run": "20 сервисов × 3 эндпоинта (pause, namespace lb). Cilium с kubeProxyReplacement: в карте балансировщика все 20 ClusterIP с 60 бэкендами; правил KUBE- в nat-таблице узла — единицы (проба: 1), их число от сервисов не зависит; на интерфейсах узла — программы Cilium tcx, по одной cil_from_container на интерфейс каждого пода. kube-proxy (iptables, контроль): цепочек KUBE-SVC для namespace lb — 20, KUBE-SEP — 60; правил KUBE- — сотни и растут с числом сервисов и эндпоинтов; eBPF-программ на интерфейсах tc/xdp нет",
+    "confidence": "высокая",
+    "control": "kube-proxy: 20 цепочек KUBE-SVC и 60 KUBE-SEP для lb — по эталону",
+    "probes": "проба 09.10 на кластере с Cilium: 20 ClusterIP lb в cilium-dbg service list; KUBE- в nat на worker — 1; bpftool net show — tcx cil_from_netdev/cil_to_netdev на eth0, cil_from_container на lxc*",
+    "revision_after_review": {
+      "written": "2026-10-09",
+      "change": "рецензия: cilium-dbg service list — состояние агента, а не содержимое eBPF-карт. Добавлено прямое чтение карты балансировщика (cilium-dbg bpf lb list) с пода Cilium на worker — том же узле, где считаются iptables и программы; пары «ClusterIP — адрес пода» сверяются с EndpointSlice",
+      "hypothesis_before_run": "в карте на worker 20 сервисов и 60 бэкендов, пары совпадают с EndpointSlice"
+    },
+    "revision_after_review_2": {
+      "written": "2026-10-09",
+      "change": "рецензия: балансировка Cilium — не только программы на интерфейсах, но и socket LB (cgroup-хуки connect/sendmsg/recvmsg/getpeername). Добавлен счёт подключений программ cil_sock* к cgroup (bpftool link show — список ядра; узлы kind делят ядро VM, видны оба узла)",
+      "hypothesis_before_run": "Cilium: по 11 подключений cil_sock* на cgroup каждого из двух узлов — inet4/6 connect, getpeername, post_bind, udp4/6 sendmsg/recvmsg, sock_release; kube-proxy — ни одного",
+      "note": "проба 09.10: 22 подключения на двух cgroup; cilium-dbg status — Socket LB: Enabled, Coverage: Full"
+    }
+  },
+  "decision_tetragon": {
+    "written": "2026-10-09",
+    "decision": "ось Tetragon в стенд не вошла по решению автора: Tetragon 1.7.1 поставлен в кластер и отдаёт события process_exec (проба 09.10: запуск cat в поде виден с pod/namespace), но сценарии защиты не замеряются; в статье Tetragon — наблюдение событий процессов без замеров политик"
+  }
+}

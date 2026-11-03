@@ -24,7 +24,8 @@
       "architecture/es-aggregate-event-design.md",
       "architecture/es-event-store-internals.md",
       "architecture/es-event-versioning-upcasting.md",
-      "architecture/es-projections-deep.md"
+      "architecture/es-projections-deep.md",
+      "architecture/es-testing-and-tooling.md"
     ],
     "architecture/grpc": [
       "architecture/grpc-deep-dive.md"
@@ -76,6 +77,9 @@
     ],
     "data-engineering/iceberg": [
       "databases/open-table-formats-iceberg-delta.md"
+    ],
+    "data-engineering/observability": [
+      "databases/data-observability-lineage.md"
     ],
     "data-engineering/pipelines": [
       "databases/data-batch-pipelines-orchestration.md"
@@ -200,6 +204,12 @@
     ],
     "ebpf/fundamentals": [
       "infrastructure/ebpf-fundamentals.md"
+    ],
+    "ebpf/network-security": [
+      "infrastructure/ebpf-network-security.md"
+    ],
+    "ebpf/observability": [
+      "infrastructure/ebpf-observability.md"
     ],
     "go/asm": [
       "go/go-asm-avo-and-honest-benchmark.md",
@@ -396,6 +406,9 @@
       "performance/inmemory-etcd-coordination-not-speed.md",
       "performance/inmemory-redis-cache-structures.md",
       "performance/inmemory-tarantool-picodata-compute-near-data.md"
+    ],
+    "performance/load-testing": [
+      "performance/load-testing-chaos.md"
     ],
     "performance/memory-management": [
       "performance/memory-management-across-languages.md"

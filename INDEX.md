@@ -53,8 +53,9 @@
 |---|---|---|
 | [`data-engineering/pipelines`](data-engineering/pipelines) | Батч-пайплайн Airflow 3 + dbt + PostgreSQL против эталона генератора: ETL против ELT при смене правила, идемпотентность загрузки и падение посреди неё, интервал данных и ручной запуск в Airflow 3, backfill и depends_on_past, поздние данные и окно пересмотра, повторы задач | [статья](https://khorost.tech/databases/data-batch-pipelines-orchestration/) |
 | [`data-engineering/dimensional`](data-engineering/dimensional) | Звёздная схема на dbt + PostgreSQL против эталона генератора: SCD1/2/3 на переездах клиентов (dbt snapshot), гранулярность факта и двойной счёт, полуаддитивные и неаддитивные меры, поздний клиент и переиспользованный id | [статья](https://khorost.tech/databases/dimensional-modeling-warehouse/) |
-| [`data-engineering/iceberg`](data-engineering/iceberg) | «Паркет в папке» против Iceberg на одном S3 (SeaweedFS, REST-каталог, Spark и PyIceberg): два писателя, читатель во время записи, удаление строки copy-on-write и merge-on-read, time travel, переименование и повторное добавление колонки, эволюция и скрытое партиционирование, мелкие файлы и обслуживание | 🔜 скоро |
+| [`data-engineering/iceberg`](data-engineering/iceberg) | «Паркет в папке» против Iceberg на одном S3 (SeaweedFS, REST-каталог, Spark и PyIceberg): два писателя, читатель во время записи, удаление строки copy-on-write и merge-on-read, time travel, переименование и повторное добавление колонки, эволюция и скрытое партиционирование, мелкие файлы и обслуживание | [статья](https://khorost.tech/databases/open-table-formats-iceberg-delta/) |
 | [`data-engineering/quality`](data-engineering/quality) | Качество данных на dbt + Great Expectations + PostgreSQL против эталона генератора: восемь видов дефектов партии и что каждый набор проверок ловит, fail / warn / карантин — сколько плохих и хороших строк доходит до витрины, контракт модели dbt против смены типа, удаления колонки и смены единиц | 🔜 скоро |
+| [`data-engineering/observability`](data-engineering/observability) | Наблюдаемость данных на dbt + OpenLineage (dbt-ol) + Marquez + PostgreSQL против эталона генератора: затронутое ниже по потоку на уровне таблиц и колонок, восемь детекторов (объём, свежесть, схема, распределение; постоянные пороги и пороги по истории) на 14 днях с четырьмя подсаженными инцидентами — пойманные, пропущенные и ложные тревоги; затянувшийся сбой, который детектор по истории выучивает как норму | 🔜 скоро |
 
 ## Messaging
 
@@ -75,7 +76,7 @@
 | [`go/context`](go/context) | Контекст в Go: отмена, дедлайны, WithCancelCause, request-scoped values | [статья](https://khorost.tech/go/go-context/) |
 | [`go/fundamentals`](go/fundamentals) | Основы Go вглубь: ошибки, интерфейсы, слайсы/карты, методы/ресиверы | [статья](https://khorost.tech/go/go-interfaces/) |
 | [`go/generics`](go/generics) | Дженерики Go на бенчмарках: generic vs interface{} vs рукопись, dispatch, размер бинаря | [статья](https://khorost.tech/go/go-generics/) |
-| [`go/golangci-lint`](go/golangci-lint) | golangci-lint v2 счётом находок по размеченным дефектам: набор по умолчанию, курируемый конфиг, обрезка вывода, исключения, //nolint, new-from-rev, своё правило как module plugin; тренажёр L1–L4 | 🔜 скоро |
+| [`go/golangci-lint`](go/golangci-lint) | golangci-lint v2 счётом находок по размеченным дефектам: набор по умолчанию, курируемый конфиг, обрезка вывода, исключения, //nolint, new-from-rev, своё правило как module plugin; тренажёр L1–L4 | [статья](https://khorost.tech/go/go-golangci-lint/) |
 | [`go/goroutine-leak-profile`](go/goroutine-leak-profile) | Пять классов утечек горутин и инструменты диагностики: pprof/goroutine, профиль goroutineleak из Go 1.27 и goleak; трейсбеки с pprof-метками | [статья](https://khorost.tech/go/go-goroutine-leak-profile/) |
 | [`go/iterators`](go/iterators) | Итераторы Go 1.23: iter.Seq/Seq2, iter.Pull, cleanup при break, бенчи | [статья](https://khorost.tech/go/go-iterators/) |
 | [`go/json-v2`](go/json-v2) | Три конфигурации JSON-движка Go 1.27 на одном payload: прежний движок (nojsonv2), encoding/json поверх v2 без правок кода и явный encoding/json/v2; строгость и стриминг через jsontext | [статья](https://khorost.tech/go/go-json-v2/) |
@@ -103,6 +104,7 @@
 | [`performance/memory-management`](performance/memory-management) | Управление памятью поперёк языков: куча и стек, сборка мусора против ручного управления — на одной задаче | [статья](https://khorost.tech/performance/memory-management-across-languages/) |
 | [`performance/probabilistic`](performance/probabilistic) | Вероятностные структуры: Bloom и родственники | [статья](https://khorost.tech/performance/bloom-filters-probabilistic-structures/) |
 | [`performance/testcontainers-template-db`](performance/testcontainers-template-db) | Шаблонная база вместо контейнера на каждый тест: CREATE DATABASE ... TEMPLATE, замеры ×10 и ×36, границы приёма (права, FORCE, размер шаблона) | [статья](https://khorost.tech/performance/testcontainers-template-db/) |
+| [`performance/load-testing`](performance/load-testing) | Нагрузочное тестирование и хаос: k6, Gatling, Locust, wrk, wrk2, vegeta, oha, hey против сервиса-эталона — открытая и закрытая модель, coordinated omission, виды тестов, потолок генераторов, Toxiproxy | 🔜 скоро |
 
 ## Infrastructure
 
@@ -118,6 +120,8 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`ebpf/fundamentals`](ebpf/fundamentals) | Основы eBPF на cilium/ebpf (Go) и bpftrace против счёта нагрузки: tracepoint, kprobe, fentry, uprobe и uretprobe (ловушки Go — двойной uprobe и падение uretprobe при росте стека), карты под конкуренцией (гонка в hash, per-CPU, потери ring buffer), вердикты verifier на 12 программах, CO-RE на переименованном поле task_struct | 🔜 скоро |
+| [`ebpf/observability`](ebpf/observability) | Наблюдаемость через eBPF против эталона генератора: Beyla против OTEL SDK на Go-сервисе (маршруты, статусы, gRPC, SQL, имена маршрутов без шаблона, связь спанов, прогрев после прицепления), eBPF-профилировщик Alloy → Pyroscope против заданной доли CPU (Go 1.26 и 1.27, с символами и без, потеря вызывающего у листовой функции на arm64), цена — счётчики ядра программ Beyla | 🔜 скоро |
+| [`ebpf/network-security`](ebpf/network-security) | eBPF на сетевом пути против счёта пакетов и сервисов: блокировка адресов через XDP (native и generic), tc ingress и iptables на cilium/ebpf (Go) — дошедшие пакеты, счётчики программы, что видит tcpdump, обновление карты на лету; Cilium в kind с заменой kube-proxy против kube-proxy — карта балансировщика, правила iptables, eBPF-программы на интерфейсах | 🔜 скоро |
 
 ## Rust
 
@@ -157,7 +161,7 @@
 | [`kubernetes/architecture`](kubernetes/architecture) | Архитектура Kubernetes на живом кластере: из чего состоит control plane, кто ведущий, что происходит между kubectl apply и запущенным контейнером | [статья](https://khorost.tech/kubernetes/k8s-architecture-control-plane/) |
 | [`kubernetes/autoscaling`](kubernetes/autoscaling) | Автоскейлинг: HPA, VPA и KEDA на управляемой бизнес-метрике — от источника метрики до решения о масштабировании | [статья](https://khorost.tech/kubernetes/k8s-autoscaling-hpa-vpa-keda/) |
 | [`kubernetes/gitops`](kubernetes/gitops) | GitOps с ArgoCD: sync, self-heal и progressive delivery — со своим ArgoCD и своим git-сервером как источником правды | [статья](https://khorost.tech/kubernetes/k8s-gitops-argocd-progressive/) |
-| [`kubernetes/hardening`](kubernetes/hardening) | Hardening подов на контрасте уровней: securityContext, Linux capabilities, Pod Security Standards, seccomp, user namespaces | 🔜 скоро |
+| [`kubernetes/hardening`](kubernetes/hardening) | Hardening подов на контрасте уровней: securityContext, Linux capabilities, Pod Security Standards, seccomp, user namespaces | [статья](https://khorost.tech/kubernetes/k8s-pod-security-hardening/) |
 | [`kubernetes/networking`](kubernetes/networking) | Сеть в Kubernetes: датаплейн Cilium без kube-proxy, сетевые политики L3/L4 и L7, наблюдаемость через Hubble | [статья](https://khorost.tech/kubernetes/k8s-networking-cilium-mesh/) |
 | [`kubernetes/operators`](kubernetes/operators) | Операторы и CRD на живом production-операторе cert-manager: цепочка Certificate → CertificateRequest → Secret и поддержание желаемого состояния | [статья](https://khorost.tech/kubernetes/k8s-operators-crd/) |
 | [`kubernetes/resources`](kubernetes/resources) | Ресурсы и QoS: requests/limits, throttling и OOMKill, ограждения namespace (ResourceQuota, LimitRange), рекомендации VPA | [статья](https://khorost.tech/kubernetes/k8s-resources-requests-limits-qos/) |

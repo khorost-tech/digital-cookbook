@@ -1,0 +1,9 @@
+{
+ "golang": {"ref": "golang:1.27", "digest": "sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2"},
+ "k6": {"ref": "grafana/k6:2.3.0", "digest": "sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34"},
+ "locust": {"ref": "locustio/locust:2.46.7", "digest": "sha256:8492fcaa6a07314551590f579219204e459d9fdc9dde060843bd2896e7a7259f"},
+ "maven": {"ref": "maven:3.9-eclipse-temurin-25", "digest": "sha256:93b8a14ea2f412782e4e842651273b4d903e35cc496284f178fbbe2d67d00976"},
+ "toxiproxy": {"ref": "ghcr.io/shopify/toxiproxy:2.12.0", "digest": "sha256:9378ed52a28bc50edc1350f936f518f31fa95f0d15917d6eb40b8e376d1a214e"},
+ "haproxy": {"ref": "haproxy:3.2.25", "digest": "sha256:89c31eabc1ce443a13a42725a04df034b992c9d60580f4e6ef8b7bf5b15deddf"},
+ "rust": {"ref": "rust:1.99.0-trixie", "digest": "sha256:6ff07edce8775d0f64be7aba9197229407301bddf2054d62c27b541a6238a181"}
+}

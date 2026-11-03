@@ -1,0 +1,237 @@
+{
+ "session": "20261008T120002Z",
+ "published": {
+  "lineage": {
+   "tables": {
+    "datasets": [
+     "marts.customer_ltv",
+     "marts.daily_revenue",
+     "marts.region_revenue",
+     "marts.status_counts",
+     "staging.int_orders_enriched",
+     "staging.stg_orders"
+    ],
+    "manifest": [
+     "marts.customer_ltv",
+     "marts.daily_revenue",
+     "marts.region_revenue",
+     "marts.status_counts",
+     "staging.int_orders_enriched",
+     "staging.stg_orders"
+    ],
+    "outcome": "match"
+   },
+   "columns": {
+    "fields": [
+     "marts.customer_ltv.ltv",
+     "marts.daily_revenue.revenue",
+     "marts.region_revenue.revenue",
+     "staging.int_orders_enriched.amount",
+     "staging.stg_orders.amount"
+    ],
+    "datasets": [
+     "marts.customer_ltv",
+     "marts.daily_revenue",
+     "marts.region_revenue",
+     "staging.int_orders_enriched",
+     "staging.stg_orders"
+    ],
+    "outcome": "match",
+    "uses": [
+     "marts.customer_ltv",
+     "marts.daily_revenue",
+     "marts.region_revenue",
+     "marts.status_counts",
+     "staging.int_orders_enriched",
+     "staging.stg_orders"
+    ]
+   },
+   "columns-status": {
+    "fields": [
+     "marts.status_counts.status",
+     "staging.int_orders_enriched.status",
+     "staging.stg_orders.status"
+    ],
+    "datasets": [
+     "marts.status_counts",
+     "staging.int_orders_enriched",
+     "staging.stg_orders"
+    ],
+    "uses": [
+     "marts.customer_ltv",
+     "marts.daily_revenue",
+     "marts.region_revenue",
+     "marts.status_counts",
+     "staging.int_orders_enriched",
+     "staging.stg_orders"
+    ],
+    "missed": [
+     "marts.customer_ltv",
+     "marts.daily_revenue",
+     "marts.region_revenue"
+    ],
+    "outcome": "mismatch"
+   },
+   "column-api": {
+    "http_status": 500,
+    "outcome": "mismatch"
+   }
+  },
+  "monitors": {
+   "volume-static": {
+    "truth": [
+     "2026-09-02",
+     "2026-09-08"
+    ],
+    "alerts": [
+     "2026-09-02",
+     "2026-09-05",
+     "2026-09-06",
+     "2026-09-08",
+     "2026-09-12",
+     "2026-09-13"
+    ],
+    "tp": 2,
+    "fp": 4,
+    "fn": 0,
+    "fp_days": [
+     "2026-09-05",
+     "2026-09-06",
+     "2026-09-12",
+     "2026-09-13"
+    ],
+    "fn_days": [],
+    "outcome": "mismatch"
+   },
+   "volume-static-best": {
+    "truth": [
+     "2026-09-02",
+     "2026-09-08"
+    ],
+    "alerts": [
+     "2026-09-02",
+     "2026-09-06",
+     "2026-09-08"
+    ],
+    "threshold": 185,
+    "rows_truth": [
+     184,
+     0
+    ],
+    "rows_fp": [
+     167
+    ],
+    "rows_by_day": {
+     "2026-09-01": 286,
+     "2026-09-02": 184,
+     "2026-09-03": 318,
+     "2026-09-04": 306,
+     "2026-09-05": 188,
+     "2026-09-06": 167,
+     "2026-09-07": 301,
+     "2026-09-08": 0,
+     "2026-09-09": 296,
+     "2026-09-10": 318,
+     "2026-09-11": 312,
+     "2026-09-12": 196,
+     "2026-09-13": 192,
+     "2026-09-14": 297
+    },
+    "tp": 2,
+    "fp": 1,
+    "fn": 0,
+    "fp_days": [
+     "2026-09-06"
+    ],
+    "fn_days": [],
+    "outcome": "mismatch"
+   },
+   "volume-history": {
+    "truth": [
+     "2026-09-02",
+     "2026-09-08"
+    ],
+    "alerts": [
+     "2026-09-02",
+     "2026-09-08"
+    ],
+    "tp": 2,
+    "fp": 0,
+    "fn": 0,
+    "fp_days": [],
+    "fn_days": [],
+    "outcome": "match"
+   },
+   "freshness-static": {
+    "truth": [
+     "2026-09-08"
+    ],
+    "alerts": [
+     "2026-09-08"
+    ],
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "fp_days": [],
+    "fn_days": [],
+    "outcome": "match"
+   },
+   "freshness-history": {
+    "truth": [
+     "2026-09-08"
+    ],
+    "alerts": [
+     "2026-09-08"
+    ],
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "fp_days": [],
+    "fn_days": [],
+    "outcome": "match"
+   },
+   "schema-diff": {
+    "truth": [
+     "2026-09-10"
+    ],
+    "alerts": [
+     "2026-09-10"
+    ],
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "fp_days": [],
+    "fn_days": [],
+    "outcome": "match"
+   },
+   "distribution-static": {
+    "truth": [
+     "2026-09-12"
+    ],
+    "alerts": [],
+    "tp": 0,
+    "fp": 0,
+    "fn": 1,
+    "fp_days": [],
+    "fn_days": [
+     "2026-09-12"
+    ],
+    "outcome": "mismatch"
+   },
+   "distribution-history": {
+    "truth": [
+     "2026-09-12"
+    ],
+    "alerts": [
+     "2026-09-12"
+    ],
+    "tp": 1,
+    "fp": 0,
+    "fn": 0,
+    "fp_days": [],
+    "fn_days": [],
+    "outcome": "match"
+   }
+  }
+ }
+}

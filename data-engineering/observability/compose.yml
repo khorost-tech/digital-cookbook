@@ -1,0 +1,44 @@
+# Стенд data-engineering/observability: PostgreSQL (хранилище dwh и база Marquez),
+# Marquez (сервер OpenLineage) и tools с генератором, мониторами, dbt и dbt-ol.
+name: de-observability
+services:
+  postgres:
+    image: postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+    environment:
+      POSTGRES_PASSWORD: stand
+    volumes:
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 30
+  marquez:
+    # образ собран только под amd64; на arm64 идёт через эмуляцию
+    image: marquezproject/marquez:0.51.1@sha256:0721c976cff17d8b14f7949d85d6dac9c7ea37cb9fe857caa19833730fcb1a50
+    platform: linux/amd64
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      POSTGRES_HOST: postgres
+      SEARCH_ENABLED: "false"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:5001/healthcheck >/dev/null"]
+      interval: 5s
+      retries: 60
+  tools:
+    build: ./tools
+    image: de-observability-tools
+    depends_on:
+      marquez:
+        condition: service_healthy
+    environment:
+      STAND_DWH_DSN: postgresql://postgres:stand@postgres/dwh
+      OPENLINEAGE_URL: http://marquez:5000
+      OPENLINEAGE_NAMESPACE: stand
+      MARQUEZ_URL: http://marquez:5000
+    volumes:
+      - .:/opt/stand
+volumes:
+  pgdata:

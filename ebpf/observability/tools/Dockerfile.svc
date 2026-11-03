@@ -1,0 +1,20 @@
+# Сервис стенда: /svc-plain без инструментирования, /svc-sdk с OTEL SDK (тег otel);
+# /burn-go12x[-stripped] — сжигатель для оси профилей, Go 1.27 и 1.26, с символами и без (-s -w).
+FROM golang:1.27@sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2 AS build
+WORKDIR /src
+COPY go.mod go.sum ./
+RUN go mod download
+COPY svc ./svc
+COPY cmd/burn ./cmd/burn
+RUN CGO_ENABLED=0 go build -o /svc-plain ./svc && CGO_ENABLED=0 go build -tags otel -o /svc-sdk ./svc \
+ && CGO_ENABLED=0 go build -o /burn-go127 ./cmd/burn && CGO_ENABLED=0 go build -ldflags="-s -w" -o /burn-go127-stripped ./cmd/burn
+# тот же сжигатель тулчейном Go 1.26 — профилировщик Alloy 1.20 поддерживает Go до 1.26
+FROM golang:1.26@sha256:52d57e3542f28ad72e9a1084e209366d8ca6af04997636134c138d16702a70a6 AS build126
+WORKDIR /src
+COPY go.mod go.sum ./
+COPY cmd/burn ./cmd/burn
+ENV GOTOOLCHAIN=local
+RUN CGO_ENABLED=0 go build -o /burn-go126 ./cmd/burn && CGO_ENABLED=0 go build -ldflags="-s -w" -o /burn-go126-stripped ./cmd/burn
+FROM debian:trixie-slim
+COPY --from=build /svc-plain /svc-sdk /burn-go127 /burn-go127-stripped /
+COPY --from=build126 /burn-go126 /burn-go126-stripped /

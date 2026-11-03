@@ -1,0 +1,8 @@
+{
+ "golang": {"ref": "golang:1.27", "digest": "sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2"},
+ "postgres": {"ref": "postgres:18.6", "digest": "sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336"},
+ "beyla": {"ref": "grafana/beyla:3.38.0", "digest": "sha256:356aec0e9e35a180fe0f7adb3704f1987bd0fab6927d70195eb828d96a27938b"},
+ "alloy": {"ref": "grafana/alloy:v1.20.1", "digest": "sha256:2aa2099af76c0098d4af7a4d6e48f86cb66dc1a000222ad927a1c67c6542d13f"},
+ "pyroscope": {"ref": "grafana/pyroscope:2.3.2", "digest": "sha256:78c3b509f2ad98a6974b38c6f2135d5daf9597809532560e9ca29f9b43aa339e"},
+ "otelcol": {"ref": "otel/opentelemetry-collector-contrib:0.162.0", "digest": "sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6"}
+}

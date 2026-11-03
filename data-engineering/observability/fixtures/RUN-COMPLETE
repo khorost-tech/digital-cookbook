@@ -1,0 +1,8 @@
+{
+ "fixtures": {
+  "lineage.jsonl": "22e52252dfaf6fc31e7d37102fed520be0d3b231b13ef963651aaf86972f31e3",
+  "monitors.jsonl": "51657cf5801b14f5ea29412d1b68445f3683e382b4ec9c847785bc8c4987f0b2"
+ },
+ "tests": 16,
+ "sabotages": 12
+}

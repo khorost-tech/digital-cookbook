@@ -1,0 +1,12 @@
+# Целевой сервис (svc) и его зависимость (dep, тот же бинарь с ROLE=dep).
+FROM golang:1.27@sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2 AS build
+WORKDIR /src
+COPY go.mod ./
+COPY svc ./svc
+RUN CGO_ENABLED=0 go vet ./svc && CGO_ENABLED=0 go build -o /svc ./svc
+FROM debian:trixie-slim
+RUN for i in 1 2 3; do apt-get update -qq && apt-get install -y -qq --no-install-recommends curl && break; sleep 5; done \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=build /svc /svc
+HEALTHCHECK --interval=2s --retries=30 CMD curl -fs http://localhost:8080/healthz || exit 1
+CMD ["/svc"]

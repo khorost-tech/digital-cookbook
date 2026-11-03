@@ -1,0 +1,16 @@
+# Коллектор стенда: принимает OTLP от Beyla и от сервиса с OTEL SDK и пишет всё
+# в файлы — счёт ведёт раннер по выгрузке, без бэкенда трейсов.
+receivers:
+  otlp:
+    protocols:
+      grpc: {endpoint: 0.0.0.0:4317}
+      http: {endpoint: 0.0.0.0:4318}
+processors:
+  batch: {timeout: 1s}
+exporters:
+  file/traces: {path: /out/traces.jsonl}
+  file/metrics: {path: /out/metrics.jsonl}
+service:
+  pipelines:
+    traces: {receivers: [otlp], processors: [batch], exporters: [file/traces]}
+    metrics: {receivers: [otlp], processors: [batch], exporters: [file/metrics]}

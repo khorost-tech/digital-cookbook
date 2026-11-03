@@ -1,0 +1,3 @@
+{"kind": "cost", "variant": "idle", "probe": "20 s without load", "cmd": "python3 scripts/run-cost.py idle", "programs~": 164, "idle_run_cnt~": 0, "background_below_1pct": true, "outcome": "match", "detail": "программ Beyla 164; за 20 с без нагрузки срабатываний 0 — меньше 1% срабатываний под нагрузкой"}
+{"kind": "cost", "variant": "load", "probe": "generator plan, 1100 requests", "cmd": "python3 scripts/run-cost.py load", "requests": 1100, "programs~": 164, "fired_under_load~": 30, "run_cnt_per_request~": 18.7, "run_time_us_per_request~": 9.8, "outcome": "match", "detail": "обращений (HTTP и gRPC) 1100: программ сработало 30 из 164, срабатываний на обращение 19, время в программах 9.8 мкс на обращение"}
+COMPLETE

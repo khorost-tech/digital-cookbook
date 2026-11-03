@@ -1,0 +1,96 @@
+# Стенд ebpf/observability: сервис в двух сборках (svc-plain — без
+# инструментирования, его видит Beyla; svc-sdk — с OTEL SDK), PostgreSQL,
+# Beyla, OTEL Collector с выгрузкой в файлы, Pyroscope и Alloy (eBPF-профилировщик).
+# beyla и alloy: privileged и pid: host — eBPF-программы и доступ к процессам других контейнеров.
+name: ebpf-observability
+x-svc: &svc
+  build: {context: ., dockerfile: tools/Dockerfile.svc}
+  depends_on: {postgres: {condition: service_healthy}}
+  environment: &svcenv
+    STAND_DSN: postgres://postgres:stand@postgres/stand?sslmode=disable
+services:
+  postgres:
+    image: postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+    environment: {POSTGRES_PASSWORD: stand, POSTGRES_DB: stand}
+    healthcheck: {test: ["CMD", "pg_isready", "-U", "postgres"], interval: 2s, retries: 30}
+  svc-plain:
+    <<: *svc
+    image: ebpf-observability-svc
+    command: ["/svc-plain"]
+  svc-sdk:
+    <<: *svc
+    image: ebpf-observability-svc
+    command: ["/svc-sdk"]
+    environment:
+      <<: *svcenv
+      OTEL_SERVICE_NAME: svc-sdk
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otelcol:4317
+  otelcol:
+    image: otel/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6
+    command: ["--config=/etc/otelcol.yaml"]
+    user: "0"
+    volumes:
+      - ./config/otelcol.yaml:/etc/otelcol.yaml:ro
+      - ./out:/out
+  beyla:
+    image: grafana/beyla:3.38.0@sha256:356aec0e9e35a180fe0f7adb3704f1987bd0fab6927d70195eb828d96a27938b
+    privileged: true
+    pid: host
+    environment:
+      BEYLA_AUTO_TARGET_EXE: "*/svc-plain"
+      OTEL_SERVICE_NAME: svc-beyla
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otelcol:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      BEYLA_TRACE_PRINTER: disabled
+    depends_on: [otelcol, svc-plain]
+  # Ось профилей — профиль compose «profiling»: эти контейнеры жгут CPU, поднимаются только на время оси.
+  burn-go126:
+    image: ebpf-observability-svc
+    command: ["/burn-go126", "self"]
+    labels: {stand.profile: "burn-go126"}
+    profiles: [profiling]
+  burn-go126-shared:
+    image: ebpf-observability-svc
+    # тот же процесс профилируют двое: Alloy (eBPF) снаружи и runtime/pprof изнутри
+    command: ["/burn-go126", "pprof-shared", "130"]
+    labels: {stand.profile: "burn-go126-shared"}
+    profiles: [profiling]
+  burn-go126-stripped:
+    image: ebpf-observability-svc
+    command: ["/burn-go126-stripped", "self"]
+    labels: {stand.profile: "burn-go126-stripped"}
+    profiles: [profiling]
+  burn-go127:
+    image: ebpf-observability-svc
+    command: ["/burn-go127", "self"]
+    labels: {stand.profile: "burn-go127"}
+    profiles: [profiling]
+  burn-go127-stripped:
+    image: ebpf-observability-svc
+    command: ["/burn-go127-stripped", "self"]
+    labels: {stand.profile: "burn-go127-stripped"}
+    profiles: [profiling]
+  pyroscope:
+    image: grafana/pyroscope:2.3.2@sha256:78c3b509f2ad98a6974b38c6f2135d5daf9597809532560e9ca29f9b43aa339e
+    profiles: [profiling]
+  alloy:
+    image: grafana/alloy:v1.20.1@sha256:2aa2099af76c0098d4af7a4d6e48f86cb66dc1a000222ad927a1c67c6542d13f
+    privileged: true
+    pid: host
+    command: ["run", "/etc/alloy/config.alloy"]
+    volumes:
+      - ./config/config.alloy:/etc/alloy/config.alloy:ro
+    depends_on: [pyroscope]
+    profiles: [profiling]
+  tools:
+    build: ./tools
+    image: ebpf-observability-tools
+    # privileged и pid: host — bpftool читает счётчики программ (kernel.bpf_stats_enabled) и их владельцев
+    privileged: true
+    pid: host
+    volumes:
+      - .:/opt/stand
+      - gocache:/cache
+    depends_on: [svc-plain, svc-sdk]
+volumes:
+  gocache:

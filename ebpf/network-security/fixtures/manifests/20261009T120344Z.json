@@ -1,0 +1,203 @@
+{
+ "session": "20261009T120344Z",
+ "published": {
+  "filter": {
+   "none": {
+    "mode": "none",
+    "sent": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 10000,
+     "10.99.0.3": 10000,
+     "10.99.0.4": 10000
+    },
+    "received": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 10000,
+     "10.99.0.3": 10000,
+     "10.99.0.4": 10000
+    },
+    "tcpdump_blocked": 20000,
+    "prog_dropped": 0,
+    "prog_passed": 0,
+    "iptables_dropped": null,
+    "socket_drops": 0,
+    "outcome": "match",
+    "dropped_total": 0
+   },
+   "xdp-native": {
+    "mode": "xdp-native",
+    "sent": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 10000,
+     "10.99.0.3": 10000,
+     "10.99.0.4": 10000
+    },
+    "received": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 0,
+     "10.99.0.3": 0,
+     "10.99.0.4": 10000
+    },
+    "tcpdump_blocked": 0,
+    "prog_dropped": 20000,
+    "prog_passed": 20000,
+    "iptables_dropped": null,
+    "socket_drops": 0,
+    "outcome": "match",
+    "dropped_total": 20000
+   },
+   "xdp-generic": {
+    "mode": "xdp-generic",
+    "sent": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 10000,
+     "10.99.0.3": 10000,
+     "10.99.0.4": 10000
+    },
+    "received": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 0,
+     "10.99.0.3": 0,
+     "10.99.0.4": 10000
+    },
+    "tcpdump_blocked": 0,
+    "prog_dropped": 20000,
+    "prog_passed": 20000,
+    "iptables_dropped": null,
+    "socket_drops": 0,
+    "outcome": "match",
+    "dropped_total": 20000
+   },
+   "tc": {
+    "mode": "tc",
+    "sent": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 10000,
+     "10.99.0.3": 10000,
+     "10.99.0.4": 10000
+    },
+    "received": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 0,
+     "10.99.0.3": 0,
+     "10.99.0.4": 10000
+    },
+    "tcpdump_blocked": 20000,
+    "prog_dropped": 20000,
+    "prog_passed": 20000,
+    "iptables_dropped": null,
+    "socket_drops": 0,
+    "outcome": "match",
+    "dropped_total": 20000
+   },
+   "iptables": {
+    "mode": "iptables",
+    "sent": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 10000,
+     "10.99.0.3": 10000,
+     "10.99.0.4": 10000
+    },
+    "received": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 0,
+     "10.99.0.3": 0,
+     "10.99.0.4": 10000
+    },
+    "tcpdump_blocked": 20000,
+    "prog_dropped": 0,
+    "prog_passed": 0,
+    "iptables_dropped": 20000,
+    "socket_drops": 0,
+    "outcome": "match",
+    "dropped_total": 20000
+   },
+   "xdp-update": {
+    "mode": "xdp-update",
+    "sent": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 10000,
+     "10.99.0.3": 10000,
+     "10.99.0.4": 10000
+    },
+    "received": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 0,
+     "10.99.0.3": 0,
+     "10.99.0.4": 10000
+    },
+    "tcpdump_blocked": 0,
+    "prog_dropped": 20000,
+    "prog_passed": 60000,
+    "iptables_dropped": null,
+    "socket_drops": 0,
+    "before_update_received": {
+     "10.99.0.1": 10000,
+     "10.99.0.2": 10000,
+     "10.99.0.3": 10000,
+     "10.99.0.4": 10000
+    },
+    "outcome": "match",
+    "dropped_total": 20000
+   }
+  },
+  "cilium": {
+   "kubeproxy": {
+    "services": 20,
+    "endpoints": 60,
+    "endpointslice_backends": 60,
+    "kube_rules": 254,
+    "svc_chains_lb": 20,
+    "sep_chains_lb": 60,
+    "socket_lb_links": 0,
+    "socket_lb_cgroups": 0,
+    "socket_lb_attach_types": [],
+    "ebpf_programs~": 0,
+    "has_ebpf_programs": false,
+    "program_names": [],
+    "outcome": "match"
+   },
+   "cilium": {
+    "services": 20,
+    "endpoints": 60,
+    "endpointslice_backends": 60,
+    "kube_rules": 0,
+    "svc_chains_lb": 0,
+    "sep_chains_lb": 0,
+    "socket_lb_links": 22,
+    "socket_lb_cgroups": 2,
+    "socket_lb_attach_types": [
+     "cgroup_inet4_connect",
+     "cgroup_inet4_getpeername",
+     "cgroup_inet4_post_bind",
+     "cgroup_inet6_connect",
+     "cgroup_inet6_getpeername",
+     "cgroup_inet6_post_bind",
+     "cgroup_inet_sock_release",
+     "cgroup_udp4_recvmsg",
+     "cgroup_udp4_sendmsg",
+     "cgroup_udp6_recvmsg",
+     "cgroup_udp6_sendmsg"
+    ],
+    "ebpf_programs~": 71,
+    "has_ebpf_programs": true,
+    "program_names": [
+     "cil_from_container",
+     "cil_from_host",
+     "cil_from_netdev",
+     "cil_from_overlay",
+     "cil_to_host",
+     "cil_to_netdev",
+     "cil_to_overlay"
+    ],
+    "lb_services": 20,
+    "lb_backends": 60,
+    "map_services": 20,
+    "map_backends": 60,
+    "map_matches_endpointslices": true,
+    "from_container_programs~": 64,
+    "outcome": "match"
+   }
+  }
+ }
+}

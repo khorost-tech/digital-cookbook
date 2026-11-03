@@ -1,0 +1,10 @@
+{
+ "fixtures": {
+  "model.jsonl": "d2eb55a5c92f2b3b17b4f4a3b9c0699df5afc7babba4e8ccf3ab8f1186d75a3f",
+  "types.jsonl": "a1d90f5140c2e915b4b932aec6dbe7a9b656735c94e6e41a0f99338b18d7d102",
+  "ceiling.jsonl": "9875c8deeecaf754587e51070cc01160a4d9e7a200d8b15adb82aaa558c0eb04",
+  "chaos.jsonl": "17e5dddff982f0051e97c44e6cbbc400dc58638d8b5ebfad0b41b650722a1964"
+ },
+ "tests": 31,
+ "sabotages": 20
+}

@@ -1,0 +1,5 @@
+{
+ "postgres": {"ref": "postgres:18.6", "digest": "sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336"},
+ "python": {"ref": "python:3.12-slim", "digest": "sha256:05cda9777409a9c3ffddd94a4c476b79f0769a0b4857f0c7ed9226b6800b0d6f"},
+ "marquez": {"ref": "marquezproject/marquez:0.51.1", "digest": "sha256:0721c976cff17d8b14f7949d85d6dac9c7ea37cb9fe857caa19833730fcb1a50"}
+}

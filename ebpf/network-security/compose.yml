@@ -1,0 +1,16 @@
+# Стенд ebpf/network-security: контейнер tools — сборка XDP/tc-программ, kind-кластер с Cilium
+# (через сокет Docker), сценарии. privileged и pid: host — загрузка eBPF-программ и сетевые
+# пространства процессов; сеть kind — tools достаёт до API-сервера кластера по внутреннему адресу.
+name: ebpf-netsec
+services:
+  tools:
+    build: ./tools
+    image: ebpf-netsec-tools
+    privileged: true
+    pid: host
+    volumes:
+      - .:/opt/stand
+      - gocache:/cache
+      - /var/run/docker.sock:/var/run/docker.sock
+volumes:
+  gocache:

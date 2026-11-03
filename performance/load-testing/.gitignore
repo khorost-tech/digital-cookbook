@@ -1,0 +1,3 @@
+out/
+gatling/target/
+scripts/__pycache__/

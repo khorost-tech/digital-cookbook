@@ -1,0 +1,18 @@
+version: 2
+# Колонки описаны явно: без них dbt-ol не передаёт схему набора, и Marquez
+# не строит lineage колонок (поля набора пусты — запрос отвечает 404).
+models:
+  - name: stg_orders
+    columns: [{name: order_id}, {name: customer_id}, {name: status}, {name: amount}, {name: created_at}]
+  - name: stg_customers
+    columns: [{name: customer_id}, {name: region}]
+  - name: int_orders_enriched
+    columns: [{name: order_id}, {name: customer_id}, {name: status}, {name: amount}, {name: created_at}, {name: region}]
+  - name: daily_revenue
+    columns: [{name: order_day}, {name: revenue}]
+  - name: region_revenue
+    columns: [{name: region}, {name: revenue}]
+  - name: customer_ltv
+    columns: [{name: customer_id}, {name: ltv}]
+  - name: status_counts
+    columns: [{name: status}, {name: orders}]

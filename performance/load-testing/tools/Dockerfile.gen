@@ -1,0 +1,32 @@
+# Генераторы без своего образа: wrk, wrk2 (из исходников, коммиты закреплены),
+# vegeta и hey (go install), oha (cargo install). Плюс python3 — разбор отчётов.
+FROM debian:trixie AS wrk
+RUN for i in 1 2 3; do apt-get update -qq && apt-get install -y -qq --no-install-recommends build-essential git ca-certificates unzip libssl-dev zlib1g-dev libluajit-5.1-dev luajit && break; sleep 5; done
+# LuaJIT из Debian (2.1, есть arm64): у вшитого в wrk2 LuaJIT 2.0 нет arm64
+ENV CPATH=/usr/include/luajit-2.1
+RUN git clone -q https://github.com/wg/wrk /wrk && cd /wrk && git checkout -q a211dd5a7050b1f9e8a9870b95513060e72ac4a0 \
+ && make -j4 WITH_LUAJIT=/usr WITH_OPENSSL=/usr >/dev/null && cp wrk /usr/local/bin/wrk
+# wrk2 (2019) на arm64: Makefile знает только вшитый deps/luajit (2.0, без arm64) —
+# подставляем системный 2.1; старое имя luaL_reg и лишний x86intrin.h — правкой;
+# `char c` для getopt_long: на arm64 char беззнаковый, -1 не наступает — разбор
+# аргументов всегда кончается справкой
+RUN git clone -q https://github.com/giltene/wrk2 /wrk2 && cd /wrk2 && git checkout -q 44a94c17d8e6a0bac8559b53da76848e430cb7a7 \
+ && rm -rf deps/luajit && mkdir -p deps/luajit/src \
+ && ln -s /usr/include/luajit-2.1/* deps/luajit/src/ && ln -s /usr/bin/luajit deps/luajit/src/luajit \
+ && ln -s /usr/lib/$(gcc -print-multiarch)/libluajit-5.1.a deps/luajit/src/libluajit.a \
+ && sed -i 's/\bluaL_reg\b/luaL_Reg/g' src/script.c \
+ && sed -i '/x86intrin.h/d' src/hdr_histogram.c \
+ && sed -i 's/^    char c, \*\*header = headers;/    int c; char **header = headers;/' src/wrk.c \
+ && make -j4 >/dev/null && cp wrk /usr/local/bin/wrk2
+FROM golang:1.27@sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2 AS go
+RUN CGO_ENABLED=0 go install github.com/tsenart/vegeta/v12@v12.13.0 && CGO_ENABLED=0 go install github.com/rakyll/hey@v0.1.5
+FROM rust:1.99.0-trixie AS rust
+RUN cargo install oha --version 1.16.0 --locked --root /out
+FROM debian:trixie-slim
+RUN for i in 1 2 3; do apt-get update -qq && apt-get install -y -qq --no-install-recommends libssl3t64 libluajit-5.1-2 zlib1g python3 curl ca-certificates && break; sleep 5; done \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=wrk /usr/local/bin/wrk /usr/local/bin/wrk2 /usr/local/bin/
+COPY --from=go /go/bin/vegeta /go/bin/hey /usr/local/bin/
+COPY --from=rust /out/bin/oha /usr/local/bin/
+WORKDIR /opt/stand
+CMD ["sleep", "infinity"]

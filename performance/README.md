@@ -11,6 +11,7 @@
 | [`memory-management/`](memory-management/) | Управление памятью поперёк языков: куча и стек, сборка мусора против ручного управления — на одной задаче | [статья](https://khorost.tech/performance/memory-management-across-languages/) |
 | [`probabilistic/`](probabilistic/) | Вероятностные структуры: Bloom и родственники | [статья](https://khorost.tech/performance/bloom-filters-probabilistic-structures/) |
 | [`testcontainers-template-db/`](testcontainers-template-db/) | Шаблонная база вместо контейнера на каждый тест: CREATE DATABASE ... TEMPLATE, замеры ×10 и ×36, границы приёма (права, FORCE, размер шаблона) | [статья](https://khorost.tech/performance/testcontainers-template-db/) |
+| [`load-testing/`](load-testing/) | Нагрузочное тестирование и хаос: k6, Gatling, Locust, wrk, wrk2, vegeta, oha, hey против сервиса-эталона — открытая и закрытая модель, coordinated omission, виды тестов, потолок генераторов, Toxiproxy | 🔜 скоро |
 
 ---
 

@@ -1,0 +1,268 @@
+{
+ "session": "20261009T112653Z",
+ "published": {
+  "traces": {
+   "sdk-routes": {
+    "sent": {
+     "/grpc.health.v1.Health/Check": {
+      "OK": 150
+     },
+     "GET /fail": {
+      "500": 50
+     },
+     "GET /health": {
+      "200": 100
+     },
+     "GET /users/{id}": {
+      "200": 300
+     },
+     "GET /v2/users/{id}": {
+      "200": 300
+     },
+     "POST /orders": {
+      "201": 200
+     }
+    },
+    "got": {
+     "GET /users/{id}": {
+      "200": 300
+     },
+     "POST /orders": {
+      "201": 200
+     },
+     "GET /fail": {
+      "500": 50
+     },
+     "GET /health": {
+      "200": 100
+     },
+     "GET /v2/users/{id}": {
+      "200": 300
+     },
+     "/grpc.health.v1.Health/Check": {
+      "OK": 150
+     }
+    },
+    "mismatched_routes": [],
+    "outcome": "match"
+   },
+   "beyla-routes": {
+    "sent": {
+     "/grpc.health.v1.Health/Check": {
+      "OK": 150
+     },
+     "GET /fail": {
+      "500": 50
+     },
+     "GET /health": {
+      "200": 100
+     },
+     "GET /users/{id}": {
+      "200": 300
+     },
+     "GET /v2/users/{id}": {
+      "200": 300
+     },
+     "POST /orders": {
+      "201": 200
+     }
+    },
+    "got": {
+     "GET /users/{id}": {
+      "200": 300
+     },
+     "POST /orders": {
+      "201": 200
+     },
+     "GET /fail": {
+      "500": 50
+     },
+     "GET /health": {
+      "200": 100
+     },
+     "GET /v2/users/{id}": {
+      "200": 300
+     },
+     "/grpc.health.v1.Health/Check": {
+      "OK": 150
+     }
+    },
+    "mismatched_routes": [],
+    "outcome": "match"
+   },
+   "beyla-route-names": {
+    "routes_8080": [
+     "/fail",
+     "/health",
+     "/orders",
+     "/users/{id}"
+    ],
+    "routes_8081": [
+     "/v2/users/*"
+    ],
+    "distinct_paths_8081": 300,
+    "outcome": "match"
+   },
+   "sdk-sql": {
+    "want": {
+     "SELECT": 300,
+     "INSERT": 200
+    },
+    "got_select_insert": {
+     "SELECT": 300,
+     "INSERT": 200
+    },
+    "extra~": {
+     "CREATE": 1
+    },
+    "startup_create_seen": true,
+    "other_extra": [],
+    "outcome": "mismatch"
+   },
+   "beyla-sql": {
+    "want": {
+     "SELECT": 300,
+     "INSERT": 200
+    },
+    "got_select_insert": {
+     "SELECT": 300,
+     "INSERT": 200
+    },
+    "extra~": {},
+    "startup_create_seen": false,
+    "other_extra": [],
+    "outcome": "match"
+   },
+   "sdk-links": {
+    "sql_spans": 500,
+    "same_trace": 500,
+    "parent_found": 500,
+    "outcome": "match"
+   },
+   "beyla-links": {
+    "sql_spans": 500,
+    "same_trace": 500,
+    "parent_found": 0,
+    "outcome": "mismatch"
+   },
+   "beyla-internal": {
+    "http_requests": 950,
+    "internal": {
+     "in queue": 950,
+     "processing": 950
+    },
+    "per_request": 2.0,
+    "warmup_requests~": 11,
+    "outcome": "match"
+   }
+  },
+  "profiles": {
+   "go126": {
+    "has_samples~": true,
+    "ticks~": 90210524692,
+    "main_functions~": [
+     "main.burnSelfA",
+     "main.burnSelfB"
+    ],
+    "unsupported_go": false,
+    "burn_functions": [
+     "main.burnSelfA",
+     "main.burnSelfB"
+    ],
+    "top_self": "main.burnSelfA",
+    "share_a~": 0.756,
+    "share_b~": 0.242,
+    "within_tolerance": true,
+    "outcome": "match"
+   },
+   "go126-shared": {
+    "has_samples~": true,
+    "ticks~": 90105261536,
+    "main_functions~": [
+     "main.pprofShared.func1",
+     "main.work"
+    ],
+    "unsupported_go": false,
+    "burn_functions": [],
+    "top_self": "main.work",
+    "within_tolerance": false,
+    "outcome": "mismatch"
+   },
+   "go126-stripped": {
+    "has_samples~": true,
+    "ticks~": 90157893114,
+    "main_functions~": [
+     "main.burnSelfA",
+     "main.burnSelfB"
+    ],
+    "unsupported_go": false,
+    "burn_functions": [
+     "main.burnSelfA",
+     "main.burnSelfB"
+    ],
+    "top_self": "main.burnSelfA",
+    "share_a~": 0.755,
+    "share_b~": 0.242,
+    "within_tolerance": true,
+    "outcome": "match"
+   },
+   "go127": {
+    "has_samples~": true,
+    "ticks~": 42368420290,
+    "main_functions~": [
+     "main.burnSelfA",
+     "main.burnSelfB"
+    ],
+    "unsupported_go": true,
+    "burn_functions": [
+     "main.burnSelfA",
+     "main.burnSelfB"
+    ],
+    "top_self": "main.burnSelfA",
+    "share_a~": 0.753,
+    "share_b~": 0.243,
+    "within_tolerance": true,
+    "outcome": "match"
+   },
+   "go127-stripped": {
+    "has_samples~": true,
+    "ticks~": 105263156,
+    "main_functions~": [],
+    "unsupported_go": true,
+    "burn_functions": [],
+    "top_self~": "[unknown]",
+    "within_tolerance": false,
+    "outcome": "mismatch"
+   },
+   "pprof-shared": {
+    "go": "go1.26.9",
+    "has_samples~": true,
+    "unsupported_go": false,
+    "burn_functions": [
+     "main.burnA",
+     "main.burnB"
+    ],
+    "share_a~": 0.75,
+    "share_b~": 0.25,
+    "within_tolerance": true,
+    "outcome": "match"
+   }
+  },
+  "cost": {
+   "idle": {
+    "programs~": 164,
+    "idle_run_cnt~": 0,
+    "background_below_1pct": true,
+    "outcome": "match"
+   },
+   "load": {
+    "requests": 1100,
+    "programs~": 164,
+    "fired_under_load~": 30,
+    "run_cnt_per_request~": 18.7,
+    "run_time_us_per_request~": 9.8,
+    "outcome": "match"
+   }
+  }
+ }
+}

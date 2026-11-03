@@ -1,0 +1,9 @@
+{
+ "fixtures": {
+  "traces.jsonl": "305b9e865b5de2131a0237e23c1222c156d4c1a2de301195d2cf5324d2f1d9b6",
+  "profiles.jsonl": "ab8c275f87daede2503d4a82621645fa04d6459912549960199d77790e2a88b4",
+  "cost.jsonl": "5372a9f55dbb591026b8021427737eeae4b6929580d7ad895377030873210cdd"
+ },
+ "tests": 14,
+ "sabotages": 11
+}

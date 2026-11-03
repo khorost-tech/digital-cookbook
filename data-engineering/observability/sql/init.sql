@@ -1,0 +1,3 @@
+CREATE DATABASE dwh;
+CREATE USER marquez PASSWORD 'marquez';
+CREATE DATABASE marquez OWNER marquez;

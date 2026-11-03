@@ -1,0 +1,8 @@
+{
+ "fixtures": {
+  "filter.jsonl": "a2a306ddbb89b58c3ae0dddeb46f80baf6f6e584d198dac14de3090ddee1bd17",
+  "cilium.jsonl": "b656667867cca9cf6d48587c8625144d9d805bd418db0ee88ee4609371a4be41"
+ },
+ "tests": 14,
+ "sabotages": 11
+}
