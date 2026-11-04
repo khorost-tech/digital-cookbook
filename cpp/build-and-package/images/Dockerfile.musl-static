@@ -1,0 +1,76 @@
+# Статика musl — второй контроль оси, рядом с парой про версию glibc.
+#
+# Этот же образ обслуживает ДВА плеча оси: "musl-static" и
+# "musl-no-resolv" — variants.json указывает на один и тот же
+# Dockerfile для обоих, они различаются только аргументами запуска
+# (run_args подменяет /etc/resolv.conf пустым файлом при docker run,
+# см. scripts/docker.py:run_variant). Имя варианта, под которым бинарник
+# отвечает в /resolve, приходит не из ENV STAND_VARIANT ниже (он общий
+# для обоих плеч), а передаётся явно при запуске через `docker run -e
+# STAND_VARIANT=<имя>` — см. run_variant. Правя этот файл, помни, что
+# правка задевает оба плеча разом.
+#
+# fmt собирается из исходника (та же версия 11.0.2, что и у glibc-пары):
+# пакетный fmt-dev в Alpine тоже несёт только .so, статически с ним не
+# слинковаться.
+#
+# cmake ставится пакетом Alpine, а НЕ сборкой Kitware (как в паре
+# glibc-static/glibc-static-old): готовая сборка cmake с релиза Kitware
+# слинкована с glibc и не запустится в Alpine (musl). Это не повод
+# "привести к единообразию" версию cmake между тройкой контролей —
+# musl вообще не входит в контролируемую пару про версию библиотеки,
+# у него нет партнёра, с которым он обязан совпадать по инструментам
+# сборки.
+# ЗАКРЕПЛЕНИЕ БАЗОВОГО ОБРАЗА ПО ДАЙДЖЕСТУ. Тег — подвижный указатель:
+# под тем же именем завтра лежит другое содержимое, и прогон,
+# сравниваемый с этими фикстурами, сравнивал бы их с другим образом молча.
+# Дайджест снят с ИНДЕКСА (манифест-листа), а не с образа под конкретную
+# архитектуру: он так же неизменяем, но оставляет разрешение архитектуры
+# докеру. Тег рядом с дайджестом оставлен для чтения человеком — Docker
+# при наличии дайджеста тег игнорирует.
+FROM alpine:3.22@sha256:14358309a308569c32bdc37e2e0e9694be33a9d99e68afb0f5ff33cc1f695dce AS build
+# ЗАКРЕПЛЕНИЕ АРХИВОВ ПО СУММЕ. Раньше архив шёл прямо в tar по
+# конвейеру: распаковывался раньше, чем его кто-либо смотрел, и подмена
+# содержимого прошла бы молча. Теперь порядок обратный — скачали, сверили
+# sha256, распаковали. Сумма cmake совпадает с cmake-3.28.3-SHA-256.txt
+# самого релиза Kitware, то есть подтверждена НЕЗАВИСИМО. Сумма архива
+# fmt подтверждена быть не может: GitHub генерирует его из тега на лету,
+# и своей контрольной суммы fmtlib для него не публикует. Что она даёт —
+# смену архива громкой; чего не даёт — доказательства, что архив тот
+# самый.
+RUN apk add --no-cache cmake g++ make
+RUN wget -qO /tmp/fmt.tar.gz \
+      https://github.com/fmtlib/fmt/archive/refs/tags/11.0.2.tar.gz \
+ && echo "6cb1e6d37bdcb756dbbe59be438790db409cdb4868c66e888d5df9f13f7c027f  /tmp/fmt.tar.gz" | sha256sum -c - \
+ && tar xzf /tmp/fmt.tar.gz -C /tmp \
+ && rm /tmp/fmt.tar.gz \
+ && cmake -S /tmp/fmt-11.0.2 -B /tmp/fmt-build -DCMAKE_BUILD_TYPE=Release \
+     -DBUILD_SHARED_LIBS=OFF -DFMT_TEST=OFF \
+ && cmake --build /tmp/fmt-build -j \
+ && cmake --install /tmp/fmt-build
+COPY service /src
+# Метка прогона и файл лечения добавлены осью соседей по языкам (ось 4):
+# там это плечо представляет C++ (решение R2), и измерителю нужны улики
+# того, что образ СОБРАН в этом прогоне, а не взят из кэша слоёв. Оба
+# файла остаются в стадии сборки и в финальный образ НЕ копируются —
+# содержимое scratch-образа от этой правки не меняется ни на байт, и ось
+# упаковки, снятая раньше, остаётся действительной.
+ARG STAND_NONCE=none
+RUN echo "$STAND_NONCE" > /nonce
+RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release -DSTAND_STATIC=ON \
+ && cmake --build /build -j \
+ && strip /build/stand_service \
+ && { echo "LANG=[c++]"; \
+      echo "TOOLCHAIN=[$(g++ --version | head -1)]"; \
+      echo "CMAKE=[$(cmake --version | head -1)]"; \
+      echo "BUILD_TYPE=[Release]"; \
+      echo "STAND_STATIC=[ON]"; \
+      echo "STRIP=[strip]"; \
+      echo "EXTERNAL_LIBS=[fmt $(sed -n 's/^#define FMT_VERSION \([0-9]*\).*/\1/p' /usr/local/include/fmt/base.h)]"; \
+    } > /treatment.txt
+
+FROM scratch
+COPY --from=build /build/stand_service /stand_service
+COPY images/resolv.conf /etc/resolv.conf
+ENV STAND_VARIANT=musl-static
+ENTRYPOINT ["/stand_service"]

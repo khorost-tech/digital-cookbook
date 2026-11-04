@@ -1,0 +1,70 @@
+# Статика современным glibc. Половина пары про устаревшее правило:
+# отличается от glibc-static-old ОБРАЗОМ СБОРКИ ЦЕЛИКОМ — gcc:15
+# против debian:bullseye. Переменных поэтому две: версия glibc И
+# компилятор. Всё, что можно было удержать равным, удержано (исходник,
+# флаги, рантайм scratch, версия fmt, версия cmake), но «различается
+# ровно версия библиотеки» про эту пару говорить нельзя.
+#
+# fmt собирается из исходника статической библиотекой: пакетный
+# libfmt-dev в этом дистрибутиве несёт только .so, статически с ним не
+# слинковаться (`attempted static link of dynamic object`). Собирать
+# fmt из исходника здесь и в glibc-static-old — тем же способом и той
+# же версией (11.0.2, как в conanfile.txt задачи 1), иначе пара
+# перестала бы отличаться только версией системной библиотеки.
+#
+# strip после сборки — тоже общий для пары шаг: без него бинарник нёс
+# бы DWARF-секции из статических архивов glibc/libstdc++ trixie
+# (bullseye их не несёт), и разница в размере с glibc-static-old была
+# бы наполовину про отладочную информацию дистрибутива, а не про саму
+# библиотеку.
+#
+# cmake — версия 3.28.3 с релиза Kitware, ТА ЖЕ, тем же способом
+# (скачивание + симлинк), что и в glibc-static-old, а не пакетный
+# cmake trixie (3.31.6). Переменных в паре и так две (версия glibc и
+# компилятор — обе приходят из образа сборки); третья, не следующая из
+# образа, путала бы вывод ровно так же, как разная отладочная
+# информация путала бы размер бинарника до strip. Совпадение версии
+# cmake не объявляется, а измеряется: scripts/docker.py:tool_versions
+# снимает `cmake --version` в образе сборки каждого варианта.
+# ЗАКРЕПЛЕНИЕ БАЗОВОГО ОБРАЗА ПО ДАЙДЖЕСТУ. Тег — подвижный указатель:
+# под тем же именем завтра лежит другое содержимое, и прогон,
+# сравниваемый с этими фикстурами, сравнивал бы их с другим образом молча.
+# Дайджест снят с ИНДЕКСА (манифест-листа), а не с образа под конкретную
+# архитектуру: он так же неизменяем, но оставляет разрешение архитектуры
+# докеру. Тег рядом с дайджестом оставлен для чтения человеком — Docker
+# при наличии дайджеста тег игнорирует.
+FROM gcc:15@sha256:fb2568a8cc0609134396aeb1eae1f3a91c8ceec54aaee67c798d9602593abd66 AS build
+# ЗАКРЕПЛЕНИЕ АРХИВОВ ПО СУММЕ. Раньше архив шёл прямо в tar по
+# конвейеру: распаковывался раньше, чем его кто-либо смотрел, и подмена
+# содержимого прошла бы молча. Теперь порядок обратный — скачали, сверили
+# sha256, распаковали. Сумма cmake совпадает с cmake-3.28.3-SHA-256.txt
+# самого релиза Kitware, то есть подтверждена НЕЗАВИСИМО. Сумма архива
+# fmt подтверждена быть не может: GitHub генерирует его из тега на лету,
+# и своей контрольной суммы fmtlib для него не публикует. Что она даёт —
+# смену архива громкой; чего не даёт — доказательства, что архив тот
+# самый.
+RUN curl -fsSL -o /tmp/cmake.tar.gz \
+      https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3-linux-x86_64.tar.gz \
+ && echo "804d231460ab3c8b556a42d2660af4ac7a0e21c98a7f8ee3318a74b4a9a187a6  /tmp/cmake.tar.gz" | sha256sum -c - \
+ && tar xzf /tmp/cmake.tar.gz -C /opt \
+ && rm /tmp/cmake.tar.gz \
+ && ln -s /opt/cmake-3.28.3-linux-x86_64/bin/cmake /usr/local/bin/cmake
+RUN curl -fsSL -o /tmp/fmt.tar.gz \
+      https://github.com/fmtlib/fmt/archive/refs/tags/11.0.2.tar.gz \
+ && echo "6cb1e6d37bdcb756dbbe59be438790db409cdb4868c66e888d5df9f13f7c027f  /tmp/fmt.tar.gz" | sha256sum -c - \
+ && tar xzf /tmp/fmt.tar.gz -C /tmp \
+ && rm /tmp/fmt.tar.gz \
+ && cmake -S /tmp/fmt-11.0.2 -B /tmp/fmt-build -DCMAKE_BUILD_TYPE=Release \
+     -DBUILD_SHARED_LIBS=OFF -DFMT_TEST=OFF \
+ && cmake --build /tmp/fmt-build -j \
+ && cmake --install /tmp/fmt-build
+COPY service /src
+RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release -DSTAND_STATIC=ON \
+ && cmake --build /build -j \
+ && strip /build/stand_service
+
+FROM scratch
+COPY --from=build /build/stand_service /stand_service
+COPY images/resolv.conf /etc/resolv.conf
+ENV STAND_VARIANT=glibc-static
+ENTRYPOINT ["/stand_service"]

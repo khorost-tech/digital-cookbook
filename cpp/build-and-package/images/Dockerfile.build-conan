@@ -1,0 +1,53 @@
+# Плечо Conan. Зависимость приходит из service/conanfile.txt, версия
+# закреплена прямо в манифесте (fmt/11.0.2).
+#
+# Установка менеджера входит в замер — симметрично плечу vcpkg, где в
+# замер входит клон репозитория и bootstrap, и плечу system, где в замер
+# входит apt-get install.
+#
+# ПОЧЕМУ ВЕРСИЯ ЧИТАЕТСЯ ИЗ ЗАГОЛОВКА, А НЕ ИЗ conanfile.txt. Раньше она
+# доставалась `sed`-ом из манифеста — из файла, который написал автор
+# стенда. Такое «измерение» вернуло бы 11.0.2 и при полностью сломанном
+# разрешении зависимости, а проверка «у vcpkg и conan одна версия»
+# сравнивала бы ИЗМЕРЕННОЕ число у одного плеча с ОБЪЯВЛЕННЫМ у другого
+# и была бы наполовину тавтологией. Теперь оба плеча меряют одинаково:
+# FMT_VERSION из заголовков установленного пакета, общим измерителем
+# /images/fmt-version.sh.
+#
+# Профиль правится в одном месте: compiler.cppstd. `conan profile
+# detect` угадывает gnu17, а сервис требует C++20 (CMakeLists.txt).
+# Оставить угаданное значило бы собирать зависимость под один стандарт,
+# а сервис — под другой; это не то различие, которое меряет ось.
+#
+# Манифест копируется ОТДЕЛЬНО от исходника сервиса — по той же
+# причине, что и в плече vcpkg: SOURCE_STAMP не должен обесценивать
+# слой получения зависимости.
+FROM cpp-build-and-package-base:tools
+
+# ЗАКРЕПЛЕНИЕ ПАКЕТА CONAN. `pip3 install conan==2.32.0` закрепляло
+# ровно один пакет из шестнадцати: пятнадцать зависимостей приезжали
+# какие окажутся свежими в день сборки — внутрь ЗАМЕРЯЕМОЙ сборки
+# входил подвижный набор, о котором фикстура не говорила ничего.
+# Теперь версии и суммы всех шестнадцати лежат в
+# images/conan-requirements.txt, а --require-hashes отказывается
+# ставить незакреплённое. Файл требований копируется ОТДЕЛЬНО от
+# исходника сервиса — по той же причине, что и манифест.
+COPY service/conanfile.txt /manifest/conanfile.txt
+COPY images/conan-requirements.txt /manifest/conan-requirements.txt
+RUN pip3 install --break-system-packages --quiet --require-hashes \
+      -r /manifest/conan-requirements.txt \
+ && conan profile detect --force \
+ && sed -i 's/^compiler.cppstd=.*/compiler.cppstd=gnu20/' \
+      /root/.conan2/profiles/default \
+ && cd /manifest \
+ && conan install . --output-folder=/manifest/build \
+      --build=missing -s build_type=Release
+
+RUN sh /images/fmt-version.sh /root/.conan2/p /fmt_version.txt
+
+ARG SOURCE_STAMP=0
+COPY service /src
+RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release \
+      -DCMAKE_TOOLCHAIN_FILE=/manifest/build/conan_toolchain.cmake \
+ && cmake --build /build -j \
+ && strip /build/stand_service

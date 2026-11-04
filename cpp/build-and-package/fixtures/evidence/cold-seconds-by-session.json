@@ -1,0 +1,256 @@
+{
+  "arms": [
+    "system",
+    "vcpkg",
+    "conan"
+  ],
+  "runs_per_session": [
+    "run-1",
+    "run-2"
+  ],
+  "sessions": [
+    {
+      "cold_seconds": {
+        "run-1": {
+          "conan": 18.826,
+          "system": 3.687,
+          "vcpkg": 24.465
+        },
+        "run-2": {
+          "conan": 17.636,
+          "system": 3.921,
+          "vcpkg": 23.288
+        }
+      },
+      "commit": "fe29b56",
+      "commit_subject": "cpp/build-and-package: ось сборки снята — фикстура, разбор, проверки",
+      "committed_at": "2026-09-05T02:29:27+03:00",
+      "label": "fe29b56",
+      "measurement_window": {
+        "conan": "не записано",
+        "system": "не записано",
+        "vcpkg": "не записано"
+      },
+      "source": "git"
+    },
+    {
+      "cold_seconds": {
+        "run-1": {
+          "conan": 18.528,
+          "system": 10.731,
+          "vcpkg": 23.959
+        },
+        "run-2": {
+          "conan": 18.225,
+          "system": 10.514,
+          "vcpkg": 22.825
+        }
+      },
+      "commit": "71d42d5",
+      "commit_subject": "cpp/build-and-package: ось сборки переснята на выровненном окне",
+      "committed_at": "2026-09-05T03:11:59+03:00",
+      "label": "71d42d5",
+      "measurement_window": {
+        "conan": "dependency_inside",
+        "system": "dependency_inside",
+        "vcpkg": "dependency_inside"
+      },
+      "source": "git"
+    },
+    {
+      "cold_seconds": {
+        "run-1": {
+          "conan": 16.392,
+          "system": 9.824,
+          "vcpkg": 21.142
+        },
+        "run-2": {
+          "conan": 16.675,
+          "system": 10.005,
+          "vcpkg": 21.297
+        }
+      },
+      "commit": "514450d",
+      "commit_subject": "cpp/build-and-package: полный прогон через bench/run-all.sh, все оси переснятыми",
+      "committed_at": "2026-09-05T09:02:15+03:00",
+      "label": "514450d",
+      "measurement_window": {
+        "conan": "dependency_inside",
+        "system": "dependency_inside",
+        "vcpkg": "dependency_inside"
+      },
+      "source": "git"
+    },
+    {
+      "cold_seconds": {
+        "run-1": {
+          "conan": 17.245,
+          "system": 10.523,
+          "vcpkg": 22.133
+        },
+        "run-2": {
+          "conan": 16.711,
+          "system": 10.36,
+          "vcpkg": 22.184
+        }
+      },
+      "commit": "f46b683",
+      "commit_subject": "cpp/build-and-package: полный прогон в WSL — остановился на шаге проверок, две находки",
+      "committed_at": "2026-09-05T12:25:15+03:00",
+      "label": "f46b683",
+      "measurement_window": {
+        "conan": "dependency_inside",
+        "system": "dependency_inside",
+        "vcpkg": "dependency_inside"
+      },
+      "source": "git"
+    },
+    {
+      "cold_seconds": {
+        "run-1": {
+          "conan": 16.618,
+          "system": 10.098,
+          "vcpkg": 21.319
+        },
+        "run-2": {
+          "conan": 16.985,
+          "system": 10.39,
+          "vcpkg": 20.866
+        }
+      },
+      "commit": "c90171b",
+      "commit_subject": "cpp/build-and-package: прогоны на двух платформах — 55 величин из 55, допуск 25 Б против расхождения 5 Б",
+      "committed_at": "2026-09-05T13:25:08+03:00",
+      "label": "c90171b",
+      "measurement_window": {
+        "conan": "dependency_inside",
+        "system": "dependency_inside",
+        "vcpkg": "dependency_inside"
+      },
+      "source": "git"
+    },
+    {
+      "cold_seconds": {
+        "run-1": {
+          "conan": 17.072,
+          "system": 10.797,
+          "vcpkg": 24.353
+        },
+        "run-2": {
+          "conan": 17.9,
+          "system": 10.573,
+          "vcpkg": 22.713
+        }
+      },
+      "commit": "5b1b017",
+      "commit_subject": "cpp/build-and-package: кодировка чтения подпроцессов, пятая сессия опровергла формулировку",
+      "committed_at": "2026-09-05T14:48:10+03:00",
+      "label": "5b1b017",
+      "measurement_window": {
+        "conan": "dependency_inside",
+        "system": "dependency_inside",
+        "vcpkg": "dependency_inside"
+      },
+      "source": "git"
+    },
+    {
+      "cold_seconds": {
+        "run-1": {
+          "conan": 20.639,
+          "system": 12.253,
+          "vcpkg": 25.4
+        },
+        "run-2": {
+          "conan": 21.474,
+          "system": 11.918,
+          "vcpkg": 27.064
+        }
+      },
+      "commit": "c3189a6",
+      "commit_subject": "cpp/build-and-package: полный прогон — версии инструментов оси упаковки в фикстуре",
+      "committed_at": "2026-09-05T23:56:26+03:00",
+      "label": "c3189a6",
+      "measurement_window": {
+        "conan": "dependency_inside",
+        "system": "dependency_inside",
+        "vcpkg": "dependency_inside"
+      },
+      "source": "git"
+    },
+    {
+      "cold_seconds": {
+        "run-1": {
+          "conan": 18.006,
+          "system": 9.972,
+          "vcpkg": 22.568
+        },
+        "run-2": {
+          "conan": 17.738,
+          "system": 10.249,
+          "vcpkg": 22.745
+        }
+      },
+      "commit": "9dfa66c",
+      "commit_subject": "cpp/build-and-package: версии закреплены digest'ами и коммитом, полный прогон",
+      "committed_at": "2026-09-06T02:04:12+03:00",
+      "label": "9dfa66c",
+      "measurement_window": {
+        "conan": "dependency_inside",
+        "system": "dependency_inside",
+        "vcpkg": "dependency_inside"
+      },
+      "source": "git"
+    },
+    {
+      "cold_seconds": {
+        "run-1": {
+          "conan": 15.52,
+          "system": 8.879,
+          "vcpkg": 20.069
+        },
+        "run-2": {
+          "conan": 16.015,
+          "system": 8.855,
+          "vcpkg": 20.35
+        }
+      },
+      "commit": "d306d96",
+      "commit_subject": "cpp/build-and-package: полный прогон после отзыва трактовки",
+      "committed_at": "2026-09-11T01:47:08+03:00",
+      "label": "d306d96",
+      "measurement_window": {
+        "conan": "dependency_inside",
+        "system": "dependency_inside",
+        "vcpkg": "dependency_inside"
+      },
+      "source": "git"
+    },
+    {
+      "cold_seconds": {
+        "run-1": {
+          "conan": 15.162,
+          "system": 9.325,
+          "vcpkg": 19.394
+        },
+        "run-2": {
+          "conan": 15.326,
+          "system": 9.867,
+          "vcpkg": 20.692
+        }
+      },
+      "commit": null,
+      "commit_subject": null,
+      "committed_at": null,
+      "label": "рабочее дерево",
+      "measurement_window": {
+        "conan": "dependency_inside",
+        "system": "dependency_inside",
+        "vcpkg": "dependency_inside"
+      },
+      "source": "рабочее дерево"
+    }
+  ],
+  "what_it_does_not_show": "Причину разброса. Что менялось между сессиями — тепловое состояние машины, состояние кэшей Docker, соседняя нагрузка — стенд не мерил.",
+  "what_this_is": "Времена холодной сборки оси 2 по СЕССИЯМ. Прошлые сессии прочитаны из истории git (каждый коммит fixtures/build.jsonl — отдельный прогон), текущая — из рабочего дерева. Файл собирается scripts/run-evidence.py; руками числа сюда не переносились.",
+  "why_it_exists": "Кратность холодной сборки в README и в статью не идёт: пара прогонов не оценивает её разброс. Фикстуры репозитория несут ОДНУ сессию — одну пару чисел, — и по ней одной нельзя проверить ни разброс между сессиями, ни то, представительна ли эта пара: у самой этой сессии пара может разойтись почти так же широко, как расходятся сессии между собой. Без этого файла утверждение держалось бы на памяти автора."
+}

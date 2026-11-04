@@ -1,0 +1,62 @@
+[
+  {
+    "name": "cpp",
+    "role": "measured",
+    "language": "C++",
+    "dockerfile": "Dockerfile.musl-static",
+    "build_args": {},
+    "external_libraries_declared": ["fmt (статически)"],
+    "name_resolution": "getaddrinfo той же musl, с которой слинкован бинарник",
+    "why": "Решение R2: C++ представлен плечом musl-static оси упаковки, а не новым плечом. Отсюда и оговорка — этот бинарник несёт внутри статически слинкованный fmt, у соседей аналога нет. Величину этой примеси меряет справочное плечо cpp-nofmt, стоящее ВНЕ оси."
+  },
+  {
+    "name": "go",
+    "role": "measured",
+    "language": "Go",
+    "dockerfile": "Dockerfile.sibling-go",
+    "build_args": {"HEALTHZ_BODY": "ok", "RESOLVE_PROBE": "resolve"},
+    "external_libraries_declared": [],
+    "name_resolution": "собственный резолвер Go внутри бинарника: при CGO_ENABLED=0 позвать функцию libc нечем",
+    "why": "Сосед. Ни одной зависимости сверх стандартной библиотеки; доказывается сборкой при GOPROXY=off, а не пустым go.mod. Механизм разрешения имён у него ДРУГОЙ, чем у соседей, и это названо здесь, а не подразумевается: тождество сервиса на оси доказано совпадением ОТВЕТОВ, а не совпадением работы."
+  },
+  {
+    "name": "rust",
+    "role": "measured",
+    "language": "Rust",
+    "dockerfile": "Dockerfile.sibling-rust",
+    "build_args": {},
+    "external_libraries_declared": [],
+    "name_resolution": "getaddrinfo той же musl, с которой слинкован бинарник (std::net через ToSocketAddrs)",
+    "why": "Сосед. Ни одной зависимости сверх стандартной библиотеки; доказывается сборкой с --offline при CARGO_NET_OFFLINE=true, а не пустым [dependencies]."
+  },
+  {
+    "name": "cpp-nofmt",
+    "role": "reference",
+    "language": "C++",
+    "dockerfile": "Dockerfile.sibling-cpp-nofmt",
+    "build_args": {},
+    "external_libraries_declared": [],
+    "name_resolution": "getaddrinfo той же musl, с которой слинкован бинарник",
+    "why": "СПРАВОЧНОЕ ПЛЕЧО, ВНЕ ОСИ. Тот же сервис на C++ с форматированием через snprintf вместо fmt: тот же базовый образ, тот же тулчейн, те же флаги, тот же strip. Разность его байтов и байтов плеча cpp — цена статически слинкованного fmt в этой сборке. Решение R2 фиксирует, каким плечом C++ представлен В ОСИ, и справочному замеру рядом не мешает: в таблицу оси, в кратности и в сравнение с соседями это плечо не идёт."
+  },
+  {
+    "name": "go-divergent",
+    "role": "control",
+    "language": "Go",
+    "dockerfile": "Dockerfile.sibling-go",
+    "build_args": {"HEALTHZ_BODY": "okay", "RESOLVE_PROBE": "resolve"},
+    "external_libraries_declared": [],
+    "name_resolution": "собственный резолвер Go внутри бинарника: при CGO_ENABLED=0 позвать функцию libc нечем",
+    "why": "ОТРИЦАТЕЛЬНЫЙ КОНТРОЛЬ ВЕТКИ /healthz. Тот же исходник и тот же Dockerfile, что у плеча go; различается РОВНО значением HEALTHZ_BODY. Обязан провалить сравнение ответов /healthz — иначе проверка неотличима от той, что всегда отвечает «совпало». Размеры этого плеча ни с чем не сравниваются: оно тут не за размером."
+  },
+  {
+    "name": "go-resolve-divergent",
+    "role": "control",
+    "language": "Go",
+    "dockerfile": "Dockerfile.sibling-go",
+    "build_args": {"HEALTHZ_BODY": "ok", "RESOLVE_PROBE": "resolve-divergent"},
+    "external_libraries_declared": [],
+    "name_resolution": "собственный резолвер Go внутри бинарника: при CGO_ENABLED=0 позвать функцию libc нечем",
+    "why": "ОТРИЦАТЕЛЬНЫЙ КОНТРОЛЬ ВЕТКИ /resolve. Тот же исходник и тот же Dockerfile, что у плеча go; различается РОВНО значением RESOLVE_PROBE, которое линковщик кладёт в поле probe тела /resolve. Ответ /healthz у него при этом СОВПАДАЕТ с go — иначе он падал бы на первой ветке и вторую по-прежнему не проверял бы ничто, кроме мутации копии фикстуры."
+  }
+]

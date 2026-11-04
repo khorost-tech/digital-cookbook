@@ -1,0 +1,65 @@
+# Статика старым glibc. Контрольная точка правила: тот же исходник, те
+# же флаги, тот же рантайм scratch, что и glibc-static — отличается
+# ОБРАЗОМ СБОРКИ ЦЕЛИКОМ. Это значит ДВЕ переменные, а не одну: вместе
+# с версией glibc, вшитой в статический бинарник, меняется и
+# компилятор, которым бинарник собран. Разделить их вклад стенд не
+# умеет — для этого понадобилось бы третье плечо, где меняется что-то
+# одно. Обе версии снимаются замером и лежат в fixtures/package.jsonl
+# (scripts/docker.py:tool_versions), а не выводятся из имени образа.
+#
+# fmt собирается из исходника той же версией (11.0.2) и теми же
+# флагами, что и в glibc-static: пакетный libfmt-dev несёт только .so
+# и здесь тоже. Собирать по-другому значило бы менять вторую вещь
+# помимо версии glibc.
+#
+# Пакетный cmake в bullseye (3.18) старше, чем требует CMakeLists.txt
+# задачи 1 (>=3.25). Это инструмент сборки, а не то, что попадает в
+# бинарник — версия glibc и компилятор остаются пакетными из bullseye,
+# меняется только оснастка. Ставим современный cmake бинарником с
+# GitHub-релиза, апстримного пакета новее в bullseye нет. Равенство
+# версии cmake у пары — единственное, что здесь удержано ВРУЧНУЮ, а не
+# следует из образа сборки; поэтому его и проверяет замер.
+# ЗАКРЕПЛЕНИЕ БАЗОВОГО ОБРАЗА ПО ДАЙДЖЕСТУ. Тег — подвижный указатель:
+# под тем же именем завтра лежит другое содержимое, и прогон,
+# сравниваемый с этими фикстурами, сравнивал бы их с другим образом молча.
+# Дайджест снят с ИНДЕКСА (манифест-листа), а не с образа под конкретную
+# архитектуру: он так же неизменяем, но оставляет разрешение архитектуры
+# докеру. Тег рядом с дайджестом оставлен для чтения человеком — Docker
+# при наличии дайджеста тег игнорирует.
+FROM debian:bullseye@sha256:6f519a81440354a85eb592c5f32109ab80605f6b892455983a6f618bf87fabe9 AS build
+RUN apt-get update -qq \
+ && apt-get install -y -qq g++ make curl ca-certificates
+# ЗАКРЕПЛЕНИЕ АРХИВОВ ПО СУММЕ. Раньше архив шёл прямо в tar по
+# конвейеру: распаковывался раньше, чем его кто-либо смотрел, и подмена
+# содержимого прошла бы молча. Теперь порядок обратный — скачали, сверили
+# sha256, распаковали. Сумма cmake совпадает с cmake-3.28.3-SHA-256.txt
+# самого релиза Kitware, то есть подтверждена НЕЗАВИСИМО. Сумма архива
+# fmt подтверждена быть не может: GitHub генерирует его из тега на лету,
+# и своей контрольной суммы fmtlib для него не публикует. Что она даёт —
+# смену архива громкой; чего не даёт — доказательства, что архив тот
+# самый.
+RUN curl -fsSL -o /tmp/cmake.tar.gz \
+      https://github.com/Kitware/CMake/releases/download/v3.28.3/cmake-3.28.3-linux-x86_64.tar.gz \
+ && echo "804d231460ab3c8b556a42d2660af4ac7a0e21c98a7f8ee3318a74b4a9a187a6  /tmp/cmake.tar.gz" | sha256sum -c - \
+ && tar xzf /tmp/cmake.tar.gz -C /opt \
+ && rm /tmp/cmake.tar.gz \
+ && ln -s /opt/cmake-3.28.3-linux-x86_64/bin/cmake /usr/local/bin/cmake
+RUN curl -fsSL -o /tmp/fmt.tar.gz \
+      https://github.com/fmtlib/fmt/archive/refs/tags/11.0.2.tar.gz \
+ && echo "6cb1e6d37bdcb756dbbe59be438790db409cdb4868c66e888d5df9f13f7c027f  /tmp/fmt.tar.gz" | sha256sum -c - \
+ && tar xzf /tmp/fmt.tar.gz -C /tmp \
+ && rm /tmp/fmt.tar.gz \
+ && cmake -S /tmp/fmt-11.0.2 -B /tmp/fmt-build -DCMAKE_BUILD_TYPE=Release \
+     -DBUILD_SHARED_LIBS=OFF -DFMT_TEST=OFF \
+ && cmake --build /tmp/fmt-build -j \
+ && cmake --install /tmp/fmt-build
+COPY service /src
+RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release -DSTAND_STATIC=ON \
+ && cmake --build /build -j \
+ && strip /build/stand_service
+
+FROM scratch
+COPY --from=build /build/stand_service /stand_service
+COPY images/resolv.conf /etc/resolv.conf
+ENV STAND_VARIANT=glibc-static-old
+ENTRYPOINT ["/stand_service"]

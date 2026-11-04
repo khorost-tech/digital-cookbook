@@ -1,0 +1,691 @@
+{
+  "compared_with_tolerance": {
+    "package_image_bytes": {
+      "tolerance_bytes": 25,
+      "why": "упакованный размер образа: между платформами расходится на единицы байт. Измерено: в слой попадают биты прав доступа файлов контекста сборки — drvfs отдаёт 0777, клиент Windows 0755, и tar пишет разный режим (проверено tar -tvf над слоями двух образов). Допуск — пятикратный запас к наибольшему ИЗМЕРЕННОМУ расхождению (5 Б у пары сводок), а не круглое число: набор файлов контекста может отличаться, и сдвиг растёт вместе с ним. Содержимое стережёт не эта величина, а package_image_unpacked_bytes рядом — она сравнивается точно"
+    },
+    "siblings_image_registry_bytes": {
+      "tolerance_bytes": 25,
+      "why": "то же самое на оси соседей; точный спутник — siblings_image_unpacked_bytes"
+    },
+    "siblings_run1_image_registry_bytes": {
+      "tolerance_bytes": 25,
+      "why": "то же для первого прогона оси соседей"
+    }
+  },
+  "environment": {
+    "docker": "Docker version 29.7.2, build a7dcaa6",
+    "platform": "windows",
+    "platform_full": "Windows-11-10.0.26200-SP0",
+    "python": "3.12.10",
+    "stand_root": "C:\\Users\\ak\\AppData\\Local\\Temp\\claude\\G--7-Projects-Khorost-khorost-tech\\ef802f03-c158-490c-a256-befece3b32fc\\scratchpad\\cpp-stand-win2"
+  },
+  "not_compared": {
+    "binary_mtime": "время изменения файла внутри образа: улика того, что сборок было две, а не одна; между прогонами обязано различаться",
+    "binary_mtime_first": "то же",
+    "binary_mtime_second": "то же",
+    "build_seconds": "то же",
+    "cold_seconds": "время сборки: зависит от диска, ядер и канала",
+    "docker_argv": "командная строка несёт абсолютный путь стенда — из неё берётся свидетель платформы, и сама она сравнению не подлежит",
+    "first_response_max_ms": "то же",
+    "first_response_min_ms": "то же",
+    "first_response_ms": "время до первого ответа: холодный запуск контейнера целиком, зависит от хоста",
+    "first_response_spread_ratio": "то же",
+    "nonce_first": "то же",
+    "nonce_passed": "метка прогона: различается по построению",
+    "nonce_read_back": "то же",
+    "nonce_second": "то же",
+    "rebuild_seconds": "то же",
+    "seconds_first": "то же",
+    "seconds_second": "то же",
+    "spread_ms": "то же",
+    "stand_root": "СВИДЕТЕЛЬ ПЛАТФОРМЫ: корень пути стенда в командах docker build. Обязан РАЗЛИЧАТЬСЯ у разных сводок — совпадение означает, что прогон был один",
+    "warm_seconds": "то же"
+  },
+  "values": {
+    "build_binary_bytes": {
+      "conan": 150136,
+      "no-fmt": null,
+      "system": 18680,
+      "system-offline": 18680,
+      "system-prebaked": 18680,
+      "vcpkg": 150168,
+      "vcpkg-latest": null
+    },
+    "build_cmake_version": {
+      "conan": "cmake version 3.31.6",
+      "system": "cmake version 3.31.6",
+      "system-offline": "cmake version 3.31.6",
+      "system-prebaked": "cmake version 3.31.6",
+      "vcpkg": "cmake version 3.31.6"
+    },
+    "build_cxx_version": {
+      "conan": "g++ (GCC) 15.3.0",
+      "system": "g++ (GCC) 15.3.0",
+      "system-offline": "g++ (GCC) 15.3.0",
+      "system-prebaked": "g++ (GCC) 15.3.0",
+      "vcpkg": "g++ (GCC) 15.3.0"
+    },
+    "build_failure_stage": {
+      "conan": null,
+      "no-fmt": "find_package",
+      "system": null,
+      "system-offline": null,
+      "system-prebaked": null,
+      "vcpkg": null,
+      "vcpkg-latest": "compile"
+    },
+    "build_fmt_linkage": {
+      "conan": "static",
+      "no-fmt": null,
+      "system": "dynamic",
+      "system-offline": "dynamic",
+      "system-prebaked": "dynamic",
+      "vcpkg": "static",
+      "vcpkg-latest": null
+    },
+    "build_fmt_version": {
+      "conan": "11.0.2",
+      "no-fmt": null,
+      "system": "10.1.0",
+      "system-offline": "10.1.0",
+      "system-prebaked": "10.1.0",
+      "vcpkg": "11.0.2",
+      "vcpkg-latest": "12.2.0"
+    },
+    "build_fmt_version_declared": {
+      "conan": null,
+      "no-fmt": null,
+      "system": "10.1.1+ds1-4",
+      "system-offline": "10.1.1+ds1-4",
+      "system-prebaked": "10.1.1+ds1-4",
+      "vcpkg": null,
+      "vcpkg-latest": null
+    },
+    "build_measurement_window": {
+      "conan": "dependency_inside",
+      "no-fmt": "dependency_inside",
+      "system": "dependency_inside",
+      "system-offline": "dependency_outside",
+      "system-prebaked": "dependency_outside",
+      "vcpkg": "dependency_inside",
+      "vcpkg-latest": "dependency_inside"
+    },
+    "build_ok": {
+      "conan": true,
+      "no-fmt": false,
+      "system": true,
+      "system-offline": true,
+      "system-prebaked": true,
+      "vcpkg": true,
+      "vcpkg-latest": false
+    },
+    "build_run1_binary_bytes": {
+      "conan": 150136,
+      "no-fmt": null,
+      "system": 18680,
+      "system-offline": 18680,
+      "system-prebaked": 18680,
+      "vcpkg": 150168,
+      "vcpkg-latest": null
+    },
+    "build_run1_cmake_version": {
+      "conan": "cmake version 3.31.6",
+      "system": "cmake version 3.31.6",
+      "system-offline": "cmake version 3.31.6",
+      "system-prebaked": "cmake version 3.31.6",
+      "vcpkg": "cmake version 3.31.6"
+    },
+    "build_run1_cxx_version": {
+      "conan": "g++ (GCC) 15.3.0",
+      "system": "g++ (GCC) 15.3.0",
+      "system-offline": "g++ (GCC) 15.3.0",
+      "system-prebaked": "g++ (GCC) 15.3.0",
+      "vcpkg": "g++ (GCC) 15.3.0"
+    },
+    "build_run1_failure_stage": {
+      "conan": null,
+      "no-fmt": "find_package",
+      "system": null,
+      "system-offline": null,
+      "system-prebaked": null,
+      "vcpkg": null,
+      "vcpkg-latest": "compile"
+    },
+    "build_run1_fmt_linkage": {
+      "conan": "static",
+      "no-fmt": null,
+      "system": "dynamic",
+      "system-offline": "dynamic",
+      "system-prebaked": "dynamic",
+      "vcpkg": "static",
+      "vcpkg-latest": null
+    },
+    "build_run1_fmt_version": {
+      "conan": "11.0.2",
+      "no-fmt": null,
+      "system": "10.1.0",
+      "system-offline": "10.1.0",
+      "system-prebaked": "10.1.0",
+      "vcpkg": "11.0.2",
+      "vcpkg-latest": "12.2.0"
+    },
+    "build_run1_fmt_version_declared": {
+      "conan": null,
+      "no-fmt": null,
+      "system": "10.1.1+ds1-4",
+      "system-offline": "10.1.1+ds1-4",
+      "system-prebaked": "10.1.1+ds1-4",
+      "vcpkg": null,
+      "vcpkg-latest": null
+    },
+    "build_run1_measurement_window": {
+      "conan": "dependency_inside",
+      "no-fmt": "dependency_inside",
+      "system": "dependency_inside",
+      "system-offline": "dependency_outside",
+      "system-prebaked": "dependency_outside",
+      "vcpkg": "dependency_inside",
+      "vcpkg-latest": "dependency_inside"
+    },
+    "build_run1_ok": {
+      "conan": true,
+      "no-fmt": false,
+      "system": true,
+      "system-offline": true,
+      "system-prebaked": true,
+      "vcpkg": true,
+      "vcpkg-latest": false
+    },
+    "build_run1_static_archives": {
+      "conan": null,
+      "no-fmt": null,
+      "system": 0,
+      "system-offline": 0,
+      "system-prebaked": 0,
+      "vcpkg": null,
+      "vcpkg-latest": null
+    },
+    "build_static_archives": {
+      "conan": null,
+      "no-fmt": null,
+      "system": 0,
+      "system-offline": 0,
+      "system-prebaked": 0,
+      "vcpkg": null,
+      "vcpkg-latest": null
+    },
+    "package_binary_bytes": {
+      "distroless": 18680,
+      "glibc-dynamic": 18680,
+      "glibc-static": 1938208,
+      "glibc-static-old": 1855288,
+      "musl-no-resolv": 1022128,
+      "musl-static": 1022128
+    },
+    "package_dynamic_dep_count": {
+      "distroless": 6,
+      "glibc-dynamic": 6,
+      "glibc-static": 0,
+      "glibc-static-old": 0,
+      "musl-no-resolv": 0,
+      "musl-static": 0
+    },
+    "package_image_bytes": {
+      "distroless": 10724241,
+      "glibc-dynamic": 29931521,
+      "glibc-static": 841799,
+      "glibc-static-old": 765235,
+      "musl-no-resolv": 414794,
+      "musl-static": 414794
+    },
+    "package_image_unpacked_bytes": {
+      "distroless": 27736067,
+      "glibc-dynamic": 78850268,
+      "glibc-static": 1938227,
+      "glibc-static-old": 1855307,
+      "musl-no-resolv": 1022147,
+      "musl-static": 1022147
+    },
+    "package_resolve_detail": {
+      "distroless": "",
+      "glibc-dynamic": "",
+      "glibc-static": "",
+      "glibc-static-old": "EAI_SYSTEM: System error",
+      "musl-no-resolv": "EAI_AGAIN: Try again",
+      "musl-static": ""
+    },
+    "package_resolve_outcome": {
+      "distroless": "resolved",
+      "glibc-dynamic": "resolved",
+      "glibc-static": "resolved",
+      "glibc-static-old": "refused",
+      "musl-no-resolv": "refused",
+      "musl-static": "resolved"
+    },
+    "package_variants": [
+      "distroless",
+      "glibc-dynamic",
+      "glibc-static",
+      "glibc-static-old",
+      "musl-no-resolv",
+      "musl-static"
+    ],
+    "repro_binary_bytes": {
+      "debug-pinned": [
+        224744,
+        224744
+      ],
+      "debug-plain": [
+        224752,
+        224752
+      ],
+      "debug-stripped": [
+        18680,
+        18680
+      ],
+      "pinned": [
+        18680,
+        18680
+      ],
+      "plain": [
+        18680,
+        18680
+      ],
+      "source-changed": [
+        18680,
+        18688
+      ]
+    },
+    "repro_identical": {
+      "debug-pinned": true,
+      "debug-plain": false,
+      "debug-stripped": true,
+      "pinned": true,
+      "plain": true,
+      "source-changed": false
+    },
+    "repro_network": {
+      "debug-pinned": "none",
+      "debug-plain": "none",
+      "debug-stripped": "none",
+      "pinned": "none",
+      "plain": "none",
+      "source-changed": "none"
+    },
+    "repro_no_cache": {
+      "debug-pinned": true,
+      "debug-plain": true,
+      "debug-stripped": true,
+      "pinned": true,
+      "plain": true,
+      "source-changed": true
+    },
+    "repro_run1_binary_bytes": {
+      "debug-pinned": [
+        224744,
+        224744
+      ],
+      "debug-plain": [
+        224752,
+        224752
+      ],
+      "debug-stripped": [
+        18680,
+        18680
+      ],
+      "pinned": [
+        18680,
+        18680
+      ],
+      "plain": [
+        18680,
+        18680
+      ],
+      "source-changed": [
+        18680,
+        18688
+      ]
+    },
+    "repro_run1_identical": {
+      "debug-pinned": true,
+      "debug-plain": false,
+      "debug-stripped": true,
+      "pinned": true,
+      "plain": true,
+      "source-changed": false
+    },
+    "repro_run1_network": {
+      "debug-pinned": "none",
+      "debug-plain": "none",
+      "debug-stripped": "none",
+      "pinned": "none",
+      "plain": "none",
+      "source-changed": "none"
+    },
+    "repro_run1_no_cache": {
+      "debug-pinned": true,
+      "debug-plain": true,
+      "debug-stripped": true,
+      "pinned": true,
+      "plain": true,
+      "source-changed": true
+    },
+    "repro_run1_sha256": {
+      "debug-pinned": [
+        "2d45ce664fa778c70e11af93a8ca6dc94bbd0a5bb3f2214091131fb9eaa0b1f5",
+        "2d45ce664fa778c70e11af93a8ca6dc94bbd0a5bb3f2214091131fb9eaa0b1f5"
+      ],
+      "debug-plain": [
+        "99d57afc45e5249df35de5560797daaaa20f69236b49641af8c85779ab50e3bd",
+        "42bc1b0468f6c81ec7b7ce3aa0dccc9aa774ecd51ab0dafce6a65db5a691b630"
+      ],
+      "debug-stripped": [
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77",
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77"
+      ],
+      "pinned": [
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77",
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77"
+      ],
+      "plain": [
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77",
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77"
+      ],
+      "source-changed": [
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77",
+        "0b4e28a21f1b39511c25299ae404d69fcb188c05f3fd643c6ef27570135bd96f"
+      ]
+    },
+    "repro_run1_toolchain": {
+      "debug-pinned": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ],
+      "debug-plain": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ],
+      "debug-stripped": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ],
+      "pinned": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ],
+      "plain": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ],
+      "source-changed": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ]
+    },
+    "repro_sha256": {
+      "debug-pinned": [
+        "2d45ce664fa778c70e11af93a8ca6dc94bbd0a5bb3f2214091131fb9eaa0b1f5",
+        "2d45ce664fa778c70e11af93a8ca6dc94bbd0a5bb3f2214091131fb9eaa0b1f5"
+      ],
+      "debug-plain": [
+        "99d57afc45e5249df35de5560797daaaa20f69236b49641af8c85779ab50e3bd",
+        "42bc1b0468f6c81ec7b7ce3aa0dccc9aa774ecd51ab0dafce6a65db5a691b630"
+      ],
+      "debug-stripped": [
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77",
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77"
+      ],
+      "pinned": [
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77",
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77"
+      ],
+      "plain": [
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77",
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77"
+      ],
+      "source-changed": [
+        "0c51077904ac8cc6b435270d43cfd64b95f7413882e5de22fbe568aff52c0d77",
+        "0b4e28a21f1b39511c25299ae404d69fcb188c05f3fd643c6ef27570135bd96f"
+      ]
+    },
+    "repro_toolchain": {
+      "debug-pinned": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ],
+      "debug-plain": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ],
+      "debug-stripped": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ],
+      "pinned": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ],
+      "plain": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ],
+      "source-changed": [
+        "g++ (GCC) 15.3.0",
+        "cmake version 3.31.6",
+        "10.1.0"
+      ]
+    },
+    "siblings_binary_bytes": {
+      "cpp": 1022128,
+      "cpp-nofmt": 263840,
+      "go": 2064568,
+      "go-divergent": 2064568,
+      "go-resolve-divergent": 2064568,
+      "rust": 506168
+    },
+    "siblings_binary_sha256": {
+      "cpp": "b959827ce48d517e189bc41d89c633572ae512c731ef69807524b2ceea998a24",
+      "cpp-nofmt": "6fa9766cd3a9d2656359221297ac586ba4bc814fd55158e609150505e5369dcc",
+      "go": "7723ab7f95632a54108fb051422dcba57e6d5ce11388f338f932d34293816f20",
+      "go-divergent": "d085dc4c2104fa36b02d1cb654171c857bc44c8b5babd52fafe80610a6ae1f32",
+      "go-resolve-divergent": "b2c653b53d8308b7bac458c94f31942f99f3c95166241409a05e8694662cad28",
+      "rust": "db265a2f935d14fb213d1825107ea57a03d431b127a34d84035ffc28a68c3e6c"
+    },
+    "siblings_elf": {
+      "cpp": [
+        "EXEC (Executable file)",
+        false,
+        false,
+        17,
+        0
+      ],
+      "cpp-nofmt": [
+        "EXEC (Executable file)",
+        false,
+        false,
+        17,
+        0
+      ],
+      "go": [
+        "EXEC (Executable file)",
+        false,
+        false,
+        15,
+        0
+      ],
+      "go-divergent": [
+        "EXEC (Executable file)",
+        false,
+        false,
+        15,
+        0
+      ],
+      "go-resolve-divergent": [
+        "EXEC (Executable file)",
+        false,
+        false,
+        15,
+        0
+      ],
+      "rust": [
+        "DYN (Position-Independent Executable file)",
+        false,
+        false,
+        25,
+        0
+      ]
+    },
+    "siblings_healthz_sha256": {
+      "cpp": "99c82f82ca5353439dc6b0205ffb94f7068cac88e4cbc0699ca770c5e9932b90",
+      "cpp-nofmt": "99c82f82ca5353439dc6b0205ffb94f7068cac88e4cbc0699ca770c5e9932b90",
+      "go": "99c82f82ca5353439dc6b0205ffb94f7068cac88e4cbc0699ca770c5e9932b90",
+      "go-divergent": "1ec75fd56c2baef87ca9d5b5e851107580ecfb25622729f623ffbc5dd7cb33bd",
+      "go-resolve-divergent": "99c82f82ca5353439dc6b0205ffb94f7068cac88e4cbc0699ca770c5e9932b90",
+      "rust": "99c82f82ca5353439dc6b0205ffb94f7068cac88e4cbc0699ca770c5e9932b90"
+    },
+    "siblings_image_registry_bytes": {
+      "cpp": 414794,
+      "cpp-nofmt": 122385,
+      "go": 915561,
+      "go-divergent": 915563,
+      "go-resolve-divergent": 915588,
+      "rust": 252230
+    },
+    "siblings_image_unpacked_bytes": {
+      "cpp": 1022147,
+      "cpp-nofmt": 263859,
+      "go": 2064587,
+      "go-divergent": 2064587,
+      "go-resolve-divergent": 2064587,
+      "rust": 506187
+    },
+    "siblings_resolve_outcome": {
+      "cpp": "resolved",
+      "cpp-nofmt": "resolved",
+      "go": "resolved",
+      "go-divergent": "resolved",
+      "go-resolve-divergent": "resolved",
+      "rust": "resolved"
+    },
+    "siblings_run1_binary_bytes": {
+      "cpp": 1022128,
+      "cpp-nofmt": 263840,
+      "go": 2064568,
+      "go-divergent": 2064568,
+      "go-resolve-divergent": 2064568,
+      "rust": 506168
+    },
+    "siblings_run1_binary_sha256": {
+      "cpp": "b959827ce48d517e189bc41d89c633572ae512c731ef69807524b2ceea998a24",
+      "cpp-nofmt": "6fa9766cd3a9d2656359221297ac586ba4bc814fd55158e609150505e5369dcc",
+      "go": "7723ab7f95632a54108fb051422dcba57e6d5ce11388f338f932d34293816f20",
+      "go-divergent": "d085dc4c2104fa36b02d1cb654171c857bc44c8b5babd52fafe80610a6ae1f32",
+      "go-resolve-divergent": "b2c653b53d8308b7bac458c94f31942f99f3c95166241409a05e8694662cad28",
+      "rust": "db265a2f935d14fb213d1825107ea57a03d431b127a34d84035ffc28a68c3e6c"
+    },
+    "siblings_run1_elf": {
+      "cpp": [
+        "EXEC (Executable file)",
+        false,
+        false,
+        17,
+        0
+      ],
+      "cpp-nofmt": [
+        "EXEC (Executable file)",
+        false,
+        false,
+        17,
+        0
+      ],
+      "go": [
+        "EXEC (Executable file)",
+        false,
+        false,
+        15,
+        0
+      ],
+      "go-divergent": [
+        "EXEC (Executable file)",
+        false,
+        false,
+        15,
+        0
+      ],
+      "go-resolve-divergent": [
+        "EXEC (Executable file)",
+        false,
+        false,
+        15,
+        0
+      ],
+      "rust": [
+        "DYN (Position-Independent Executable file)",
+        false,
+        false,
+        25,
+        0
+      ]
+    },
+    "siblings_run1_healthz_sha256": {
+      "cpp": "99c82f82ca5353439dc6b0205ffb94f7068cac88e4cbc0699ca770c5e9932b90",
+      "cpp-nofmt": "99c82f82ca5353439dc6b0205ffb94f7068cac88e4cbc0699ca770c5e9932b90",
+      "go": "99c82f82ca5353439dc6b0205ffb94f7068cac88e4cbc0699ca770c5e9932b90",
+      "go-divergent": "1ec75fd56c2baef87ca9d5b5e851107580ecfb25622729f623ffbc5dd7cb33bd",
+      "go-resolve-divergent": "99c82f82ca5353439dc6b0205ffb94f7068cac88e4cbc0699ca770c5e9932b90",
+      "rust": "99c82f82ca5353439dc6b0205ffb94f7068cac88e4cbc0699ca770c5e9932b90"
+    },
+    "siblings_run1_image_registry_bytes": {
+      "cpp": 414794,
+      "cpp-nofmt": 122385,
+      "go": 915561,
+      "go-divergent": 915563,
+      "go-resolve-divergent": 915588,
+      "rust": 252230
+    },
+    "siblings_run1_image_unpacked_bytes": {
+      "cpp": 1022147,
+      "cpp-nofmt": 263859,
+      "go": 2064587,
+      "go-divergent": 2064587,
+      "go-resolve-divergent": 2064587,
+      "rust": 506187
+    },
+    "siblings_run1_resolve_outcome": {
+      "cpp": "resolved",
+      "cpp-nofmt": "resolved",
+      "go": "resolved",
+      "go-divergent": "resolved",
+      "go-resolve-divergent": "resolved",
+      "rust": "resolved"
+    },
+    "siblings_run1_toolchain": {
+      "cpp": "g++ (Alpine 14.2.0) 14.2.0",
+      "cpp-nofmt": "g++ (Alpine 14.2.0) 14.2.0",
+      "go": "go version go1.24.13 linux/amd64",
+      "go-divergent": "go version go1.24.13 linux/amd64",
+      "go-resolve-divergent": "go version go1.24.13 linux/amd64",
+      "rust": "rustc 1.85.1 (4eb161250 2025-03-15)"
+    },
+    "siblings_toolchain": {
+      "cpp": "g++ (Alpine 14.2.0) 14.2.0",
+      "cpp-nofmt": "g++ (Alpine 14.2.0) 14.2.0",
+      "go": "go version go1.24.13 linux/amd64",
+      "go-divergent": "go version go1.24.13 linux/amd64",
+      "go-resolve-divergent": "go version go1.24.13 linux/amd64",
+      "rust": "rustc 1.85.1 (4eb161250 2025-03-15)"
+    }
+  }
+}

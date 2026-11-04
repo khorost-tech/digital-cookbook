@@ -22,6 +22,7 @@
 | [`architecture/temporal`](architecture/temporal) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
 | [`architecture/testing`](architecture/testing) | Тестирование: распределённые системы (Testcontainers), TDD/BDD, flaky-тесты | [статья](https://khorost.tech/architecture/flaky-tests-diagnose-and-fix/) |
 | [`architecture/schema-migrators`](architecture/schema-migrators) | goose, Flyway, Liquibase, Atlas и Alembic против PostgreSQL, CockroachDB и Picodata: журнал версий, применение, интроспекция и откат с проверкой состояния базы SQL-запросом; обходные пути для CockroachDB | [статья](https://khorost.tech/architecture/schema-migrators-across-databases/) |
+| [`architecture/web-frameworks`](architecture/web-frameworks) | Двенадцать приложений с одним API — пары «минимальный — полный» в Go, Rust, Python, Node, Java и C# (net/http и Gin, axum и actix-web, Flask и FastAPI, Express и NestJS, Javalin и Spring Boot, Minimal API и MVC): поведение по умолчанию — 405 или 404, слэш в конце пути, валидация тела, лимит размера, исключение в обработчике и утечка стека, заголовки сервера, соотношение времени старта | 🔜 скоро |
 
 ## Databases
 
@@ -54,7 +55,7 @@
 | [`data-engineering/pipelines`](data-engineering/pipelines) | Батч-пайплайн Airflow 3 + dbt + PostgreSQL против эталона генератора: ETL против ELT при смене правила, идемпотентность загрузки и падение посреди неё, интервал данных и ручной запуск в Airflow 3, backfill и depends_on_past, поздние данные и окно пересмотра, повторы задач | [статья](https://khorost.tech/databases/data-batch-pipelines-orchestration/) |
 | [`data-engineering/dimensional`](data-engineering/dimensional) | Звёздная схема на dbt + PostgreSQL против эталона генератора: SCD1/2/3 на переездах клиентов (dbt snapshot), гранулярность факта и двойной счёт, полуаддитивные и неаддитивные меры, поздний клиент и переиспользованный id | [статья](https://khorost.tech/databases/dimensional-modeling-warehouse/) |
 | [`data-engineering/iceberg`](data-engineering/iceberg) | «Паркет в папке» против Iceberg на одном S3 (SeaweedFS, REST-каталог, Spark и PyIceberg): два писателя, читатель во время записи, удаление строки copy-on-write и merge-on-read, time travel, переименование и повторное добавление колонки, эволюция и скрытое партиционирование, мелкие файлы и обслуживание | [статья](https://khorost.tech/databases/open-table-formats-iceberg-delta/) |
-| [`data-engineering/quality`](data-engineering/quality) | Качество данных на dbt + Great Expectations + PostgreSQL против эталона генератора: восемь видов дефектов партии и что каждый набор проверок ловит, fail / warn / карантин — сколько плохих и хороших строк доходит до витрины, контракт модели dbt против смены типа, удаления колонки и смены единиц | 🔜 скоро |
+| [`data-engineering/quality`](data-engineering/quality) | Качество данных на dbt + Great Expectations + PostgreSQL против эталона генератора: восемь видов дефектов партии и что каждый набор проверок ловит, fail / warn / карантин — сколько плохих и хороших строк доходит до витрины, контракт модели dbt против смены типа, удаления колонки и смены единиц | [статья](https://khorost.tech/databases/data-quality-contracts/) |
 | [`data-engineering/observability`](data-engineering/observability) | Наблюдаемость данных на dbt + OpenLineage (dbt-ol) + Marquez + PostgreSQL против эталона генератора: затронутое ниже по потоку на уровне таблиц и колонок, восемь детекторов (объём, свежесть, схема, распределение; постоянные пороги и пороги по истории) на 14 днях с четырьмя подсаженными инцидентами — пойманные, пропущенные и ложные тревоги; затянувшийся сбой, который детектор по истории выучивает как норму | 🔜 скоро |
 
 ## Messaging
@@ -119,7 +120,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`ebpf/fundamentals`](ebpf/fundamentals) | Основы eBPF на cilium/ebpf (Go) и bpftrace против счёта нагрузки: tracepoint, kprobe, fentry, uprobe и uretprobe (ловушки Go — двойной uprobe и падение uretprobe при росте стека), карты под конкуренцией (гонка в hash, per-CPU, потери ring buffer), вердикты verifier на 12 программах, CO-RE на переименованном поле task_struct | 🔜 скоро |
+| [`ebpf/fundamentals`](ebpf/fundamentals) | Основы eBPF на cilium/ebpf (Go) и bpftrace против счёта нагрузки: tracepoint, kprobe, fentry, uprobe и uretprobe (ловушки Go — двойной uprobe и падение uretprobe при росте стека), карты под конкуренцией (гонка в hash, per-CPU, потери ring buffer), вердикты verifier на 12 программах, CO-RE на переименованном поле task_struct | [статья](https://khorost.tech/infrastructure/ebpf-fundamentals/) |
 | [`ebpf/observability`](ebpf/observability) | Наблюдаемость через eBPF против эталона генератора: Beyla против OTEL SDK на Go-сервисе (маршруты, статусы, gRPC, SQL, имена маршрутов без шаблона, связь спанов, прогрев после прицепления), eBPF-профилировщик Alloy → Pyroscope против заданной доли CPU (Go 1.26 и 1.27, с символами и без, потеря вызывающего у листовой функции на arm64), цена — счётчики ядра программ Beyla | 🔜 скоро |
 | [`ebpf/network-security`](ebpf/network-security) | eBPF на сетевом пути против счёта пакетов и сервисов: блокировка адресов через XDP (native и generic), tc ingress и iptables на cilium/ebpf (Go) — дошедшие пакеты, счётчики программы, что видит tcpdump, обновление карты на лету; Cilium в kind с заменой kube-proxy против kube-proxy — карта балансировщика, правила iptables, eBPF-программы на интерфейсах | 🔜 скоро |
 
@@ -153,6 +154,12 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`zig/hello-comptime`](zig/hello-comptime) | Zig: comptime и позиционирование среди C/Rust/C++ | [статья](https://khorost.tech/zig/zig-positioning-among-c-rust-cpp/) |
+
+## C++
+
+| Пример | Описание | Статья |
+|---|---|---|
+| [`cpp/build-and-package`](cpp/build-and-package) | Сборка и упаковка сервиса на C++: vcpkg против Conan против системного пакета, воспроизводимость сборки, статическая линковка и разрешение имён, размеры бинарника и образа рядом с Go и Rust | 🔜 скоро |
 
 ## Kubernetes
 

@@ -72,6 +72,12 @@
       "architecture/testing-distributed-systems.md",
       "architecture/writing-testable-code.md"
     ],
+    "architecture/web-frameworks": [
+      "architecture/web-frameworks-across-languages.md"
+    ],
+    "cpp/build-and-package": [
+      "cpp/cpp-modern-backend-and-systems.md"
+    ],
     "data-engineering/dimensional": [
       "databases/dimensional-modeling-warehouse.md"
     ],

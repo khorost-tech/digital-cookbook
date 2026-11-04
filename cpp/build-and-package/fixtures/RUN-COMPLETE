@@ -1,0 +1,16 @@
+{
+  "checks": 311,
+  "finished_at": "2026-09-11T05:59:47Z",
+  "fixtures_sha256": {
+    "build.jsonl": "00889c005b2a10c2d73bfd084f32a219ebc7b2e7713ae69dcef4a4bba666eff5",
+    "build.run-1.jsonl": "786d431951bf1d8d8759fa43b31e1922b52ce4eb45921e22ef58d07ed0ec8030",
+    "link.jsonl": "8e7a8f610cb9b4cbc88348ff50f95f514fc662b0a3e622cf248d5822e8658c2f",
+    "package.jsonl": "0217fbc7451b9da38c803dea503e54319761528f199b14853b7825ed09d0ba66",
+    "repro.jsonl": "cf1618555848e52cc4a68fd983b58bf1db4d4994ead88daed5cd38d0ed9a8977",
+    "repro.run-1.jsonl": "f344cf5d2b3b24ce38e21e86f13e4225da4980cb8d7aa0b0584aafb98729de50",
+    "siblings.jsonl": "991950b319b663628d11fb3a212c151b7b9527f66cebb48955c530b24de7fad2",
+    "siblings.run-1.jsonl": "49ae6c65e365e6869c676c5eba9bfe20283c8b81ab2fef28935d9ca84e438db1"
+  },
+  "platform": "linux",
+  "sabotages": 168
+}

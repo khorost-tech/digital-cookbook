@@ -1,0 +1,34 @@
+{
+ "golang": {
+  "ref": "golang:1.27",
+  "digest": "sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2"
+ },
+ "rust": {
+  "ref": "rust:1.98.1-slim-trixie",
+  "digest": "sha256:4cd829461bd5c4d511c32e269da9cb8929223b666519d8004e35fc8d1d771ab7"
+ },
+ "java": {
+  "ref": "eclipse-temurin:25.0.4_7-jdk",
+  "digest": "sha256:97014c4b396021f9ddb7d592a7dbedb0c4e4215c29e03dc01c393558aefb71c2"
+ },
+ "python": {
+  "ref": "python:3.14.7-slim",
+  "digest": "sha256:51dafde81dbdb6ebde285137a295cf18a47ca95234fe388a343719cb97305b3d"
+ },
+ "node": {
+  "ref": "node:24.20.0-slim",
+  "digest": "sha256:ba849c60be29959425b8734d57b8b4b7d56f98edd9504c9af091d5281095a71e"
+ },
+ "dotnet": {
+  "ref": "mcr.microsoft.com/dotnet/sdk:10.0.401",
+  "digest": "sha256:e70cdb7f80b0348f5cb85f19a8f670fca061f033d57eed12fa003d58b0e06317"
+ },
+ "maven": {
+  "ref": "maven:3.9-eclipse-temurin-25",
+  "digest": "sha256:93b8a14ea2f412782e4e842651273b4d903e35cc496284f178fbbe2d67d00976"
+ },
+ "distroless": {
+  "ref": "gcr.io/distroless/static-debian13:nonroot",
+  "digest": "sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3"
+ }
+}

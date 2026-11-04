@@ -1,0 +1,892 @@
+{
+ "written": "2026-10-19, до первого запуска приложений: собраны только образы. Предсказания — по документации и опыту, без прогона.",
+ "checks": {
+  "routing": {
+   "wrong_method": {
+    "go-nethttp": 405,
+    "go-gin": 404,
+    "rust-axum": 405,
+    "rust-actix": 404,
+    "py-flask": 405,
+    "py-fastapi": 405,
+    "node-express": 404,
+    "node-nestjs": 404,
+    "java-javalin": 404,
+    "java-spring": 405,
+    "cs-minimal": 405,
+    "cs-mvc": 405
+   },
+   "trailing_slash": {
+    "go-nethttp": 404,
+    "go-gin": 301,
+    "rust-axum": 404,
+    "rust-actix": 404,
+    "py-flask": 404,
+    "py-fastapi": 307,
+    "node-express": 200,
+    "node-nestjs": 200,
+    "java-javalin": 200,
+    "java-spring": 404,
+    "cs-minimal": 200,
+    "cs-mvc": 200
+   },
+   "bad_param": {
+    "go-nethttp": 400,
+    "go-gin": 400,
+    "rust-axum": 400,
+    "rust-actix": 404,
+    "py-flask": 404,
+    "py-fastapi": 422,
+    "node-express": 400,
+    "node-nestjs": 400,
+    "java-javalin": 500,
+    "java-spring": 400,
+    "cs-minimal": 404,
+    "cs-mvc": 404
+   },
+   "unknown_path": {
+    "go-nethttp": 404,
+    "go-gin": 404,
+    "rust-axum": 404,
+    "rust-actix": 404,
+    "py-flask": 404,
+    "py-fastapi": 404,
+    "node-express": 404,
+    "node-nestjs": 404,
+    "java-javalin": 404,
+    "java-spring": 404,
+    "cs-minimal": 404,
+    "cs-mvc": 404
+   }
+  },
+  "validation": {
+   "malformed_json": {
+    "go-nethttp": 400,
+    "go-gin": 400,
+    "rust-axum": 400,
+    "rust-actix": 400,
+    "py-flask": 400,
+    "py-fastapi": 422,
+    "node-express": 400,
+    "node-nestjs": 400,
+    "java-javalin": 500,
+    "java-spring": 400,
+    "cs-minimal": 400,
+    "cs-mvc": 400
+   },
+   "missing_name": {
+    "go-nethttp": 201,
+    "go-gin": 400,
+    "rust-axum": 422,
+    "rust-actix": 400,
+    "py-flask": 500,
+    "py-fastapi": 422,
+    "node-express": 201,
+    "node-nestjs": 201,
+    "java-javalin": 201,
+    "java-spring": 201,
+    "cs-minimal": 201,
+    "cs-mvc": 400
+   },
+   "wrong_type": {
+    "go-nethttp": 400,
+    "go-gin": 400,
+    "rust-axum": 422,
+    "rust-actix": 400,
+    "py-flask": 201,
+    "py-fastapi": 422,
+    "node-express": 201,
+    "node-nestjs": 201,
+    "java-javalin": 500,
+    "java-spring": 400,
+    "cs-minimal": 400,
+    "cs-mvc": 400
+   }
+  },
+  "limits": {
+   "body_40mb": {
+    "go-nethttp": 201,
+    "go-gin": 201,
+    "rust-axum": 413,
+    "rust-actix": 413,
+    "py-flask": 201,
+    "py-fastapi": 201,
+    "node-express": 413,
+    "node-nestjs": 413,
+    "java-javalin": 413,
+    "java-spring": 201,
+    "cs-minimal": 413,
+    "cs-mvc": 413
+   }
+  },
+  "errors": {
+   "boom_status": {
+    "go-nethttp": 0,
+    "go-gin": 500,
+    "rust-axum": 0,
+    "rust-actix": 0,
+    "py-flask": 500,
+    "py-fastapi": 500,
+    "node-express": 500,
+    "node-nestjs": 500,
+    "java-javalin": 500,
+    "java-spring": 500,
+    "cs-minimal": 500,
+    "cs-mvc": 500
+   },
+   "boom_leaks_message_or_stack": {
+    "go-nethttp": false,
+    "go-gin": false,
+    "rust-axum": false,
+    "rust-actix": false,
+    "py-flask": false,
+    "py-fastapi": false,
+    "node-express": true,
+    "node-nestjs": false,
+    "java-javalin": false,
+    "java-spring": false,
+    "cs-minimal": false,
+    "cs-mvc": false
+   },
+   "server_discloses_software": {
+    "go-nethttp": false,
+    "go-gin": false,
+    "rust-axum": false,
+    "rust-actix": false,
+    "py-flask": true,
+    "py-fastapi": true,
+    "node-express": true,
+    "node-nestjs": true,
+    "java-javalin": false,
+    "java-spring": false,
+    "cs-minimal": true,
+    "cs-mvc": true
+   }
+  },
+  "footprint": {
+   "java_full_starts_over_2x_slower": true,
+   "node_full_starts_over_2x_slower": true,
+   "go_pair_within_2x": true
+  },
+  "control": {
+   "valid_post": {
+    "go-nethttp": 201,
+    "go-gin": 201,
+    "rust-axum": 201,
+    "rust-actix": 201,
+    "py-flask": 201,
+    "py-fastapi": 201,
+    "node-express": 201,
+    "node-nestjs": 201,
+    "java-javalin": 201,
+    "java-spring": 201,
+    "cs-minimal": 201,
+    "cs-mvc": 201
+   },
+   "valid_get": {
+    "go-nethttp": 200,
+    "go-gin": 200,
+    "rust-axum": 200,
+    "rust-actix": 200,
+    "py-flask": 200,
+    "py-fastapi": 200,
+    "node-express": 200,
+    "node-nestjs": 200,
+    "java-javalin": 200,
+    "java-spring": 200,
+    "cs-minimal": 200,
+    "cs-mvc": 200
+   }
+  }
+ },
+ "notes": {
+  "routing": "DELETE на существующий путь: Go net/http (1.22+), axum, Flask, FastAPI, Spring, ASP.NET — 405; Gin, actix, Express, NestJS, Javalin — 404. Слэш в конце: Gin — 301, FastAPI — 307, Express, NestJS, Javalin, ASP.NET — совпадение (200), остальные — 404. Нечисловой id: ошибки привязки — 400 (Go и Express — проверка в коде), 422 (FastAPI), 404 (Flask int-конвертер, actix, ограничение маршрута ASP.NET), 500 (Javalin, parseInt в обработчике).",
+  "validation": "Пропущенное name: без слоя валидации — 201 с пустым полем (net/http, Express, NestJS без ValidationPipe, Javalin, Spring без @Valid, Minimal API); 400 (Gin binding, actix, MVC с неявным [Required]); 422 (axum, FastAPI); 500 (Flask, KeyError в коде).",
+  "limits": "Тело 40 МБ: лимит по умолчанию у axum (2 МБ), actix Json (32 КБ), express.json и NestJS (100 КБ), Javalin (1 МБ), Kestrel (30 МБ) — 413; у net/http, Gin, Flask, FastAPI, Spring — лимита нет, 201.",
+  "errors": "Паника в обработчике: net/http и Rust-серверы закрывают соединение без ответа; остальные — 500. Сообщение исключения или стек в теле — только Express без NODE_ENV=production. Сервер раскрывает себя: Werkzeug (Server), uvicorn (Server), Express и NestJS (X-Powered-By), Kestrel (Server).",
+  "footprint": "Время до первого ответа: Spring против Javalin и NestJS против Express — больше чем вдвое; net/http и Gin — в пределах двух раз. Только соотношения внутри экосистемы.",
+  "control": "Положительный контроль: корректный POST — 201, GET существующего пути — 200 у всех двенадцати; без него отказ в остальных проверках мог бы значить просто сломанное приложение."
+ },
+ "revision_stage1_probe": {
+  "written": "2026-10-19, после первой пробы, до сессий",
+  "observed": [
+   "footprint: время до первого ответа полного фреймворка к минимальному — Spring Boot/Javalin 1,94 и 2,10, NestJS/Express 1,73 и 2,02 в двух повторах (в пробе NestJS — меньше двух); в замер входит запуск контейнера — почти постоянная добавка, которая сжимает соотношение. Порог «больше чем вдвое» лежит внутри разброса; заменён на «больше чем в 1,5 раза». Отношение памяти шумит сильнее (Gin/net/http — 1,37 и 3,48) и не проверяется — только в полях ~. Остальные пять осей совпали с гипотезой у всех двенадцати приложений."
+  ],
+  "checks": {
+   "footprint": {
+    "java_full_starts_over_1_5x_slower": true,
+    "node_full_starts_over_1_5x_slower": true,
+    "go_pair_within_2x": true
+   }
+  }
+ },
+ "revision_stage2_session1": {
+  "written": "2026-10-19, после сессии 1, до следующих",
+  "harness": [
+   "Сводный скрипт диверсий копировал стенд в каталог control, а у стенда есть ось control — копия для неё попадала в существующий каталог (FileExistsError в сессии 2). Каталоги диверсий — с префиксом s-.",
+   "Время старта — медиана трёх запусков вместо одного."
+  ],
+  "observed": [
+   "footprint: NestJS к Express — 1,73, 2,02, 2,16 по одному запуску и меньше 1,5 в сессии 1; медиана трёх — 2,00, 1,50, 1,49 в трёх повторах. Express стартует так быстро, что почти всё время до первого ответа — запуск контейнера, и его разброс решает исход. Проверка Node убрана из actual, соотношение — в полях ~. Spring Boot к Javalin (медиана трёх) — 2,16, 2,16, 2,18; Gin к net/http — 0,88–1,02. Сводка сессии 1 снята при прежнем наборе и удалена."
+  ],
+  "checks": {
+   "footprint": {
+    "java_full_starts_over_1_5x_slower": true,
+    "go_pair_within_2x": true
+   }
+  }
+ },
+ "revision_stage3_review": {
+  "written": "2026-10-20, после рецензии, до прогона нового набора: приложения с новыми запросами ещё не запускались.",
+  "reason": [
+   "Рецензия: результат зависит и от кода примера, а не только от фреймворка. Добавлены запросы, разделяющие эти причины: /items/0 и name=\"\" (binding:\"required\" в Gin и неявный [Required] в MVC отвергают нулевое значение и пустую строку), /items/1abc (Number.parseInt в Express берёт префикс), мусор после JSON (json.Decoder в Go и Jackson 2 в Javalin читают первое значение и не проверяют остаток). Контроль Javalin: тот же маршрут со штатным pathParamAsClass — ошибка преобразования даёт 400, а не 500.",
+   "Рецензия: 301 на GET не говорит о POST. Добавлен POST /items/ с телом: код, путь из Location и повтор того же POST по Location; у 405 — наличие заголовка Allow.",
+   "Рецензия: детектор утечки искал подстроку в сыром теле и пропускал \\u-экранированный JSON. В сообщении исключения — уникальная метка marker-7f3a9c; детектор проверяет сырой текст, HTML-раскодированный и строки разобранного JSON; контроли детектора — пять образцов (три представления утечки, стек без метки, общий текст). Отсутствие ответа теперь с классом транспортной ошибки (closed/timeout/refused).",
+   "Рецензия: 40 МБ не доказывают отсутствия лимита и не различают пороги. Тело — серия размеров чуть ниже и чуть выше известных порогов (100 КБ express.json, 1 000 000 байт Javalin, 2 МиБ axum, 30 000 000 байт Kestrel) и 40 МиБ. Для actix-web предсказание — 2 МиБ у web::Json (в статье стояло 32 КБ — это значение actix-web 3; серия размеров это проверит).",
+   "Контроль: тело ответа проверяется — POST возвращает переданное name, GET — id 1.",
+   "Сводки сессий 3–4 сняты при прежнем наборе и удаляются; нужны две новые сессии."
+  ],
+  "checks": {
+   "control": {
+    "valid_post": {
+     "go-nethttp": 201,
+     "go-gin": 201,
+     "rust-axum": 201,
+     "rust-actix": 201,
+     "py-flask": 201,
+     "py-fastapi": 201,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 201,
+     "java-spring": 201,
+     "cs-minimal": 201,
+     "cs-mvc": 201
+    },
+    "valid_post_echoes_name": {
+     "go-nethttp": true,
+     "go-gin": true,
+     "rust-axum": true,
+     "rust-actix": true,
+     "py-flask": true,
+     "py-fastapi": true,
+     "node-express": true,
+     "node-nestjs": true,
+     "java-javalin": true,
+     "java-spring": true,
+     "cs-minimal": true,
+     "cs-mvc": true
+    },
+    "valid_get": {
+     "go-nethttp": 200,
+     "go-gin": 200,
+     "rust-axum": 200,
+     "rust-actix": 200,
+     "py-flask": 200,
+     "py-fastapi": 200,
+     "node-express": 200,
+     "node-nestjs": 200,
+     "java-javalin": 200,
+     "java-spring": 200,
+     "cs-minimal": 200,
+     "cs-mvc": 200
+    },
+    "valid_get_returns_id": {
+     "go-nethttp": true,
+     "go-gin": true,
+     "rust-axum": true,
+     "rust-actix": true,
+     "py-flask": true,
+     "py-fastapi": true,
+     "node-express": true,
+     "node-nestjs": true,
+     "java-javalin": true,
+     "java-spring": true,
+     "cs-minimal": true,
+     "cs-mvc": true
+    },
+    "javalin_typed_valid_get": true
+   },
+   "routing": {
+    "wrong_method": {
+     "go-nethttp": 405,
+     "go-gin": 404,
+     "rust-axum": 405,
+     "rust-actix": 404,
+     "py-flask": 405,
+     "py-fastapi": 405,
+     "node-express": 404,
+     "node-nestjs": 404,
+     "java-javalin": 404,
+     "java-spring": 405,
+     "cs-minimal": 405,
+     "cs-mvc": 405
+    },
+    "allow_present": {
+     "go-nethttp": true,
+     "go-gin": null,
+     "rust-axum": true,
+     "rust-actix": null,
+     "py-flask": true,
+     "py-fastapi": true,
+     "node-express": null,
+     "node-nestjs": null,
+     "java-javalin": null,
+     "java-spring": true,
+     "cs-minimal": true,
+     "cs-mvc": true
+    },
+    "trailing_slash": {
+     "go-nethttp": 404,
+     "go-gin": 301,
+     "rust-axum": 404,
+     "rust-actix": 404,
+     "py-flask": 404,
+     "py-fastapi": 307,
+     "node-express": 200,
+     "node-nestjs": 200,
+     "java-javalin": 200,
+     "java-spring": 404,
+     "cs-minimal": 200,
+     "cs-mvc": 200
+    },
+    "post_trailing_slash": {
+     "go-nethttp": 404,
+     "go-gin": 307,
+     "rust-axum": 404,
+     "rust-actix": 404,
+     "py-flask": 404,
+     "py-fastapi": 307,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 201,
+     "java-spring": 404,
+     "cs-minimal": 201,
+     "cs-mvc": 201
+    },
+    "post_redirect_body_kept": {
+     "go-nethttp": null,
+     "go-gin": true,
+     "rust-axum": null,
+     "rust-actix": null,
+     "py-flask": null,
+     "py-fastapi": true,
+     "node-express": null,
+     "node-nestjs": null,
+     "java-javalin": null,
+     "java-spring": null,
+     "cs-minimal": null,
+     "cs-mvc": null
+    },
+    "bad_param": {
+     "go-nethttp": 400,
+     "go-gin": 400,
+     "rust-axum": 400,
+     "rust-actix": 404,
+     "py-flask": 404,
+     "py-fastapi": 422,
+     "node-express": 400,
+     "node-nestjs": 400,
+     "java-javalin": 500,
+     "java-spring": 400,
+     "cs-minimal": 404,
+     "cs-mvc": 404
+    },
+    "digits_prefix_param": {
+     "go-nethttp": 400,
+     "go-gin": 400,
+     "rust-axum": 400,
+     "rust-actix": 404,
+     "py-flask": 404,
+     "py-fastapi": 422,
+     "node-express": 200,
+     "node-nestjs": 400,
+     "java-javalin": 500,
+     "java-spring": 400,
+     "cs-minimal": 404,
+     "cs-mvc": 404
+    },
+    "zero_id": {
+     "go-nethttp": 200,
+     "go-gin": 400,
+     "rust-axum": 200,
+     "rust-actix": 200,
+     "py-flask": 200,
+     "py-fastapi": 200,
+     "node-express": 200,
+     "node-nestjs": 200,
+     "java-javalin": 200,
+     "java-spring": 200,
+     "cs-minimal": 200,
+     "cs-mvc": 200
+    },
+    "unknown_path": {
+     "go-nethttp": 404,
+     "go-gin": 404,
+     "rust-axum": 404,
+     "rust-actix": 404,
+     "py-flask": 404,
+     "py-fastapi": 404,
+     "node-express": 404,
+     "node-nestjs": 404,
+     "java-javalin": 404,
+     "java-spring": 404,
+     "cs-minimal": 404,
+     "cs-mvc": 404
+    },
+    "javalin_typed_bad_param": 400
+   },
+   "validation": {
+    "malformed_json": {
+     "go-nethttp": 400,
+     "go-gin": 400,
+     "rust-axum": 400,
+     "rust-actix": 400,
+     "py-flask": 400,
+     "py-fastapi": 422,
+     "node-express": 400,
+     "node-nestjs": 400,
+     "java-javalin": 500,
+     "java-spring": 400,
+     "cs-minimal": 400,
+     "cs-mvc": 400
+    },
+    "missing_name": {
+     "go-nethttp": 201,
+     "go-gin": 400,
+     "rust-axum": 422,
+     "rust-actix": 400,
+     "py-flask": 500,
+     "py-fastapi": 422,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 201,
+     "java-spring": 201,
+     "cs-minimal": 201,
+     "cs-mvc": 400
+    },
+    "empty_name": {
+     "go-nethttp": 201,
+     "go-gin": 400,
+     "rust-axum": 201,
+     "rust-actix": 201,
+     "py-flask": 201,
+     "py-fastapi": 201,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 201,
+     "java-spring": 201,
+     "cs-minimal": 201,
+     "cs-mvc": 400
+    },
+    "wrong_type": {
+     "go-nethttp": 400,
+     "go-gin": 400,
+     "rust-axum": 422,
+     "rust-actix": 400,
+     "py-flask": 201,
+     "py-fastapi": 422,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 500,
+     "java-spring": 400,
+     "cs-minimal": 400,
+     "cs-mvc": 400
+    },
+    "trailing_garbage": {
+     "go-nethttp": 201,
+     "go-gin": 201,
+     "rust-axum": 400,
+     "rust-actix": 400,
+     "py-flask": 400,
+     "py-fastapi": 422,
+     "node-express": 400,
+     "node-nestjs": 400,
+     "java-javalin": 201,
+     "java-spring": 400,
+     "cs-minimal": 400,
+     "cs-mvc": 400
+    }
+   },
+   "limits": {
+    "by_size": {
+     "90000": {
+      "go-nethttp": 201,
+      "go-gin": 201,
+      "rust-axum": 201,
+      "rust-actix": 201,
+      "py-flask": 201,
+      "py-fastapi": 201,
+      "node-express": 201,
+      "node-nestjs": 201,
+      "java-javalin": 201,
+      "java-spring": 201,
+      "cs-minimal": 201,
+      "cs-mvc": 201
+     },
+     "110000": {
+      "go-nethttp": 201,
+      "go-gin": 201,
+      "rust-axum": 201,
+      "rust-actix": 201,
+      "py-flask": 201,
+      "py-fastapi": 201,
+      "node-express": 413,
+      "node-nestjs": 413,
+      "java-javalin": 201,
+      "java-spring": 201,
+      "cs-minimal": 201,
+      "cs-mvc": 201
+     },
+     "900000": {
+      "go-nethttp": 201,
+      "go-gin": 201,
+      "rust-axum": 201,
+      "rust-actix": 201,
+      "py-flask": 201,
+      "py-fastapi": 201,
+      "node-express": 413,
+      "node-nestjs": 413,
+      "java-javalin": 201,
+      "java-spring": 201,
+      "cs-minimal": 201,
+      "cs-mvc": 201
+     },
+     "1100000": {
+      "go-nethttp": 201,
+      "go-gin": 201,
+      "rust-axum": 201,
+      "rust-actix": 201,
+      "py-flask": 201,
+      "py-fastapi": 201,
+      "node-express": 413,
+      "node-nestjs": 413,
+      "java-javalin": 413,
+      "java-spring": 201,
+      "cs-minimal": 201,
+      "cs-mvc": 201
+     },
+     "2000000": {
+      "go-nethttp": 201,
+      "go-gin": 201,
+      "rust-axum": 201,
+      "rust-actix": 201,
+      "py-flask": 201,
+      "py-fastapi": 201,
+      "node-express": 413,
+      "node-nestjs": 413,
+      "java-javalin": 413,
+      "java-spring": 201,
+      "cs-minimal": 201,
+      "cs-mvc": 201
+     },
+     "2200000": {
+      "go-nethttp": 201,
+      "go-gin": 201,
+      "rust-axum": 413,
+      "rust-actix": 413,
+      "py-flask": 201,
+      "py-fastapi": 201,
+      "node-express": 413,
+      "node-nestjs": 413,
+      "java-javalin": 413,
+      "java-spring": 201,
+      "cs-minimal": 201,
+      "cs-mvc": 201
+     },
+     "29000000": {
+      "go-nethttp": 201,
+      "go-gin": 201,
+      "rust-axum": 413,
+      "rust-actix": 413,
+      "py-flask": 201,
+      "py-fastapi": 201,
+      "node-express": 413,
+      "node-nestjs": 413,
+      "java-javalin": 413,
+      "java-spring": 201,
+      "cs-minimal": 201,
+      "cs-mvc": 201
+     },
+     "31000000": {
+      "go-nethttp": 201,
+      "go-gin": 201,
+      "rust-axum": 413,
+      "rust-actix": 413,
+      "py-flask": 201,
+      "py-fastapi": 201,
+      "node-express": 413,
+      "node-nestjs": 413,
+      "java-javalin": 413,
+      "java-spring": 201,
+      "cs-minimal": 413,
+      "cs-mvc": 413
+     },
+     "41943040": {
+      "go-nethttp": 201,
+      "go-gin": 201,
+      "rust-axum": 413,
+      "rust-actix": 413,
+      "py-flask": 201,
+      "py-fastapi": 201,
+      "node-express": 413,
+      "node-nestjs": 413,
+      "java-javalin": 413,
+      "java-spring": 201,
+      "cs-minimal": 413,
+      "cs-mvc": 413
+     }
+    }
+   },
+   "errors": {
+    "boom_status": {
+     "go-nethttp": 0,
+     "go-gin": 500,
+     "rust-axum": 0,
+     "rust-actix": 0,
+     "py-flask": 500,
+     "py-fastapi": 500,
+     "node-express": 500,
+     "node-nestjs": 500,
+     "java-javalin": 500,
+     "java-spring": 500,
+     "cs-minimal": 500,
+     "cs-mvc": 500
+    },
+    "boom_transport": {
+     "go-nethttp": "closed",
+     "go-gin": "ok",
+     "rust-axum": "closed",
+     "rust-actix": "closed",
+     "py-flask": "ok",
+     "py-fastapi": "ok",
+     "node-express": "ok",
+     "node-nestjs": "ok",
+     "java-javalin": "ok",
+     "java-spring": "ok",
+     "cs-minimal": "ok",
+     "cs-mvc": "ok"
+    },
+    "boom_leaks_message_or_stack": {
+     "go-nethttp": false,
+     "go-gin": false,
+     "rust-axum": false,
+     "rust-actix": false,
+     "py-flask": false,
+     "py-fastapi": false,
+     "node-express": true,
+     "node-nestjs": false,
+     "java-javalin": false,
+     "java-spring": false,
+     "cs-minimal": false,
+     "cs-mvc": false
+    },
+    "server_discloses_software": {
+     "go-nethttp": false,
+     "go-gin": false,
+     "rust-axum": false,
+     "rust-actix": false,
+     "py-flask": true,
+     "py-fastapi": true,
+     "node-express": true,
+     "node-nestjs": true,
+     "java-javalin": false,
+     "java-spring": false,
+     "cs-minimal": true,
+     "cs-mvc": true
+    },
+    "detector_controls_ok": true
+   }
+  }
+ },
+ "revision_stage4_review_probe": {
+  "written": "2026-10-20, после пробы нового набора, до сессий.",
+  "observed": [
+   "validation: MVC принял name пустой строкой (201), гипотеза 400 была неверна — неявная проверка обязательности для ненулевого string отвергает отсутствующее поле (missing_name — 400), но не пустую строку. Остальные новые проверки совпали с гипотезой, в том числе порог actix-web: web::Json принимает 2 000 000 байт и отвергает 2 200 000 (2 МиБ, а не 32 КБ, как стояло в статье)."
+  ],
+  "checks": {
+   "validation": {
+    "malformed_json": {
+     "go-nethttp": 400,
+     "go-gin": 400,
+     "rust-axum": 400,
+     "rust-actix": 400,
+     "py-flask": 400,
+     "py-fastapi": 422,
+     "node-express": 400,
+     "node-nestjs": 400,
+     "java-javalin": 500,
+     "java-spring": 400,
+     "cs-minimal": 400,
+     "cs-mvc": 400
+    },
+    "missing_name": {
+     "go-nethttp": 201,
+     "go-gin": 400,
+     "rust-axum": 422,
+     "rust-actix": 400,
+     "py-flask": 500,
+     "py-fastapi": 422,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 201,
+     "java-spring": 201,
+     "cs-minimal": 201,
+     "cs-mvc": 400
+    },
+    "empty_name": {
+     "go-nethttp": 201,
+     "go-gin": 400,
+     "rust-axum": 201,
+     "rust-actix": 201,
+     "py-flask": 201,
+     "py-fastapi": 201,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 201,
+     "java-spring": 201,
+     "cs-minimal": 201,
+     "cs-mvc": 201
+    },
+    "wrong_type": {
+     "go-nethttp": 400,
+     "go-gin": 400,
+     "rust-axum": 422,
+     "rust-actix": 400,
+     "py-flask": 201,
+     "py-fastapi": 422,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 500,
+     "java-spring": 400,
+     "cs-minimal": 400,
+     "cs-mvc": 400
+    },
+    "trailing_garbage": {
+     "go-nethttp": 201,
+     "go-gin": 201,
+     "rust-axum": 400,
+     "rust-actix": 400,
+     "py-flask": 400,
+     "py-fastapi": 422,
+     "node-express": 400,
+     "node-nestjs": 400,
+     "java-javalin": 201,
+     "java-spring": 400,
+     "cs-minimal": 400,
+     "cs-mvc": 400
+    }
+   }
+  },
+  "harness": [
+   "Сессия после пробы: Flask (Werkzeug) отдаёт методы в Allow в разном порядке от запуска к запуску (\"HEAD, GET, OPTIONS\" и \"OPTIONS, GET, HEAD\") — набор методов один, порядок из множества. Поле allow теперь — отсортированный список методов; сводки двух сессий с прежним форматом удалены."
+  ]
+ },
+ "revision_stage5_review2": {
+  "written": "2026-10-20, после второй рецензии, до прогона нового набора.",
+  "reason": [
+   "Рецензия: «qty строкой» проверялось только непреобразуемой строкой \"many\"; числовая строка \"1\" — другой случай: pydantic в нестрогом режиме, Jackson (ALLOW_COERCION_OF_SCALARS) и System.Text.Json с JsonSerializerDefaults.Web (AllowReadingFromString) её преобразуют. Контракт уточнён: qty — целое; числовая строка и дробь — ошибка клиента. Добавлены запросы qty=\"1\" и qty=1.5. Предсказания для дроби: Jackson по умолчанию принимает дробь в int (ACCEPT_FLOAT_AS_INT), pydantic отвергает дробную часть, System.Text.Json — отвергает."
+  ],
+  "checks": {
+   "validation": {
+    "malformed_json": {
+     "go-nethttp": 400,
+     "go-gin": 400,
+     "rust-axum": 400,
+     "rust-actix": 400,
+     "py-flask": 400,
+     "py-fastapi": 422,
+     "node-express": 400,
+     "node-nestjs": 400,
+     "java-javalin": 500,
+     "java-spring": 400,
+     "cs-minimal": 400,
+     "cs-mvc": 400
+    },
+    "missing_name": {
+     "go-nethttp": 201,
+     "go-gin": 400,
+     "rust-axum": 422,
+     "rust-actix": 400,
+     "py-flask": 500,
+     "py-fastapi": 422,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 201,
+     "java-spring": 201,
+     "cs-minimal": 201,
+     "cs-mvc": 400
+    },
+    "empty_name": {
+     "go-nethttp": 201,
+     "go-gin": 400,
+     "rust-axum": 201,
+     "rust-actix": 201,
+     "py-flask": 201,
+     "py-fastapi": 201,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 201,
+     "java-spring": 201,
+     "cs-minimal": 201,
+     "cs-mvc": 201
+    },
+    "wrong_type": {
+     "go-nethttp": 400,
+     "go-gin": 400,
+     "rust-axum": 422,
+     "rust-actix": 400,
+     "py-flask": 201,
+     "py-fastapi": 422,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 500,
+     "java-spring": 400,
+     "cs-minimal": 400,
+     "cs-mvc": 400
+    },
+    "trailing_garbage": {
+     "go-nethttp": 201,
+     "go-gin": 201,
+     "rust-axum": 400,
+     "rust-actix": 400,
+     "py-flask": 400,
+     "py-fastapi": 422,
+     "node-express": 400,
+     "node-nestjs": 400,
+     "java-javalin": 201,
+     "java-spring": 400,
+     "cs-minimal": 400,
+     "cs-mvc": 400
+    },
+    "numeric_string": {
+     "go-nethttp": 400,
+     "go-gin": 400,
+     "rust-axum": 422,
+     "rust-actix": 400,
+     "py-flask": 201,
+     "py-fastapi": 201,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 201,
+     "java-spring": 201,
+     "cs-minimal": 201,
+     "cs-mvc": 201
+    },
+    "fractional": {
+     "go-nethttp": 400,
+     "go-gin": 400,
+     "rust-axum": 422,
+     "rust-actix": 400,
+     "py-flask": 201,
+     "py-fastapi": 422,
+     "node-express": 201,
+     "node-nestjs": 201,
+     "java-javalin": 201,
+     "java-spring": 201,
+     "cs-minimal": 400,
+     "cs-mvc": 400
+    }
+   }
+  }
+ }
+}

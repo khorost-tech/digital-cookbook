@@ -1,0 +1,6 @@
+# артефакты сборки приложений
+apps/*/target/
+apps/*/node_modules/
+apps/*/dist/
+apps/*/obj/
+apps/*/bin/

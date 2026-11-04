@@ -1,0 +1,44 @@
+# Динамика без оболочки и пакетного менеджера. Отличается от
+# glibc-dynamic ТОЛЬКО рантаймом: тот же builder gcc:15, та же
+# динамическая линковка. distroless/cc-debian13 несёт glibc/libstdc++,
+# но не libfmt — .so библиотеки fmt из builder-стадии переносятся рядом
+# с бинарником и подключаются через LD_LIBRARY_PATH, иначе смена рантайма
+# незаметно потребовала бы ещё и переупаковки fmt — то есть двух вещей
+# сразу вместо одной.
+#
+# Рантайм — cc-debian13, а не cc-debian12. Изначально стоял cc-debian12
+# (Debian bookworm, glibc 2.36), а builder — gcc:15 (Debian trixie,
+# glibc 2.41): собранный бинарник отказывался стартовать в рантайме
+# словами "version `GLIBC_2.38' not found", следом
+# "CXXABI_1.3.15' not found". Это распространённая и незаметная на
+# первый взгляд ошибка упаковки: glibc обратно совместим (новый рантайм
+# запускает старый бинарник), но НЕ вперёд — бинарник, слинкованный
+# свежим компилятором/libc, не запускается на рантайме прошлого
+# поколения дистрибутива, даже если оба образа называются "стабильными".
+# Здесь builder и рантайм оказались из разных поколений Debian
+# (trixie/bookworm) просто потому, что первый выбирался по версии gcc,
+# а второй — по инерции "текущий тег distroless". cc-debian13 собран на
+# той же trixie, что и builder gcc:15 — это сохраняет ОДНУ переменную
+# относительно glibc-dynamic (различие только в рантайме, не в
+# поколении дистрибутива builder'а и рантайма одновременно).
+# ЗАКРЕПЛЕНИЕ БАЗОВОГО ОБРАЗА ПО ДАЙДЖЕСТУ. Тег — подвижный указатель:
+# под тем же именем завтра лежит другое содержимое, и прогон,
+# сравниваемый с этими фикстурами, сравнивал бы их с другим образом молча.
+# Дайджест снят с ИНДЕКСА (манифест-листа), а не с образа под конкретную
+# архитектуру: он так же неизменяем, но оставляет разрешение архитектуры
+# докеру. Тег рядом с дайджестом оставлен для чтения человеком — Docker
+# при наличии дайджеста тег игнорирует.
+FROM gcc:15@sha256:fb2568a8cc0609134396aeb1eae1f3a91c8ceec54aaee67c798d9602593abd66 AS build
+RUN apt-get update -qq && apt-get install -y -qq cmake libfmt-dev
+COPY service /src
+RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release \
+ && cmake --build /build -j \
+ && strip /build/stand_service
+
+FROM gcr.io/distroless/cc-debian13@sha256:9b615fff20e1a4fad29c2b30562580b212c7dd5e2225236735cca0070ed11c78
+COPY --from=build /build/stand_service /stand_service
+COPY --from=build /usr/lib/x86_64-linux-gnu/libfmt.so.10.1.0 /libfmt/libfmt.so.10
+COPY images/resolv.conf /etc/resolv.conf
+ENV STAND_VARIANT=distroless
+ENV LD_LIBRARY_PATH=/libfmt
+ENTRYPOINT ["/stand_service"]

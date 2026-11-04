@@ -1,0 +1,52 @@
+# Сосед по языку: тот же сервис на Rust, упакован так же, как плечо
+# musl-static оси упаковки, — статический бинарник в scratch.
+#
+# ПОЧЕМУ ОБРАЗ НА ALPINE. Плечо C++ этой оси собрано в Alpine и слинковано
+# с musl. Соседа надо упаковать так же, иначе сравнивались бы не языки, а
+# способы линковки: rust:alpine даёт цель x86_64-unknown-linux-musl, у
+# которой статическая линковка — умолчание.
+#
+# ПОЧЕМУ --offline И CARGO_NET_OFFLINE. Это САМО ИЗМЕРЕНИЕ условия «ни
+# одной зависимости сверх стандартной библиотеки». Пустой [dependencies]
+# написал автор стенда; сборка при выключенном доступе к реестру крейтов
+# — улика: любой внешний крейт уронил бы её.
+#
+# ПОЧЕМУ strip ОТДЕЛЬНЫМ ШАГОМ. У плеча C++ отладочная информация
+# убирается утилитой strip из binutils. Чтобы размеры сравнивались, у
+# соседа она убирается тем же инструментом, а не средствами cargo:
+# «убрано одинаковым способом» — часть условия сравнимости, и шаг
+# записывается в файл лечения, который измеритель читает из образа.
+# ЗАКРЕПЛЕНИЕ БАЗОВОГО ОБРАЗА ПО ДАЙДЖЕСТУ. Тег — подвижный указатель:
+# под тем же именем завтра лежит другое содержимое, и прогон,
+# сравниваемый с этими фикстурами, сравнивал бы их с другим образом молча.
+# Дайджест снят с ИНДЕКСА (манифест-листа), а не с образа под конкретную
+# архитектуру: он так же неизменяем, но оставляет разрешение архитектуры
+# докеру. Тег рядом с дайджестом оставлен для чтения человеком — Docker
+# при наличии дайджеста тег игнорирует.
+FROM rust:1.85-alpine@sha256:4333721398de61f53ccbe53b0b855bcc4bb49e55828e8f652d7a8ac33dd0c118 AS build
+ARG STAND_NONCE=none
+ENV CARGO_NET_OFFLINE=true
+RUN apk add --no-cache musl-dev binutils
+COPY siblings/rust /src
+WORKDIR /src
+# Метка прогона пишется в образ ПЕРЕД шагом компиляции и читается обратно
+# измерителем: слой, переиспользованный из кэша, отдал бы чужую метку.
+RUN echo "$STAND_NONCE" > /nonce
+RUN cargo build --release --offline --target-dir /target
+RUN mkdir -p /build \
+ && cp /target/release/stand_service /build/stand_service \
+ && strip /build/stand_service \
+ && { echo "LANG=[rust]"; \
+      echo "TOOLCHAIN=[$(rustc --version)]"; \
+      echo "CARGO_NET_OFFLINE=[$CARGO_NET_OFFLINE]"; \
+      echo "CARGO_FLAGS=[--release --offline]"; \
+      echo "TARGET=[$(rustc -vV | sed -n 's/^host: //p')]"; \
+      echo "STRIP=[strip]"; \
+      echo "EXTERNAL_CRATES=[$(grep -c '^name = ' Cargo.lock | awk '{print $1-1}')]"; \
+    } > /treatment.txt
+
+FROM scratch
+COPY --from=build /build/stand_service /stand_service
+COPY images/resolv.conf /etc/resolv.conf
+ENV STAND_VARIANT=rust
+ENTRYPOINT ["/stand_service"]

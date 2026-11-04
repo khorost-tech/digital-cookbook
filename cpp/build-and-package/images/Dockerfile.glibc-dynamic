@@ -1,0 +1,23 @@
+# Обычная динамическая сборка glibc. Базовая точка оси: всё остальное
+# сравнивается с этим вариантом.
+# ЗАКРЕПЛЕНИЕ БАЗОВОГО ОБРАЗА ПО ДАЙДЖЕСТУ. Тег — подвижный указатель:
+# под тем же именем завтра лежит другое содержимое, и прогон,
+# сравниваемый с этими фикстурами, сравнивал бы их с другим образом молча.
+# Дайджест снят с ИНДЕКСА (манифест-листа), а не с образа под конкретную
+# архитектуру: он так же неизменяем, но оставляет разрешение архитектуры
+# докеру. Тег рядом с дайджестом оставлен для чтения человеком — Docker
+# при наличии дайджеста тег игнорирует.
+FROM gcc:15@sha256:fb2568a8cc0609134396aeb1eae1f3a91c8ceec54aaee67c798d9602593abd66 AS build
+RUN apt-get update -qq && apt-get install -y -qq cmake libfmt-dev
+COPY service /src
+RUN cmake -S /src -B /build -DCMAKE_BUILD_TYPE=Release \
+ && cmake --build /build -j \
+ && strip /build/stand_service
+
+FROM debian:trixie-slim@sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132
+RUN apt-get update -qq && apt-get install -y -qq --no-install-recommends libfmt10 \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=build /build/stand_service /stand_service
+COPY images/resolv.conf /etc/resolv.conf
+ENV STAND_VARIANT=glibc-dynamic
+ENTRYPOINT ["/stand_service"]
