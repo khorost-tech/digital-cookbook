@@ -1,0 +1,12 @@
+{
+  "image": "postgres@sha256:4aabea78cf39b90e834caf3af7d602a18565f6fe2508705c8d01aa63245c2e20",
+  "tag_at_pinning": "postgres:18",
+  "why_a_digest": "Тег — подвижный указатель: под тем же именем завтра лежит другое содержимое, и счётчики из базы сравнивались бы с фикстурами от другой версии молча. Дайджест снят с индекса (манифест-листа): он неизменяем и оставляет разрешение архитектуры докеру.",
+  "why_a_separate_file": "images/variants.json читается как ОБЪЯВЛЕНИЕ ТРЁХ ВАРИАНТОВ: обвязка перебирает его ключи. Четвёртый ключ там означал бы четвёртый вариант сервиса, которого нет.",
+  "statements_extension": {
+    "name": "pg_stat_statements",
+    "preload_flag": "shared_preload_libraries=pg_stat_statements",
+    "measured": "Без флага при старте сервера CREATE EXTENSION ПРОХОДИТ, а чтение представления отвечает ошибкой «pg_stat_statements must be loaded via shared_preload_libraries». То есть отсутствие расширения громкое, а не молчаливое, — но только если ответ базы читается, а не превращается в ноль."
+  },
+  "measured_about_prepared_statements": "pg_prepared_statements в PostgreSQL 18 имеет столбцы name, statement, prepare_time, parameter_types, result_types, from_sql, generic_plans, custom_plans — ни pid, ни application_name. Замер: пока одна сессия держала подготовленный запрос, ОТДЕЛЬНАЯ сессия читала из этого представления ноль. См. докстринг scripts/pg.prepared."
+}

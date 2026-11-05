@@ -1,0 +1,13 @@
+{
+  "checks": 372,
+  "finished_at": "2026-09-26T13:29:15Z",
+  "fixtures_sha256": {
+    "cancel.jsonl": "037234f23164658f57d8a45be7df6e805341cd5239bb87361f8cba64df5c0eda",
+    "db-wait.jsonl": "f97ec074eae45db3e5b8a3b9829078885c1c346ebcca42a6d799ad340a16e3ad",
+    "pool.jsonl": "ed3dde12dc853a2223fff8a1ef8257c6d6666e96378465df948d58cabd7ee471",
+    "prepared.jsonl": "e3ae0e07d389a55a09791e5ff8bb10afeaed1b61dd0e0b60d7fc5cac366336f0",
+    "variants.jsonl": "43f4e58617aca7409bb092bee6ef9ef48eff9cf83959fdb47f86cf8a7fa5060f"
+  },
+  "platform": "linux",
+  "sabotages": 175
+}

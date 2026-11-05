@@ -1,0 +1,65 @@
+{
+  "beast": {
+    "layer": "beast",
+    "dockerfile": "Dockerfile.beast",
+    "base_image": "cpp-service-and-postgres-base:latest",
+    "library": "Boost.Beast поверх Boost.Asio (заголовки Boost из libboost-dev)",
+    "model": "корутины C++20: awaitable + co_spawn, асинхронные чтение и запись",
+    "worker_knob": {
+      "call": "threads.emplace_back",
+      "unit": "поток, крутящий io_context",
+      "count_expression": "index < workers"
+    },
+    "worker_default": "своего дефолта у слоя нет: сколько потоков заведёт точка входа, столько и будет — без явной величины сравнивать было бы не с чем",
+    "observed": {
+      "kind": "measured",
+      "workers": 3,
+      "probes": 4,
+      "served_concurrently": 3,
+      "where": "fixtures/variants.jsonl, поле occupancy"
+    },
+    "note": "Слой ничего не решает за нас: приём соединения и обслуживание написаны в точке входа корутинами. Остальное общее: ручки, разбор запроса, клиент базы."
+  },
+  "drogon": {
+    "layer": "drogon",
+    "dockerfile": "Dockerfile.drogon",
+    "base_image": "cpp-service-and-postgres-base:latest",
+    "library": "Drogon (libdrogon-dev)",
+    "model": "собственный цикл событий, обработчик с обратным вызовом",
+    "worker_knob": {
+      "call": "setThreadNum",
+      "unit": "цикл событий",
+      "count_expression": "setThreadNum(workers)"
+    },
+    "worker_default": "один цикл событий — то есть без явной величины этот вариант сравнивался бы с соседями при другом числе рабочих единиц",
+    "observed": {
+      "kind": "existential",
+      "workers": 3,
+      "probes": 4,
+      "served_concurrently": 2,
+      "where": "fixtures/variants.jsonl, поле occupancy; kind=existential означает, что залп с таким числом НАБЛЮДАЛСЯ, а не что оно повторяется: у этого слоя прочитанная занятость при трёх единицах меняется от залпа к залпу"
+    },
+    "note": "Обработчик выполняется на цикле событий, и ожидание в ручке /block занимает этот цикл — ровно это меряет ось 1. Ни контроллеров, ни клиента базы самого Drogon не заведено: они увели бы вариант в сторону от двух остальных."
+  },
+  "crow": {
+    "layer": "crow",
+    "dockerfile": "Dockerfile.crow",
+    "base_image": "cpp-service-and-postgres-base:latest",
+    "library": "Crow v1.2.1.2, один заголовок crow_all.h, закреплён суммой sha256 (images/install-layer.sh); из репозитория — только asio",
+    "model": "пул потоков, синхронный обработчик",
+    "worker_knob": {
+      "call": "concurrency",
+      "unit": "поток из пула",
+      "count_expression": "concurrency(static_cast<std::uint16_t>(workers))"
+    },
+    "worker_default": "число аппаратных потоков машины — величина, зависящая от МЕСТА ЗАПУСКА: без явной настройки один и тот же стенд давал бы разные числа на разных машинах",
+    "observed": {
+      "kind": "measured",
+      "workers": 3,
+      "probes": 4,
+      "served_concurrently": 2,
+      "where": "fixtures/variants.jsonl, поле occupancy"
+    },
+    "note": "Заведён один перехватывающий маршрут: собственная маршрутизация Crow развела бы три варианта ещё и разбором запроса. ОДНО И ТО ЖЕ ЧИСЛО У ТРЁХ СЛОЁВ ЗНАЧИТ РАЗНОЕ: при трёх заданных единицах этот вариант обслуживал разом две, а beast — три. Почему именно так — стенд не замерял и не утверждает."
+  }
+}

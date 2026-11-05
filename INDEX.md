@@ -56,7 +56,7 @@
 | [`data-engineering/dimensional`](data-engineering/dimensional) | Звёздная схема на dbt + PostgreSQL против эталона генератора: SCD1/2/3 на переездах клиентов (dbt snapshot), гранулярность факта и двойной счёт, полуаддитивные и неаддитивные меры, поздний клиент и переиспользованный id | [статья](https://khorost.tech/databases/dimensional-modeling-warehouse/) |
 | [`data-engineering/iceberg`](data-engineering/iceberg) | «Паркет в папке» против Iceberg на одном S3 (SeaweedFS, REST-каталог, Spark и PyIceberg): два писателя, читатель во время записи, удаление строки copy-on-write и merge-on-read, time travel, переименование и повторное добавление колонки, эволюция и скрытое партиционирование, мелкие файлы и обслуживание | [статья](https://khorost.tech/databases/open-table-formats-iceberg-delta/) |
 | [`data-engineering/quality`](data-engineering/quality) | Качество данных на dbt + Great Expectations + PostgreSQL против эталона генератора: восемь видов дефектов партии и что каждый набор проверок ловит, fail / warn / карантин — сколько плохих и хороших строк доходит до витрины, контракт модели dbt против смены типа, удаления колонки и смены единиц | [статья](https://khorost.tech/databases/data-quality-contracts/) |
-| [`data-engineering/observability`](data-engineering/observability) | Наблюдаемость данных на dbt + OpenLineage (dbt-ol) + Marquez + PostgreSQL против эталона генератора: затронутое ниже по потоку на уровне таблиц и колонок, восемь детекторов (объём, свежесть, схема, распределение; постоянные пороги и пороги по истории) на 14 днях с четырьмя подсаженными инцидентами — пойманные, пропущенные и ложные тревоги; затянувшийся сбой, который детектор по истории выучивает как норму | 🔜 скоро |
+| [`data-engineering/observability`](data-engineering/observability) | Наблюдаемость данных на dbt + OpenLineage (dbt-ol) + Marquez + PostgreSQL против эталона генератора: затронутое ниже по потоку на уровне таблиц и колонок, восемь детекторов (объём, свежесть, схема, распределение; постоянные пороги и пороги по истории) на 14 днях с четырьмя подсаженными инцидентами — пойманные, пропущенные и ложные тревоги; затянувшийся сбой, который детектор по истории выучивает как норму | [статья](https://khorost.tech/databases/data-observability-lineage/) |
 
 ## Messaging
 
@@ -121,7 +121,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`ebpf/fundamentals`](ebpf/fundamentals) | Основы eBPF на cilium/ebpf (Go) и bpftrace против счёта нагрузки: tracepoint, kprobe, fentry, uprobe и uretprobe (ловушки Go — двойной uprobe и падение uretprobe при росте стека), карты под конкуренцией (гонка в hash, per-CPU, потери ring buffer), вердикты verifier на 12 программах, CO-RE на переименованном поле task_struct | [статья](https://khorost.tech/infrastructure/ebpf-fundamentals/) |
-| [`ebpf/observability`](ebpf/observability) | Наблюдаемость через eBPF против эталона генератора: Beyla против OTEL SDK на Go-сервисе (маршруты, статусы, gRPC, SQL, имена маршрутов без шаблона, связь спанов, прогрев после прицепления), eBPF-профилировщик Alloy → Pyroscope против заданной доли CPU (Go 1.26 и 1.27, с символами и без, потеря вызывающего у листовой функции на arm64), цена — счётчики ядра программ Beyla | 🔜 скоро |
+| [`ebpf/observability`](ebpf/observability) | Наблюдаемость через eBPF против эталона генератора: Beyla против OTEL SDK на Go-сервисе (маршруты, статусы, gRPC, SQL, имена маршрутов без шаблона, связь спанов, прогрев после прицепления), eBPF-профилировщик Alloy → Pyroscope против заданной доли CPU (Go 1.26 и 1.27, с символами и без, потеря вызывающего у листовой функции на arm64), цена — счётчики ядра программ Beyla | [статья](https://khorost.tech/infrastructure/ebpf-observability/) |
 | [`ebpf/network-security`](ebpf/network-security) | eBPF на сетевом пути против счёта пакетов и сервисов: блокировка адресов через XDP (native и generic), tc ingress и iptables на cilium/ebpf (Go) — дошедшие пакеты, счётчики программы, что видит tcpdump, обновление карты на лету; Cilium в kind с заменой kube-proxy против kube-proxy — карта балансировщика, правила iptables, eBPF-программы на интерфейсах | 🔜 скоро |
 
 ## Rust
@@ -160,6 +160,7 @@
 | Пример | Описание | Статья |
 |---|---|---|
 | [`cpp/build-and-package`](cpp/build-and-package) | Сборка и упаковка сервиса на C++: vcpkg против Conan против системного пакета, воспроизводимость сборки, статическая линковка и разрешение имён, размеры бинарника и образа рядом с Go и Rust | 🔜 скоро |
+| [`cpp/service-and-postgres`](cpp/service-and-postgres) | Три слоя HTTP над одним сервисом на C++ (Boost.Beast на корутинах, Drogon, Crow) и PostgreSQL: занимает ли рабочую единицу ожидание в базе, сколько соединений открыто на самом деле при названном размере пула, что из запроса видно снаружи — параметр или вклеенная величина, переживает ли запрос уход клиента, и почему занятость приходится читать счётчиком, а не выводить из времени ответа | 🔜 скоро |
 
 ## Kubernetes
 

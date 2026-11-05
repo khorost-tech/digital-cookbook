@@ -78,6 +78,9 @@
     "cpp/build-and-package": [
       "cpp/cpp-modern-backend-and-systems.md"
     ],
+    "cpp/service-and-postgres": [
+      "cpp/cpp-async-coroutines-asio.md"
+    ],
     "data-engineering/dimensional": [
       "databases/dimensional-modeling-warehouse.md"
     ],

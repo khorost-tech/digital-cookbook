@@ -1,0 +1,338 @@
+{
+  "axes": {
+    "db-wait": {
+      "beast": {
+        "control_is_valid": true,
+        "control_workers": 3,
+        "endpoint": "q",
+        "entry_binary_matches_variants_fixture": true,
+        "entry_binary_sha256": "f5cfbea175b6daee452cc60b8a43246de1ceb3a8461962177e23ae6eb0ce383a",
+        "occupies_unit": true,
+        "probes": 2,
+        "runs_per_setting": 5,
+        "sleep_ms": 1000,
+        "sources.agree_everywhere": true,
+        "sources.disagreed": 0,
+        "sources.missed": 0,
+        "sources.without_second_source": 0
+      },
+      "crow": {
+        "control_is_valid": true,
+        "control_workers": 3,
+        "endpoint": "q",
+        "entry_binary_matches_variants_fixture": true,
+        "entry_binary_sha256": "8801162a7fab77d6bee20c3b0c25b82eb54fa48c808afd7b043f411e403f617b",
+        "occupies_unit": true,
+        "probes": 2,
+        "runs_per_setting": 5,
+        "sleep_ms": 1000,
+        "sources.agree_everywhere": true,
+        "sources.disagreed": 0,
+        "sources.missed": 0,
+        "sources.without_second_source": 0
+      },
+      "drogon": {
+        "control_is_valid": false,
+        "control_workers": 3,
+        "endpoint": "q",
+        "entry_binary_matches_variants_fixture": true,
+        "entry_binary_sha256": "ebf366ac61d2652e184ee35080b587ca6e1e30f320eebcdd81e127f860ac3161",
+        "occupies_unit": true,
+        "probes": 2,
+        "runs_per_setting": 5,
+        "sleep_ms": 1000,
+        "sources.agree_everywhere": true,
+        "sources.disagreed": 0,
+        "sources.missed": 0,
+        "sources.without_second_source": 0
+      }
+    },
+    "pool": {
+      "beast/pool/pool=1": {
+        "!reply_ms_total": 117942,
+        "concurrent": 8,
+        "connections_before": 0,
+        "connections_idle_after": 1,
+        "connections_observed": 1,
+        "driver": "libpqxx",
+        "entry_binary_sha256": "f5cfbea175b6daee452cc60b8a43246de1ceb3a8461962177e23ae6eb0ce383a",
+        "inflight_peak": 8,
+        "not_served": 0,
+        "pool_size": 1,
+        "runs": 3,
+        "served": 24,
+        "sleep_ms": 1000,
+        "workers": 8
+      },
+      "beast/pool/pool=8": {
+        "!reply_ms_total": 24245,
+        "concurrent": 8,
+        "connections_before": 0,
+        "connections_idle_after": 8,
+        "connections_observed": 8,
+        "driver": "libpqxx",
+        "entry_binary_sha256": "f5cfbea175b6daee452cc60b8a43246de1ceb3a8461962177e23ae6eb0ce383a",
+        "inflight_peak": 8,
+        "not_served": 0,
+        "pool_size": 8,
+        "runs": 3,
+        "served": 24,
+        "sleep_ms": 1000,
+        "workers": 8
+      },
+      "crow/pool/pool=1": {
+        "!reply_ms_total": 114155,
+        "concurrent": 8,
+        "connections_before": 0,
+        "connections_idle_after": 1,
+        "connections_observed": 1,
+        "driver": "libpqxx",
+        "entry_binary_sha256": "8801162a7fab77d6bee20c3b0c25b82eb54fa48c808afd7b043f411e403f617b",
+        "inflight_peak": 7,
+        "not_served": 0,
+        "pool_size": 1,
+        "runs": 3,
+        "served": 24,
+        "sleep_ms": 1000,
+        "workers": 8
+      },
+      "crow/pool/pool=8": {
+        "!reply_ms_total": 27228,
+        "concurrent": 8,
+        "connections_before": 0,
+        "connections_idle_after": 7,
+        "connections_observed": 7,
+        "driver": "libpqxx",
+        "entry_binary_sha256": "8801162a7fab77d6bee20c3b0c25b82eb54fa48c808afd7b043f411e403f617b",
+        "inflight_peak": 7,
+        "not_served": 0,
+        "pool_size": 8,
+        "runs": 3,
+        "served": 24,
+        "sleep_ms": 1000,
+        "workers": 8
+      },
+      "drogon/drogon-own-pool/pool=1": {
+        "application_name": "drogon-own-pool",
+        "concurrent": 8,
+        "connections_observed": 1,
+        "driver": "drogon::orm::DbClient (libpq)",
+        "pool_size": 1,
+        "probe_exit_code": 0,
+        "probe_finished_every_query": true,
+        "runs": 1,
+        "sleep_ms": 1000,
+        "used_in_axis": false
+      },
+      "drogon/drogon-own-pool/pool=8": {
+        "application_name": "drogon-own-pool",
+        "concurrent": 8,
+        "connections_observed": 8,
+        "driver": "drogon::orm::DbClient (libpq)",
+        "pool_size": 8,
+        "probe_exit_code": 0,
+        "probe_finished_every_query": true,
+        "runs": 1,
+        "sleep_ms": 1000,
+        "used_in_axis": false
+      },
+      "drogon/pool/pool=1": {
+        "!reply_ms_total": 108312,
+        "concurrent": 8,
+        "connections_before": 0,
+        "connections_idle_after": 1,
+        "connections_observed": 1,
+        "driver": "libpqxx",
+        "entry_binary_sha256": "ebf366ac61d2652e184ee35080b587ca6e1e30f320eebcdd81e127f860ac3161",
+        "inflight_peak": 6,
+        "not_served": 0,
+        "pool_size": 1,
+        "runs": 3,
+        "served": 24,
+        "sleep_ms": 1000,
+        "workers": 8
+      },
+      "drogon/pool/pool=8": {
+        "!reply_ms_total": 33199,
+        "concurrent": 8,
+        "connections_before": 0,
+        "connections_idle_after": 6,
+        "connections_observed": 6,
+        "driver": "libpqxx",
+        "entry_binary_sha256": "ebf366ac61d2652e184ee35080b587ca6e1e30f320eebcdd81e127f860ac3161",
+        "inflight_peak": 6,
+        "not_served": 0,
+        "pool_size": 8,
+        "runs": 3,
+        "served": 24,
+        "sleep_ms": 1000,
+        "workers": 8
+      }
+    },
+    "variants": {
+      "beast": {
+        "axis_1_publishable": true,
+        "baked_env": [],
+        "capacity_stable": true,
+        "client_bound_holds": true,
+        "common_build_defines": "",
+        "common_build_flags": "-O3 -DNDEBUG -std=gnu++20",
+        "common_build_includes": "-I/src",
+        "entry_binary.is_elf": true,
+        "entry_binary.same_as_build_output": true,
+        "entry_binary.sha256": "f5cfbea175b6daee452cc60b8a43246de1ceb3a8461962177e23ae6eb0ce383a",
+        "entrypoint": [
+          "/usr/local/bin/stand_service"
+        ],
+        "healthy_port_open": true,
+        "idle_reads_zero": true,
+        "image_tag": "cpp-service-and-postgres:beast",
+        "knob_evidence.follows_workers": true,
+        "knob_evidence.high_peak_max": 3,
+        "knob_evidence.low_peak_max": 1,
+        "knob_evidence.one_unit_reads_one": true,
+        "knob_evidence.runs_per_setting": 3,
+        "layer": "beast",
+        "layer_library.name": "Boost",
+        "layer_library.version": "1_83",
+        "negative_control.probes": 4,
+        "negative_control.reads_one": true,
+        "occupancy.at_1": 1,
+        "occupancy.at_2": 2,
+        "occupancy.at_3": 3,
+        "pool": 8,
+        "startup_refusals": [
+          {
+            "exit_code": 1,
+            "missing": "STAND_VARIANT",
+            "port_open": false
+          },
+          {
+            "exit_code": 1,
+            "missing": "STAND_WORKERS",
+            "port_open": false
+          },
+          {
+            "exit_code": 1,
+            "missing": "STAND_POOL",
+            "port_open": false
+          }
+        ],
+        "tools.cmake": "cmake version 3.31.6",
+        "tools.cxx": "g++ (Debian 14.2.0-19) 14.2.0",
+        "tools.libpqxx": "#  define PQXX_VERSION \"7.10.0\""
+      },
+      "crow": {
+        "axis_1_publishable": true,
+        "baked_env": [],
+        "capacity_stable": true,
+        "client_bound_holds": true,
+        "common_build_defines": "",
+        "common_build_flags": "-O3 -DNDEBUG -std=gnu++20",
+        "common_build_includes": "-I/src",
+        "entry_binary.is_elf": true,
+        "entry_binary.same_as_build_output": true,
+        "entry_binary.sha256": "8801162a7fab77d6bee20c3b0c25b82eb54fa48c808afd7b043f411e403f617b",
+        "entrypoint": [
+          "/usr/local/bin/stand_service"
+        ],
+        "healthy_port_open": true,
+        "idle_reads_zero": true,
+        "image_tag": "cpp-service-and-postgres:crow",
+        "knob_evidence.follows_workers": true,
+        "knob_evidence.high_peak_max": 2,
+        "knob_evidence.low_peak_max": 1,
+        "knob_evidence.one_unit_reads_one": true,
+        "knob_evidence.runs_per_setting": 3,
+        "layer": "crow",
+        "layer_library.name": "Crow",
+        "layer_library.version": "sha256:1f22dd63a65685ed9e22803bdc675428ca1c81e51d2bc6912db6beb1b357f582",
+        "negative_control.probes": 4,
+        "negative_control.reads_one": true,
+        "occupancy.at_1": 1,
+        "occupancy.at_2": 1,
+        "occupancy.at_3": 2,
+        "pool": 8,
+        "startup_refusals": [
+          {
+            "exit_code": 1,
+            "missing": "STAND_VARIANT",
+            "port_open": false
+          },
+          {
+            "exit_code": 1,
+            "missing": "STAND_WORKERS",
+            "port_open": false
+          },
+          {
+            "exit_code": 1,
+            "missing": "STAND_POOL",
+            "port_open": false
+          }
+        ],
+        "tools.cmake": "cmake version 3.31.6",
+        "tools.cxx": "g++ (Debian 14.2.0-19) 14.2.0",
+        "tools.libpqxx": "#  define PQXX_VERSION \"7.10.0\""
+      },
+      "drogon": {
+        "axis_1_publishable": true,
+        "baked_env": [],
+        "capacity_stable": false,
+        "client_bound_holds": true,
+        "common_build_defines": "",
+        "common_build_flags": "-O3 -DNDEBUG -std=gnu++20",
+        "common_build_includes": "-I/src",
+        "entry_binary.is_elf": true,
+        "entry_binary.same_as_build_output": true,
+        "entry_binary.sha256": "ebf366ac61d2652e184ee35080b587ca6e1e30f320eebcdd81e127f860ac3161",
+        "entrypoint": [
+          "/usr/local/bin/stand_service"
+        ],
+        "healthy_port_open": true,
+        "idle_reads_zero": true,
+        "image_tag": "cpp-service-and-postgres:drogon",
+        "knob_evidence.follows_workers": true,
+        "knob_evidence.high_peak_max": 3,
+        "knob_evidence.low_peak_max": 1,
+        "knob_evidence.one_unit_reads_one": true,
+        "knob_evidence.runs_per_setting": 3,
+        "layer": "drogon",
+        "layer_library.name": "Drogon",
+        "layer_library.version": "1.9.0",
+        "negative_control.probes": 4,
+        "negative_control.reads_one": true,
+        "occupancy.at_1": 1,
+        "occupancy.at_2": 2,
+        "occupancy.at_3": 1,
+        "pool": 8,
+        "startup_refusals": [
+          {
+            "exit_code": 1,
+            "missing": "STAND_VARIANT",
+            "port_open": false
+          },
+          {
+            "exit_code": 1,
+            "missing": "STAND_WORKERS",
+            "port_open": false
+          },
+          {
+            "exit_code": 1,
+            "missing": "STAND_POOL",
+            "port_open": false
+          }
+        ],
+        "tools.cmake": "cmake version 3.31.6",
+        "tools.cxx": "g++ (Debian 14.2.0-19) 14.2.0",
+        "tools.libpqxx": "#  define PQXX_VERSION \"7.10.0\""
+      }
+    }
+  },
+  "axes_omitted": {
+    "cancel": "фикстуры cancel.jsonl в этом источнике нет",
+    "prepared": "фикстуры prepared.jsonl в этом источнике нет"
+  },
+  "session": "commit-92c3b1d",
+  "source": "фикстуры коммита 92c3b1d",
+  "unknown_fields": {}
+}
