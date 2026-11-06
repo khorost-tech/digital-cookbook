@@ -1,0 +1,239 @@
+{
+ "written": "2026-10-17, до первого прогона",
+ "checks": {
+  "controls": {
+   "batch_vs_reference_mismatches": 0,
+   "comparator_detects_injection": true,
+   "postgres_major": 18,
+   "known_user_online_found": true,
+   "unknown_user_online_null": true
+  },
+  "skew": {
+   "errors": 0,
+   "variants": {
+    "as_written": {
+     "differing": [
+      "amount_avg_30d",
+      "amount_ratio",
+      "tx_count_24h"
+     ],
+     "flipped": true,
+     "count_always_off_by_one": true
+    },
+    "fix_current": {
+     "differing": [
+      "amount_avg_30d",
+      "amount_ratio"
+     ],
+     "flipped": true
+    },
+    "fix_current_calendar": {
+     "differing": [
+      "amount_avg_30d",
+      "amount_ratio"
+     ],
+     "flipped": false
+    },
+    "all_fixed": {
+     "differing": [],
+     "flipped": false
+    }
+   }
+  },
+  "feature_store": {
+   "inclusive_boundary": true,
+   "own_row": {
+    "tx_count_24h_differ_over_50pct": true,
+    "flipped": true
+   },
+   "shifted": {
+    "mismatch_outside_ttl_gap": 0,
+    "ttl_gap_cases_present": true,
+    "ttl_gap_cases_all_differ": true,
+    "flipped_outside_ttl_gap": 0
+   },
+   "consistent_but_not_reference": true
+  },
+  "materialization": {
+   "stale_15m": true,
+   "monotonic": true,
+   "flipped_24h": true
+  },
+  "point_in_time": {
+   "naive_val_above_label_val": true,
+   "event_val_above_label_val": true,
+   "naive_prod_below_its_val": true,
+   "event_prod_below_its_val": true,
+   "label_val_prod_within_0_03": true,
+   "feast_label_pit_vs_reference_mismatches": 0,
+   "features": [
+    "amount",
+    "tx_count_24h",
+    "amount_avg_30d",
+    "minutes_since_prev",
+    "amount_ratio",
+    "device_new",
+    "foreign",
+    "user_fraud_count"
+   ]
+  },
+  "one_path": {
+   "mismatch_vs_batch": 0,
+   "mismatch_train_vs_serve": 0
+  }
+ },
+ "notes": {
+  "skew": "Онлайн-путь «другой команды» с тремя расхождениями прочтения спецификации; ошибок нет ни в одном варианте. Гипотеза для fix_current_calendar: остаются только пропуски без истории за 30 дней — их мало, решения не переворачиваются.",
+  "feature_store": "Граница PIT в Feast включительна (event_timestamp <= entity_timestamp, видно в шаблоне SQL postgres-хранилища), поэтому строка «состояние после платежа» с той же отметкой попадает в обучение. Онлайн-хранилище PostgreSQL ttl не применяет — у пользователей с паузой больше ttl офлайн даёт пусто, онлайн отдаёт старое значение.",
+  "point_in_time": "Счёт мошенничества: снимок на день 90, PIT по времени платежа, PIT по времени chargeback; в проде признак — только пришедшие chargeback."
+ },
+ "revision_after_probe": {
+  "written": "2026-10-17, после пробы, до сессий",
+  "harness": [
+   "Контроль онлайн-хранилища стоял до первой материализации — хранилище было пустым, известный пользователь не находился. Контроль перенесён в ось feature_store, после записи состояний; в controls его больше нет.",
+   "Онлайн-путь прогревался с дня 60: у одного запроса из 26 052 прошлый платёж был раньше, и minutes_since_prev расходился даже в all_fixed. Это обвязка, а не код команды: прогрев теперь со дня 0.",
+   "Онлайн-путь искал прошлый платёж в очереди, обрезанной до 31 дня, — у пользователей с паузой больше месяца minutes_since_prev становился пропуском и нулём. Это расходится с описанием кода команды (минуты считаются верно) — дефект реализации стенда; прошлый платёж теперь берётся из last, как в исправленном варианте."
+  ],
+  "observed": [
+   "fix_current_calendar: остаются 5 запросов без истории за 30 дней, и одно решение из 26 052 переворачивается — гипотеза «не переворачиваются» неверна.",
+   "point_in_time: снимок на день 90 даёт AUC 0.941 на валидации и 0.929 в проде — просадка 0.0125, меньше порога 0.02; гипотеза о заметной просадке снимка неверна. PIT по времени платежа: 0.980 → 0.329."
+  ],
+  "checks": {
+   "controls": {
+    "batch_vs_reference_mismatches": 0,
+    "comparator_detects_injection": true,
+    "postgres_major": 18
+   },
+   "skew": {
+    "errors": 0,
+    "variants": {
+     "as_written": {
+      "differing": [
+       "amount_avg_30d",
+       "amount_ratio",
+       "tx_count_24h"
+      ],
+      "flipped": true,
+      "count_always_off_by_one": true
+     },
+     "fix_current": {
+      "differing": [
+       "amount_avg_30d",
+       "amount_ratio"
+      ],
+      "flipped": true
+     },
+     "fix_current_calendar": {
+      "differing": [
+       "amount_avg_30d",
+       "amount_ratio"
+      ],
+      "flipped": true
+     },
+     "all_fixed": {
+      "differing": [],
+      "flipped": false
+     }
+    }
+   },
+   "feature_store": {
+    "inclusive_boundary": true,
+    "own_row": {
+     "tx_count_24h_differ_over_50pct": true,
+     "flipped": true
+    },
+    "shifted": {
+     "mismatch_outside_ttl_gap": 0,
+     "ttl_gap_cases_present": true,
+     "ttl_gap_cases_all_differ": true,
+     "flipped_outside_ttl_gap": 0
+    },
+    "consistent_but_not_reference": true,
+    "online_controls": {
+     "known_user_found": true,
+     "unknown_user_null": true
+    }
+   },
+   "point_in_time": {
+    "naive_val_above_label_val": true,
+    "event_val_above_label_val": true,
+    "naive_prod_below_its_val": false,
+    "event_prod_below_its_val": true,
+    "label_val_prod_within_0_03": true,
+    "feast_label_pit_vs_reference_mismatches": 0,
+    "features": [
+     "amount",
+     "tx_count_24h",
+     "amount_avg_30d",
+     "minutes_since_prev",
+     "amount_ratio",
+     "device_new",
+     "foreign",
+     "user_fraud_count"
+    ]
+   }
+  }
+ },
+ "revision_review2": {
+  "written": "2026-10-17, вторая рецензия серии, до прогона",
+  "reason": [
+   "fraud_by_event — накопительный count(*) включая текущую строку, PIT Feast включителен, отметка сущности — время платежа: мошеннический платёж видел собственную метку. Опыт смешивал две утечки. Добавлен вариант by_event_prior — PIT по времени платежа строго по предыдущим событиям (собственной метки нет, неверное время знания сохранено); проверяется, что by_event у мошеннических строк обучения ровно на единицу больше by_event_prior."
+  ],
+  "checks": {
+   "point_in_time": {
+    "naive_val_above_label_val": true,
+    "event_val_above_label_val": true,
+    "naive_prod_below_its_val": false,
+    "event_prod_below_its_val": true,
+    "label_val_prod_within_0_03": true,
+    "feast_label_pit_vs_reference_mismatches": 0,
+    "features": [
+     "amount",
+     "tx_count_24h",
+     "amount_avg_30d",
+     "minutes_since_prev",
+     "amount_ratio",
+     "device_new",
+     "foreign",
+     "user_fraud_count"
+    ],
+    "by_event_includes_own_label": true,
+    "prior_val_above_label_val": true,
+    "prior_prod_below_its_val": true
+   }
+  }
+ },
+ "revision_review3": {
+  "written": "2026-10-17, третья рецензия серии, до прогона",
+  "reason": [
+   "fraud_by_event_prior строился оконной функцией по уже отфильтрованным мошенническим строкам: обычный платёж после мошенничества получал счёт до последнего мошенничества, а не включая его. Теперь состояние «до платежа» строится по всем платежам: sum(is_fraud) по строго предшествующим строкам пользователя. Новая проверка — сверка с независимым счётом (numpy: мошеннические платежи пользователя с ts < текущего) на всех строках выборки; прежний контроль смотрел только мошеннические строки."
+  ],
+  "checks": {
+   "point_in_time": {
+    "naive_val_above_label_val": true,
+    "event_val_above_label_val": true,
+    "naive_prod_below_its_val": false,
+    "event_prod_below_its_val": true,
+    "label_val_prod_within_0_03": true,
+    "feast_label_pit_vs_reference_mismatches": 0,
+    "features": [
+     "amount",
+     "tx_count_24h",
+     "amount_avg_30d",
+     "minutes_since_prev",
+     "amount_ratio",
+     "device_new",
+     "foreign",
+     "user_fraud_count"
+    ],
+    "by_event_includes_own_label": true,
+    "prior_val_above_label_val": false,
+    "prior_prod_below_its_val": false,
+    "prior_vs_reference_mismatches_all_rows": 0
+   }
+  },
+  "observed": [
+   "После исправления «строго по предыдущим» — 0.880 на валидации и 0.893 в проде: ниже честной сборки по времени chargeback (0.927 и 0.907) и без завышения валидации. Гипотезы prior_val_above_label_val и prior_prod_below_its_val опровергнуты; прежние числа 0.972 → 0.929 относились к неверно построенному признаку. Провал до 0.329 — собственная метка."
+  ]
+ }
+}

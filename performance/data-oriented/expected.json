@@ -1,0 +1,611 @@
+{
+ "written": "2026-10-27, до первого запуска ядер: код C и Go написан, ни одно ядро не запускалось. Предсказания — по документации M5/Zen 4 и опыту.",
+ "reasoning": {
+  "hierarchy": "L1 у обоих ≥32K — 16K и 32K на одном плато; случайный шаг в RAM ~100+ нс против ~1 нс в L1 (на M5 страницы 16K, в ВМ — двухуровневая трансляция), отсюда 50-200; последовательный обход упирается в полосу, случайный — в задержку: 10-50 на 128 байт.",
+  "aos_soa": "сумма double — цепочка зависимых сложений (~4 такта), поэтому SoA за кэшем упирается в вычисление, а AoS — в полосу: выигрыш SoA 1.5-3, а не 8; в кэше (2048 частиц) — <1.5; все поля — <1.5; срез указателей вперемешку — промах на каждый элемент, >8; по порядку аллокатор кладёт объекты подряд — <1.5.",
+  "false_sharing": "M5: линия 128 — 8 и 64 медленнее, 128 нет; Zen 4: линия 64 — медленнее только 8.",
+  "branch": "clang -O2 превращает условие в cmov/векторный код — порядок данных не важен (<1.5); Go оставляет ветку — несортированные >3; без ветки — <1.5 везде.",
+  "counters": "16K — промахов почти нет, 256M — промах на шаг; AoS тянет 8 линий против одной у SoA — >8 промахов (если префетч не прячет промахи от счётчика); branch-misses несортированных у Go ~0.5 на элемент, у C — <0.05 (ветки нет)."
+ },
+ "checks": {
+  "control": {
+   "checksums_agree_c_go": {
+    "mac": true,
+    "devproxy": true
+   },
+   "other_seed_changes_checksum": {
+    "mac": true,
+    "devproxy": true
+   },
+   "line_bytes": {
+    "mac": 128,
+    "devproxy": 64
+   },
+   "go_cache_line_pad": {
+    "mac": 128,
+    "devproxy": 64
+   },
+   "goarch": {
+    "mac": "arm64",
+    "devproxy": "amd64"
+   },
+   "pmu_counts_cycles_privileged": true,
+   "pmu_counts_cycles_unprivileged": false
+  },
+  "hierarchy": {
+   "mac": {
+    "c": {
+     "l1_plateau_32k_vs_16k": true,
+     "grows_to_ram": true,
+     "ram_over_l1": "50-200",
+     "random_over_seq_per_128b_at_256m": "10-50"
+    },
+    "go": {
+     "l1_plateau_32k_vs_16k": true,
+     "grows_to_ram": true,
+     "ram_over_l1": "50-200",
+     "random_over_seq_per_128b_at_256m": "10-50"
+    }
+   },
+   "devproxy": {
+    "c": {
+     "l1_plateau_32k_vs_16k": true,
+     "grows_to_ram": true,
+     "ram_over_l1": "50-200",
+     "random_over_seq_per_128b_at_256m": "10-50"
+    },
+    "go": {
+     "l1_plateau_32k_vs_16k": true,
+     "grows_to_ram": true,
+     "ram_over_l1": "50-200",
+     "random_over_seq_per_128b_at_256m": "10-50"
+    }
+   }
+  },
+  "aos_soa": {
+   "mac": {
+    "c": {
+     "large_one_field_aos_over_soa": "1.5-3",
+     "large_all_fields_aos_over_soa": "<1.5",
+     "small_one_field_aos_over_soa": "<1.5",
+     "large_ptr_shuffled_over_aos": ">8",
+     "large_ptr_in_order_over_aos": "<1.5"
+    },
+    "go": {
+     "large_one_field_aos_over_soa": "1.5-3",
+     "large_all_fields_aos_over_soa": "<1.5",
+     "small_one_field_aos_over_soa": "<1.5",
+     "large_ptr_shuffled_over_aos": ">8",
+     "large_ptr_in_order_over_aos": "<1.5"
+    }
+   },
+   "devproxy": {
+    "c": {
+     "large_one_field_aos_over_soa": "1.5-3",
+     "large_all_fields_aos_over_soa": "<1.5",
+     "small_one_field_aos_over_soa": "<1.5",
+     "large_ptr_shuffled_over_aos": ">8",
+     "large_ptr_in_order_over_aos": "<1.5"
+    },
+    "go": {
+     "large_one_field_aos_over_soa": "1.5-3",
+     "large_all_fields_aos_over_soa": "<1.5",
+     "small_one_field_aos_over_soa": "<1.5",
+     "large_ptr_shuffled_over_aos": ">8",
+     "large_ptr_in_order_over_aos": "<1.5"
+    }
+   }
+  },
+  "false_sharing": {
+   "mac": {
+    "c": {
+     "slower_than_256_at_8": true,
+     "slower_than_256_at_64": true,
+     "slower_than_256_at_128": false
+    },
+    "go": {
+     "slower_than_256_at_8": true,
+     "slower_than_256_at_64": true,
+     "slower_than_256_at_128": false
+    }
+   },
+   "devproxy": {
+    "c": {
+     "slower_than_256_at_8": true,
+     "slower_than_256_at_64": false,
+     "slower_than_256_at_128": false
+    },
+    "go": {
+     "slower_than_256_at_8": true,
+     "slower_than_256_at_64": false,
+     "slower_than_256_at_128": false
+    }
+   }
+  },
+  "branch": {
+   "mac": {
+    "c": {
+     "branch_unsorted_over_sorted": "<1.5",
+     "branchless_unsorted_over_sorted": "<1.5"
+    },
+    "go": {
+     "branch_unsorted_over_sorted": ">3",
+     "branchless_unsorted_over_sorted": "<1.5"
+    }
+   },
+   "devproxy": {
+    "c": {
+     "branch_unsorted_over_sorted": "<1.5",
+     "branchless_unsorted_over_sorted": "<1.5"
+    },
+    "go": {
+     "branch_unsorted_over_sorted": ">3",
+     "branchless_unsorted_over_sorted": "<1.5"
+    }
+   }
+  },
+  "counters": {
+   "c": {
+    "chase_misses_per_access_16k": "<0.05",
+    "chase_misses_per_access_256m": ">0.5",
+    "aos_over_soa_misses_large": ">8",
+    "branch_misses_per_elem_unsorted": "<0.05",
+    "branch_misses_per_elem_sorted": "<0.05",
+    "branchless_misses_per_elem_unsorted": "<0.05"
+   },
+   "go": {
+    "chase_misses_per_access_16k": "<0.05",
+    "chase_misses_per_access_256m": ">0.5",
+    "aos_over_soa_misses_large": ">8",
+    "branch_misses_per_elem_unsorted": ">0.3",
+    "branch_misses_per_elem_sorted": "<0.05",
+    "branchless_misses_per_elem_unsorted": "<0.05"
+   }
+  }
+ },
+ "revision_stage1_probe": {
+  "written": "2026-10-27, после пробного прогона и до сессий. Стенд исправлен: на macOS CLOCK_MONOTONIC в C давал микросекунды (короткие ядра кратны 1000 нс) — взят CLOCK_UPTIME_RAW, и каждый замер теперь не короче 2^24 операций; перед замерами — 2 с разгона частоты (первый замер Mac шёл на холодной частоте). Добавлены: расстояния 16 и 32 байта в false sharing; ядро filter — отбор в массив, где ветка остаётся (сумму с условием оба компилятора превратили в cmov/векторный код, branch-misses ≈ 0); счётчик cache-references для AoS/SoA (cache-misses почти не видит потоковый обход: префетчер успевает, ≈0,05 промаха на частицу). Ниже — оси целиком; новые проверки (16, 32 байта, filter, references) — предсказания, их ещё не запускали.",
+  "findings": {
+   "false_sharing": "M5: замедление 7× на 8 байтах и никакого на 64 — при hw.cachelinesize 128 и CacheLinePad 128 в x/sys/cpu. Гипотеза «на M5 64 байта не спасают» не подтвердилась.",
+   "aos_soa": "срез указателей вперемешку — 3-8×, не >8×: адреса известны заранее, процессор держит много промахов параллельно; зависимый обход (chase) на 256M — ~90-100 нс на шаг. Go на Mac: AoS к SoA 1,47 — у самой границы корзины.",
+   "branch": "сумма с условием: ни clang, ни Go 1.27 ветку не оставили — сортировка ничего не даёт; perf подтверждает: branch-misses ≈ 0.",
+   "hierarchy": "C на Mac векторизует последовательную сумму (0,10 нс на слово против 0,24 у Go) — отсюда случайный к последовательному >50 у C и 10-50 у Go."
+  },
+  "checks": {
+   "hierarchy": {
+    "mac": {
+     "c": {
+      "l1_plateau_32k_vs_16k": true,
+      "grows_to_ram": true,
+      "ram_over_l1": "50-200",
+      "random_over_seq_per_128b_at_256m": ">50"
+     },
+     "go": {
+      "l1_plateau_32k_vs_16k": true,
+      "grows_to_ram": true,
+      "ram_over_l1": "50-200",
+      "random_over_seq_per_128b_at_256m": "10-50"
+     }
+    },
+    "devproxy": {
+     "c": {
+      "l1_plateau_32k_vs_16k": true,
+      "grows_to_ram": true,
+      "ram_over_l1": "50-200",
+      "random_over_seq_per_128b_at_256m": "10-50"
+     },
+     "go": {
+      "l1_plateau_32k_vs_16k": true,
+      "grows_to_ram": true,
+      "ram_over_l1": "50-200",
+      "random_over_seq_per_128b_at_256m": "10-50"
+     }
+    }
+   },
+   "aos_soa": {
+    "mac": {
+     "c": {
+      "large_one_field_aos_over_soa": "1.5-3",
+      "large_all_fields_aos_over_soa": "<1.5",
+      "small_one_field_aos_over_soa": "<1.5",
+      "large_ptr_shuffled_over_aos": "3-8",
+      "large_ptr_in_order_over_aos": "<1.5"
+     },
+     "go": {
+      "large_one_field_aos_over_soa": "<1.5",
+      "large_all_fields_aos_over_soa": "<1.5",
+      "small_one_field_aos_over_soa": "<1.5",
+      "large_ptr_shuffled_over_aos": "3-8",
+      "large_ptr_in_order_over_aos": "<1.5"
+     }
+    },
+    "devproxy": {
+     "c": {
+      "large_one_field_aos_over_soa": "1.5-3",
+      "large_all_fields_aos_over_soa": "<1.5",
+      "small_one_field_aos_over_soa": "<1.5",
+      "large_ptr_shuffled_over_aos": "3-8",
+      "large_ptr_in_order_over_aos": "1.5-3"
+     },
+     "go": {
+      "large_one_field_aos_over_soa": "1.5-3",
+      "large_all_fields_aos_over_soa": "<1.5",
+      "small_one_field_aos_over_soa": "<1.5",
+      "large_ptr_shuffled_over_aos": "3-8",
+      "large_ptr_in_order_over_aos": "1.5-3"
+     }
+    }
+   },
+   "false_sharing": {
+    "mac": {
+     "c": {
+      "slower_than_256_at_8": true,
+      "slower_than_256_at_16": true,
+      "slower_than_256_at_32": true,
+      "slower_than_256_at_64": false,
+      "slower_than_256_at_128": false
+     },
+     "go": {
+      "slower_than_256_at_8": true,
+      "slower_than_256_at_16": true,
+      "slower_than_256_at_32": true,
+      "slower_than_256_at_64": false,
+      "slower_than_256_at_128": false
+     }
+    },
+    "devproxy": {
+     "c": {
+      "slower_than_256_at_8": true,
+      "slower_than_256_at_16": true,
+      "slower_than_256_at_32": true,
+      "slower_than_256_at_64": false,
+      "slower_than_256_at_128": false
+     },
+     "go": {
+      "slower_than_256_at_8": true,
+      "slower_than_256_at_16": true,
+      "slower_than_256_at_32": true,
+      "slower_than_256_at_64": false,
+      "slower_than_256_at_128": false
+     }
+    }
+   },
+   "branch": {
+    "mac": {
+     "c": {
+      "branch_unsorted_over_sorted": "<1.5",
+      "branchless_unsorted_over_sorted": "<1.5",
+      "filter_unsorted_over_sorted": ">3",
+      "filter_branchless_unsorted_over_sorted": "<1.5"
+     },
+     "go": {
+      "branch_unsorted_over_sorted": "<1.5",
+      "branchless_unsorted_over_sorted": "<1.5",
+      "filter_unsorted_over_sorted": ">3",
+      "filter_branchless_unsorted_over_sorted": "<1.5"
+     }
+    },
+    "devproxy": {
+     "c": {
+      "branch_unsorted_over_sorted": "<1.5",
+      "branchless_unsorted_over_sorted": "<1.5",
+      "filter_unsorted_over_sorted": ">3",
+      "filter_branchless_unsorted_over_sorted": "<1.5"
+     },
+     "go": {
+      "branch_unsorted_over_sorted": "<1.5",
+      "branchless_unsorted_over_sorted": "<1.5",
+      "filter_unsorted_over_sorted": ">3",
+      "filter_branchless_unsorted_over_sorted": "<1.5"
+     }
+    }
+   },
+   "counters": {
+    "c": {
+     "chase_misses_per_access_16k": "<0.05",
+     "chase_misses_per_access_256m": ">0.5",
+     "aos_misses_per_elem_large": "<0.1",
+     "aos_over_soa_references_large": "6-12",
+     "branch_misses_per_elem_unsorted": "<0.05",
+     "branch_misses_per_elem_sorted": "<0.05",
+     "branchless_misses_per_elem_unsorted": "<0.05",
+     "filter_misses_per_elem_unsorted": ">0.3",
+     "filter_misses_per_elem_sorted": "<0.05",
+     "filter_branchless_misses_per_elem_unsorted": "<0.05"
+    },
+    "go": {
+     "chase_misses_per_access_16k": "<0.05",
+     "chase_misses_per_access_256m": ">0.5",
+     "aos_misses_per_elem_large": "<0.1",
+     "aos_over_soa_references_large": "6-12",
+     "branch_misses_per_elem_unsorted": "<0.05",
+     "branch_misses_per_elem_sorted": "<0.05",
+     "branchless_misses_per_elem_unsorted": "<0.05",
+     "filter_misses_per_elem_unsorted": ">0.3",
+     "filter_misses_per_elem_sorted": "<0.05",
+     "filter_branchless_misses_per_elem_unsorted": "<0.05"
+    }
+   }
+  }
+ },
+ "revision_stage2_thresholds": {
+  "written": "2026-10-27, после второй пробы и до сессий. Корзины осей aos_soa оказались у самой границы и перескакивают между прогонами: Go на Mac, AoS к SoA одного поля — 1.47 и 1.43 при границе 1.5; Go на devproxy, срез указателей по порядку — 1.51 и 1.31. Ось переведена на утверждения с запасом от разброса: «вровень» — 0.8–1.25, «быстрее» — больше чем на 25%, указатели вперемешку — больше 3×, по порядку — меньше 3×. Наблюдаемые отношения во всех двух прогонах: 1.43–1.93, 0.89–1.01, 0.97–1.07, 3.65–5.57, 1.13–2.29. Точные отношения остаются в поле ratios~. Так же переведены ещё две величины у границы: случайный обход к последовательному на 128 байт (C на Mac 54–55 при границе 50; все наблюдения 23.8–55) — теперь «больше 10×»; cache-references AoS к SoA (6.6 при границе 6; теория — 8 линий против одной) — теперь «больше 4×».",
+  "checks": {
+   "aos_soa": {
+    "mac": {
+     "c": {
+      "soa_faster_large_one_field": true,
+      "same_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true
+     },
+     "go": {
+      "soa_faster_large_one_field": true,
+      "same_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true
+     }
+    },
+    "devproxy": {
+     "c": {
+      "soa_faster_large_one_field": true,
+      "same_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true
+     },
+     "go": {
+      "soa_faster_large_one_field": true,
+      "same_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true
+     }
+    }
+   },
+   "hierarchy": {
+    "mac": {
+     "c": {
+      "l1_plateau_32k_vs_16k": true,
+      "grows_to_ram": true,
+      "ram_over_l1": "50-200",
+      "random_over_seq_per_128b_at_256m_over_10x": true
+     },
+     "go": {
+      "l1_plateau_32k_vs_16k": true,
+      "grows_to_ram": true,
+      "ram_over_l1": "50-200",
+      "random_over_seq_per_128b_at_256m_over_10x": true
+     }
+    },
+    "devproxy": {
+     "c": {
+      "l1_plateau_32k_vs_16k": true,
+      "grows_to_ram": true,
+      "ram_over_l1": "50-200",
+      "random_over_seq_per_128b_at_256m_over_10x": true
+     },
+     "go": {
+      "l1_plateau_32k_vs_16k": true,
+      "grows_to_ram": true,
+      "ram_over_l1": "50-200",
+      "random_over_seq_per_128b_at_256m_over_10x": true
+     }
+    }
+   },
+   "counters": {
+    "c": {
+     "chase_misses_per_access_16k": "<0.05",
+     "chase_misses_per_access_256m": ">0.5",
+     "aos_misses_per_elem_large": "<0.1",
+     "branch_misses_per_elem_unsorted": "<0.05",
+     "branch_misses_per_elem_sorted": "<0.05",
+     "branchless_misses_per_elem_unsorted": "<0.05",
+     "filter_misses_per_elem_unsorted": ">0.3",
+     "filter_misses_per_elem_sorted": "<0.05",
+     "filter_branchless_misses_per_elem_unsorted": "<0.05",
+     "aos_over_soa_references_large_over_4x": true
+    },
+    "go": {
+     "chase_misses_per_access_16k": "<0.05",
+     "chase_misses_per_access_256m": ">0.5",
+     "aos_misses_per_elem_large": "<0.1",
+     "branch_misses_per_elem_unsorted": "<0.05",
+     "branch_misses_per_elem_sorted": "<0.05",
+     "branchless_misses_per_elem_unsorted": "<0.05",
+     "filter_misses_per_elem_unsorted": ">0.3",
+     "filter_misses_per_elem_sorted": "<0.05",
+     "filter_branchless_misses_per_elem_unsorted": "<0.05",
+     "aos_over_soa_references_large_over_4x": true
+    }
+   }
+  }
+ },
+ "revision_stage3_all_fields": {
+  "written": "2026-10-27, после второй сессии и до новых двух сессий. Go на Mac, все восемь полей: AoS к SoA 0.89 в первой сессии и 0.76 во второй — SoA медленнее AoS, проверка «вровень, 0.8–1.25» перескочила. Это не шум вокруг единицы, а сдвиг в одну сторону: у Go в SoA на элемент восемь срезов и восемь проверок границ, у C (0.97–0.98) — нет. Утверждение заменено на то, что держится на всех наблюдениях (0.76–1.01): когда нужны все поля, SoA не даёт выигрыша — отношение меньше 1.25. Обе сессии переснимаются.",
+  "checks": {
+   "aos_soa": {
+    "mac": {
+     "c": {
+      "soa_faster_large_one_field": true,
+      "soa_no_gain_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true
+     },
+     "go": {
+      "soa_faster_large_one_field": true,
+      "soa_no_gain_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true
+     }
+    },
+    "devproxy": {
+     "c": {
+      "soa_faster_large_one_field": true,
+      "soa_no_gain_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true
+     },
+     "go": {
+      "soa_faster_large_one_field": true,
+      "soa_no_gain_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true
+     }
+    }
+   }
+  }
+ },
+ "revision_stage4_hot_cold": {
+  "written": "2026-10-27, по рецензии статьи и до первого запуска нового ядра. Добавлено ядро cross — пример перехода от объекта к данным: сколько частиц пересечёт границу за шаг (x + vx >= 1000), цикл читает два поля из восьми. split=0 — частица целиком (64 байта), split=1 — горячие x и vx отдельным массивом по 16 байт, холодные шесть полей — в другом. Предсказание: за кэшем (2M частиц) раздельное хранение быстрее больше чем в 1.5 раза на обоих хостах и в обоих языках — из памяти идёт вчетверо меньше линий, а сравнение со счётом не образует цепочки зависимых сложений double, как сумма в large_one_field. Набор проверок сменился — две сессии переснимаются.",
+  "checks": {
+   "aos_soa": {
+    "mac": {
+     "c": {
+      "soa_faster_large_one_field": true,
+      "soa_no_gain_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true,
+      "hot_cold_split_faster_large": true
+     },
+     "go": {
+      "soa_faster_large_one_field": true,
+      "soa_no_gain_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true,
+      "hot_cold_split_faster_large": true
+     }
+    },
+    "devproxy": {
+     "c": {
+      "soa_faster_large_one_field": true,
+      "soa_no_gain_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true,
+      "hot_cold_split_faster_large": true
+     },
+     "go": {
+      "soa_faster_large_one_field": true,
+      "soa_no_gain_large_all_fields": true,
+      "same_small_one_field": true,
+      "ptr_shuffled_over_3x": true,
+      "ptr_in_order_under_3x": true,
+      "hot_cold_split_faster_large": true
+     }
+    }
+   }
+  }
+ },
+ "revision_stage5_review2": {
+  "written": "2026-10-27, по второй рецензии и до сессий. 1) Ось branch сравнивала каждое ядро с самим собой на отсортированных данных, но не отбор с условием с отбором без условия на одних данных — добавлены прямые отношения: на несортированных отбор с условием медленнее больше чем в 2 раза, на отсортированных — меньше чем в 1.5 раза (цена безусловной записи). Эти отношения уже видны в сырых медианах прежних прогонов (несортированные 5.8–9.9, отсортированные 0.72–1.17), поэтому это не слепое предсказание, а фиксация до сессий. 2) Новая ось codegen: машинный код тем компилятором, что собирает ядра на хосте (clang -O2 -g -S, go build -gcflags=-S), — есть ли условный переход среди инструкций строки условия; контроль детектора — отбор без условия, где переходов на строке нет, хотя в цикле они есть. Для Mac и кросс-сборки amd64 (clang 21, Go 1.27.2) код разобран вручную 27.10; для clang 19 на devproxy — предсказание. 3) Ось counters: разбор perf stat теперь хранит долю времени работы счётчика; проверка — все события считались всё время (без мультиплексирования): пять событий при шести счётчиках Zen 4 — предсказание.",
+  "checks": {
+   "branch": {
+    "mac": {
+     "c": {
+      "branch_unsorted_over_sorted": "<1.5",
+      "branchless_unsorted_over_sorted": "<1.5",
+      "filter_unsorted_over_sorted": ">3",
+      "filter_branchless_unsorted_over_sorted": "<1.5",
+      "filter_over_branchless_unsorted_over_2x": true,
+      "filter_over_branchless_sorted_under_1.5x": true
+     },
+     "go": {
+      "branch_unsorted_over_sorted": "<1.5",
+      "branchless_unsorted_over_sorted": "<1.5",
+      "filter_unsorted_over_sorted": ">3",
+      "filter_branchless_unsorted_over_sorted": "<1.5",
+      "filter_over_branchless_unsorted_over_2x": true,
+      "filter_over_branchless_sorted_under_1.5x": true
+     }
+    },
+    "devproxy": {
+     "c": {
+      "branch_unsorted_over_sorted": "<1.5",
+      "branchless_unsorted_over_sorted": "<1.5",
+      "filter_unsorted_over_sorted": ">3",
+      "filter_branchless_unsorted_over_sorted": "<1.5",
+      "filter_over_branchless_unsorted_over_2x": true,
+      "filter_over_branchless_sorted_under_1.5x": true
+     },
+     "go": {
+      "branch_unsorted_over_sorted": "<1.5",
+      "branchless_unsorted_over_sorted": "<1.5",
+      "filter_unsorted_over_sorted": ">3",
+      "filter_branchless_unsorted_over_sorted": "<1.5",
+      "filter_over_branchless_unsorted_over_2x": true,
+      "filter_over_branchless_sorted_under_1.5x": true
+     }
+    }
+   },
+   "codegen": {
+    "mac": {
+     "jump_on_condition_line": {
+      "c": {
+       "branch": false,
+       "filter": true,
+       "filter_branchless": false
+      },
+      "go": {
+       "branch": false,
+       "filter": true,
+       "filter_branchless": false
+      }
+     },
+     "c_sum_vectorized": true
+    },
+    "devproxy": {
+     "jump_on_condition_line": {
+      "c": {
+       "branch": false,
+       "filter": true,
+       "filter_branchless": false
+      },
+      "go": {
+       "branch": false,
+       "filter": true,
+       "filter_branchless": false
+      }
+     },
+     "c_sum_vectorized": true
+    }
+   },
+   "counters": {
+    "c": {
+     "chase_misses_per_access_16k": "<0.05",
+     "chase_misses_per_access_256m": ">0.5",
+     "aos_misses_per_elem_large": "<0.1",
+     "branch_misses_per_elem_unsorted": "<0.05",
+     "branch_misses_per_elem_sorted": "<0.05",
+     "branchless_misses_per_elem_unsorted": "<0.05",
+     "filter_misses_per_elem_unsorted": ">0.3",
+     "filter_misses_per_elem_sorted": "<0.05",
+     "filter_branchless_misses_per_elem_unsorted": "<0.05",
+     "aos_over_soa_references_large_over_4x": true,
+     "events_counted_full_time": true
+    },
+    "go": {
+     "chase_misses_per_access_16k": "<0.05",
+     "chase_misses_per_access_256m": ">0.5",
+     "aos_misses_per_elem_large": "<0.1",
+     "branch_misses_per_elem_unsorted": "<0.05",
+     "branch_misses_per_elem_sorted": "<0.05",
+     "branchless_misses_per_elem_unsorted": "<0.05",
+     "filter_misses_per_elem_unsorted": ">0.3",
+     "filter_misses_per_elem_sorted": "<0.05",
+     "filter_branchless_misses_per_elem_unsorted": "<0.05",
+     "aos_over_soa_references_large_over_4x": true,
+     "events_counted_full_time": true
+    }
+   }
+  }
+ }
+}

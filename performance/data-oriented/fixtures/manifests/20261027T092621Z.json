@@ -1,0 +1,545 @@
+{
+ "session": "20261027T092621Z",
+ "published": {
+  "checks": {
+   "control": {
+    "actual": {
+     "checksums_agree_c_go": {
+      "mac": true,
+      "devproxy": true
+     },
+     "other_seed_changes_checksum": {
+      "mac": true,
+      "devproxy": true
+     },
+     "line_bytes": {
+      "mac": 128,
+      "devproxy": 64
+     },
+     "go_cache_line_pad": {
+      "mac": 128,
+      "devproxy": 64
+     },
+     "goarch": {
+      "mac": "arm64",
+      "devproxy": "amd64"
+     },
+     "pmu_counts_cycles_privileged": true,
+     "pmu_counts_cycles_unprivileged": false
+    },
+    "outcome": "match",
+    "sys": {
+     "mac": {
+      "line": "128",
+      "cpu": "Apple M5",
+      "cc": "Apple clang version 21.0.0 (clang-2100.3.34.2)",
+      "go": "go1.27.2"
+     },
+     "devproxy": {
+      "line": "64",
+      "cpu": "AMD Ryzen 9 7940HS w/ Radeon 780M Graphics",
+      "cc": "Debian clang version 19.1.7 (3+b1)",
+      "perf": "perf version 6.12.113",
+      "go": "go1.27.2"
+     }
+    }
+   },
+   "hierarchy": {
+    "actual": {
+     "mac": {
+      "c": {
+       "l1_plateau_32k_vs_16k": true,
+       "grows_to_ram": true,
+       "ram_over_l1": "50-200",
+       "random_over_seq_per_128b_at_256m_over_10x": true
+      },
+      "go": {
+       "l1_plateau_32k_vs_16k": true,
+       "grows_to_ram": true,
+       "ram_over_l1": "50-200",
+       "random_over_seq_per_128b_at_256m_over_10x": true
+      }
+     },
+     "devproxy": {
+      "c": {
+       "l1_plateau_32k_vs_16k": true,
+       "grows_to_ram": true,
+       "ram_over_l1": "50-200",
+       "random_over_seq_per_128b_at_256m_over_10x": true
+      },
+      "go": {
+       "l1_plateau_32k_vs_16k": true,
+       "grows_to_ram": true,
+       "ram_over_l1": "50-200",
+       "random_over_seq_per_128b_at_256m_over_10x": true
+      }
+     }
+    },
+    "outcome": "match",
+    "chase_over_16k~": {
+     "mac": {
+      "c": [
+       1.0,
+       1.0,
+       2.9,
+       7.8,
+       98.3,
+       102.4
+      ],
+      "go": [
+       1.0,
+       1.0,
+       3.0,
+       7.9,
+       98.9,
+       103.4
+      ]
+     },
+     "devproxy": {
+      "c": [
+       1.0,
+       1.0,
+       3.0,
+       12.3,
+       94.4,
+       94.5
+      ],
+      "go": [
+       1.0,
+       1.0,
+       3.0,
+       11.4,
+       92.8,
+       93.2
+      ]
+     }
+    },
+    "chase_ws_bytes": [
+     16384,
+     32768,
+     262144,
+     4194304,
+     67108864,
+     268435456
+    ],
+    "random_over_seq_per_128b~": {
+     "mac": {
+      "c": 52.1,
+      "go": 23.8
+     },
+     "devproxy": {
+      "c": 38.2,
+      "go": 23.6
+     }
+    }
+   },
+   "aos_soa": {
+    "actual": {
+     "mac": {
+      "c": {
+       "soa_faster_large_one_field": true,
+       "soa_no_gain_large_all_fields": true,
+       "same_small_one_field": true,
+       "ptr_shuffled_over_3x": true,
+       "ptr_in_order_under_3x": true,
+       "hot_cold_split_faster_large": true
+      },
+      "go": {
+       "soa_faster_large_one_field": true,
+       "soa_no_gain_large_all_fields": true,
+       "same_small_one_field": true,
+       "ptr_shuffled_over_3x": true,
+       "ptr_in_order_under_3x": true,
+       "hot_cold_split_faster_large": true
+      }
+     },
+     "devproxy": {
+      "c": {
+       "soa_faster_large_one_field": true,
+       "soa_no_gain_large_all_fields": true,
+       "same_small_one_field": true,
+       "ptr_shuffled_over_3x": true,
+       "ptr_in_order_under_3x": true,
+       "hot_cold_split_faster_large": true
+      },
+      "go": {
+       "soa_faster_large_one_field": true,
+       "soa_no_gain_large_all_fields": true,
+       "same_small_one_field": true,
+       "ptr_shuffled_over_3x": true,
+       "ptr_in_order_under_3x": true,
+       "hot_cold_split_faster_large": true
+      }
+     }
+    },
+    "outcome": "match",
+    "ratios~": {
+     "mac": {
+      "c": {
+       "large_one_field_aos_over_soa": 1.68,
+       "large_all_fields_aos_over_soa": 0.98,
+       "small_one_field_aos_over_soa": 1.0,
+       "large_ptr_shuffled_over_aos": 3.8,
+       "large_ptr_in_order_over_aos": 1.13,
+       "large_cross_aos_over_split": 4.15,
+       "small_cross_aos_over_split": 1.01
+      },
+      "go": {
+       "large_one_field_aos_over_soa": 1.46,
+       "large_all_fields_aos_over_soa": 0.73,
+       "small_one_field_aos_over_soa": 0.97,
+       "large_ptr_shuffled_over_aos": 3.75,
+       "large_ptr_in_order_over_aos": 1.13,
+       "large_cross_aos_over_split": 3.39,
+       "small_cross_aos_over_split": 1.01
+      }
+     },
+     "devproxy": {
+      "c": {
+       "large_one_field_aos_over_soa": 1.9,
+       "large_all_fields_aos_over_soa": 0.99,
+       "small_one_field_aos_over_soa": 1.02,
+       "large_ptr_shuffled_over_aos": 5.11,
+       "large_ptr_in_order_over_aos": 2.04,
+       "large_cross_aos_over_split": 4.58,
+       "small_cross_aos_over_split": 1.69
+      },
+      "go": {
+       "large_one_field_aos_over_soa": 1.97,
+       "large_all_fields_aos_over_soa": 0.9,
+       "small_one_field_aos_over_soa": 1.04,
+       "large_ptr_shuffled_over_aos": 7.37,
+       "large_ptr_in_order_over_aos": 1.23,
+       "large_cross_aos_over_split": 2.22,
+       "small_cross_aos_over_split": 1.02
+      }
+     }
+    }
+   },
+   "false_sharing": {
+    "actual": {
+     "mac": {
+      "c": {
+       "slower_than_256_at_8": true,
+       "slower_than_256_at_16": true,
+       "slower_than_256_at_32": true,
+       "slower_than_256_at_64": false,
+       "slower_than_256_at_128": false
+      },
+      "go": {
+       "slower_than_256_at_8": true,
+       "slower_than_256_at_16": true,
+       "slower_than_256_at_32": true,
+       "slower_than_256_at_64": false,
+       "slower_than_256_at_128": false
+      }
+     },
+     "devproxy": {
+      "c": {
+       "slower_than_256_at_8": true,
+       "slower_than_256_at_16": true,
+       "slower_than_256_at_32": true,
+       "slower_than_256_at_64": false,
+       "slower_than_256_at_128": false
+      },
+      "go": {
+       "slower_than_256_at_8": true,
+       "slower_than_256_at_16": true,
+       "slower_than_256_at_32": true,
+       "slower_than_256_at_64": false,
+       "slower_than_256_at_128": false
+      }
+     }
+    },
+    "outcome": "match",
+    "over_256~": {
+     "mac": {
+      "c": {
+       "8": 7.2,
+       "16": 7.12,
+       "32": 7.74,
+       "64": 1.0,
+       "128": 1.0
+      },
+      "go": {
+       "8": 6.77,
+       "16": 7.05,
+       "32": 6.95,
+       "64": 1.0,
+       "128": 1.0
+      }
+     },
+     "devproxy": {
+      "c": {
+       "8": 6.63,
+       "16": 6.67,
+       "32": 6.9,
+       "64": 1.0,
+       "128": 1.0
+      },
+      "go": {
+       "8": 5.52,
+       "16": 5.37,
+       "32": 5.53,
+       "64": 1.0,
+       "128": 0.99
+      }
+     }
+    }
+   },
+   "branch": {
+    "actual": {
+     "mac": {
+      "c": {
+       "branch_unsorted_over_sorted": "<1.5",
+       "branchless_unsorted_over_sorted": "<1.5",
+       "filter_unsorted_over_sorted": ">3",
+       "filter_branchless_unsorted_over_sorted": "<1.5",
+       "filter_over_branchless_unsorted_over_2x": true,
+       "filter_over_branchless_sorted_under_1.5x": true
+      },
+      "go": {
+       "branch_unsorted_over_sorted": "<1.5",
+       "branchless_unsorted_over_sorted": "<1.5",
+       "filter_unsorted_over_sorted": ">3",
+       "filter_branchless_unsorted_over_sorted": "<1.5",
+       "filter_over_branchless_unsorted_over_2x": true,
+       "filter_over_branchless_sorted_under_1.5x": true
+      }
+     },
+     "devproxy": {
+      "c": {
+       "branch_unsorted_over_sorted": "<1.5",
+       "branchless_unsorted_over_sorted": "<1.5",
+       "filter_unsorted_over_sorted": ">3",
+       "filter_branchless_unsorted_over_sorted": "<1.5",
+       "filter_over_branchless_unsorted_over_2x": true,
+       "filter_over_branchless_sorted_under_1.5x": true
+      },
+      "go": {
+       "branch_unsorted_over_sorted": "<1.5",
+       "branchless_unsorted_over_sorted": "<1.5",
+       "filter_unsorted_over_sorted": ">3",
+       "filter_branchless_unsorted_over_sorted": "<1.5",
+       "filter_over_branchless_unsorted_over_2x": true,
+       "filter_over_branchless_sorted_under_1.5x": true
+      }
+     }
+    },
+    "outcome": "match",
+    "ratios~": {
+     "mac": {
+      "c": {
+       "branch": 1.0,
+       "branchless": 1.01,
+       "filter": 13.42,
+       "filter_branchless": 1.0
+      },
+      "go": {
+       "branch": 1.01,
+       "branchless": 1.06,
+       "filter": 8.91,
+       "filter_branchless": 0.99
+      }
+     },
+     "devproxy": {
+      "c": {
+       "branch": 0.97,
+       "branchless": 1.0,
+       "filter": 7.89,
+       "filter_branchless": 1.05
+      },
+      "go": {
+       "branch": 1.03,
+       "branchless": 0.99,
+       "filter": 4.8,
+       "filter_branchless": 1.07
+      }
+     }
+    },
+    "filter_over_branchless~": {
+     "mac": {
+      "c": {
+       "unsorted": 8.72,
+       "sorted": 0.65
+      },
+      "go": {
+       "unsorted": 10.02,
+       "sorted": 1.11
+      }
+     },
+     "devproxy": {
+      "c": {
+       "unsorted": 9.52,
+       "sorted": 1.27
+      },
+      "go": {
+       "unsorted": 5.39,
+       "sorted": 1.2
+      }
+     }
+    }
+   },
+   "counters": {
+    "actual": {
+     "c": {
+      "chase_misses_per_access_16k": "<0.05",
+      "chase_misses_per_access_256m": ">0.5",
+      "aos_misses_per_elem_large": "<0.1",
+      "aos_over_soa_references_large_over_4x": true,
+      "filter_misses_per_elem_unsorted": ">0.3",
+      "filter_misses_per_elem_sorted": "<0.05",
+      "filter_branchless_misses_per_elem_unsorted": "<0.05",
+      "branch_misses_per_elem_unsorted": "<0.05",
+      "branch_misses_per_elem_sorted": "<0.05",
+      "branchless_misses_per_elem_unsorted": "<0.05",
+      "events_counted_full_time": true
+     },
+     "go": {
+      "chase_misses_per_access_16k": "<0.05",
+      "chase_misses_per_access_256m": ">0.5",
+      "aos_misses_per_elem_large": "<0.1",
+      "aos_over_soa_references_large_over_4x": true,
+      "filter_misses_per_elem_unsorted": ">0.3",
+      "filter_misses_per_elem_sorted": "<0.05",
+      "filter_branchless_misses_per_elem_unsorted": "<0.05",
+      "branch_misses_per_elem_unsorted": "<0.05",
+      "branch_misses_per_elem_sorted": "<0.05",
+      "branchless_misses_per_elem_unsorted": "<0.05",
+      "events_counted_full_time": true
+     }
+    },
+    "outcome": "match",
+    "per_op~": {
+     "c": {
+      "chase ws=16384 cache-references": 0.0009,
+      "chase ws=16384 cache-misses": 0.0001,
+      "chase ws=16384 branch-misses": 0.0001,
+      "chase ws=16384 instructions": 1.2531,
+      "chase ws=268435456 cache-references": 2.0448,
+      "chase ws=268435456 cache-misses": 1.0299,
+      "chase ws=268435456 branch-misses": 0.0066,
+      "chase ws=268435456 instructions": 1.4452,
+      "aos n=2097152 fields=1 cache-references": 2.0236,
+      "aos n=2097152 fields=1 cache-misses": 0.0041,
+      "aos n=2097152 fields=1 branch-misses": 0.0001,
+      "aos n=2097152 fields=1 instructions": 2.0021,
+      "soa n=2097152 fields=1 cache-references": 0.3082,
+      "soa n=2097152 fields=1 cache-misses": 0.0008,
+      "soa n=2097152 fields=1 branch-misses": 0.0001,
+      "soa n=2097152 fields=1 instructions": 1.3758,
+      "branch n=4194304 sorted=0 cache-references": 0.036,
+      "branch n=4194304 sorted=0 cache-misses": 0.0002,
+      "branch n=4194304 sorted=0 branch-misses": 0.0001,
+      "branch n=4194304 sorted=0 instructions": 5.2519,
+      "branch n=4194304 sorted=1 cache-references": 0.0361,
+      "branch n=4194304 sorted=1 cache-misses": 0.0002,
+      "branch n=4194304 sorted=1 branch-misses": 0.0,
+      "branch n=4194304 sorted=1 instructions": 5.2512,
+      "branchless n=4194304 sorted=0 cache-references": 0.0365,
+      "branchless n=4194304 sorted=0 cache-misses": 0.0002,
+      "branchless n=4194304 sorted=0 branch-misses": 0.0001,
+      "branchless n=4194304 sorted=0 instructions": 5.2524,
+      "filter n=4194304 sorted=0 cache-references": 0.0638,
+      "filter n=4194304 sorted=0 cache-misses": 0.0011,
+      "filter n=4194304 sorted=0 branch-misses": 0.5011,
+      "filter n=4194304 sorted=0 instructions": 5.7623,
+      "filter n=4194304 sorted=1 cache-references": 0.0581,
+      "filter n=4194304 sorted=1 cache-misses": 0.0005,
+      "filter n=4194304 sorted=1 branch-misses": 0.0007,
+      "filter n=4194304 sorted=1 instructions": 5.7741,
+      "filter_branchless n=4194304 sorted=0 cache-references": 0.0597,
+      "filter_branchless n=4194304 sorted=0 cache-misses": 0.0005,
+      "filter_branchless n=4194304 sorted=0 branch-misses": 0.0005,
+      "filter_branchless n=4194304 sorted=0 instructions": 5.5177
+     },
+     "go": {
+      "chase ws=16384 cache-references": 0.0003,
+      "chase ws=16384 cache-misses": 0.0003,
+      "chase ws=16384 branch-misses": 0.0003,
+      "chase ws=16384 instructions": 7.0086,
+      "chase ws=268435456 cache-references": 2.0961,
+      "chase ws=268435456 cache-misses": 1.0576,
+      "chase ws=268435456 branch-misses": 0.0114,
+      "chase ws=268435456 instructions": 7.3368,
+      "aos n=2097152 fields=1 cache-references": 2.1196,
+      "aos n=2097152 fields=1 cache-misses": 0.0025,
+      "aos n=2097152 fields=1 branch-misses": 0.0002,
+      "aos n=2097152 fields=1 instructions": 8.0013,
+      "soa n=2097152 fields=1 cache-references": 0.3149,
+      "soa n=2097152 fields=1 cache-misses": 0.0003,
+      "soa n=2097152 fields=1 branch-misses": 0.0001,
+      "soa n=2097152 fields=1 instructions": 3.9982,
+      "branch n=4194304 sorted=0 cache-references": 0.0426,
+      "branch n=4194304 sorted=0 cache-misses": 0.0008,
+      "branch n=4194304 sorted=0 branch-misses": 0.0002,
+      "branch n=4194304 sorted=0 instructions": 8.0067,
+      "branch n=4194304 sorted=1 cache-references": 0.0408,
+      "branch n=4194304 sorted=1 cache-misses": 0.0001,
+      "branch n=4194304 sorted=1 branch-misses": 0.0001,
+      "branch n=4194304 sorted=1 instructions": 8.0018,
+      "branchless n=4194304 sorted=0 cache-references": 0.0395,
+      "branchless n=4194304 sorted=0 cache-misses": 0.0001,
+      "branchless n=4194304 sorted=0 branch-misses": 0.0001,
+      "branchless n=4194304 sorted=0 instructions": 9.0038,
+      "filter n=4194304 sorted=0 cache-references": 0.0742,
+      "filter n=4194304 sorted=0 cache-misses": 0.0017,
+      "filter n=4194304 sorted=0 branch-misses": 0.5007,
+      "filter n=4194304 sorted=0 instructions": 9.5099,
+      "filter n=4194304 sorted=1 cache-references": 0.0659,
+      "filter n=4194304 sorted=1 cache-misses": 0.001,
+      "filter n=4194304 sorted=1 branch-misses": 0.0001,
+      "filter n=4194304 sorted=1 instructions": 9.5004,
+      "filter_branchless n=4194304 sorted=0 cache-references": 0.0684,
+      "filter_branchless n=4194304 sorted=0 cache-misses": 0.0008,
+      "filter_branchless n=4194304 sorted=0 branch-misses": 0.0003,
+      "filter_branchless n=4194304 sorted=0 instructions": 9.0059
+     }
+    },
+    "min_coverage_percent": {
+     "c": 100.0,
+     "go": 100.0
+    },
+    "aos_over_soa_references~": {
+     "c": 6.57,
+     "go": 6.73
+    }
+   },
+   "codegen": {
+    "actual": {
+     "mac": {
+      "jump_on_condition_line": {
+       "c": {
+        "branch": false,
+        "filter": true,
+        "filter_branchless": false
+       },
+       "go": {
+        "branch": false,
+        "filter": true,
+        "filter_branchless": false
+       }
+      },
+      "c_sum_vectorized": true
+     },
+     "devproxy": {
+      "jump_on_condition_line": {
+       "c": {
+        "branch": false,
+        "filter": true,
+        "filter_branchless": false
+       },
+       "go": {
+        "branch": false,
+        "filter": true,
+        "filter_branchless": false
+       }
+      },
+      "c_sum_vectorized": true
+     }
+    },
+    "outcome": "match"
+   }
+  }
+ }
+}

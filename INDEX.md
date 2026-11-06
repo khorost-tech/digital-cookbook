@@ -58,6 +58,13 @@
 | [`data-engineering/quality`](data-engineering/quality) | Качество данных на dbt + Great Expectations + PostgreSQL против эталона генератора: восемь видов дефектов партии и что каждый набор проверок ловит, fail / warn / карантин — сколько плохих и хороших строк доходит до витрины, контракт модели dbt против смены типа, удаления колонки и смены единиц | [статья](https://khorost.tech/databases/data-quality-contracts/) |
 | [`data-engineering/observability`](data-engineering/observability) | Наблюдаемость данных на dbt + OpenLineage (dbt-ol) + Marquez + PostgreSQL против эталона генератора: затронутое ниже по потоку на уровне таблиц и колонок, восемь детекторов (объём, свежесть, схема, распределение; постоянные пороги и пороги по истории) на 14 днях с четырьмя подсаженными инцидентами — пойманные, пропущенные и ложные тревоги; затянувшийся сбой, который детектор по истории выучивает как норму | [статья](https://khorost.tech/databases/data-observability-lineage/) |
 
+## AI / ML
+
+| Пример | Описание | Статья |
+|---|---|---|
+| [`ai/ml-dataset`](ai/ml-dataset) | Общий датасет серии «Классический ML в проде»: детерминированный поток платежей (2000 пользователей, 120 дней) с захватами аккаунта, новым сегментом трафика с дня 100 и новой схемой мошенничества с дня 105, разметка с задержкой chargeback; эталон признаков «до платежа» и базовая модель | 🔜 скоро |
+| [`ai/ml-features`](ai/ml-features) | Train/serve skew на PostgreSQL и Feast 0.66: батч-признаки SQL против онлайн-кода по той же спецификации — доли расхождений и перевёрнутых решений при нуле ошибок, атрибуция по источникам; граница PIT в Feast, ttl онлайн против офлайн, отставание материализации, утечка будущего при сборке выборки, один путь без feature store | 🔜 скоро |
+
 ## Messaging
 
 | Пример | Описание | Статья |
@@ -105,7 +112,8 @@
 | [`performance/memory-management`](performance/memory-management) | Управление памятью поперёк языков: куча и стек, сборка мусора против ручного управления — на одной задаче | [статья](https://khorost.tech/performance/memory-management-across-languages/) |
 | [`performance/probabilistic`](performance/probabilistic) | Вероятностные структуры: Bloom и родственники | [статья](https://khorost.tech/performance/bloom-filters-probabilistic-structures/) |
 | [`performance/testcontainers-template-db`](performance/testcontainers-template-db) | Шаблонная база вместо контейнера на каждый тест: CREATE DATABASE ... TEMPLATE, замеры ×10 и ×36, границы приёма (права, FORCE, размер шаблона) | [статья](https://khorost.tech/performance/testcontainers-template-db/) |
-| [`performance/load-testing`](performance/load-testing) | Нагрузочное тестирование и хаос: k6, Gatling, Locust, wrk, wrk2, vegeta, oha, hey против сервиса-эталона — открытая и закрытая модель, coordinated omission, виды тестов, потолок генераторов, Toxiproxy | 🔜 скоро |
+| [`performance/load-testing`](performance/load-testing) | Нагрузочное тестирование и хаос: k6, Gatling, Locust, wrk, wrk2, vegeta, oha, hey против сервиса-эталона — открытая и закрытая модель, coordinated omission, виды тестов, потолок генераторов, Toxiproxy | [статья](https://khorost.tech/performance/load-testing-chaos/) |
+| [`performance/data-oriented`](performance/data-oriented) | Data-oriented design и CPU-кэши: одни и те же ядра на C и Go на Apple M5 и AMD Zen 4 — ступени иерархии кэшей, AoS против SoA и среза указателей, false sharing по расстоянию, ветвления и cmov, аппаратные счётчики perf | 🔜 скоро |
 
 ## Infrastructure
 
@@ -122,7 +130,7 @@
 |---|---|---|
 | [`ebpf/fundamentals`](ebpf/fundamentals) | Основы eBPF на cilium/ebpf (Go) и bpftrace против счёта нагрузки: tracepoint, kprobe, fentry, uprobe и uretprobe (ловушки Go — двойной uprobe и падение uretprobe при росте стека), карты под конкуренцией (гонка в hash, per-CPU, потери ring buffer), вердикты verifier на 12 программах, CO-RE на переименованном поле task_struct | [статья](https://khorost.tech/infrastructure/ebpf-fundamentals/) |
 | [`ebpf/observability`](ebpf/observability) | Наблюдаемость через eBPF против эталона генератора: Beyla против OTEL SDK на Go-сервисе (маршруты, статусы, gRPC, SQL, имена маршрутов без шаблона, связь спанов, прогрев после прицепления), eBPF-профилировщик Alloy → Pyroscope против заданной доли CPU (Go 1.26 и 1.27, с символами и без, потеря вызывающего у листовой функции на arm64), цена — счётчики ядра программ Beyla | [статья](https://khorost.tech/infrastructure/ebpf-observability/) |
-| [`ebpf/network-security`](ebpf/network-security) | eBPF на сетевом пути против счёта пакетов и сервисов: блокировка адресов через XDP (native и generic), tc ingress и iptables на cilium/ebpf (Go) — дошедшие пакеты, счётчики программы, что видит tcpdump, обновление карты на лету; Cilium в kind с заменой kube-proxy против kube-proxy — карта балансировщика, правила iptables, eBPF-программы на интерфейсах | 🔜 скоро |
+| [`ebpf/network-security`](ebpf/network-security) | eBPF на сетевом пути против счёта пакетов и сервисов: блокировка адресов через XDP (native и generic), tc ingress и iptables на cilium/ebpf (Go) — дошедшие пакеты, счётчики программы, что видит tcpdump, обновление карты на лету; Cilium в kind с заменой kube-proxy против kube-proxy — карта балансировщика, правила iptables, eBPF-программы на интерфейсах | [статья](https://khorost.tech/infrastructure/ebpf-network-security/) |
 
 ## Rust
 

@@ -1,0 +1,79 @@
+{
+ "session": "20261017T062726Z",
+ "published": {
+  "checks": {
+   "controls": {
+    "actual": {
+     "users": 2000,
+     "days": 120,
+     "deterministic": true,
+     "schemes": [
+      "card_testing",
+      "noise",
+      "normal",
+      "takeover"
+     ],
+     "fraud_share_before_105_in_0_3_to_1_5pct": true,
+     "card_testing_from_day_105_only": true,
+     "digital_segment_from_day_100_only": true,
+     "legit_label_delay_days": [
+      60.0
+     ],
+     "fraud_label_delay_within_10_60": true,
+     "user_time_strictly_increasing": true
+    },
+    "outcome": "match",
+    "transactions": 327231,
+    "fraud_by_scheme": {
+     "noise": 155,
+     "takeover": 2111,
+     "card_testing": 811
+    },
+    "fraud_share_before_105": 0.006891,
+    "sha256": [
+     "4bd456374559f40177ca17ba8712c49305080c117dd03a3e2eb4ca97216a25dd",
+     "b637a4c97566fa53382ba568fe79ab0f6aee5523c284bf0f69fd9c2c1f1a037f"
+    ],
+    "generate_s~": 8.8
+   },
+   "reference": {
+    "actual": {
+     "sampled": 2000,
+     "mismatches": 0,
+     "broken_window_detected": true
+    },
+    "outcome": "match"
+   },
+   "labels": {
+    "actual": {
+     "prod_labeled_share_below_1pct": true,
+     "prod_legit_labels_known": 0,
+     "labeled_share_falls_after_day_60": true
+    },
+    "outcome": "match",
+    "prod_labeled_share": 0.000811,
+    "prod_fraud_labels_known": 74
+   },
+   "model": {
+    "actual": {
+     "deterministic": true,
+     "features": [
+      "amount",
+      "tx_count_24h",
+      "amount_avg_30d",
+      "minutes_since_prev",
+      "amount_ratio",
+      "device_new",
+      "foreign"
+     ],
+     "val_flag_share_about_1pct": true,
+     "val_auc_above_0_8": true
+    },
+    "outcome": "match",
+    "val_auc": 0.9494,
+    "threshold": 0.159878,
+    "train_s~": 3.1
+   }
+  }
+ }
+}

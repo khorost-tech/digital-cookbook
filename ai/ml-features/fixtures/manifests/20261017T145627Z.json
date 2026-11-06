@@ -1,0 +1,254 @@
+{
+ "session": "20261017T145627Z",
+ "published": {
+  "checks": {
+   "controls": {
+    "actual": {
+     "batch_vs_reference_mismatches": 0,
+     "comparator_detects_injection": true,
+     "postgres_major": 18
+    },
+    "outcome": "match",
+    "versions": {
+     "feast": "0.66.0",
+     "sklearn": "1.9.1",
+     "numpy": "2.5.3",
+     "pandas": "2.3.3"
+    },
+    "total_s~": 88.7
+   },
+   "skew": {
+    "actual": {
+     "errors": 0,
+     "variants": {
+      "as_written": {
+       "differing": [
+        "amount_avg_30d",
+        "amount_ratio",
+        "tx_count_24h"
+       ],
+       "flipped": true,
+       "count_always_off_by_one": true
+      },
+      "fix_current": {
+       "differing": [
+        "amount_avg_30d",
+        "amount_ratio"
+       ],
+       "flipped": true
+      },
+      "fix_current_calendar": {
+       "differing": [
+        "amount_avg_30d",
+        "amount_ratio"
+       ],
+       "flipped": true
+      },
+      "all_fixed": {
+       "differing": [],
+       "flipped": false
+      }
+     }
+    },
+    "outcome": "match",
+    "requests": 26052,
+    "fraud_requests": 159,
+    "mismatch_share": {
+     "as_written": {
+      "tx_count_24h": 1.0,
+      "amount_avg_30d": 1.0,
+      "minutes_since_prev": 0.0,
+      "amount_ratio": 1.0
+     },
+     "fix_current": {
+      "tx_count_24h": 0.0,
+      "amount_avg_30d": 0.500499,
+      "minutes_since_prev": 0.0,
+      "amount_ratio": 0.500461
+     },
+     "fix_current_calendar": {
+      "tx_count_24h": 0.0,
+      "amount_avg_30d": 0.000192,
+      "minutes_since_prev": 0.0,
+      "amount_ratio": 0.000192
+     },
+     "all_fixed": {
+      "tx_count_24h": 0.0,
+      "amount_avg_30d": 0.0,
+      "minutes_since_prev": 0.0,
+      "amount_ratio": 0.0
+     }
+    },
+    "decisions": {
+     "as_written": {
+      "flipped": 58,
+      "flagged_online": 203,
+      "flagged_batch": 209,
+      "fraud_caught_online": 121,
+      "fraud_caught_batch": 126
+     },
+     "fix_current": {
+      "flipped": 14,
+      "flagged_online": 207,
+      "flagged_batch": 209,
+      "fraud_caught_online": 127,
+      "fraud_caught_batch": 126
+     },
+     "fix_current_calendar": {
+      "flipped": 1,
+      "flagged_online": 208,
+      "flagged_batch": 209,
+      "fraud_caught_online": 126,
+      "fraud_caught_batch": 126
+     },
+     "all_fixed": {
+      "flipped": 0,
+      "flagged_online": 209,
+      "flagged_batch": 209,
+      "fraud_caught_online": 126,
+      "fraud_caught_batch": 126
+     }
+    }
+   },
+   "feature_store": {
+    "actual": {
+     "online_controls": {
+      "known_user_found": true,
+      "unknown_user_null": true
+     },
+     "inclusive_boundary": true,
+     "own_row": {
+      "tx_count_24h_differ_over_50pct": true,
+      "flipped": true
+     },
+     "shifted": {
+      "mismatch_outside_ttl_gap": 0,
+      "ttl_gap_cases_present": true,
+      "ttl_gap_cases_all_differ": true,
+      "flipped_outside_ttl_gap": 0
+     },
+     "consistent_but_not_reference": true
+    },
+    "outcome": "match",
+    "requests": 4918,
+    "ttl_gap_cases": 31,
+    "mismatch_share_own_row": {
+     "tx_count_24h": 0.729768,
+     "amount_avg_30d": 1.0,
+     "amount_ratio": 1.0,
+     "minutes_since_prev": 1.0
+    },
+    "mismatch_share_shifted": {
+     "tx_count_24h": 0.006303,
+     "amount_avg_30d": 0.006303,
+     "amount_ratio": 0.006303,
+     "minutes_since_prev": 0.006303
+    },
+    "own_row_flipped": 63,
+    "not_reference_share": 0.537139,
+    "online_ms~": 0.77
+   },
+   "materialization": {
+    "actual": {
+     "stale_15m": true,
+     "monotonic": true,
+     "flipped_24h": true
+    },
+    "outcome": "match",
+    "requests": 4918,
+    "intervals": {
+     "15m": {
+      "stale_share": 0.017487,
+      "by_feature": {
+       "tx_count_24h": 0.013217,
+       "amount_avg_30d": 0.017487,
+       "amount_ratio": 0.017487,
+       "minutes_since_prev": 0.017487
+      },
+      "flipped": 2
+     },
+     "1h": {
+      "stale_share": 0.057747,
+      "by_feature": {
+       "tx_count_24h": 0.042904,
+       "amount_avg_30d": 0.057747,
+       "amount_ratio": 0.057747,
+       "minutes_since_prev": 0.057747
+      },
+      "flipped": 8
+     },
+     "24h": {
+      "stale_share": 0.500813,
+      "by_feature": {
+       "tx_count_24h": 0.372712,
+       "amount_avg_30d": 0.500813,
+       "amount_ratio": 0.500813,
+       "minutes_since_prev": 0.500813
+      },
+      "flipped": 27
+     }
+    }
+   },
+   "point_in_time": {
+    "actual": {
+     "naive_val_above_label_val": true,
+     "event_val_above_label_val": true,
+     "naive_prod_below_its_val": false,
+     "event_prod_below_its_val": true,
+     "label_val_prod_within_0_03": true,
+     "feast_label_pit_vs_reference_mismatches": 0,
+     "features": [
+      "amount",
+      "tx_count_24h",
+      "amount_avg_30d",
+      "minutes_since_prev",
+      "amount_ratio",
+      "device_new",
+      "foreign",
+      "user_fraud_count"
+     ],
+     "by_event_includes_own_label": true,
+     "prior_vs_reference_mismatches_all_rows": 0,
+     "prior_val_above_label_val": false,
+     "prior_prod_below_its_val": false
+    },
+    "outcome": "match",
+    "auc": {
+     "naive": {
+      "val_auc": 0.9412,
+      "prod_auc": 0.9287
+     },
+     "by_event": {
+      "val_auc": 0.9795,
+      "prod_auc": 0.329
+     },
+     "by_event_prior": {
+      "val_auc": 0.8799,
+      "prod_auc": 0.8931
+     },
+     "by_label": {
+      "val_auc": 0.9272,
+      "prod_auc": 0.9072
+     }
+    },
+    "rows": 262016,
+    "fraud_count_nonzero_share": {
+     "naive": 0.141572,
+     "by_event": 0.113817,
+     "by_event_prior": 0.112302,
+     "by_label": 0.060935
+    }
+   },
+   "one_path": {
+    "actual": {
+     "mismatch_vs_batch": 0,
+     "mismatch_train_vs_serve": 0
+    },
+    "outcome": "match",
+    "requests": 4918,
+    "sql_ms~": 0.08,
+    "sql_to_feast_online~": 0.1
+   }
+  }
+ }
+}

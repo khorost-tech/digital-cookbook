@@ -1,5 +1,11 @@
 {
   "stands": {
+    "ai/ml-dataset": [
+      "ai/ml-feature-store-and-skew.md"
+    ],
+    "ai/ml-features": [
+      "ai/ml-feature-store-and-skew.md"
+    ],
     "architecture/background-jobs": [
       "architecture/schedulers-distributed-cron.md",
       "architecture/task-queues-background-jobs.md",
@@ -79,7 +85,8 @@
       "cpp/cpp-modern-backend-and-systems.md"
     ],
     "cpp/service-and-postgres": [
-      "cpp/cpp-async-coroutines-asio.md"
+      "cpp/cpp-async-coroutines-asio.md",
+      "cpp/cpp-web-frameworks.md"
     ],
     "data-engineering/dimensional": [
       "databases/dimensional-modeling-warehouse.md"
@@ -400,6 +407,9 @@
     ],
     "performance/crypto-rsa-regression": [
       "performance/go-crypto-rsa-regression.md"
+    ],
+    "performance/data-oriented": [
+      "performance/data-oriented-design-cpu-cache.md"
     ],
     "performance/highload-lowlatency": [
       "performance/go-highload-client-pooling.md",
