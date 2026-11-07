@@ -1,0 +1,15 @@
+# Namespace стенда capstone на k8s-volga. Создаётся автором (вместе с секретом harbor-pull для
+# чтения образов из закрытого проекта volga), стенд только навешивает метки.
+#
+# Pod Security: enforce baseline — ниже restricted нельзя из-за ArgoCD v3.x оси gitops (его поды
+# restricted не проходят, см. kubernetes/gitops). Поды самого сервиса, consumer'а и зависимостей
+# написаны под restricted: warn=restricted покажет, если какой-то из них это свойство потеряет.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cookbook-capstone
+  labels:
+    purpose: digital-cookbook
+    stand: cookbook-capstone
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted

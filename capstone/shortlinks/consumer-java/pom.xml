@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Consumer аналитики кликов на Java: JetStream durable, идемпотентный агрегат в PostgreSQL.
+     Версии зафиксированы явно; outputTimestamp — воспроизводимый jar. -->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>shortlinks</groupId>
+  <artifactId>consumer</artifactId>
+  <version>1.0.0</version>
+  <packaging>jar</packaging>
+
+  <properties>
+    <maven.compiler.release>25</maven.compiler.release>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.build.outputTimestamp>2026-10-01T00:00:00Z</project.build.outputTimestamp>
+    <jnats.version>2.26.3</jnats.version>
+    <postgresql.version>42.7.13</postgresql.version>
+    <jackson.version>2.22.3</jackson.version>
+    <otel.version>1.65.0</otel.version>
+    <otel.agent.version>2.31.1</otel.agent.version>
+  </properties>
+
+  <dependencies>
+    <dependency><groupId>io.nats</groupId><artifactId>jnats</artifactId><version>${jnats.version}</version></dependency>
+    <dependency><groupId>org.postgresql</groupId><artifactId>postgresql</artifactId><version>${postgresql.version}</version></dependency>
+    <dependency><groupId>com.fasterxml.jackson.core</groupId><artifactId>jackson-databind</artifactId><version>${jackson.version}</version></dependency>
+    <!-- только API: реализацию подставляет Java-агент OpenTelemetry, без агента — no-op -->
+    <dependency><groupId>io.opentelemetry</groupId><artifactId>opentelemetry-api</artifactId><version>${otel.version}</version></dependency>
+  </dependencies>
+
+  <build>
+    <finalName>consumer</finalName>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-compiler-plugin</artifactId><version>3.16.0</version>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-shade-plugin</artifactId><version>3.6.2</version>
+        <executions><execution><phase>package</phase><goals><goal>shade</goal></goals>
+          <configuration>
+            <createDependencyReducedPom>false</createDependencyReducedPom>
+            <!-- подписи подписанных зависимостей в fat-jar недействительны — JVM отвергла бы jar целиком -->
+            <filters><filter><artifact>*:*</artifact><excludes>
+              <exclude>META-INF/*.SF</exclude><exclude>META-INF/*.DSA</exclude><exclude>META-INF/*.RSA</exclude>
+            </excludes></filter></filters>
+            <transformers>
+              <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                <mainClass>shortlinks.consumer.Main</mainClass>
+              </transformer>
+              <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+            </transformers>
+          </configuration>
+        </execution></executions>
+      </plugin>
+      <plugin>
+        <!-- SBOM от сборки: дерево зависимостей Maven, а не то, что удастся найти в готовом jar -->
+        <groupId>org.cyclonedx</groupId><artifactId>cyclonedx-maven-plugin</artifactId><version>2.9.3</version>
+        <executions><execution><phase>package</phase><goals><goal>makeBom</goal></goals>
+          <configuration><outputFormat>json</outputFormat><outputName>bom</outputName></configuration>
+        </execution></executions>
+      </plugin>
+      <plugin>
+        <!-- Java-агент OpenTelemetry кладётся рядом с jar; включается переменной OTEL_JAVAAGENT_ENABLED -->
+        <groupId>org.apache.maven.plugins</groupId><artifactId>maven-dependency-plugin</artifactId><version>3.9.0</version>
+        <executions><execution><id>agent</id><phase>package</phase><goals><goal>copy</goal></goals>
+          <configuration>
+            <artifactItems><artifactItem>
+              <groupId>io.opentelemetry.javaagent</groupId><artifactId>opentelemetry-javaagent</artifactId>
+              <version>${otel.agent.version}</version><destFileName>opentelemetry-javaagent.jar</destFileName>
+            </artifactItem></artifactItems>
+            <outputDirectory>${project.build.directory}</outputDirectory>
+          </configuration>
+        </execution></executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

@@ -1,0 +1,72 @@
+# Сервис и consumer. Шаблон: ${SERVICE_IMAGE}, ${CONSUMER_IMAGE} (ссылки по дайджесту из Harbor,
+# проект volga), ${SHUTDOWN_DELAY} и ${PUBLISH_MODE} подставляет стенд (stand/axes_k8s.py) — так же он кладёт
+# отрендеренный файл в git для оси gitops.
+#
+# Выкатка без потерь держится на трёх вещах сразу:
+#   maxUnavailable 0 — новый под готов раньше, чем старый уходит;
+#   readinessProbe /readyz — сервис снимает готовность первым шагом остановки;
+#   SHUTDOWN_DELAY — пауза между снятием готовности и закрытием listener'а, за которую
+#     endpoint пода успевает исчезнуть у всех, кто балансирует трафик.
+# UID задан числом: в distroless пользователь nonroot записан именем, а kubelet по имени не
+# может проверить runAsNonRoot и не запускает контейнер (CreateContainerConfigError).
+# terminationGracePeriodSeconds больше SHUTDOWN_DELAY + SHUTDOWN_TIMEOUT, иначе kubelet
+# добьёт под SIGKILL посреди остановки.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: service, labels: {app: service}}
+spec:
+  replicas: 3
+  strategy: {type: RollingUpdate, rollingUpdate: {maxSurge: 1, maxUnavailable: 0}}
+  selector: {matchLabels: {app: service}}
+  template:
+    metadata: {labels: {app: service}}
+    spec:
+      imagePullSecrets: [{name: harbor-pull}]
+      terminationGracePeriodSeconds: 40
+      securityContext: {runAsNonRoot: true, runAsUser: 65532, runAsGroup: 65532, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: app
+          image: ${SERVICE_IMAGE}
+          env:
+            - {name: DATABASE_URL, value: "postgres://app:local-fixture-only@postgres:5432/shortlinks"}
+            - {name: REDIS_ADDR, value: "redis:6379"}
+            - {name: NATS_URL, value: "nats://nats:4222"}
+            - {name: BASE_URL, value: "http://service:8080"}
+            - {name: SHUTDOWN_DELAY, value: "${SHUTDOWN_DELAY}"}
+            - {name: SHUTDOWN_TIMEOUT, value: "15s"}
+            - {name: PUBLISH_MODE, value: "${PUBLISH_MODE}"}
+          ports: [{containerPort: 8080, name: http}]
+          readinessProbe: {httpGet: {path: /readyz, port: http}, periodSeconds: 1, failureThreshold: 1}
+          livenessProbe: {httpGet: {path: /healthz, port: http}, periodSeconds: 5}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 100m, memory: 64Mi}, limits: {memory: 256Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: service}
+spec: {selector: {app: service}, ports: [{port: 8080, targetPort: http, name: http}]}
+---
+# Число реплик consumer'а в манифесте не задано: при оси keda им владеет HPA, который создаёт
+# ScaledObject, и поле replicas в git спорило бы с ним при каждой сверке.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: consumer, labels: {app: consumer}}
+spec:
+  selector: {matchLabels: {app: consumer}}
+  template:
+    metadata: {labels: {app: consumer}}
+    spec:
+      imagePullSecrets: [{name: harbor-pull}]
+      securityContext: {runAsNonRoot: true, runAsUser: 65532, runAsGroup: 65532, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: consumer
+          image: ${CONSUMER_IMAGE}
+          env:
+            - {name: DATABASE_URL, value: "postgres://app:local-fixture-only@postgres:5432/shortlinks"}
+            - {name: NATS_URL, value: "nats://nats:4222"}
+            - {name: JAVA_TOOL_OPTIONS, value: "-XX:MaxRAMPercentage=75"}
+          ports: [{containerPort: 9090, name: metrics}]
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 200m, memory: 256Mi}, limits: {memory: 512Mi}}
+          volumeMounts: [{name: tmp, mountPath: /tmp}]   # JVM пишет hsperfdata во временный каталог
+      volumes: [{name: tmp, emptyDir: {}}]

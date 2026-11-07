@@ -1,0 +1,15 @@
+# Права ArgoCD стенда — Role в cookbook-capstone, без кластерных ролей. Разбор, почему
+# контроллеру нужна «звёздочка» и почему только в одном namespace, — kubernetes/gitops,
+# manifests/11-rbac.yaml; здесь та же схема, урезанная до контроллера (UI стенду не нужен).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: capstone-argocd-manage-ns, namespace: cookbook-capstone}
+rules:
+  - {apiGroups: ["*"], resources: ["*"], verbs: ["*"]}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: capstone-argocd-manage-ns, namespace: cookbook-capstone}
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: capstone-argocd-manage-ns}
+subjects:
+  - {kind: ServiceAccount, name: argocd-application-controller, namespace: cookbook-capstone}

@@ -1,0 +1,20 @@
+# Нагрузка изнутри кластера: probe (cmd/probe) ходит в Service по ClusterIP. Шаблон: ${PROBE_IMAGE},
+# ${NAME}, ${ARGS} (JSON-список аргументов) подставляет стенд.
+apiVersion: batch/v1
+kind: Job
+metadata: {name: "${NAME}", labels: {app: probe}}
+spec:
+  backoffLimit: 0
+  ttlSecondsAfterFinished: 600
+  template:
+    metadata: {labels: {app: probe}}
+    spec:
+      restartPolicy: Never
+      imagePullSecrets: [{name: harbor-pull}]
+      securityContext: {runAsNonRoot: true, runAsUser: 65532, runAsGroup: 65532, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: probe
+          image: ${PROBE_IMAGE}
+          args: ${ARGS}
+          securityContext: {allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 500m, memory: 64Mi}, limits: {memory: 256Mi}}

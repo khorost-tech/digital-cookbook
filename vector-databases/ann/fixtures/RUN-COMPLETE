@@ -1,0 +1,12 @@
+{
+ "fixtures": {
+  "brute.jsonl": "f5515624530fadeccbdb8ce15b7bdc82a29b2d8bbf4db77619f27712d6ca4c5b",
+  "hnsw.jsonl": "fa219d15921b9ce99e61a0b1822b89de37869d1ec81318a3babe23275bbeeea9",
+  "ivf.jsonl": "4681c7d4fe119e749828860945e5d81c315b20bd1db30d36b2252b93c8a5ce7e",
+  "quant.jsonl": "3197d63d762b40617ddd70c55132deb044d37b95b1cd81a822a017c01fc3fec3",
+  "metric.jsonl": "72fba2b334194883eaeedd8cd05f25ab4e4325917356cf926028ed2b9f5f294e",
+  "crosscheck.jsonl": "669edfa6a987865ccd1cf787c7bcfe212fe4bbbfba7e45059b4abdac67c724ac"
+ },
+ "tests": 25,
+ "sabotages": 22
+}

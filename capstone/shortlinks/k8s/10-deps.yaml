@@ -1,0 +1,84 @@
+# Зависимости сервиса: PostgreSQL, Redis, NATS JetStream. Данные — emptyDir: стенду нужна
+# выкатка сервиса, а не сохранность базы между прогонами (teardown удаляет namespace целиком).
+# Образы — те же дайджесты, что в images.json и deploy/compose.yml.
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: postgres, labels: {app: postgres}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: postgres}}
+  template:
+    metadata: {labels: {app: postgres}}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 999, runAsGroup: 999, fsGroup: 999, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: postgres
+          image: postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+          env:
+            - {name: POSTGRES_USER, value: app}
+            - {name: POSTGRES_PASSWORD, value: local-fixture-only}
+            - {name: POSTGRES_DB, value: shortlinks}
+            - {name: PGDATA, value: /var/lib/postgresql/data/pg}
+          ports: [{containerPort: 5432}]
+          readinessProbe: {exec: {command: [pg_isready, -U, app, -d, shortlinks]}, periodSeconds: 2}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 200m, memory: 256Mi}, limits: {memory: 1Gi}}
+          volumeMounts: [{name: data, mountPath: /var/lib/postgresql/data}, {name: run, mountPath: /var/run/postgresql}]
+      volumes: [{name: data, emptyDir: {}}, {name: run, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: postgres}
+spec: {selector: {app: postgres}, ports: [{port: 5432}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: redis, labels: {app: redis}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: redis}}
+  template:
+    metadata: {labels: {app: redis}}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 999, runAsGroup: 999, fsGroup: 999, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: redis
+          image: redis:8.8-alpine@sha256:0b2b77d3ea5078274795e3177cdbdada8b96316684a38911d528534ed679b5ec
+          ports: [{containerPort: 6379}]
+          readinessProbe: {exec: {command: [redis-cli, ping]}, periodSeconds: 2}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 100m, memory: 64Mi}, limits: {memory: 256Mi}}
+          volumeMounts: [{name: data, mountPath: /data}]
+      volumes: [{name: data, emptyDir: {}}]
+---
+apiVersion: v1
+kind: Service
+metadata: {name: redis}
+spec: {selector: {app: redis}, ports: [{port: 6379}]}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: nats, labels: {app: nats}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: nats}}
+  template:
+    metadata: {labels: {app: nats}}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000, seccompProfile: {type: RuntimeDefault}}
+      containers:
+        - name: nats
+          image: nats:2.14-alpine@sha256:4063edae0717ba5f7501bfde75f97fd9b57f5b93597b92c70b6a6fbbf6a74e06
+          args: ["-js", "-sd", "/data", "-m", "8222"]
+          ports: [{containerPort: 4222, name: client}, {containerPort: 8222, name: monitor}]
+          readinessProbe: {httpGet: {path: "/healthz?js-enabled-only=true", port: 8222}, periodSeconds: 2}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          resources: {requests: {cpu: 100m, memory: 128Mi}, limits: {memory: 512Mi}}
+          volumeMounts: [{name: data, mountPath: /data}]
+      volumes: [{name: data, emptyDir: {}}]
+---
+# Порт мониторинга 8222 нужен KEDA: скейлер nats-jetstream читает лаг consumer'а из /jsz.
+apiVersion: v1
+kind: Service
+metadata: {name: nats}
+spec: {selector: {app: nats}, ports: [{port: 4222, name: client}, {port: 8222, name: monitor}]}

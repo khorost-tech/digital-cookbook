@@ -1,0 +1,650 @@
+{
+ "written": "2026-10-17, до первого прогона; оси статей 1 и 2. Оси статей 3–5 добавляются пересмотрами revision_stage* — тоже до их прогона",
+ "checks": {
+  "config": {
+   "invalid_exit_code": 2,
+   "all_errors_reported": true,
+   "port_never_opened": true,
+   "valid_ready": true
+  },
+  "shutdown": {
+   "graceful": {
+    "inflight_ok": 20,
+    "inflight_failed": 0
+   },
+   "abrupt": {
+    "inflight_ok": 0
+   },
+   "readyz_503_during_delay": true,
+   "requests_during_delay_ok": true,
+   "buffered_clicks_flushed": true
+  },
+  "errors": {
+   "invalid_url": 400,
+   "bad_json": 400,
+   "unknown_code": 404,
+   "db_down_cached_redirect": 302,
+   "db_down_uncached": 500,
+   "internal_details_hidden": true
+  },
+  "cache": {
+   "singleflight_db_reads": 1,
+   "no_singleflight_db_reads_over_50": true,
+   "warm_db_reads": 0,
+   "all_redirects_ok": true
+  },
+  "broker_down": {
+   "async": {
+    "redirects_ok_share_1": true,
+    "fast": true,
+    "dropped_over_0": true,
+    "loss_visible_in_metric": true
+   },
+   "sync": {
+    "redirects_ok_share_1": true,
+    "fast": false
+   }
+  },
+  "outbox": {
+   "direct": {
+    "link_in_db": true,
+    "event_seen": false
+   },
+   "outbox": {
+    "link_in_db": true,
+    "event_seen": true
+   }
+  },
+  "consumer": {
+   "control_exact": true,
+   "crash": {
+    "non_idempotent_overcounts": true,
+    "idempotent_exact": true,
+    "idempotent_duplicates_over_0": true
+   }
+  }
+ },
+ "notes": {
+  "config": "Три ошибки сразу: нет DATABASE_URL, PUBLISH_MODE=fast, DB_MAX_CONNS=0. Ожидание: код выхода 2, все три в одном сообщении, порт так и не открылся.",
+  "shutdown": "SLOW_REDIRECT=500ms, 20 одновременных редиректов, SIGTERM через 150 мс после их начала. graceful — все 20 получают 302; GRACEFUL=false — ни один. SHUTDOWN_DELAY=2s: /readyz сразу 503, новые запросы в эту паузу обслуживаются. Клики из буфера публикуются до выхода — consumer учитывает все.",
+  "errors": "База остановлена: ссылка из кэша отдаёт 302, ссылка не из кэша — 500 с телом без подробностей драйвера.",
+  "cache": "Холодная ссылка, 200 одновременных редиректов: с singleflight в базу один запрос, без — больше 50. Прогретая — ноль.",
+  "broker_down": "NATS остановлен, 300 редиректов, буфер 100. async — все 302 быстро (медиана меньше 100 мс), часть кликов отброшена и видна в clicks_dropped_total. sync — тоже 302 (ошибка публикации не влияет на ответ), но медленно: каждый ждёт таймаут публикации.",
+  "outbox": "CRASH_AFTER_INSERT: процесс падает после коммита ссылки до публикации. direct — ссылка есть, события нет; outbox — после перезапуска ретранслятор доставляет событие.",
+  "consumer": "100 кликов. Контроль — без падения учёт точный. CRASH_AFTER_COMMIT=50, ACK_WAIT=2s: падение после коммита до ack, повторная доставка; без идемпотентности — больше 100, с ней — ровно 100 и учтённые дубли."
+ },
+ "revision_after_probe": {
+  "written": "2026-10-17, после пробы осей статей 1–2, до сессий",
+  "harness": [
+   "Залп из 200 потоков Python на хосте через проброс порта Docker не давал одновременности: без singleflight в базу шёл один запрос (первый успевал прогреть кэш), часть соединений срывалась. Залп теперь — Go-клиент cmd/probe внутри сети compose: 200 горутин стартуют по закрытию канала; все 400 редиректов успешны."
+  ],
+  "observed": [
+   "Без singleflight холодная ссылка под залпом 200 даёт 27–28 чтений из базы (два прогона), а не больше 50: гипотеза о величине неверна, stampede при этом есть. Добавлен признак no_singleflight_multiple_reads."
+  ],
+  "checks": {
+   "cache": {
+    "singleflight_db_reads": 1,
+    "no_singleflight_db_reads_over_50": false,
+    "no_singleflight_multiple_reads": true,
+    "warm_db_reads": 0,
+    "all_redirects_ok": true
+   }
+  }
+ },
+ "revision_stage3": {
+  "written": "2026-10-17, до прогона осей статьи 3",
+  "checks": {
+   "image": {
+    "minimal_under_5pct_of_naive": true,
+    "minimal_has_no_shell": true,
+    "minimal_runs_as_nonroot": true,
+    "naive_runs_as_root": true
+   },
+   "reproducible": {
+    "binaries_identical": true,
+    "image_ids_identical_plain": false,
+    "image_ids_identical_epoch": true
+   },
+   "sbom": {
+    "go_modules_match_buildinfo": true,
+    "lists_pgx_v5_11_0": true
+   },
+   "sign": {
+    "signed_verifies": true,
+    "unsigned_rejected": true,
+    "moved_tag_rejected": true
+   },
+   "scan": {
+    "minimal_fewer_findings_than_naive": true,
+    "minimal_os_findings_zero": true
+   }
+  },
+  "notes": {
+   "image": "Двухэтапная сборка в distroless static против одноэтапной в golang:1.27: размер, шелл, пользователь.",
+   "reproducible": "Две сборки без кеша: бинарь (-trimpath, -buildid=) совпадает побайтно; ID образа без SOURCE_DATE_EPOCH — нет (время в слоях и конфиге), с SOURCE_DATE_EPOCH и rewrite-timestamp — да.",
+   "sbom": "Syft по минимальному образу: Go-модули из build info бинаря совпадают с go version -m.",
+   "sign": "Локальный registry 2.8.3, cosign 3.1.3 с ключом: подписанный образ проходит verify, неподписанный — нет; тег перенесён на другой образ — verify по тегу не проходит.",
+   "scan": "Trivy 0.75.0: у минимального образа находок меньше, чем у одноэтапного; находок по пакетам ОС — ноль. Абсолютные числа зависят от даты базы уязвимостей — поле ~."
+  }
+ },
+ "revision_stage3_java": {
+  "written": "2026-10-17, consumer переписан на Java (решение автора), до прогона Java-части осей статьи 3",
+  "checks": {
+   "image": {
+    "minimal_under_5pct_of_naive": true,
+    "minimal_has_no_shell": true,
+    "minimal_runs_as_nonroot": true,
+    "naive_runs_as_root": true,
+    "java_has_no_shell": true,
+    "java_runs_as_nonroot": true,
+    "java_over_5x_go": true
+   },
+   "reproducible": {
+    "binaries_identical": true,
+    "image_ids_identical_plain": false,
+    "image_ids_identical_epoch": true,
+    "java_jar_identical": true
+   },
+   "sbom": {
+    "go_modules_match_buildinfo": true,
+    "lists_pgx_v5_11_0": true,
+    "java_lists_jnats_2_26_3": true,
+    "java_lists_javaagent": true
+   },
+   "scan": {
+    "minimal_fewer_findings_than_naive": true,
+    "minimal_os_findings_zero": true,
+    "java_more_findings_than_go": true
+   }
+  }
+ },
+ "revision_stage3_probe": {
+  "written": "2026-10-18, после пробы осей статьи 3, до сессий",
+  "harness": [
+   "Сборки без кеша падали на скачивании зависимостей Maven и слоёв (сбои TLS сети) — в осях сборки добавлены повторы; это не результат опыта."
+  ],
+  "observed": [
+   "Syft по Java-образу не видит jnats (и драйвер PostgreSQL): в fat-jar после shade pom.properties остались только у Jackson. Гипотеза java_lists_jnats_2_26_3 неверна. Добавлена проверка SBOM от сборки — плагин CycloneDX для Maven 2.9.3 (bom.json из этапа сборки): гипотеза — он перечисляет jnats 2.26.3 и postgresql 42.7.13."
+  ],
+  "checks": {
+   "sbom": {
+    "go_modules_match_buildinfo": true,
+    "lists_pgx_v5_11_0": true,
+    "java_lists_jnats_2_26_3": false,
+    "java_lists_javaagent": true,
+    "cyclonedx_lists_jnats_2_26_3": true,
+    "cyclonedx_lists_postgresql_42_7_13": true
+   }
+  }
+ },
+ "revision_stage4": {
+  "written": "2026-10-18, до прогона осей статьи 4 (локальный стек)",
+  "checks": {
+   "trace": {
+    "propagated": {
+     "consumer_spans_in_request_traces_share_over_0_99": true,
+     "chain_http_pg_publish_consume": true,
+     "consumer_has_jdbc_spans": true
+    },
+    "not_propagated": {
+     "consumer_spans_in_request_traces_share": 0.0
+    }
+   },
+   "slo": {
+    "fast_burn_fires": true,
+    "slow_burn_fires": true,
+    "normal_error_rate_silent": true,
+    "rules_valid": true
+   },
+   "load": {
+    "small_pool": {
+     "errors_zero": true
+    },
+    "large_pool": {
+     "errors_zero": true
+    },
+    "small_pool_p99_over_3x_large": true,
+    "small_pool_waits_for_connections": true,
+    "large_pool_waits_less": true
+   }
+  },
+  "notes": {
+   "trace": "OTel Collector пишет спаны в файл. 100 редиректов по ссылке: при PROPAGATE=true каждый спан consumer'а (Java-агент) принадлежит трейсу HTTP-запроса и цепочка HTTP → pg → публикация → consume полна; JDBC-спаны агента — внутри consume. PROPAGATE=false — ни одного общего трейса.",
+   "slo": "SLO редиректа 99,9 % за 30 дней, многооконное правило burn-rate (14,4 за 1 ч и 5 мин; 6 за 6 ч и 30 мин). promtool test rules: всплеск ошибок срабатывает быстрым окном, медленная утечка — медленным, нормальный фон (0,05 % ошибок) молчит.",
+   "load": "k6 с постоянной частотой на редиректы по 2000 ссылкам без Redis (каждый редирект — запрос в базу), 30 с. DB_MAX_CONNS=2 против 20: у маленького пула p99 больше чем втрое и рост ожидания соединения (pgxpool acquire), у большого ожидание меньше; ошибок нет в обоих."
+  }
+ },
+ "revision_stage4_probe": {
+  "written": "2026-10-18, после пробы осей статьи 4, до сессий",
+  "harness": [
+   "Имя HTTP-спана получалось «GET GET /{code}»: r.Pattern уже содержит метод, форматтер добавлял его ещё раз — проверка не находила ни одного HTTP-трейса. Исправлено."
+  ],
+  "observed": [
+   "При проброске контекста трейс рвался на стыке Go → Java: propagation.HeaderCarrier пишет через http.Header.Set и приводит имя к Traceparent, а заголовки NATS чувствительны к регистру — jnats и Java-агент OpenTelemetry (у агента 2.31.1 своя инструментация jnats, спан «… process») ищут traceparent. Ни одного спана consumer'а в трейсах запросов, ошибок нет. В сервисе — перевозчик заголовков без приведения регистра; старый оставлен режимом NATS_HEADER_CARRIER=canonical, гипотеза для него — ноль общих трейсов.",
+   "load: при 1500 запросах в секунду пул из 2 соединений не стал узким местом — ждали 1,1 % взятий, p99 в 1,12 раза выше, чем у пула 20. Гипотезы small_pool_p99_over_3x_large и small_pool_waits_for_connections неверны. Добавлен ступенчатый опыт ramp (1500, 3000, 6000 в секунду, пул 2 и 20); гипотеза до прогона: на 6000 у пула 2 ждут больше 10 % взятий, p99 больше чем вдвое выше, чем у пула 20; ошибок нет.",
+   "ramp: пул из 2 соединений ждёт на 3000 в секунду в 36 % взятий, на 6000 — в 12 %, но p99 против пула 20 — 0,79× и 1,69×, ошибок нет и при 6000. Гипотеза small_p99_over_2x_large неверна: насыщение пула (USE) видно раньше и сильнее, чем рост хвоста задержки (RED); узкое место по задержке на этой машине не достигнуто. Дальнейших подборов нагрузки не делаю — это вывод опыта."
+  ],
+  "checks": {
+   "trace": {
+    "propagated": {
+     "consumer_spans_in_request_traces_share_over_0_99": true,
+     "chain_http_pg_publish_consume": true,
+     "consumer_has_jdbc_spans": true
+    },
+    "canonical_header_names": {
+     "consumer_spans_in_request_traces_share": 0.0
+    },
+    "not_propagated": {
+     "consumer_spans_in_request_traces_share": 0.0
+    }
+   },
+   "load": {
+    "small_pool": {
+     "errors_zero": true
+    },
+    "large_pool": {
+     "errors_zero": true
+    },
+    "small_pool_p99_over_3x_large": false,
+    "small_pool_waits_for_connections": false,
+    "large_pool_waits_less": true,
+    "ramp_6000": {
+     "small_waits_over_10pct": true,
+     "small_p99_over_2x_large": false,
+     "errors_zero": true
+    }
+   }
+  }
+ },
+ "revision_stage3_k8s": {
+  "written": "2026-10-18, до пробы и сессий; оси k8s-volga статьи 3. Честно: пробные прогоны при настройке стенда (образы amd64, UID, хвост очереди, нагрузка) уже были, их числа в фикстуру не идут; гипотезы — пороговые признаки, не подогнанные значения",
+  "checks": {
+   "rollout": {
+    "control_no_errors": true,
+    "no_delay_loses_requests": true,
+    "delay_no_errors": true
+   },
+   "keda": {
+    "control_stays_at_one": true,
+    "scales_out_on_lag": true,
+    "drains_faster_than_control": true,
+    "returns_to_one": true
+   },
+   "gitops": {
+    "synced_before_drift": true,
+    "self_heal_reverts_drift": true,
+    "control_drift_stays": true,
+    "control_reports_out_of_sync": true,
+    "git_change_reaches_cluster": true,
+    "control_drift_overwritten_by_next_sync": true
+   }
+  },
+  "notes": {
+   "rollout": "rollout restart под нагрузкой без keep-alive (новое соединение на запрос). SHUTDOWN_DELAY=0: listener закрывается раньше, чем endpoint пода пропадает у балансировщика, — отказы и зависания до таймаута клиента; 5s — ноль. Контроль: тот же поток без выкатки — ноль",
+   "keda": "ScaledObject по num_pending durable analytics: реплики растут выше 1, очередь разбирается быстрее, чем у одной реплики (меньше 0.7 времени контроля), и возвращается к 1 после явного scaleDown.stabilizationWindowSeconds=30. Контроль — без ScaledObject, одна реплика",
+   "gitops": "ArgoCD стенда в своём namespace. selfHeal=true — kubectl scale мимо git откатывается; selfHeal=false — правка остаётся, Application OutOfSync, но следующий коммит синхронизирует манифест целиком и стирает её. Коммит в git доходит до кластера в обоих вариантах"
+  }
+ },
+ "revision_stage5_after_session1": {
+  "written": "2026-10-18, после первой полной сессии, до следующих",
+  "harness": [
+   "Залп cmd/probe растягивался во времени: правка для k8s (режим -d) подкладывала запросы в очередь после старта, и с singleflight база видела 2 чтения. Режим залпа снова заполняет очередь до общего старта.",
+   "Сессия 2 остановлена на broker_down: замер возобновления начинался на consumer'е, пережившем две остановки брокера в этой же оси, и при 30s молчание вышло меньше 20 с. Перед замером consumer теперь пересоздаётся; четыре повтора — 42, 5, 42, 5 с. Гипотеза не менялась."
+  ],
+  "observed": [
+   "После broker_down consumer на Java не обрабатывал сообщения: outbox (ожидание 15 с) и контроль consumer (30 с) разошлись с гипотезой. Причина — не ошибка обвязки: после перезапуска NATS упрощённый consume jnats молчит, пока не заметит пропуск heartbeat (heartbeatAlarm в логе), — 42 с при expiresIn по умолчанию 30 с, 5 с при 5 с. Ни ошибки обработки, ни отставания в метриках consumer'а. Добавлены CONSUME_EXPIRES и проверка broker_down.consumer_resume; гипотеза до прогона: при 30s молчание больше 20 с, при 5s — меньше 15 с. Ось сама ждёт возобновления, следующие оси стартуют с работающим consumer'ом.",
+   "load: отношение p99 пула 2 к пулу 20 между пробой и первой сессией — 1,12× / 0,03× на исходной частоте, 0,79× / 7,46× на вдвое большей, 1,69× / 3,12× на вчетверо большей; доля взятий соединения с ожиданием у пула 2 — 1,1 % / 2,1 %, 36 % / 29 %, 12 % / 14 %, у пула 20 — не больше 1,1 %. Хвост задержки на одной машине с Docker Desktop — шум, по нему конфигурации не сравнить; признаки по p99 убраны из actual (отношения остаются в полях ~). Гипотеза до прогона: на обеих повышенных ступенях пул 2 ждёт больше 5 % взятий и больше чем в 5 раз чаще пула 20; ошибок нет (порог 10 % отвергнут до прогона: на вчетверо большей частоте у пула 2 было 12–14 %, запас мал).",
+   "cache: залп заполняется до старта, и всё равно с singleflight база видит 1–2 чтения, без него — от 3 до 120 (пять прогонов подряд: 2/27, 1/3, 1/14, 1/12, 2/120; в пробе 27–28). singleflight склеивает только одновременные загрузки: запрос, промахнувшийся мимо Redis до записи значения и дошедший до group.Do после первой загрузки, запускает вторую. Признаки singleflight_db_reads=1 и no_singleflight_db_reads_over_50 зависят от планировщика; заменены устойчивыми: с singleflight не больше двух чтений, без него — больше, чем с ним. Точные числа — в полях ~.",
+   "cache, вторая попытка: признак «с singleflight не больше двух чтений» разошёлся уже в следующей сессии — опыт неустойчив сам: чтение из базы длится около миллисекунды, а разброс прихода 200 горутин на Docker Desktop больше. Опыт переделан до следующей сессии: SLOW_LOAD=50ms — чтение при промахе кэша искусственно медленное, как у холодной ссылки под нагрузкой на базу, и весь залп приходит, пока идёт первая загрузка. Четыре прогона: 1 / 200, 1 / 200, 1 / 200, 1 / 200. Гипотеза: с singleflight ровно одно чтение, без него — по чтению на каждый из 200 запросов."
+  ],
+  "checks": {
+   "broker_down": {
+    "async": {
+     "redirects_ok_share_1": true,
+     "fast": true,
+     "dropped_over_0": true,
+     "loss_visible_in_metric": true
+    },
+    "sync": {
+     "redirects_ok_share_1": true,
+     "fast": false
+    },
+    "consumer_resume": {
+     "default_30s_over_20s": true,
+     "expires_5s_under_15s": true
+    }
+   },
+   "load": {
+    "small_pool": {
+     "errors_zero": true
+    },
+    "large_pool": {
+     "errors_zero": true
+    },
+    "small_pool_waits_for_connections": false,
+    "large_pool_waits_less": true,
+    "ramp_3000": {
+     "small_waits_over_5pct": true,
+     "small_waits_over_5x_large": true,
+     "errors_zero": true
+    },
+    "ramp_6000": {
+     "small_waits_over_5pct": true,
+     "small_waits_over_5x_large": true,
+     "errors_zero": true
+    }
+   },
+   "cache": {
+    "singleflight_db_reads": 1,
+    "no_singleflight_every_request_reads": true,
+    "warm_db_reads": 0,
+    "all_redirects_ok": true
+   }
+  }
+ },
+ "revision_stage6_review": {
+  "written": "2026-10-18, после рецензии серии, до проб и сессий изменённых осей. Пробы drain, trace и chain при настройке уже были — их числа ниже, в фикстуру они не идут",
+  "harness": [
+   "trace: доля считалась как связанные спаны consumer'а к полученным спанам consumer'а — 100 HTTP-трейсов с одним спаном consumer'а давали 100 % (контрпример рецензии). Теперь доля — от 100 сделанных запросов: сколько трейсов редиректа содержат спан consumer'а, родитель которого — спан публикации; отдельно — число спанов consumer'а равно числу запросов.",
+   "keda: нагрузка с фиксированной конкуренцией на 30 с давала вариантам разный объём работы (528 040 и 463 771 редиректов). Теперь — фиксированные 300 000 редиректов; опубликованные события сверяются по last_seq потока, сравнивается скорость разбора остатка очереди.",
+   "load: constant-arrival-rate не гарантирует частоту — k6 пропускает итерации без свободных VU. dropped_iterations сохраняется, достижение частоты проверяется на каждой ступени.",
+   "scan: дата базы уязвимостей Trivy пишется в фикстуру рядом с числом находок.",
+   "Образы для кластера теперь собираются воспроизводимо (SOURCE_DATE_EPOCH, rewrite-timestamp) — все оси k8s-volga выкатывают тот же дайджест, что проверяет chain.",
+   "shutdown, проба после рецензии: опыт с полным буфером стоял в начале оси, перезапуск NATS в нём оставлял consumer молчащим (статья 2), и следующий опыт оси не дождался кликов — buffered_clicks_flushed=false. Опыты с полным буфером перенесены в конец оси, после них consumer пересоздаётся. Гипотеза не менялась.",
+   "keda, проба после рецензии: при одинаковом числе редиректов в поток попало разное число событий — async-буфер на подах сервиса под этой нагрузкой отбросил от 0 до 166 432 кликов на под. В опыте KEDA сервис теперь публикует синхронно (PUBLISH_MODE=sync): каждое событие в потоке, объём работы одинаков. Гипотеза не менялась.",
+   "Сводки сессий 2 и 3 (fixtures/manifests) сняты при прежнем наборе проверок и удалены: сравнение соседних сессий имеет смысл только при одном наборе. Они остаются в истории git (коммит ec243848)."
+  ],
+  "observed": [
+   "shutdown: Close публикатора ждал брокер по 2 с на клик без общего срока — полный буфер при недоступном брокере пережил бы SHUTDOWN_TIMEOUT и grace period. Close получил срок остановки, остаток считается (clicks_unsent_on_shutdown_total, лог). Пробы: брокер недоступен — 5,1 с при SHUTDOWN_TIMEOUT=5s, не опубликовано 98 (два прогона); брокер доступен — 0,1 с, 0.",
+   "cache: context.WithoutCancel снимал и срок — общая загрузка не была ограничена, ожидающий не мог уйти. Теперь DoChan, у загрузки свой срок, клиент выходит по своему контексту; два модульных теста.",
+   "trace: спан агента jnats («clicks.* process») сам извлекает traceparent и в 100 из 100 случаев — потомок спана публикации; ручной спан consume — его брат с тем же родителем, JDBC-спаны — под ручным. Без ручного спана (TRACE_MANUAL=false) агент держит трейс сам: 100 % спанов process и JDBC в трейсах запросов. С каноническими именами заголовков — 0 и у ручного, и у агента.",
+   "chain: две сборки linux/amd64 без кэша — один дайджест, тот же в Harbor и в реестре стенда; SBOM этого дайджеста содержит pgx; подписанный проходит проверку, неподписанный — нет; три живых пода — с проверенным дайджестом."
+  ],
+  "checks": {
+   "shutdown": {
+    "graceful": {
+     "inflight_ok": 20,
+     "inflight_failed": 0
+    },
+    "abrupt": {
+     "inflight_ok": 0
+    },
+    "readyz_503_during_delay": true,
+    "requests_during_delay_ok": true,
+    "buffered_clicks_flushed": true,
+    "broker_down_full_buffer": {
+     "exit_within_timeout": true,
+     "unsent_counted": true,
+     "clean_exit": true
+    },
+    "broker_up_full_buffer": {
+     "unsent_zero": true,
+     "clean_exit": true
+    }
+   },
+   "cache": {
+    "singleflight_db_reads": 1,
+    "no_singleflight_every_request_reads": true,
+    "warm_db_reads": 0,
+    "all_redirects_ok": true,
+    "waiter_cancel_and_load_deadline_tests_pass": true
+   },
+   "trace": {
+    "propagated": {
+     "request_traces_with_consumer_share_over_0_99": true,
+     "consumer_spans_equal_requests": true,
+     "agent_span_child_of_publish_share_over_0_99": true,
+     "chain_http_pg_publish_consume": true,
+     "jdbc_under_manual_span": true
+    },
+    "agent_only": {
+     "agent_span_child_of_publish_share_over_0_99": true,
+     "jdbc_in_request_traces_share_over_0_99": true,
+     "no_manual_spans": true
+    },
+    "canonical_header_names": {
+     "request_traces_with_consumer_share": 0.0,
+     "agent_share": 0.0
+    },
+    "not_propagated": {
+     "request_traces_with_consumer_share": 0.0,
+     "agent_share": 0.0
+    }
+   },
+   "keda": {
+    "control_stays_at_one": true,
+    "scales_out_on_lag": true,
+    "same_work_within_5pct": true,
+    "backlog_rate_over_1_5x": true,
+    "returns_to_one": true
+   },
+   "load": {
+    "small_pool": {
+     "errors_zero": true
+    },
+    "large_pool": {
+     "errors_zero": true
+    },
+    "small_pool_waits_for_connections": false,
+    "large_pool_waits_less": true,
+    "generator_reached_rate": true,
+    "ramp_3000": {
+     "small_waits_over_5pct": true,
+     "small_waits_over_5x_large": true,
+     "errors_zero": true,
+     "generator_reached_rate": true
+    },
+    "ramp_6000": {
+     "small_waits_over_5pct": true,
+     "small_waits_over_5x_large": true,
+     "errors_zero": true,
+     "generator_reached_rate": true
+    }
+   },
+   "chain": {
+    "deploy_build_reproducible": true,
+    "same_digest_as_deployed_axes": true,
+    "sbom_of_digest_lists_pgx": true,
+    "signed_digest_passes_gate": true,
+    "unsigned_digest_blocked": true,
+    "running_pods_use_verified_digest": true
+   }
+  },
+  "notes": {
+   "chain": "Один артефакт от сборки до пода: две воспроизводимые сборки linux/amd64 без кэша дают один дайджест (Harbor и реестр стенда одним push), SBOM этого дайджеста, подпись cosign, проверка подписи перед выкаткой, неподписанный дайджест не проходит, живые поды — с проверенным дайджестом. Подпись — в реестре стенда, admission-проверки в кластере нет."
+  }
+ },
+ "revision_stage7_review2": {
+  "written": "2026-10-18, после второй рецензии, до проб и сессий изменённых осей; пробы при настройке уже были — числа ниже, в фикстуру не идут",
+  "harness": [
+   "trace: родитель спана consumer'а искался в общем множестве спанов публикации всех трейсов — 100 трейсов, где каждый consumer ссылался на публикацию соседнего, давали связность 1,0 (контрпример рецензии). Теперь родитель ищется по паре (трейс, спан), так же для JDBC; в оси — отрицательный контроль с чужими родителями, связность обязана быть нулевой.",
+   "Сводки сессий 4 и 5 сняты при наборе проверок revision_stage6_review и удалены; они остаются в истории git (коммит 680b3824)."
+  ],
+  "observed": [
+   "shutdown: при ошибке srv.Shutdown по сроку run выходил до pub.Close, а отложенный pool.Close ждал запрос, застрявший в PostgreSQL. Теперь контексты запросов — от общего base, по истечении срока он отменяется и соединения закрываются; pub.Close выполняется и после ошибки. Проба: запрос ждёт LOCK TABLE links 20 с, SIGTERM при SHUTDOWN_TIMEOUT=3s — выход за 3,1 и 3,2 с, в логе «незавершённые запросы прерваны».",
+   "consumer: JDBC-соединение создавалось один раз; после перезапуска PostgreSQL каждая доставка падала на мёртвом соединении. Теперь после ошибки соединение проверяется и пересоздаётся, повтор — nakWithDelay 1 с. Проба: PostgreSQL остановлен на время 100 кликов и запущен, consumer не перезапускался — 101 клик из 101 (два прогона), db_reconnects_total > 0.",
+   "slo: доля 5xx видит только ответы, дошедшие до приложения. Добавлены RedirectTargetsDown (sum(up)==0), RedirectMetricsAbsent (absent) и RedirectProbeFailing (внешняя проба); три сценария promtool — все экземпляры недоступны, метрики пропали, проба падает при нормальных счётчиках (быстрое окно при этом молчит); нормальный фон молчит и по новым правилам."
+  ],
+  "checks": {
+   "shutdown": {
+    "graceful": {
+     "inflight_ok": 20,
+     "inflight_failed": 0
+    },
+    "abrupt": {
+     "inflight_ok": 0
+    },
+    "readyz_503_during_delay": true,
+    "requests_during_delay_ok": true,
+    "buffered_clicks_flushed": true,
+    "broker_down_full_buffer": {
+     "exit_within_timeout": true,
+     "unsent_counted": true,
+     "clean_exit": true
+    },
+    "broker_up_full_buffer": {
+     "unsent_zero": true,
+     "clean_exit": true
+    },
+    "db_blocked_request": {
+     "request_was_blocked": true,
+     "exit_within_timeout": true,
+     "aborted_logged": true,
+     "client_got_no_success": true
+    }
+   },
+   "trace": {
+    "propagated": {
+     "request_traces_with_consumer_share_over_0_99": true,
+     "consumer_spans_equal_requests": true,
+     "agent_span_child_of_publish_share_over_0_99": true,
+     "chain_http_pg_publish_consume": true,
+     "jdbc_under_manual_span": true
+    },
+    "agent_only": {
+     "agent_span_child_of_publish_share_over_0_99": true,
+     "jdbc_in_request_traces_share_over_0_99": true,
+     "no_manual_spans": true
+    },
+    "canonical_header_names": {
+     "request_traces_with_consumer_share": 0.0,
+     "agent_share": 0.0
+    },
+    "not_propagated": {
+     "request_traces_with_consumer_share": 0.0,
+     "agent_share": 0.0
+    },
+    "foreign_parent_rejected": true
+   },
+   "consumer": {
+    "control_exact": true,
+    "crash": {
+     "non_idempotent_overcounts": true,
+     "idempotent_exact": true,
+     "idempotent_duplicates_over_0": true
+    },
+    "db_restart": {
+     "redirects_ok_without_db": true,
+     "recovers_without_restart": true,
+     "count_exact": true,
+     "reconnected": true
+    }
+   },
+   "slo": {
+    "fast_burn_fires": true,
+    "slow_burn_fires": true,
+    "normal_error_rate_silent": true,
+    "rules_valid": true,
+    "blind_spots": {
+     "all_targets_down_fires": true,
+     "metrics_absent_fires": true,
+     "probe_failure_fires_while_ratio_silent": true
+    }
+   }
+  }
+ },
+ "revision_stage8_session7": {
+  "written": "2026-10-18, после сессии 7, до следующих сессий",
+  "observed": [
+   "load: на вчетверо большей частоте доля взятий соединения с ожиданием у пула 2 по прогонам — 12 %, 14 %, 5,1 %, 5,1 % и 4,44 % (сессия 7), у пула 20 — не больше 1,1 %; на вдвое большей — 29–37 % против долей процента. На верхней ступени абсолютная доля плавает и ниже, чем на средней: упирается уже машина, а не только пул. Порог 5 % для верхней ступени убран (в сессии 7 — 4,44 %, признак разошёлся); проверяется кратность к пулу 20 (в сессии 7 — в 22 раза), абсолютный порог остаётся на средней ступени. Сводка сессии 6 снята при прежнем наборе и удалена, в git она не попадала; её итог — все оси совпали, 23 теста, 22 диверсии."
+  ],
+  "checks": {
+   "load": {
+    "small_pool": {
+     "errors_zero": true
+    },
+    "large_pool": {
+     "errors_zero": true
+    },
+    "small_pool_waits_for_connections": false,
+    "large_pool_waits_less": true,
+    "generator_reached_rate": true,
+    "ramp_3000": {
+     "small_waits_over_5pct": true,
+     "small_waits_over_5x_large": true,
+     "errors_zero": true,
+     "generator_reached_rate": true
+    },
+    "ramp_6000": {
+     "small_waits_over_5x_large": true,
+     "errors_zero": true,
+     "generator_reached_rate": true
+    }
+   }
+  }
+ },
+ "revision_stage9_session8": {
+  "written": "2026-10-19, после сессии 8, до следующих сессий",
+  "observed": [
+   "load: на вчетверо большей частоте (6000 в секунду) в сессии 8 k6 не удержал частоту — у пула 2 пропущено 5 243 итерации из 180 002 (2,9 %), отношение p99 к пулу 20 — 36,97×; в сессии 7 там же доля ожиданий пула 2 упала до 4,44 %, по прогонам она плавала от 4 до 14 %. Эта ступень — на пределе машины стенда: на ней плавают и пул, и генератор, и вывод о пуле из неё не следует. Ступень убрана из опыта; остаются исходная частота и вдвое большая, где все признаки повторялись во всех прогонах (пул 2 ждёт 22–37 % взятий, пул 20 — доли процента, пропущенных итераций нет). Сводка сессии 8 снята при прежнем наборе и удалена, в git не попадала; её итог — расхождение только на этой ступени."
+  ],
+  "checks": {
+   "load": {
+    "small_pool": {
+     "errors_zero": true
+    },
+    "large_pool": {
+     "errors_zero": true
+    },
+    "small_pool_waits_for_connections": false,
+    "large_pool_waits_less": true,
+    "generator_reached_rate": true,
+    "ramp_3000": {
+     "small_waits_over_5pct": true,
+     "small_waits_over_5x_large": true,
+     "errors_zero": true,
+     "generator_reached_rate": true
+    }
+   }
+  }
+ },
+ "revision_stage9_review3": {
+  "written": "2026-10-19, после третьей рецензии, до проб и сессий",
+  "observed": [
+   "shutdown: обработчик, начавший клик до остановки, мог отправить его в уже закрытую очередь — panic: send on closed channel (воспроизведено рецензентом и тестом TestConcurrentClickAndClose на коде без защиты). Теперь проверка closed и отправка — под RLock, закрытие очереди — под Lock; поздний клик отклоняется и считается (clicks_late_after_close_total). Тест: 200 раундов, 16 горутин × 50 кликов против Close, каждый клик — ровно в одном исходе; с -race.",
+   "shutdown: выгрузка трейсов шла вне срока остановки (shutdownTracing с context.Background) — медленный Collector держал бы процесс после SHUTDOWN_TIMEOUT. Теперь последняя секунда срока отдана выгрузке, ошибка пишется в лог; config требует запаса больше 2 с при включённой телеметрии. Пробы: Collector не отвечает (10.255.255.1), SHUTDOWN_TIMEOUT=4s — выход за 4,1 и 4,2 с, в логе «трейсы не выгружены»; Collector работает — 0,1 с, без предупреждения."
+  ],
+  "checks": {
+   "shutdown": {
+    "graceful": {
+     "inflight_ok": 20,
+     "inflight_failed": 0
+    },
+    "abrupt": {
+     "inflight_ok": 0
+    },
+    "readyz_503_during_delay": true,
+    "requests_during_delay_ok": true,
+    "buffered_clicks_flushed": true,
+    "broker_down_full_buffer": {
+     "exit_within_timeout": true,
+     "unsent_counted": true,
+     "clean_exit": true
+    },
+    "broker_up_full_buffer": {
+     "unsent_zero": true,
+     "clean_exit": true
+    },
+    "db_blocked_request": {
+     "request_was_blocked": true,
+     "exit_within_timeout": true,
+     "aborted_logged": true,
+     "client_got_no_success": true
+    },
+    "collector_down": {
+     "exit_within_timeout": true,
+     "unexported_logged": true
+    },
+    "collector_up": {
+     "exit_within_timeout": true,
+     "no_warning": true
+    }
+   }
+  },
+  "harness": [
+   "Сводки сессий 9 и 10 сняты при прежнем наборе и удалены; они в истории git (коммит db131a29).",
+   "gitops, сессия 12 остановлена: без selfHeal признак «правка стёрта следующим коммитом» разошёлся. Замер гонялся — число реплик читалось, как только env на деплойменте показал 6s, а это могло случиться до синхронизации нового коммита (в одном из трёх повторов «коммит дошёл» за 0 с при 1 реплике). Теперь стенд ждёт, пока Application синхронизирует ревизию именно этого коммита с успешной операцией, и только потом читает реплики; четыре повтора — 3 реплики во всех. Гипотеза не менялась.",
+   "Сессия 14 упала на обвязке: kubectl wait по метке пода нагрузочного Job пришёл раньше, чем под создан («no matching resources found»). Теперь стенд ждёт появления пода, затем его готовности. Измерений правка не касается; сессия 14 перезапущена."
+  ]
+ }
+}

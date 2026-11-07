@@ -1,0 +1,14 @@
+{
+ "golang": {
+  "ref": "golang:1.27",
+  "digest": "sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2"
+ },
+ "maven": {
+  "ref": "maven:3.9-eclipse-temurin-21",
+  "digest": "sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320"
+ },
+ "python": {
+  "ref": "python:3.12-slim",
+  "digest": "sha256:a6e34c598f2467ed0e9a8d349809fcd8b5c603269512df273a0bb1784edc11b1"
+ }
+}

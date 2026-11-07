@@ -1,0 +1,862 @@
+{
+ "session": "20261019T080357Z",
+ "published": {
+  "checks": {
+   "config": {
+    "actual": {
+     "invalid_exit_code": 2,
+     "all_errors_reported": true,
+     "port_never_opened": true,
+     "valid_ready": true
+    },
+    "outcome": "match",
+    "message": "конфигурация: DATABASE_URL не задана; PUBLISH_MODE=\"fast\": допустимо async, sync; DB_MAX_CONNS=\"0\": целое от 1 до 1000"
+   },
+   "shutdown": {
+    "actual": {
+     "graceful": {
+      "inflight_ok": 20,
+      "inflight_failed": 0
+     },
+     "abrupt": {
+      "inflight_ok": 0
+     },
+     "readyz_503_during_delay": true,
+     "requests_during_delay_ok": true,
+     "buffered_clicks_flushed": true,
+     "broker_down_full_buffer": {
+      "exit_within_timeout": true,
+      "unsent_counted": true,
+      "clean_exit": true
+     },
+     "broker_up_full_buffer": {
+      "unsent_zero": true,
+      "clean_exit": true
+     },
+     "db_blocked_request": {
+      "request_was_blocked": true,
+      "exit_within_timeout": true,
+      "aborted_logged": true,
+      "client_got_no_success": true
+     },
+     "collector_down": {
+      "exit_within_timeout": true,
+      "unexported_logged": true
+     },
+     "collector_up": {
+      "exit_within_timeout": true,
+      "no_warning": true
+     }
+    },
+    "outcome": "match",
+    "drain_s~": {
+     "broker_down": 5.1,
+     "broker_up": 0.1,
+     "db_blocked": 3.2,
+     "collector_down": 4.1,
+     "collector_up": 0.1
+    },
+    "unsent_broker_down~": 98,
+    "abrupt_failed": 20,
+    "clicks_counted": 210,
+    "clicks_made": 210
+   },
+   "errors": {
+    "actual": {
+     "invalid_url": 400,
+     "bad_json": 400,
+     "unknown_code": 404,
+     "db_down_cached_redirect": 302,
+     "db_down_uncached": 500,
+     "internal_details_hidden": true
+    },
+    "outcome": "match",
+    "uncached_body": "{\"error\":\"внутренняя ошибка\"}\n"
+   },
+   "cache": {
+    "actual": {
+     "singleflight_db_reads": 1,
+     "no_singleflight_every_request_reads": true,
+     "warm_db_reads": 0,
+     "all_redirects_ok": true,
+     "waiter_cancel_and_load_deadline_tests_pass": true
+    },
+    "outcome": "match",
+    "singleflight_db_reads~": 1,
+    "no_singleflight_db_reads~": 200
+   },
+   "broker_down": {
+    "actual": {
+     "async": {
+      "redirects_ok_share_1": true,
+      "fast": true,
+      "dropped_over_0": true,
+      "loss_visible_in_metric": true
+     },
+     "sync": {
+      "redirects_ok_share_1": true,
+      "fast": false
+     },
+     "consumer_resume": {
+      "default_30s_over_20s": true,
+      "expires_5s_under_15s": true
+     }
+    },
+    "outcome": "match",
+    "consumer_resume_s~": {
+     "30s": 42,
+     "5s": 4
+    },
+    "async_counters~": {
+     "clicks_dropped_total": 199,
+     "clicks_published_total": 0,
+     "clicks_publish_failed_total": 0
+    },
+    "async_buffered~": 100,
+    "median_s~": {
+     "async": 0.0068,
+     "sync": 2.011
+    }
+   },
+   "outbox": {
+    "actual": {
+     "direct": {
+      "link_in_db": true,
+      "event_seen": false
+     },
+     "outbox": {
+      "link_in_db": true,
+      "event_seen": true
+     }
+    },
+    "outcome": "match"
+   },
+   "consumer": {
+    "actual": {
+     "control_exact": true,
+     "db_restart": {
+      "redirects_ok_without_db": true,
+      "recovers_without_restart": true,
+      "count_exact": true,
+      "reconnected": true
+     },
+     "crash": {
+      "non_idempotent_overcounts": true,
+      "idempotent_exact": true,
+      "idempotent_duplicates_over_0": true
+     }
+    },
+    "outcome": "match",
+    "counted": {
+     "non_idempotent": 101,
+     "idempotent": 100,
+     "after_db_restart": 101
+    },
+    "duplicates_skipped": 1
+   },
+   "image": {
+    "actual": {
+     "minimal_under_5pct_of_naive": true,
+     "minimal_has_no_shell": true,
+     "java_has_no_shell": true,
+     "java_runs_as_nonroot": true,
+     "java_over_5x_go": true,
+     "minimal_runs_as_nonroot": true,
+     "naive_runs_as_root": true
+    },
+    "outcome": "match",
+    "bytes~": {
+     "minimal": 41879275,
+     "naive": 2196119787,
+     "java": 380298354
+    }
+   },
+   "reproducible": {
+    "actual": {
+     "binaries_identical": true,
+     "image_ids_identical_plain": false,
+     "image_ids_identical_epoch": true,
+     "java_jar_identical": true
+    },
+    "outcome": "match",
+    "binary_sha256": "03aaf74516a0c406ff396a46239969df54ecfd445a2781092a2e89a1a6ffd611",
+    "epoch_manifest_digest": "sha256:e542c3caa6682668d6889f481967131a5958219106a66b4740bfb6672701914b"
+   },
+   "sbom": {
+    "actual": {
+     "go_modules_match_buildinfo": true,
+     "lists_pgx_v5_11_0": true,
+     "cyclonedx_lists_jnats_2_26_3": true,
+     "cyclonedx_lists_postgresql_42_7_13": true,
+     "java_lists_jnats_2_26_3": false,
+     "java_lists_javaagent": true
+    },
+    "outcome": "match",
+    "java_archives": 6,
+    "cyclonedx_components": 11,
+    "modules": 41,
+    "syft_only": [],
+    "buildinfo_only": []
+   },
+   "sign": {
+    "actual": {
+     "signed_verifies": true,
+     "unsigned_rejected": true,
+     "moved_tag_rejected": true
+    },
+    "outcome": "match",
+    "original_digest_still_verifies": true
+   },
+   "scan": {
+    "actual": {
+     "minimal_fewer_findings_than_naive": true,
+     "minimal_os_findings_zero": true,
+     "java_more_findings_than_go": true
+    },
+    "outcome": "match",
+    "findings~": {
+     "minimal": {
+      "os-pkgs": 0,
+      "lang-pkgs": 20
+     },
+     "naive": {
+      "os-pkgs": 2506,
+      "lang-pkgs": 150
+     },
+     "java": {
+      "os-pkgs": 69,
+      "lang-pkgs": 0
+     }
+    },
+    "vuln_db_updated~": "2026-10-19T00:45:30.553047111Z"
+   },
+   "rollout": {
+    "actual": {
+     "control_no_errors": true,
+     "no_delay_loses_requests": true,
+     "delay_no_errors": true
+    },
+    "outcome": "match",
+    "control": {
+     "errors~": 0,
+     "requests~": 301099,
+     "kinds~": {},
+     "rollout_s~": 0
+    },
+    "no_delay": {
+     "errors~": 167,
+     "requests~": 92080,
+     "kinds~": {
+      "connection refused": 62,
+      "eof": 1,
+      "timeout": 104
+     },
+     "rollout_s~": 3
+    },
+    "delay_5s": {
+     "errors~": 0,
+     "requests~": 453945,
+     "kinds~": {},
+     "rollout_s~": 3
+    }
+   },
+   "keda": {
+    "actual": {
+     "control_stays_at_one": true,
+     "scales_out_on_lag": true,
+     "same_work_within_5pct": true,
+     "backlog_rate_over_1_5x": true,
+     "returns_to_one": true
+    },
+    "outcome": "match",
+    "control": {
+     "published~": 300000,
+     "redirects~": 300000,
+     "load_s~": 31,
+     "backlog_at_load_end~": 269519,
+     "drain_after_load_s~": 246,
+     "backlog_rate~": 1096,
+     "max_replicas~": 1,
+     "back_to_one_after_load_s~": 246,
+     "series~": [
+      [
+       0,
+       0,
+       1
+      ],
+      [
+       5,
+       55383,
+       1
+      ],
+      [
+       10,
+       113018,
+       1
+      ],
+      [
+       15,
+       170254,
+       1
+      ],
+      [
+       21,
+       227408,
+       1
+      ],
+      [
+       26,
+       275123,
+       1
+      ],
+      [
+       31,
+       269519,
+       1
+      ],
+      [
+       36,
+       263511,
+       1
+      ],
+      [
+       41,
+       257611,
+       1
+      ],
+      [
+       46,
+       251795,
+       1
+      ],
+      [
+       52,
+       245964,
+       1
+      ],
+      [
+       57,
+       241280,
+       1
+      ],
+      [
+       62,
+       236411,
+       1
+      ],
+      [
+       67,
+       230540,
+       1
+      ],
+      [
+       72,
+       224666,
+       1
+      ],
+      [
+       77,
+       218717,
+       1
+      ],
+      [
+       82,
+       212766,
+       1
+      ],
+      [
+       87,
+       207706,
+       1
+      ],
+      [
+       93,
+       202387,
+       1
+      ],
+      [
+       98,
+       196413,
+       1
+      ],
+      [
+       103,
+       190645,
+       1
+      ],
+      [
+       108,
+       184760,
+       1
+      ],
+      [
+       113,
+       178893,
+       1
+      ],
+      [
+       118,
+       173036,
+       1
+      ],
+      [
+       123,
+       167827,
+       1
+      ],
+      [
+       128,
+       162027,
+       1
+      ],
+      [
+       134,
+       156056,
+       1
+      ],
+      [
+       139,
+       150914,
+       1
+      ],
+      [
+       144,
+       144998,
+       1
+      ],
+      [
+       149,
+       139170,
+       1
+      ],
+      [
+       154,
+       133459,
+       1
+      ],
+      [
+       159,
+       127487,
+       1
+      ],
+      [
+       164,
+       121586,
+       1
+      ],
+      [
+       169,
+       115673,
+       1
+      ],
+      [
+       175,
+       109856,
+       1
+      ],
+      [
+       180,
+       106782,
+       1
+      ],
+      [
+       185,
+       100874,
+       1
+      ],
+      [
+       190,
+       95505,
+       1
+      ],
+      [
+       195,
+       89556,
+       1
+      ],
+      [
+       200,
+       83658,
+       1
+      ],
+      [
+       205,
+       77761,
+       1
+      ],
+      [
+       210,
+       72142,
+       1
+      ],
+      [
+       216,
+       66322,
+       1
+      ],
+      [
+       221,
+       60459,
+       1
+      ],
+      [
+       226,
+       54509,
+       1
+      ],
+      [
+       231,
+       48673,
+       1
+      ],
+      [
+       236,
+       42792,
+       1
+      ],
+      [
+       241,
+       37171,
+       1
+      ],
+      [
+       246,
+       31419,
+       1
+      ],
+      [
+       251,
+       25554,
+       1
+      ],
+      [
+       257,
+       19574,
+       1
+      ],
+      [
+       262,
+       13669,
+       1
+      ],
+      [
+       267,
+       7686,
+       1
+      ],
+      [
+       272,
+       1927,
+       1
+      ],
+      [
+       277,
+       0,
+       1
+      ]
+     ]
+    },
+    "keda": {
+     "published~": 300000,
+     "redirects~": 300000,
+     "load_s~": 31,
+     "backlog_at_load_end~": 224008,
+     "drain_after_load_s~": 57,
+     "backlog_rate~": 3930,
+     "max_replicas~": 4,
+     "back_to_one_after_load_s~": 77,
+     "series~": [
+      [
+       0,
+       0,
+       1
+      ],
+      [
+       5,
+       55695,
+       1
+      ],
+      [
+       10,
+       113164,
+       1
+      ],
+      [
+       16,
+       159441,
+       4
+      ],
+      [
+       21,
+       186697,
+       4
+      ],
+      [
+       26,
+       216424,
+       4
+      ],
+      [
+       31,
+       224008,
+       4
+      ],
+      [
+       36,
+       202084,
+       4
+      ],
+      [
+       41,
+       180538,
+       4
+      ],
+      [
+       47,
+       158719,
+       4
+      ],
+      [
+       52,
+       137252,
+       4
+      ],
+      [
+       57,
+       115569,
+       4
+      ],
+      [
+       62,
+       93961,
+       4
+      ],
+      [
+       67,
+       72159,
+       4
+      ],
+      [
+       72,
+       50562,
+       4
+      ],
+      [
+       77,
+       28688,
+       4
+      ],
+      [
+       82,
+       7215,
+       4
+      ],
+      [
+       88,
+       0,
+       4
+      ],
+      [
+       93,
+       0,
+       4
+      ],
+      [
+       98,
+       0,
+       4
+      ],
+      [
+       103,
+       0,
+       4
+      ],
+      [
+       108,
+       0,
+       1
+      ]
+     ]
+    }
+   },
+   "gitops": {
+    "actual": {
+     "synced_before_drift": true,
+     "self_heal_reverts_drift": true,
+     "control_drift_stays": true,
+     "control_reports_out_of_sync": true,
+     "git_change_reaches_cluster": true,
+     "control_drift_overwritten_by_next_sync": true
+    },
+    "outcome": "match",
+    "self_heal": {
+     "synced_before_drift": true,
+     "first_sync_s~": 2,
+     "healed_after_s~": 2,
+     "after_watch": {
+      "replicas": 3,
+      "sync": "Synced"
+     },
+     "git_change_applied_s~": 2,
+     "replicas_after_commit": 3,
+     "commit~": "fb6b576 SHUTDOWN_DELAY 6s"
+    },
+    "control": {
+     "synced_before_drift": true,
+     "first_sync_s~": 142,
+     "healed_after_s~": null,
+     "after_watch": {
+      "replicas": 1,
+      "sync": "OutOfSync"
+     },
+     "git_change_applied_s~": 2,
+     "replicas_after_commit": 3,
+     "commit~": "a68f521 SHUTDOWN_DELAY 6s"
+    }
+   },
+   "trace": {
+    "actual": {
+     "propagated": {
+      "request_traces_with_consumer_share_over_0_99": true,
+      "consumer_spans_equal_requests": true,
+      "agent_span_child_of_publish_share_over_0_99": true,
+      "chain_http_pg_publish_consume": true,
+      "jdbc_under_manual_span": true
+     },
+     "agent_only": {
+      "agent_span_child_of_publish_share_over_0_99": true,
+      "jdbc_in_request_traces_share_over_0_99": true,
+      "no_manual_spans": true
+     },
+     "canonical_header_names": {
+      "request_traces_with_consumer_share": 0.0,
+      "agent_share": 0.0
+     },
+     "not_propagated": {
+      "request_traces_with_consumer_share": 0.0,
+      "agent_share": 0.0
+     },
+     "foreign_parent_rejected": true
+    },
+    "outcome": "match",
+    "counts~": {
+     "propagated": {
+      "manual": 100,
+      "agent": 100,
+      "jdbc": 100,
+      "spans": 728
+     },
+     "agent_only": {
+      "manual": 0,
+      "agent": 100,
+      "jdbc": 100,
+      "spans": 625
+     },
+     "canonical": {
+      "manual": 100,
+      "agent": 100,
+      "jdbc": 100,
+      "spans": 728
+     },
+     "not_propagated": {
+      "manual": 100,
+      "agent": 100,
+      "jdbc": 100,
+      "spans": 726
+     }
+    },
+    "jdbc_share_agent_only~": 1.0
+   },
+   "slo": {
+    "actual": {
+     "fast_burn_fires": true,
+     "slow_burn_fires": true,
+     "normal_error_rate_silent": true,
+     "rules_valid": true,
+     "blind_spots": {
+      "all_targets_down_fires": true,
+      "metrics_absent_fires": true,
+      "probe_failure_fires_while_ratio_silent": true
+     }
+    },
+    "outcome": "match",
+    "promtool_exit_codes": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "load": {
+    "actual": {
+     "small_pool": {
+      "errors_zero": true
+     },
+     "large_pool": {
+      "errors_zero": true
+     },
+     "small_pool_waits_for_connections": false,
+     "large_pool_waits_less": true,
+     "generator_reached_rate": true,
+     "ramp_3000": {
+      "small_waits_over_5pct": true,
+      "small_waits_over_5x_large": true,
+      "errors_zero": true,
+      "generator_reached_rate": true
+     }
+    },
+    "outcome": "match",
+    "requests~": {
+     "small": 45002,
+     "large": 45001
+    },
+    "p99_ratio~": 1.29,
+    "p50_ratio~": 1.01,
+    "waited_share~": {
+     "small": 0.0109,
+     "large": 0.001
+    },
+    "ramp~": {
+     "3000": {
+      "p99_ratio": 0.65,
+      "waited": {
+       "small": 0.3371,
+       "large": 0.005
+      },
+      "reqs": {
+       "small": 90004,
+       "large": 90001
+      },
+      "failed": {
+       "small": 0,
+       "large": 0
+      },
+      "dropped": {
+       "small": 0,
+       "large": 0
+      }
+     }
+    },
+    "dropped~": {
+     "small": 0,
+     "large": 0
+    }
+   },
+   "chain": {
+    "actual": {
+     "deploy_build_reproducible": true,
+     "same_digest_as_deployed_axes": true,
+     "sbom_of_digest_lists_pgx": true,
+     "signed_digest_passes_gate": true,
+     "unsigned_digest_blocked": true,
+     "running_pods_use_verified_digest": true
+    },
+    "outcome": "match",
+    "digest": "sha256:162749ac31499d7bc57a00c6dc10d81949417623e3240f18eaefff87fbcd7f39",
+    "running_pods": 3
+   }
+  }
+ }
+}

@@ -1,0 +1,39 @@
+{
+ "model": {
+  "name": "intfloat/multilingual-e5-small",
+  "revision": "614241f622f53c4eeff9890bdc4f31cfecc418b3",
+  "dim": 384,
+  "normalized": true,
+  "prefixes": {
+   "document": "passage: ",
+   "query": "query: "
+  },
+  "libraries": {
+   "torch": "2.6.0+cpu",
+   "sentence-transformers": "3.4.1",
+   "transformers": "4.49.0"
+  }
+ },
+ "corpora": {
+  "quora": {
+   "url": "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/quora.zip",
+   "sha256": "56aacd9dcc4d9c093b63f175afdda0e21cbc8442ecf6c717d09de7b358d77531",
+   "ground_truth": {
+    "queries": 1000,
+    "k": 100
+   }
+  },
+  "fiqa": {
+   "url": "https://public.ukp.informatik.tu-darmstadt.de/thakur/BEIR/datasets/fiqa.zip",
+   "sha256": "32c7df99ed21252fdfb2cf3f5673502a8d245ee0c44c4a133570d92ce2b3ad02",
+   "ground_truth": {
+    "queries": 1000,
+    "k": 100
+   }
+  }
+ },
+ "reference": {
+  "sample_rows": 600,
+  "min_cosine": 0.9999
+ }
+}

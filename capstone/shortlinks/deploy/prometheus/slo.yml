@@ -1,0 +1,37 @@
+# SLO редиректа: 99,9 % ответов без 5xx за 30 дней — бюджет ошибок 0,1 %.
+# Многооконное правило burn-rate (Google SRE Workbook): быстрая утечка — 14,4× бюджета за 1 ч
+# и подтверждение за 5 мин; медленная — 6× за 6 ч и подтверждение за 30 мин.
+groups:
+  - name: shortlinks-slo
+    rules:
+      - record: slo:redirect_errors:ratio_rate5m
+        expr: sum(rate(http_requests_total{route="redirect",code=~"5.."}[5m])) / sum(rate(http_requests_total{route="redirect"}[5m]))
+      - record: slo:redirect_errors:ratio_rate30m
+        expr: sum(rate(http_requests_total{route="redirect",code=~"5.."}[30m])) / sum(rate(http_requests_total{route="redirect"}[30m]))
+      - record: slo:redirect_errors:ratio_rate1h
+        expr: sum(rate(http_requests_total{route="redirect",code=~"5.."}[1h])) / sum(rate(http_requests_total{route="redirect"}[1h]))
+      - record: slo:redirect_errors:ratio_rate6h
+        expr: sum(rate(http_requests_total{route="redirect",code=~"5.."}[6h])) / sum(rate(http_requests_total{route="redirect"}[6h]))
+      - alert: RedirectErrorBudgetFastBurn
+        expr: slo:redirect_errors:ratio_rate1h > (14.4 * 0.001) and slo:redirect_errors:ratio_rate5m > (14.4 * 0.001)
+        labels: {severity: page}
+      - alert: RedirectErrorBudgetSlowBurn
+        expr: slo:redirect_errors:ratio_rate6h > (6 * 0.001) and slo:redirect_errors:ratio_rate30m > (6 * 0.001)
+        labels: {severity: ticket}
+  # Доля 5xx видит только ответы, которые дошли до приложения. Отказ соединения при выкатке (статья 3),
+  # падение всех экземпляров и пропавшие метрики она не видит — для них отдельные сигналы.
+  - name: shortlinks-availability
+    rules:
+      - alert: RedirectTargetsDown
+        expr: sum(up{job="shortlinks"}) == 0
+        for: 2m
+        labels: {severity: page}
+      - alert: RedirectMetricsAbsent
+        expr: absent(http_requests_total{route="redirect"})
+        for: 5m
+        labels: {severity: page}
+      # внешняя проба (blackbox exporter, GET /<код> снаружи кластера): видит отказ соединения, которого нет в счётчиках
+      - alert: RedirectProbeFailing
+        expr: avg_over_time(probe_success{job="blackbox-redirect"}[5m]) < 0.9
+        for: 2m
+        labels: {severity: page}

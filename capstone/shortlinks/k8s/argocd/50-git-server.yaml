@@ -1,0 +1,59 @@
+# Источник правды оси gitops — git-сервер внутри namespace (git://, без внешних репозиториев и
+# токенов). Первый коммит — отрендеренный 20-app.yaml из ConfigMap git-seed, который создаёт
+# стенд. Push анонимный, поэтому вход только из своего namespace (NetworkPolicy ниже).
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: git-server, labels: {app: git-server}}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: git-server}}
+  template:
+    metadata: {labels: {app: git-server}}
+    spec:
+      securityContext: {runAsNonRoot: true, runAsUser: 1000, runAsGroup: 1000, fsGroup: 1000, seccompProfile: {type: RuntimeDefault}}
+      volumes: [{name: repos, emptyDir: {}}, {name: seed, configMap: {name: git-seed}}]
+      initContainers:
+        - name: seed-repo
+          image: buildpack-deps:bookworm-scm@sha256:877e9e4d949edfbcbedabc3a2d7ab593955fee5d6d0777adf3a991eb30c750d8
+          env:
+            - {name: HOME, value: /tmp}
+            - {name: GIT_AUTHOR_DATE, value: "2026-10-18T12:00:00+00:00"}
+            - {name: GIT_COMMITTER_DATE, value: "2026-10-18T12:00:00+00:00"}
+          command: ["bash", "-euo", "pipefail", "-c"]
+          args:
+            - |
+              git config --global user.email stand@khorost.tech
+              git config --global user.name "digital-cookbook stand"
+              git init -q --bare --initial-branch=main /srv/git/shortlinks.git
+              git --git-dir=/srv/git/shortlinks.git config daemon.receivepack true
+              mkdir -p /tmp/w/apps/shortlinks && cp /seed/app.yaml /tmp/w/apps/shortlinks/app.yaml
+              cd /tmp/w && git init -q --initial-branch=main . && git add apps
+              git commit -q -m "seed: сервис и consumer" && git push -q /srv/git/shortlinks.git main
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          volumeMounts: [{name: repos, mountPath: /srv/git}, {name: seed, mountPath: /seed}]
+          resources: {requests: {cpu: 20m, memory: 32Mi}, limits: {memory: 256Mi}}
+      containers:
+        - name: git-daemon
+          image: buildpack-deps:bookworm-scm@sha256:877e9e4d949edfbcbedabc3a2d7ab593955fee5d6d0777adf3a991eb30c750d8
+          env: [{name: HOME, value: /tmp}]
+          command: [git, daemon, --export-all, --base-path=/srv/git, --enable=receive-pack, --reuseaddr]
+          ports: [{name: git, containerPort: 9418}]
+          readinessProbe: {exec: {command: [git, ls-remote, "git://127.0.0.1/shortlinks.git"]}, periodSeconds: 5}
+          securityContext: {allowPrivilegeEscalation: false, capabilities: {drop: [ALL]}}
+          volumeMounts: [{name: repos, mountPath: /srv/git}]
+          resources: {requests: {cpu: 20m, memory: 32Mi}, limits: {memory: 256Mi}}
+---
+apiVersion: v1
+kind: Service
+metadata: {name: git-server}
+spec: {selector: {app: git-server}, ports: [{name: git, port: 9418, targetPort: git}]}
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: {name: git-server-own-namespace-only}
+spec:
+  podSelector: {matchLabels: {app: git-server}}
+  policyTypes: [Ingress]
+  ingress:
+    - from: [{namespaceSelector: {matchLabels: {kubernetes.io/metadata.name: cookbook-capstone}}}]
+      ports: [{protocol: TCP, port: 9418}]

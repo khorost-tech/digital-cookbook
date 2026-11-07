@@ -1,0 +1,28 @@
+# Автоскейл consumer'а по лагу JetStream: KEDA (уже стоит в кластере, 2.20.1) опрашивает /jsz
+# NATS и держит num_pending / replicas около lagThreshold. Число реплик — от 1 до 4: нижняя
+# граница 1, а не 0, чтобы первое сообщение не ждало холодного старта JVM.
+#
+# cooldownPeriod действует только на переход в 0. Снижение 4 → 1 решает HPA, который создаёт
+# KEDA, а у HPA окно стабилизации на снижение по умолчанию 300 с — без behavior ниже реплики
+# держались бы ещё пять минут после того, как очередь опустела.
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata: {name: consumer}
+spec:
+  scaleTargetRef: {name: consumer}
+  minReplicaCount: 1
+  maxReplicaCount: 4
+  pollingInterval: 5
+  cooldownPeriod: 30
+  advanced:
+    horizontalPodAutoscalerConfig:
+      behavior:
+        scaleDown: {stabilizationWindowSeconds: 30}
+  triggers:
+    - type: nats-jetstream
+      metadata:
+        natsServerMonitoringEndpoint: "nats.cookbook-capstone.svc.cluster.local:8222"
+        account: "$G"
+        stream: SHORTLINKS
+        consumer: analytics
+        lagThreshold: "500"

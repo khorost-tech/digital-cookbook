@@ -1,0 +1,64 @@
+# Локальный стек капстона: PostgreSQL, Redis, NATS JetStream, сервис и consumer.
+# Порт сервиса — только на 127.0.0.1. Режимы опытов — переменными окружения при запуске.
+name: capstone
+services:
+  postgres:
+    image: postgres:18.6@sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336
+    environment: {POSTGRES_USER: app, POSTGRES_PASSWORD: local-fixture-only, POSTGRES_DB: shortlinks}
+    healthcheck: {test: ["CMD", "pg_isready", "-U", "app", "-d", "shortlinks"], interval: 1s, retries: 60}
+  redis:
+    image: redis:8.8-alpine@sha256:0b2b77d3ea5078274795e3177cdbdada8b96316684a38911d528534ed679b5ec
+    healthcheck: {test: ["CMD", "redis-cli", "ping"], interval: 1s, retries: 60}
+  nats:
+    image: nats:2.14-alpine@sha256:4063edae0717ba5f7501bfde75f97fd9b57f5b93597b92c70b6a6fbbf6a74e06
+    command: ["-js", "-sd", "/data", "-m", "8222"]
+    healthcheck: {test: ["CMD", "wget", "-qO-", "http://127.0.0.1:8222/healthz?js-enabled-only=true"], interval: 1s, retries: 60}
+  service:
+    image: shortlinks-service:dev
+    depends_on: {postgres: {condition: service_healthy}, redis: {condition: service_healthy}, nats: {condition: service_healthy}}
+    environment:
+      DATABASE_URL: postgres://app:local-fixture-only@postgres:5432/shortlinks
+      REDIS_ADDR: ${REDIS_ADDR-redis:6379}
+      NATS_URL: nats://nats:4222
+      BASE_URL: http://127.0.0.1:18080
+      PUBLISH_MODE: ${PUBLISH_MODE:-async}
+      PUBLISH_BUFFER: ${PUBLISH_BUFFER:-1024}
+      EVENT_MODE: ${EVENT_MODE:-outbox}
+      SINGLEFLIGHT: ${SINGLEFLIGHT:-true}
+      GRACEFUL: ${GRACEFUL:-true}
+      SHUTDOWN_DELAY: ${SHUTDOWN_DELAY:-0s}
+      SHUTDOWN_TIMEOUT: ${SHUTDOWN_TIMEOUT:-15s}
+      SLOW_REDIRECT: ${SLOW_REDIRECT:-0s}
+      SLOW_LOAD: ${SLOW_LOAD:-0s}
+      CRASH_AFTER_INSERT: ${CRASH_AFTER_INSERT:-false}
+      DB_MAX_CONNS: ${DB_MAX_CONNS:-10}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_ENDPOINT:-}
+      PROPAGATE: ${PROPAGATE:-true}
+      NATS_HEADER_CARRIER: ${NATS_HEADER_CARRIER:-exact}
+    ports: ["127.0.0.1:18080:8080"]
+    stop_grace_period: 30s
+  consumer:
+    image: shortlinks-consumer:dev
+    depends_on: {service: {condition: service_started}}
+    environment:
+      DATABASE_URL: postgres://app:local-fixture-only@postgres:5432/shortlinks
+      NATS_URL: nats://nats:4222
+      IDEMPOTENT: ${IDEMPOTENT:-true}
+      CRASH_AFTER_COMMIT: ${CRASH_AFTER_COMMIT:-0}
+      ACK_WAIT: ${ACK_WAIT:-30s}
+      CONSUME_EXPIRES: ${CONSUME_EXPIRES:-30s}
+      TRACE_MANUAL: ${TRACE_MANUAL:-true}
+      OTEL_EXPORTER_OTLP_ENDPOINT: ${OTEL_ENDPOINT:-}
+      OTEL_JAVAAGENT_ENABLED: ${OTEL_JAVA:-false}
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_METRICS_EXPORTER: none
+      OTEL_LOGS_EXPORTER: none
+      OTEL_BSP_SCHEDULE_DELAY: "500"
+    ports: ["127.0.0.1:19090:9090"]
+  # профиль obs: сборщик трейсов пишет спаны в файл ../out/otel/spans.json
+  otelcol:
+    profiles: ["obs"]
+    image: otel/opentelemetry-collector-contrib:0.162.0@sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes: ["./otelcol.yaml:/etc/otelcol/config.yaml:ro", "../out/otel:/out"]
+    user: "0:0"

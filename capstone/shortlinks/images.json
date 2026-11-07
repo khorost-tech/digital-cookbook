@@ -1,0 +1,58 @@
+{
+ "golang": {
+  "ref": "golang:1.27",
+  "digest": "sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2"
+ },
+ "distroless": {
+  "ref": "gcr.io/distroless/static-debian13:nonroot",
+  "digest": "sha256:e2e927ec666bae08560abb3c55d0659eceabb657f56b6782ab500a9fc7f555e3"
+ },
+ "postgres": {
+  "ref": "postgres:18.6",
+  "digest": "sha256:74935e72241653ca55e0414067e6d8763aceb8a810eb51b452253ec3dcfc4336"
+ },
+ "redis": {
+  "ref": "redis:8.8-alpine",
+  "digest": "sha256:0b2b77d3ea5078274795e3177cdbdada8b96316684a38911d528534ed679b5ec"
+ },
+ "nats": {
+  "ref": "nats:2.14-alpine",
+  "digest": "sha256:4063edae0717ba5f7501bfde75f97fd9b57f5b93597b92c70b6a6fbbf6a74e06"
+ },
+ "registry": {
+  "ref": "registry:2.8.3",
+  "digest": "sha256:a3d8aaa63ed8681a604f1dea0aa03f100d5895b6a58ace528858a7b332415373"
+ },
+ "syft": {
+  "ref": "anchore/syft:v1.54.1",
+  "digest": "sha256:3eb5379ba7b409c3f4069b686110527af0c47df993fa5c10d13e7cf34f49b1aa"
+ },
+ "cosign": {
+  "ref": "ghcr.io/sigstore/cosign/cosign:v3.1.3",
+  "digest": "sha256:9e5c2f2edc34351160407ca3416c61855bdf9403c3c5936e0f0be7fc261611b8"
+ },
+ "trivy": {
+  "ref": "aquasec/trivy:0.75.0",
+  "digest": "sha256:af6acf9a6b85dfe389a1941505c0ce9efef52a4719635e1a962f022a3d855daa"
+ },
+ "otelcol": {
+  "ref": "otel/opentelemetry-collector-contrib:0.162.0",
+  "digest": "sha256:39923a8e431bd1f57be82411999d389fcfe40857492e4365456d97a4c1f74be6"
+ },
+ "prometheus": {
+  "ref": "prom/prometheus:v3.15.0",
+  "digest": "sha256:efd719c99d83b060d9daefdcf00360461adf279f45ef5391f8d111892118753e"
+ },
+ "k6": {
+  "ref": "grafana/k6:2.3.0",
+  "digest": "sha256:9c2dee7f8ed74d317e4027c06a10f169b625638189de8d4555d0b3486a5aeb34"
+ },
+ "distroless_java": {
+  "ref": "gcr.io/distroless/java25-debian13:nonroot",
+  "digest": "sha256:ca60da1345c0f17b6d019049e6749e15f10fd3c0da86dec938d2b4ec565d0629"
+ },
+ "maven": {
+  "ref": "maven:3.9-eclipse-temurin-25",
+  "digest": "sha256:93b8a14ea2f412782e4e842651273b4d903e35cc496284f178fbbe2d67d00976"
+ }
+}

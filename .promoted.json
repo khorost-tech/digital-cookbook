@@ -81,7 +81,11 @@
     "architecture/web-frameworks": [
       "architecture/web-frameworks-across-languages.md"
     ],
+    "capstone/shortlinks": [
+      "capstone/capstone-service-overview-and-code.md"
+    ],
     "cpp/build-and-package": [
+      "cpp/cpp-cmake-vcpkg-conan.md",
       "cpp/cpp-modern-backend-and-systems.md"
     ],
     "cpp/service-and-postgres": [
@@ -500,6 +504,12 @@
       "security/silent-memory-corruption-detection.md",
       "security/untrusted-file-pipeline-architecture.md",
       "security/vendored-dependencies-blind-spot.md"
+    ],
+    "vector-databases/ann": [
+      "databases/vector-ann-algorithms-deep.md"
+    ],
+    "vector-databases/dataset": [
+      "databases/vector-ann-algorithms-deep.md"
     ],
     "zig/hello-comptime": [
       "zig/zig-positioning-among-c-rust-cpp.md"

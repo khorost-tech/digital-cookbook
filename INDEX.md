@@ -22,7 +22,7 @@
 | [`architecture/temporal`](architecture/temporal) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
 | [`architecture/testing`](architecture/testing) | Тестирование: распределённые системы (Testcontainers), TDD/BDD, flaky-тесты | [статья](https://khorost.tech/architecture/flaky-tests-diagnose-and-fix/) |
 | [`architecture/schema-migrators`](architecture/schema-migrators) | goose, Flyway, Liquibase, Atlas и Alembic против PostgreSQL, CockroachDB и Picodata: журнал версий, применение, интроспекция и откат с проверкой состояния базы SQL-запросом; обходные пути для CockroachDB | [статья](https://khorost.tech/architecture/schema-migrators-across-databases/) |
-| [`architecture/web-frameworks`](architecture/web-frameworks) | Двенадцать приложений с одним API — пары «минимальный — полный» в Go, Rust, Python, Node, Java и C# (net/http и Gin, axum и actix-web, Flask и FastAPI, Express и NestJS, Javalin и Spring Boot, Minimal API и MVC): поведение по умолчанию — 405 или 404, слэш в конце пути, валидация тела, лимит размера, исключение в обработчике и утечка стека, заголовки сервера, соотношение времени старта | 🔜 скоро |
+| [`architecture/web-frameworks`](architecture/web-frameworks) | Двенадцать приложений с одним API — пары «минимальный — полный» в Go, Rust, Python, Node, Java и C# (net/http и Gin, axum и actix-web, Flask и FastAPI, Express и NestJS, Javalin и Spring Boot, Minimal API и MVC): поведение по умолчанию — 405 или 404, слэш в конце пути, валидация тела, лимит размера, исключение в обработчике и утечка стека, заголовки сервера, соотношение времени старта | [статья](https://khorost.tech/architecture/web-frameworks-across-languages/) |
 
 ## Databases
 
@@ -47,6 +47,13 @@
 | [`databases/timeseries`](databases/timeseries) | TimescaleDB, Prometheus и VictoriaMetrics на одних рядах: отсечение чанков, continuous aggregate на свежих, опоздавших и удалённых данных, байт на точку, память на ряд, increase() в двух системах, бесплатные сборки | [статья](https://khorost.tech/databases/timeseries-databases/) |
 | [`databases/transactions`](databases/transactions) | Транзакции и изоляция: реляционные, KV/документные, брокеры, мульти-хранилище | [статья](https://khorost.tech/databases/transactions-brokers-rabbitmq-kafka/) |
 | [`databases/wal`](databases/wal) | WAL и его аналоги: PostgreSQL, MySQL, MongoDB, SQLite, Redis, CDC/Debezium | [статья](https://khorost.tech/databases/) |
+
+## Vector databases
+
+| Пример | Описание | Статья |
+|---|---|---|
+| [`vector-databases/dataset`](vector-databases/dataset) | Общий датасет серии о векторных БД: BEIR Quora (523 тыс. текстов) и FiQA, эмбеддинги self-hosted моделью multilingual-e5-small в контейнере, истина точного перебора top-100 на Go; сборка сверяется с эталонной выборкой по косинусу | 🔜 скоро |
+| [`vector-databases/ann`](vector-databases/ann) | Алгоритмы приближённого поиска на 523 тыс. эмбеддингов против точного перебора: своя HNSW, IVF-Flat, SQ8 и PQ на Go — recall@10, время, число расстояний и память по ручкам M, ef, nlist, nprobe, m; сверка с Faiss и jvector (Java); недостижимые узлы графа, нерепрезентативное обучение IVF, метрики на ненормированных векторах | 🔜 скоро |
 
 ## Data engineering
 
@@ -167,7 +174,7 @@
 
 | Пример | Описание | Статья |
 |---|---|---|
-| [`cpp/build-and-package`](cpp/build-and-package) | Сборка и упаковка сервиса на C++: vcpkg против Conan против системного пакета, воспроизводимость сборки, статическая линковка и разрешение имён, размеры бинарника и образа рядом с Go и Rust | 🔜 скоро |
+| [`cpp/build-and-package`](cpp/build-and-package) | Сборка и упаковка сервиса на C++: vcpkg против Conan против системного пакета, воспроизводимость сборки, статическая линковка и разрешение имён, размеры бинарника и образа рядом с Go и Rust | [статья](https://khorost.tech/cpp/cpp-modern-backend-and-systems/) |
 | [`cpp/service-and-postgres`](cpp/service-and-postgres) | Три слоя HTTP над одним сервисом на C++ (Boost.Beast на корутинах, Drogon, Crow) и PostgreSQL: занимает ли рабочую единицу ожидание в базе, сколько соединений открыто на самом деле при названном размере пула, что из запроса видно снаружи — параметр или вклеенная величина, переживает ли запрос уход клиента, и почему занятость приходится читать счётчиком, а не выводить из времени ответа | 🔜 скоро |
 
 ## Kubernetes
@@ -210,4 +217,10 @@
 | [`python/tooling`](python/tooling) | uv, Poetry и pip на одном наборе зависимостей в трёх состояниях кэша; шесть стратегий сборки образа при побайтово одинаковом ответе; кто ловит подсунутый дефект — моки, фейк на SQLite, настоящая база в контейнере и property-based тест | [статья](https://khorost.tech/python/python-packaging-uv-poetry/) |
 | [`python/typing-and-data`](python/typing-and-data) | Кто ловит подсунутый дефект — mypy, mypy --strict, pyright, pydantic на границе и голое выполнение; и кто не полез в данные, которые ответу не нужны: лишние разделы Parquet сделаны нечитаемыми, дошедший до ответа тем самым доказал, что в них не заглядывал. Времени этот стенд не меряет вовсе | [статья](https://khorost.tech/python/python-modern-typing/) |
 | [`python/web`](python/web) | FastAPI, Django и Flask на побайтово одинаковых ответах: во что обходится сам фреймворк и когда это перестаёт быть заметно; воркеры, корректное завершение, отказ на старте | [статья](https://khorost.tech/python/python-web-frameworks/) |
+
+## Capstone
+
+| Пример | Описание | Статья |
+|---|---|---|
+| [`capstone/shortlinks`](capstone/shortlinks) | Сервис коротких ссылок (Go) и consumer аналитики (Java) от кода до кластера: валидация конфигурации, graceful shutdown, singleflight против залпа промахов кэша; брокер недоступен, outbox против прямой публикации, идемпотентный consumer при падении до ack; distroless, воспроизводимая сборка, SBOM fat-jar, подпись cosign, Trivy; выкатка без потерь, KEDA по лагу JetStream и self-heal ArgoCD на k8s-volga; трейс Go → NATS → Java, burn-rate SLO и насыщение пула соединений под нагрузкой | 🔜 скоро |
 

@@ -1,0 +1,93 @@
+# promtool test rules slo_test.yml — три сценария по 1000 редиректов в минуту.
+rule_files: [slo.yml]
+evaluation_interval: 1m
+tests:
+  - name: всплеск 5 % ошибок — быстрое окно
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{route="redirect",code="302"}'
+        values: '0+950x120'
+      - series: 'http_requests_total{route="redirect",code="500"}'
+        values: '0+50x120'
+    alert_rule_test:
+      - eval_time: 70m
+        alertname: RedirectErrorBudgetFastBurn
+        exp_alerts: [{exp_labels: {severity: page}}]
+  - name: медленная утечка 0,8 % — только медленное окно
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{route="redirect",code="302"}'
+        values: '0+992x420'
+      - series: 'http_requests_total{route="redirect",code="500"}'
+        values: '0+8x420'
+    alert_rule_test:
+      - eval_time: 400m
+        alertname: RedirectErrorBudgetSlowBurn
+        exp_alerts: [{exp_labels: {severity: ticket}}]
+      - eval_time: 400m
+        alertname: RedirectErrorBudgetFastBurn
+        exp_alerts: []
+  - name: нормальный фон 0,05 % — тишина
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{route="redirect",code="302"}'
+        values: '0+19990x420'
+      - series: 'http_requests_total{route="redirect",code="500"}'
+        values: '0+10x420'
+      - series: 'up{job="shortlinks",instance="a"}'
+        values: '1x420'
+      - series: 'probe_success{job="blackbox-redirect"}'
+        values: '1x420'
+    alert_rule_test:
+      - eval_time: 400m
+        alertname: RedirectTargetsDown
+        exp_alerts: []
+      - eval_time: 400m
+        alertname: RedirectMetricsAbsent
+        exp_alerts: []
+      - eval_time: 400m
+        alertname: RedirectProbeFailing
+        exp_alerts: []
+      - eval_time: 400m
+        alertname: RedirectErrorBudgetSlowBurn
+        exp_alerts: []
+      - eval_time: 400m
+        alertname: RedirectErrorBudgetFastBurn
+        exp_alerts: []
+  - name: все экземпляры недоступны — up в ноле, доля 5xx молчит
+    interval: 1m
+    input_series:
+      - series: 'up{job="shortlinks",instance="a"}'
+        values: '1x10 0x20'
+      - series: 'up{job="shortlinks",instance="b"}'
+        values: '1x10 0x20'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: RedirectTargetsDown
+        exp_alerts: [{exp_labels: {severity: page}}]
+      - eval_time: 20m
+        alertname: RedirectErrorBudgetFastBurn
+        exp_alerts: []
+  - name: метрики пропали — сработал absent
+    interval: 1m
+    input_series:
+      - series: 'up{job="shortlinks",instance="a"}'
+        values: '1x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: RedirectMetricsAbsent
+        exp_alerts: [{exp_labels: {severity: page, route: redirect}}]
+  - name: внешняя проба падает, счётчики приложения в норме — отказ соединения
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{route="redirect",code="302"}'
+        values: '0+1000x60'
+      - series: 'probe_success{job="blackbox-redirect"}'
+        values: '1x10 0x50'
+    alert_rule_test:
+      - eval_time: 30m
+        alertname: RedirectProbeFailing
+        exp_alerts: [{exp_labels: {severity: page, job: blackbox-redirect}}]
+      - eval_time: 30m
+        alertname: RedirectErrorBudgetFastBurn
+        exp_alerts: []

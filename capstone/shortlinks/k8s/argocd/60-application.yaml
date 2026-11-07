@@ -1,0 +1,12 @@
+# Application оси gitops: репозиторий стенда → namespace стенда. ${SELF_HEAL} подставляет стенд:
+# true — ручная правка в кластере откатывается к git; false — контроль: правка остаётся,
+# ArgoCD только отмечает расхождение (OutOfSync).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: {name: shortlinks, namespace: cookbook-capstone}
+spec:
+  project: default
+  source: {repoURL: "git://git-server.cookbook-capstone.svc.cluster.local/shortlinks.git", path: apps/shortlinks, targetRevision: HEAD}
+  destination: {server: https://kubernetes.default.svc, namespace: cookbook-capstone}
+  syncPolicy:
+    automated: {prune: true, selfHeal: ${SELF_HEAL}}

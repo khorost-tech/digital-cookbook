@@ -1,0 +1,16 @@
+# Область наблюдения ArgoCD стенда — один namespace и никаких кластерных ресурсов. Без этого
+# секрета контроллер строит кэш всех типов кластера и падает на первом, читать который ему
+# не дали (на k8s-volga — CRD KEDA); подробно — kubernetes/gitops, manifests/15-cluster-scope.yaml.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cluster-in-cluster
+  namespace: cookbook-capstone
+  labels: {argocd.argoproj.io/secret-type: cluster}
+type: Opaque
+stringData:
+  name: in-cluster
+  server: https://kubernetes.default.svc
+  namespaces: cookbook-capstone
+  clusterResources: "false"
+  config: '{"tlsClientConfig":{"insecure":false}}'

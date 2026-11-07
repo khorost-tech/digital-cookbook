@@ -1,0 +1,935 @@
+{
+ "session": "20261010T195016Z",
+ "published": {
+  "brute": {
+   "control": {
+    "tool_cmd": "bench brute -n 10000,50000,100000,250000,522931 -q 200",
+    "n": 522931,
+    "queries": 200,
+    "gt_agree": 200,
+    "outcome": "match"
+   },
+   "scaling": {
+    "tool_cmd": "bench brute -n 10000,50000,100000,250000,522931 -q 200",
+    "points": [
+     {
+      "n": 10000,
+      "p50_us~": 1328,
+      "dists_per_query": 10000
+     },
+     {
+      "n": 50000,
+      "p50_us~": 6888,
+      "dists_per_query": 50000
+     },
+     {
+      "n": 100000,
+      "p50_us~": 13549,
+      "dists_per_query": 100000
+     },
+     {
+      "n": 250000,
+      "p50_us~": 33909,
+      "dists_per_query": 250000
+     },
+     {
+      "n": 522931,
+      "p50_us~": 68073,
+      "dists_per_query": 522931
+     }
+    ],
+    "us_per_1k_docs~": 135.56,
+    "linear": true,
+    "outcome": "match"
+   }
+  },
+  "hnsw": {
+   "m16-efc200": {
+    "tool_cmd": "bench hnsw -m 16 -efc 200 -ef 10,20,40,80,160,400",
+    "m": 16,
+    "efc": 200,
+    "n": 522931,
+    "levels": [
+     522931,
+     32330,
+     1960,
+     140,
+     12,
+     1
+    ],
+    "build_s~": 184.8,
+    "link_bytes~": 51532920,
+    "link_bound": 69139520,
+    "link_within": true,
+    "heap_bytes~": 127104576,
+    "vector_bytes": 803222016,
+    "unreachable~": 24,
+    "unreachable_ok": true,
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.8904,
+      "p50_us~": 195,
+      "p99_us~": 422,
+      "dists_per_query~": 378.3
+     },
+     {
+      "param": 20,
+      "recall_at_10~": 0.9466,
+      "p50_us~": 376,
+      "p99_us~": 983,
+      "dists_per_query~": 553.2
+     },
+     {
+      "param": 40,
+      "recall_at_10~": 0.9716,
+      "p50_us~": 499,
+      "p99_us~": 1049,
+      "dists_per_query~": 881.3
+     },
+     {
+      "param": 80,
+      "recall_at_10~": 0.9825,
+      "p50_us~": 954,
+      "p99_us~": 2592,
+      "dists_per_query~": 1503
+     },
+     {
+      "param": 160,
+      "recall_at_10~": 0.9912,
+      "p50_us~": 1618,
+      "p99_us~": 2647,
+      "dists_per_query~": 2674.7
+     },
+     {
+      "param": 400,
+      "recall_at_10~": 0.9963,
+      "p50_us~": 3052,
+      "p99_us~": 5072,
+      "dists_per_query~": 5901.1
+     }
+    ],
+    "recall_monotonic": true,
+    "ef_reaching_target~": 40,
+    "reaches_target": true,
+    "outcome": "match"
+   },
+   "m8-efc200": {
+    "tool_cmd": "bench hnsw -m 8 -efc 200 -ef 10,20,40,80,160,400",
+    "m": 8,
+    "efc": 200,
+    "n": 522931,
+    "levels": [
+     522931,
+     64953,
+     8071,
+     986,
+     140,
+     18,
+     3
+    ],
+    "build_s~": 132.1,
+    "link_bytes~": 32523816,
+    "link_bound": 35841056,
+    "link_within": true,
+    "heap_bytes~": 94811152,
+    "vector_bytes": 803222016,
+    "unreachable~": 359,
+    "unreachable_ok": true,
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.807,
+      "p50_us~": 125,
+      "p99_us~": 404,
+      "dists_per_query~": 260.6
+     },
+     {
+      "param": 20,
+      "recall_at_10~": 0.896,
+      "p50_us~": 203,
+      "p99_us~": 984,
+      "dists_per_query~": 373.3
+     },
+     {
+      "param": 40,
+      "recall_at_10~": 0.9405,
+      "p50_us~": 339,
+      "p99_us~": 1378,
+      "dists_per_query~": 579.4
+     },
+     {
+      "param": 80,
+      "recall_at_10~": 0.9618,
+      "p50_us~": 461,
+      "p99_us~": 975,
+      "dists_per_query~": 961.2
+     },
+     {
+      "param": 160,
+      "recall_at_10~": 0.9779,
+      "p50_us~": 847,
+      "p99_us~": 1364,
+      "dists_per_query~": 1682.2
+     },
+     {
+      "param": 400,
+      "recall_at_10~": 0.9871,
+      "p50_us~": 1862,
+      "p99_us~": 2838,
+      "dists_per_query~": 3689.3
+     }
+    ],
+    "recall_monotonic": true,
+    "ef_reaching_target~": 80,
+    "reaches_target": true,
+    "outcome": "match"
+   },
+   "m32-efc200": {
+    "tool_cmd": "bench hnsw -m 32 -efc 200 -ef 10,20,40,80,160,400",
+    "m": 32,
+    "efc": 200,
+    "n": 522931,
+    "levels": [
+     522931,
+     16193,
+     505,
+     18,
+     1
+    ],
+    "build_s~": 246.2,
+    "link_bytes~": 69657660,
+    "link_bound": 136010112,
+    "link_within": true,
+    "heap_bytes~": 191444432,
+    "vector_bytes": 803222016,
+    "unreachable~": 1,
+    "unreachable_ok": true,
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.9242,
+      "p50_us~": 197,
+      "p99_us~": 505,
+      "dists_per_query~": 503.9
+     },
+     {
+      "param": 20,
+      "recall_at_10~": 0.9639,
+      "p50_us~": 272,
+      "p99_us~": 479,
+      "dists_per_query~": 736.8
+     },
+     {
+      "param": 40,
+      "recall_at_10~": 0.9838,
+      "p50_us~": 498,
+      "p99_us~": 1062,
+      "dists_per_query~": 1179.1
+     },
+     {
+      "param": 80,
+      "recall_at_10~": 0.9912,
+      "p50_us~": 911,
+      "p99_us~": 1822,
+      "dists_per_query~": 2010.1
+     },
+     {
+      "param": 160,
+      "recall_at_10~": 0.9949,
+      "p50_us~": 1548,
+      "p99_us~": 2747,
+      "dists_per_query~": 3569.8
+     },
+     {
+      "param": 400,
+      "recall_at_10~": 0.9981,
+      "p50_us~": 3348,
+      "p99_us~": 5701,
+      "dists_per_query~": 7856.4
+     }
+    ],
+    "recall_monotonic": true,
+    "ef_reaching_target~": 20,
+    "reaches_target": true,
+    "outcome": "match"
+   },
+   "m16-efc100": {
+    "tool_cmd": "bench hnsw -m 16 -efc 100 -ef 10,20,40,80,160,400",
+    "m": 16,
+    "efc": 100,
+    "n": 522931,
+    "levels": [
+     522931,
+     32330,
+     1960,
+     140,
+     12,
+     1
+    ],
+    "build_s~": 79.6,
+    "link_bytes~": 43413500,
+    "link_bound": 69139520,
+    "link_within": true,
+    "heap_bytes~": 125002168,
+    "vector_bytes": 803222016,
+    "unreachable~": 42,
+    "unreachable_ok": true,
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.871,
+      "p50_us~": 131,
+      "p99_us~": 254,
+      "dists_per_query~": 344.9
+     },
+     {
+      "param": 20,
+      "recall_at_10~": 0.9215,
+      "p50_us~": 182,
+      "p99_us~": 315,
+      "dists_per_query~": 486.5
+     },
+     {
+      "param": 40,
+      "recall_at_10~": 0.9544,
+      "p50_us~": 294,
+      "p99_us~": 476,
+      "dists_per_query~": 756.8
+     },
+     {
+      "param": 80,
+      "recall_at_10~": 0.9673,
+      "p50_us~": 499,
+      "p99_us~": 759,
+      "dists_per_query~": 1257.9
+     },
+     {
+      "param": 160,
+      "recall_at_10~": 0.9806,
+      "p50_us~": 926,
+      "p99_us~": 1432,
+      "dists_per_query~": 2206.8
+     },
+     {
+      "param": 400,
+      "recall_at_10~": 0.9893,
+      "p50_us~": 2107,
+      "p99_us~": 3181,
+      "dists_per_query~": 4855.8
+     }
+    ],
+    "recall_monotonic": true,
+    "ef_reaching_target~": 40,
+    "reaches_target": true,
+    "outcome": "match"
+   },
+   "compare": {
+    "tool_cmd": "—",
+    "recall_grows_with_m": true,
+    "build_grows_with_m": true,
+    "efc100_builds_faster": true,
+    "efc100_not_better": true,
+    "outcome": "match"
+   }
+  },
+  "ivf": {
+   "control": {
+    "tool_cmd": "bench ivf -nlist 723 -nprobe 1,2,4,8,16,32,64,128,723 -train sample",
+    "recall_at_10": 1,
+    "scanned_all": true,
+    "outcome": "match"
+   },
+   "nlist723": {
+    "tool_cmd": "bench ivf -nlist 723 -nprobe 1,2,4,8,16,32,64,128,723 -train sample",
+    "nlist": 723,
+    "train": "sample",
+    "n": 522931,
+    "build_s~": 20.8,
+    "list_min~": 7,
+    "list_median~": 691,
+    "list_max~": 2368,
+    "empty_lists~": 0,
+    "points": [
+     {
+      "param": 1,
+      "recall_at_10~": 0.5204,
+      "p50_us~": 441,
+      "p99_us~": 889,
+      "dists_per_query~": 1591.4
+     },
+     {
+      "param": 2,
+      "recall_at_10~": 0.6528,
+      "p50_us~": 721,
+      "p99_us~": 1328,
+      "dists_per_query~": 2457.6
+     },
+     {
+      "param": 4,
+      "recall_at_10~": 0.7408,
+      "p50_us~": 1368,
+      "p99_us~": 2268,
+      "dists_per_query~": 4152.5
+     },
+     {
+      "param": 8,
+      "recall_at_10~": 0.8083,
+      "p50_us~": 2709,
+      "p99_us~": 5156,
+      "dists_per_query~": 7467.4
+     },
+     {
+      "param": 16,
+      "recall_at_10~": 0.8656,
+      "p50_us~": 5038,
+      "p99_us~": 9510,
+      "dists_per_query~": 14000
+     },
+     {
+      "param": 32,
+      "recall_at_10~": 0.909,
+      "p50_us~": 9169,
+      "p99_us~": 13078,
+      "dists_per_query~": 26845.8
+     },
+     {
+      "param": 64,
+      "recall_at_10~": 0.9466,
+      "p50_us~": 19693,
+      "p99_us~": 35004,
+      "dists_per_query~": 52294.5
+     },
+     {
+      "param": 128,
+      "recall_at_10~": 0.9722,
+      "p50_us~": 37382,
+      "p99_us~": 72067,
+      "dists_per_query~": 102165.3
+     }
+    ],
+    "recall_monotonic": true,
+    "outcome": "match"
+   },
+   "nlist2892": {
+    "tool_cmd": "bench ivf -nlist 2892 -nprobe 1,2,4,8,16,32,64,128,256 -train sample",
+    "nlist": 2892,
+    "train": "sample",
+    "n": 522931,
+    "build_s~": 86.1,
+    "list_min~": 1,
+    "list_median~": 149,
+    "list_max~": 1364,
+    "empty_lists~": 0,
+    "points": [
+     {
+      "param": 1,
+      "recall_at_10~": 0.4731,
+      "p50_us~": 599,
+      "p99_us~": 1036,
+      "dists_per_query~": 3179.8
+     },
+     {
+      "param": 2,
+      "recall_at_10~": 0.6033,
+      "p50_us~": 693,
+      "p99_us~": 1145,
+      "dists_per_query~": 3447.3
+     },
+     {
+      "param": 4,
+      "recall_at_10~": 0.7015,
+      "p50_us~": 875,
+      "p99_us~": 1494,
+      "dists_per_query~": 3978.7
+     },
+     {
+      "param": 8,
+      "recall_at_10~": 0.7759,
+      "p50_us~": 1261,
+      "p99_us~": 2286,
+      "dists_per_query~": 4977
+     },
+     {
+      "param": 16,
+      "recall_at_10~": 0.8285,
+      "p50_us~": 1962,
+      "p99_us~": 2921,
+      "dists_per_query~": 6884.3
+     },
+     {
+      "param": 32,
+      "recall_at_10~": 0.8778,
+      "p50_us~": 3554,
+      "p99_us~": 5719,
+      "dists_per_query~": 10630.7
+     },
+     {
+      "param": 64,
+      "recall_at_10~": 0.9112,
+      "p50_us~": 6317,
+      "p99_us~": 9630,
+      "dists_per_query~": 17886.1
+     },
+     {
+      "param": 128,
+      "recall_at_10~": 0.9387,
+      "p50_us~": 11506,
+      "p99_us~": 16720,
+      "dists_per_query~": 32011.1
+     },
+     {
+      "param": 256,
+      "recall_at_10~": 0.9652,
+      "p50_us~": 21276,
+      "p99_us~": 29327,
+      "dists_per_query~": 59549.2
+     }
+    ],
+    "recall_monotonic": true,
+    "outcome": "match"
+   },
+   "skewed723": {
+    "tool_cmd": "bench ivf -nlist 723 -nprobe 1,2,4,8,16,32,64,128 -train skewed",
+    "nlist": 723,
+    "train": "skewed",
+    "n": 522931,
+    "build_s~": 20.3,
+    "list_min~": 1,
+    "list_median~": 363,
+    "list_max~": 17246,
+    "empty_lists~": 0,
+    "points": [
+     {
+      "param": 1,
+      "recall_at_10~": 0.4265,
+      "p50_us~": 723,
+      "p99_us~": 5714,
+      "dists_per_query~": 2962.4
+     },
+     {
+      "param": 2,
+      "recall_at_10~": 0.5607,
+      "p50_us~": 1341,
+      "p99_us~": 6634,
+      "dists_per_query~": 5001.3
+     },
+     {
+      "param": 4,
+      "recall_at_10~": 0.6884,
+      "p50_us~": 2616,
+      "p99_us~": 9424,
+      "dists_per_query~": 9040.1
+     },
+     {
+      "param": 8,
+      "recall_at_10~": 0.783,
+      "p50_us~": 5123,
+      "p99_us~": 14330,
+      "dists_per_query~": 16730.7
+     },
+     {
+      "param": 16,
+      "recall_at_10~": 0.8591,
+      "p50_us~": 9867,
+      "p99_us~": 22488,
+      "dists_per_query~": 30852.1
+     },
+     {
+      "param": 32,
+      "recall_at_10~": 0.9132,
+      "p50_us~": 19068,
+      "p99_us~": 33744,
+      "dists_per_query~": 55782.3
+     },
+     {
+      "param": 64,
+      "recall_at_10~": 0.9565,
+      "p50_us~": 35328,
+      "p99_us~": 54242,
+      "dists_per_query~": 99936.7
+     },
+     {
+      "param": 128,
+      "recall_at_10~": 0.9814,
+      "p50_us~": 62428,
+      "p99_us~": 88196,
+      "dists_per_query~": 175502.1
+     }
+    ],
+    "recall_monotonic": true,
+    "outcome": "match"
+   },
+   "compare": {
+    "tool_cmd": "—",
+    "finer_cheaper_at_090": true,
+    "skewed_lists_uneven": true,
+    "skewed_scans_more": true,
+    "skew_ratio~": 13.9,
+    "outcome": "match"
+   }
+  },
+  "quant": {
+   "sq8": {
+    "tool_cmd": "bench sq8 -r 10,100,1000",
+    "n": 522931,
+    "code_bytes": 200805504,
+    "float_bytes": 803222016,
+    "code_size_ok": true,
+    "raw_recall~": 0.9878,
+    "raw_ok": true,
+    "points": [
+     {
+      "p50_us~": 62167,
+      "p99_us~": 72654,
+      "r": 10,
+      "recall_at_10~": 0.9878,
+      "rescore": false
+     },
+     {
+      "p50_us~": 62490,
+      "p99_us~": 81438,
+      "r": 10,
+      "recall_at_10~": 0.9878,
+      "rescore": true
+     },
+     {
+      "p50_us~": 62350,
+      "p99_us~": 66923,
+      "r": 100,
+      "recall_at_10~": 0.9878,
+      "rescore": false
+     },
+     {
+      "p50_us~": 62511,
+      "p99_us~": 66487,
+      "r": 100,
+      "recall_at_10~": 1,
+      "rescore": true
+     },
+     {
+      "p50_us~": 63562,
+      "p99_us~": 68003,
+      "r": 1000,
+      "recall_at_10~": 0.9878,
+      "rescore": false
+     },
+     {
+      "p50_us~": 64184,
+      "p99_us~": 68424,
+      "r": 1000,
+      "recall_at_10~": 1,
+      "rescore": true
+     }
+    ],
+    "outcome": "match"
+   },
+   "pq48": {
+    "tool_cmd": "bench pq -pqm 48 -r 10,100,1000",
+    "n": 522931,
+    "pq_m": 48,
+    "code_bytes": 25100688,
+    "codebook_bytes": 393216,
+    "compression": 32,
+    "code_size_ok": true,
+    "raw_recall~": 0.5073,
+    "rescored_1000~": 0.9892,
+    "raw_loses_much": true,
+    "rescored_ok": true,
+    "build_s~": 19.3,
+    "points": [
+     {
+      "p50_us~": 11414,
+      "p99_us~": 23800,
+      "r": 10,
+      "recall_at_10~": 0.5073,
+      "rescore": false
+     },
+     {
+      "p50_us~": 9964,
+      "p99_us~": 19500,
+      "r": 10,
+      "recall_at_10~": 0.5073,
+      "rescore": true
+     },
+     {
+      "p50_us~": 9139,
+      "p99_us~": 10266,
+      "r": 100,
+      "recall_at_10~": 0.5073,
+      "rescore": false
+     },
+     {
+      "p50_us~": 9046,
+      "p99_us~": 9694,
+      "r": 100,
+      "recall_at_10~": 0.8895,
+      "rescore": true
+     },
+     {
+      "p50_us~": 10354,
+      "p99_us~": 11148,
+      "r": 1000,
+      "recall_at_10~": 0.5073,
+      "rescore": false
+     },
+     {
+      "p50_us~": 10916,
+      "p99_us~": 12241,
+      "r": 1000,
+      "recall_at_10~": 0.9892,
+      "rescore": true
+     }
+    ],
+    "outcome": "match"
+   },
+   "pq96": {
+    "tool_cmd": "bench pq -pqm 96 -r 10,100,1000",
+    "n": 522931,
+    "pq_m": 96,
+    "code_bytes": 50201376,
+    "codebook_bytes": 393216,
+    "compression": 16,
+    "code_size_ok": true,
+    "raw_recall~": 0.7236,
+    "rescored_1000~": 0.9999,
+    "raw_loses_much": false,
+    "rescored_ok": true,
+    "build_s~": 33.1,
+    "points": [
+     {
+      "p50_us~": 21200,
+      "p99_us~": 23756,
+      "r": 10,
+      "recall_at_10~": 0.7236,
+      "rescore": false
+     },
+     {
+      "p50_us~": 20826,
+      "p99_us~": 27461,
+      "r": 10,
+      "recall_at_10~": 0.7236,
+      "rescore": true
+     },
+     {
+      "p50_us~": 20664,
+      "p99_us~": 22666,
+      "r": 100,
+      "recall_at_10~": 0.7236,
+      "rescore": false
+     },
+     {
+      "p50_us~": 20480,
+      "p99_us~": 22603,
+      "r": 100,
+      "recall_at_10~": 0.9959,
+      "rescore": true
+     },
+     {
+      "p50_us~": 21403,
+      "p99_us~": 25409,
+      "r": 1000,
+      "recall_at_10~": 0.7236,
+      "rescore": false
+     },
+     {
+      "p50_us~": 21961,
+      "p99_us~": 25514,
+      "r": 1000,
+      "recall_at_10~": 0.9999,
+      "rescore": true
+     }
+    ],
+    "outcome": "match"
+   },
+   "compare": {
+    "tool_cmd": "—",
+    "finer_more_accurate": true,
+    "outcome": "match"
+   }
+  },
+  "metric": {
+   "all": {
+    "tool_cmd": "bench metric",
+    "n": 100000,
+    "queries": 200,
+    "normalized~": {
+     "cosine_vs_dot": {
+      "overlap": 1,
+      "same": 200
+     },
+     "cosine_vs_l2": {
+      "overlap": 1,
+      "same": 200
+     }
+    },
+    "scaled~": {
+     "cosine_vs_dot": {
+      "overlap": 0.111,
+      "same": 0
+     },
+     "cosine_vs_l2": {
+      "overlap": 0.316,
+      "same": 0
+     }
+    },
+    "normalized_agree": true,
+    "scaled_dot_differs": true,
+    "outcome": "match"
+   }
+  },
+  "crosscheck": {
+   "faiss-hnsw": {
+    "tool_cmd": "faiss/check.py /data/quora hnsw 16 200 10,40,160",
+    "faiss_version": "1.10.0",
+    "pairs~": [
+     {
+      "at": "ef 10",
+      "ours": 0.8904,
+      "faiss": 0.9127
+     },
+     {
+      "at": "ef 40",
+      "ours": 0.9716,
+      "faiss": 0.9812
+     },
+     {
+      "at": "ef 160",
+      "ours": 0.9912,
+      "faiss": 0.9945
+     }
+    ],
+    "max_gap~": 0.0223,
+    "tolerance": 0.04,
+    "within": true,
+    "outcome": "match",
+    "faiss_dists~": {
+     "10": 386.3,
+     "40": 884.6,
+     "160": 2675.5
+    },
+    "ours_dists~": {
+     "10": 378.3,
+     "40": 881.3,
+     "160": 2674.7
+    }
+   },
+   "faiss-ivf": {
+    "tool_cmd": "faiss/check.py /data/quora ivf 723 1,8,64",
+    "faiss_version": "1.10.0",
+    "pairs~": [
+     {
+      "at": "nprobe 1",
+      "ours": 0.5204,
+      "faiss": 0.5109
+     },
+     {
+      "at": "nprobe 8",
+      "ours": 0.8083,
+      "faiss": 0.8079
+     },
+     {
+      "at": "nprobe 64",
+      "ours": 0.9466,
+      "faiss": 0.9475
+     }
+    ],
+    "max_gap~": 0.0095,
+    "tolerance": 0.03,
+    "within": true,
+    "outcome": "match"
+   },
+   "faiss-pq": {
+    "tool_cmd": "faiss/check.py /data/quora pq 48 0,100,1000",
+    "faiss_version": "1.10.0",
+    "pairs~": [
+     {
+      "at": "без пересчёта",
+      "ours": 0.5073,
+      "faiss": 0.499
+     },
+     {
+      "at": "пересчёт 100",
+      "ours": 0.8895,
+      "faiss": 0.8897
+     },
+     {
+      "at": "пересчёт 1000",
+      "ours": 0.9892,
+      "faiss": 0.9871
+     }
+    ],
+    "max_gap~": 0.0083,
+    "tolerance": 0.02,
+    "within": true,
+    "outcome": "match"
+   },
+   "faiss-sq8": {
+    "tool_cmd": "faiss/check.py /data/quora sq8",
+    "faiss_version": "1.10.0",
+    "pairs~": [
+     {
+      "at": "без пересчёта",
+      "ours": 0.9878,
+      "faiss": 0.9872
+     },
+     {
+      "at": "пересчёт 100",
+      "ours": 1,
+      "faiss": 1.0
+     }
+    ],
+    "max_gap~": 0.0006,
+    "tolerance": 0.02,
+    "within": true,
+    "outcome": "match"
+   },
+   "jvector": {
+    "tool_cmd": "java vdb.Bench /data/quora 16 200 10,20,40,80,160,400",
+    "n": 522931,
+    "build_s~": 107.6,
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.8447,
+      "visited_per_query~": 273.9,
+      "p50_us~": 101
+     },
+     {
+      "param": 20,
+      "recall_at_10~": 0.9164,
+      "visited_per_query~": 385.7,
+      "p50_us~": 120
+     },
+     {
+      "param": 40,
+      "recall_at_10~": 0.9577,
+      "visited_per_query~": 592.1,
+      "p50_us~": 191
+     },
+     {
+      "param": 80,
+      "recall_at_10~": 0.977,
+      "visited_per_query~": 973.3,
+      "p50_us~": 354
+     },
+     {
+      "param": 160,
+      "recall_at_10~": 0.986,
+      "visited_per_query~": 1692.2,
+      "p50_us~": 588
+     },
+     {
+      "param": 400,
+      "recall_at_10~": 0.9914,
+      "visited_per_query~": 3707.5,
+      "p50_us~": 1296
+     }
+    ],
+    "recall_monotonic": true,
+    "reaches_min": true,
+    "outcome": "match"
+   }
+  }
+ }
+}
