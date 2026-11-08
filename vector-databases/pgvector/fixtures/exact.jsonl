@@ -1,0 +1,2 @@
+{"kind": "exact", "variant": "control", "probe": "ORDER BY embedding <#> $1, id LIMIT 10 при enable_indexscan = off", "cmd": "python3 scripts/run-exact.py control", "tool_cmd": "vbench exact", "queries": 200, "gt_agree": 200, "near_tie": 0, "only_near_ties": true, "p50_us~": 225262, "plan": "Limit → Gather Merge → Sort → Parallel Seq Scan on docs", "outcome": "match", "detail": "выдача совпала с истиной на 200 запросах из 200, ещё 0 — почти равные скоры на границе десятки; 225 мс на запрос"}
+COMPLETE

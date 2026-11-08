@@ -1,0 +1,183 @@
+{
+ "session": "20261017T133039Z",
+ "published": {
+  "checks": {
+   "controls": {
+    "actual": {
+     "registry_roundtrip_identical": true,
+     "missing_alias": "RestException",
+     "default_artifact": [
+      "model.skops"
+     ],
+     "log_without_trusted_types": "MlflowException"
+    },
+    "outcome": "match",
+    "untrusted_message": "The saved sklearn model references untrusted types. If you are sure loading these types is safe, set the 'skops_trusted_types' parameter when calling 'log_model' or 'save_model' to the list of trusted types. Root error: Untrusted types found in the file: ['sklearn.ensemble._hist_gradient_boosting.predictor.TreePredictor'].",
+    "versions": {
+     "mlflow": "3.16.1",
+     "sklearn": "1.9.1",
+     "dvc": "3.67.1"
+    },
+    "total_s~": 61.4
+   },
+   "five_parts": {
+    "actual": {
+     "same_inputs": {
+      "predictions_identical": true,
+      "differing_files": [
+       "MLmodel",
+       "model.skops"
+      ]
+     },
+     "data_slice": {
+      "flipped": true,
+      "digest_differs": true
+     },
+     "feature_version": {
+      "flipped": true
+     },
+     "preprocessing": {
+      "separate_flipped": true,
+      "pipeline_flipped": 0
+     }
+    },
+    "outcome": "match",
+    "prod_requests": 26052,
+    "flipped": {
+     "data_slice": 135,
+     "feature_version": 107,
+     "preprocessing_separate": 978
+    }
+   },
+   "library_version": {
+    "actual": {
+     "by_version": {
+      "1.8.0": {
+       "same_trust_list": "error",
+       "outcome": "loaded",
+       "predictions_identical": true,
+       "version_warning": true
+      },
+      "1.7.2": {
+       "same_trust_list": "error",
+       "outcome": "loaded",
+       "predictions_identical": true,
+       "version_warning": true
+      },
+      "1.6.1": {
+       "same_trust_list": "error",
+       "outcome": "loaded",
+       "predictions_identical": true,
+       "version_warning": true
+      }
+     },
+     "artifact_pins_sklearn": true
+    },
+    "outcome": "match",
+    "messages": {
+     "1.8.0": {
+      "warnings": [
+       "InconsistentVersionWarning: Trying to unpickle estimator HistGradientBoostingClassifier from version 1.9.1 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:",
+       "InconsistentVersionWarning: Trying to unpickle estimator LabelEncoder from version 1.9.1 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:",
+       "InconsistentVersionWarning: Trying to unpickle estimator _BinMapper from version 1.9.1 when using version 1.8.0. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:"
+      ],
+      "error": null,
+      "same_trust_error": "UntrustedTypesFoundException: Untrusted types found in the file: ['sklearn._loss._loss.CyHalfBinomialLoss'].",
+      "extra_trusted": [
+       "sklearn._loss._loss.CyHalfBinomialLoss"
+      ]
+     },
+     "1.7.2": {
+      "warnings": [
+       "InconsistentVersionWarning: Trying to unpickle estimator HistGradientBoostingClassifier from version 1.9.1 when using version 1.7.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:",
+       "InconsistentVersionWarning: Trying to unpickle estimator LabelEncoder from version 1.9.1 when using version 1.7.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:",
+       "InconsistentVersionWarning: Trying to unpickle estimator _BinMapper from version 1.9.1 when using version 1.7.2. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:"
+      ],
+      "error": null,
+      "same_trust_error": "UntrustedTypesFoundException: Untrusted types found in the file: ['sklearn._loss._loss.CyHalfBinomialLoss'].",
+      "extra_trusted": [
+       "sklearn._loss._loss.CyHalfBinomialLoss"
+      ]
+     },
+     "1.6.1": {
+      "warnings": [
+       "InconsistentVersionWarning: Trying to unpickle estimator HistGradientBoostingClassifier from version 1.9.1 when using version 1.6.1. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:",
+       "InconsistentVersionWarning: Trying to unpickle estimator LabelEncoder from version 1.9.1 when using version 1.6.1. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:",
+       "InconsistentVersionWarning: Trying to unpickle estimator _BinMapper from version 1.9.1 when using version 1.6.1. This might lead to breaking code or invalid results. Use at your own risk. For more info please refer to:"
+      ],
+      "error": null,
+      "same_trust_error": "UntrustedTypesFoundException: Untrusted types found in the file: ['sklearn._loss._loss.CyHalfBinomialLoss'].",
+      "extra_trusted": [
+       "sklearn._loss._loss.CyHalfBinomialLoss"
+      ]
+     }
+    }
+   },
+   "registry": {
+    "actual": {
+     "alias_resolves": true,
+     "stage_api_works": true,
+     "stage_api_warning": [
+      "FutureWarning"
+     ]
+    },
+    "outcome": "match",
+    "stage_warning_text": [
+     "``mlflow.tracking.client.MlflowClient.get_latest_versions`` is deprecated since 2.9.0. Model registry stages will be removed in a future major release. To learn more about the deprecation of model reg",
+     "``mlflow.tracking.client.MlflowClient.transition_model_version_stage`` is deprecated since 2.9.0. Model registry stages will be removed in a future major release. To learn more about the deprecation o"
+    ]
+   },
+   "stages": {
+    "actual": {
+     "before_move_serves_v1": true,
+     "after_move_serves_v1": true,
+     "after_move_serves_v2": false,
+     "after_restart_serves_v2": true,
+     "version_endpoint_is_mlflow_version": true,
+     "reconcile": {
+      "before_move": true,
+      "after_move": false,
+      "after_restart": true
+     },
+     "registry_says_after_move": "v2",
+     "old_version_alias_trace": false
+    },
+    "outcome": "match",
+    "requests": 2000,
+    "v1_v2_differ": 1953
+   },
+   "data_versioning": {
+    "actual": {
+     "versions_differ": true,
+     "only_labels_file_changed": true,
+     "restored_bytes_identical": true,
+     "restored_model_identical": true,
+     "dvc_stores_changed_file_whole_and_unchanged_once": true,
+     "git_with_dvc_under_1mb": true,
+     "git_gc_smaller_than_dvc_cache": true
+    },
+    "outcome": "match",
+    "bytes": {
+     "dataset": 59740155,
+     "dvc_cache": 90950414
+    },
+    "git_bytes~": {
+     "with_dvc": 28837,
+     "plain_loose": 22960293,
+     "plain_after_gc": 13392343
+    }
+   },
+   "decision_policy": {
+    "actual": {
+     "same_model_other_threshold_flipped": true,
+     "threshold_from_older_window_differs": true
+    },
+    "outcome": "match",
+    "threshold_val": 0.159878,
+    "threshold_older": 0.128662,
+    "flipped": 7,
+    "prod_requests": 26052
+   }
+  }
+ }
+}

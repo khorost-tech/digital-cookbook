@@ -1,10 +1,14 @@
 {
   "stands": {
     "ai/ml-dataset": [
-      "ai/ml-feature-store-and-skew.md"
+      "ai/ml-feature-store-and-skew.md",
+      "ai/ml-model-registry-versioning.md"
     ],
     "ai/ml-features": [
       "ai/ml-feature-store-and-skew.md"
+    ],
+    "ai/ml-registry": [
+      "ai/ml-model-registry-versioning.md"
     ],
     "architecture/background-jobs": [
       "architecture/schedulers-distributed-cron.md",
@@ -86,6 +90,7 @@
     ],
     "cpp/build-and-package": [
       "cpp/cpp-cmake-vcpkg-conan.md",
+      "cpp/cpp-docker-minimal-images.md",
       "cpp/cpp-modern-backend-and-systems.md"
     ],
     "cpp/service-and-postgres": [
@@ -509,7 +514,11 @@
       "databases/vector-ann-algorithms-deep.md"
     ],
     "vector-databases/dataset": [
-      "databases/vector-ann-algorithms-deep.md"
+      "databases/vector-ann-algorithms-deep.md",
+      "databases/vector-pgvector-deep.md"
+    ],
+    "vector-databases/pgvector": [
+      "databases/vector-pgvector-deep.md"
     ],
     "zig/hello-comptime": [
       "zig/zig-positioning-among-c-rust-cpp.md"

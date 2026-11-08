@@ -1,0 +1,812 @@
+{
+ "session": "20261011T001739Z",
+ "published": {
+  "exact": {
+   "control": {
+    "tool_cmd": "vbench exact",
+    "queries": 200,
+    "gt_agree": 200,
+    "near_tie": 0,
+    "only_near_ties": true,
+    "p50_us~": 225262,
+    "plan": "Limit → Gather Merge → Sort → Parallel Seq Scan on docs",
+    "outcome": "match"
+   }
+  },
+  "hnsw": {
+   "mwm2gb": {
+    "tool_cmd": "vbench index -kind hnsw -mwm 2GB; vbench search -param hnsw.ef_search -values 10,20,40,80,160,400",
+    "maintenance_work_mem": "2GB",
+    "build_s~": 122.6,
+    "index_bytes~": 1070039040,
+    "table_bytes~": 476053504,
+    "spilled": false,
+    "spilled_after~": null,
+    "notice~": null,
+    "plan": "Limit → Index Scan using docs_hnsw on docs",
+    "uses_index": true,
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.9423,
+      "rows_per_query": 10,
+      "p50_us~": 384,
+      "p99_us~": 773
+     },
+     {
+      "param": 20,
+      "recall_at_10~": 0.9707,
+      "rows_per_query": 10,
+      "p50_us~": 549,
+      "p99_us~": 2837
+     },
+     {
+      "param": 40,
+      "recall_at_10~": 0.9832,
+      "rows_per_query": 10,
+      "p50_us~": 729,
+      "p99_us~": 1194
+     },
+     {
+      "param": 80,
+      "recall_at_10~": 0.9881,
+      "rows_per_query": 10,
+      "p50_us~": 1171,
+      "p99_us~": 1906
+     },
+     {
+      "param": 160,
+      "recall_at_10~": 0.994,
+      "rows_per_query": 10,
+      "p50_us~": 2200,
+      "p99_us~": 3815
+     },
+     {
+      "param": 400,
+      "recall_at_10~": 0.9972,
+      "rows_per_query": 10,
+      "p50_us~": 4220,
+      "p99_us~": 6492
+     }
+    ],
+    "recall_monotonic": true,
+    "near_ann": true,
+    "index_holds_vectors": true,
+    "outcome": "match"
+   },
+   "mwm64mb": {
+    "tool_cmd": "vbench index -kind hnsw -mwm 64MB; vbench search -param hnsw.ef_search -values 40",
+    "maintenance_work_mem": "64MB",
+    "build_s~": 384.5,
+    "index_bytes~": 1070047232,
+    "table_bytes~": 476053504,
+    "spilled": true,
+    "spilled_after~": 28362,
+    "notice~": "hnsw graph no longer fits into maintenance_work_mem after 28362 tuples",
+    "plan": "Limit → Index Scan using docs_hnsw on docs",
+    "uses_index": true,
+    "points": [
+     {
+      "param": 40,
+      "recall_at_10~": 0.985,
+      "rows_per_query": 10,
+      "p50_us~": 802,
+      "p99_us~": 1383
+     }
+    ],
+    "recall_monotonic": true,
+    "outcome": "match"
+   },
+   "compare": {
+    "tool_cmd": "—",
+    "spill_slower": true,
+    "slowdown~": 3.1,
+    "same_recall": true,
+    "outcome": "match"
+   }
+  },
+  "ivfflat": {
+   "lists723": {
+    "tool_cmd": "vbench index -kind ivfflat -lists 723; vbench search -param ivfflat.probes -values 1,2,4,8,16,32,64,128",
+    "build_s~": 14.7,
+    "index_bytes~": 860291072,
+    "plan": "Limit → Index Scan using docs_ivf on docs",
+    "points": [
+     {
+      "param": 1,
+      "recall_at_10~": 0.5003,
+      "rows_per_query": 10,
+      "p50_us~": 340,
+      "p99_us~": 799
+     },
+     {
+      "param": 2,
+      "recall_at_10~": 0.6388,
+      "rows_per_query": 10,
+      "p50_us~": 536,
+      "p99_us~": 942
+     },
+     {
+      "param": 4,
+      "recall_at_10~": 0.7336,
+      "rows_per_query": 10,
+      "p50_us~": 923,
+      "p99_us~": 1574
+     },
+     {
+      "param": 8,
+      "recall_at_10~": 0.8057,
+      "rows_per_query": 10,
+      "p50_us~": 1655,
+      "p99_us~": 2523
+     },
+     {
+      "param": 16,
+      "recall_at_10~": 0.8645,
+      "rows_per_query": 10,
+      "p50_us~": 3071,
+      "p99_us~": 4461
+     },
+     {
+      "param": 32,
+      "recall_at_10~": 0.9092,
+      "rows_per_query": 10,
+      "p50_us~": 5897,
+      "p99_us~": 7999
+     },
+     {
+      "param": 64,
+      "recall_at_10~": 0.947,
+      "rows_per_query": 10,
+      "p50_us~": 12373,
+      "p99_us~": 15130
+     },
+     {
+      "param": 128,
+      "recall_at_10~": 0.9735,
+      "rows_per_query": 10,
+      "p50_us~": 26414,
+      "p99_us~": 31619
+     }
+    ],
+    "recall_monotonic": true,
+    "gap_to_ann~": {
+     "1": -0.0197,
+     "8": -0.0023,
+     "64": 0.0
+    },
+    "near_ann": true,
+    "outcome": "match"
+   }
+  },
+  "ops": {
+   "all": {
+    "tool_cmd": "vbench ops",
+    "ops": {
+     "l2": {
+      "operator": "<->",
+      "plan": "Limit → Gather Merge → Sort → Parallel Seq Scan on docs",
+      "uses_index": false,
+      "recall_at_10~": 0.999,
+      "p50_us~": 239176
+     },
+     "cosine": {
+      "operator": "<=>",
+      "plan": "Limit → Gather Merge → Sort → Parallel Seq Scan on docs",
+      "uses_index": false,
+      "recall_at_10~": 1,
+      "p50_us~": 240442
+     },
+     "ip": {
+      "operator": "<#>",
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "uses_index": true,
+      "recall_at_10~": 0.994,
+      "p50_us~": 700
+     }
+    },
+    "only_ip_uses_index": true,
+    "others_10x_slower": true,
+    "outcome": "match"
+   }
+  },
+  "filter": {
+   "hnsw": {
+    "tool_cmd": "vbench filter -sel 500,100,10,1",
+    "plan_cache_mode": "auto",
+    "generic_plan": "Limit → Index Scan using docs_hnsw on docs",
+    "points": [
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "mode": "off",
+      "recall_at_10~": 0.9795,
+      "rows_per_query~": 10,
+      "p50_us~": 522,
+      "p99_us~": 914,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.9795,
+      "rows_per_query~": 10,
+      "p50_us~": 499,
+      "p99_us~": 930,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "mode": "strict_order",
+      "recall_at_10~": 0.9795,
+      "rows_per_query~": 10,
+      "p50_us~": 503,
+      "p99_us~": 1026,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "mode": "off",
+      "recall_at_10~": 0.3835,
+      "rows_per_query~": 3.84,
+      "p50_us~": 467,
+      "p99_us~": 828,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.971,
+      "rows_per_query~": 10,
+      "p50_us~": 1606,
+      "p99_us~": 9199,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "mode": "strict_order",
+      "recall_at_10~": 0.9455,
+      "rows_per_query~": 10,
+      "p50_us~": 2008,
+      "p99_us~": 4970,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "mode": "off",
+      "recall_at_10~": 0.0355,
+      "rows_per_query~": 0.36,
+      "p50_us~": 473,
+      "p99_us~": 869,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.9605,
+      "rows_per_query~": 10,
+      "p50_us~": 12920,
+      "p99_us~": 22746,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "mode": "strict_order",
+      "recall_at_10~": 0.9165,
+      "rows_per_query~": 10,
+      "p50_us~": 13363,
+      "p99_us~": 26239,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "mode": "off",
+      "recall_at_10~": 0.001,
+      "rows_per_query~": 0.01,
+      "p50_us~": 541,
+      "p99_us~": 911,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.67,
+      "rows_per_query~": 10,
+      "p50_us~": 30436,
+      "p99_us~": 42743,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "mode": "strict_order",
+      "recall_at_10~": 0.6635,
+      "rows_per_query~": 10,
+      "p50_us~": 30197,
+      "p99_us~": 41741,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     }
+    ],
+    "off_full_at_50": true,
+    "off_short_when_selective": true,
+    "iterative_full": true,
+    "always_hnsw": true,
+    "outcome": "match"
+   },
+   "hnsw-btree": {
+    "tool_cmd": "vbench filter -sel 500,100,10,1",
+    "plan_cache_mode": "auto",
+    "generic_plan": "Limit → Index Scan using docs_hnsw on docs",
+    "points": [
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "mode": "off",
+      "recall_at_10~": 0.9795,
+      "rows_per_query~": 10,
+      "p50_us~": 556,
+      "p99_us~": 978,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.9795,
+      "rows_per_query~": 10,
+      "p50_us~": 542,
+      "p99_us~": 935,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "mode": "strict_order",
+      "recall_at_10~": 0.9795,
+      "rows_per_query~": 10,
+      "p50_us~": 569,
+      "p99_us~": 983,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "mode": "off",
+      "recall_at_10~": 0.3835,
+      "rows_per_query~": 3.84,
+      "p50_us~": 664,
+      "p99_us~": 1155,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.971,
+      "rows_per_query~": 10,
+      "p50_us~": 1520,
+      "p99_us~": 4225,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "mode": "strict_order",
+      "recall_at_10~": 0.9455,
+      "rows_per_query~": 10,
+      "p50_us~": 1689,
+      "p99_us~": 4284,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "mode": "off",
+      "recall_at_10~": 0.0355,
+      "rows_per_query~": 0.36,
+      "p50_us~": 522,
+      "p99_us~": 921,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.9605,
+      "rows_per_query~": 10,
+      "p50_us~": 12536,
+      "p99_us~": 21132,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "mode": "strict_order",
+      "recall_at_10~": 0.9165,
+      "rows_per_query~": 10,
+      "p50_us~": 13267,
+      "p99_us~": 21073,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "mode": "off",
+      "recall_at_10~": 0.001,
+      "rows_per_query~": 0.01,
+      "p50_us~": 539,
+      "p99_us~": 921,
+      "plan": "Limit → Sort → Bitmap Heap Scan on docs → Bitmap Index Scan on docs_bucket",
+      "via_hnsw": false
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.67,
+      "rows_per_query~": 10,
+      "p50_us~": 30413,
+      "p99_us~": 40114,
+      "plan": "Limit → Sort → Bitmap Heap Scan on docs → Bitmap Index Scan on docs_bucket",
+      "via_hnsw": false
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "mode": "strict_order",
+      "recall_at_10~": 0.6635,
+      "rows_per_query~": 10,
+      "p50_us~": 30947,
+      "p99_us~": 45954,
+      "plan": "Limit → Sort → Bitmap Heap Scan on docs → Bitmap Index Scan on docs_bucket",
+      "via_hnsw": false
+     }
+    ],
+    "custom_plan_btree": true,
+    "generic_plan_hnsw": true,
+    "generic_plan_wins": true,
+    "outcome": "match"
+   },
+   "hnsw-btree-custom": {
+    "tool_cmd": "vbench filter -sel 500,100,10,1 -plancache force_custom_plan",
+    "plan_cache_mode": "force_custom_plan",
+    "generic_plan": "Limit → Index Scan using docs_hnsw on docs",
+    "points": [
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "mode": "off",
+      "recall_at_10~": 0.9795,
+      "rows_per_query~": 10,
+      "p50_us~": 574,
+      "p99_us~": 1023,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.9795,
+      "rows_per_query~": 10,
+      "p50_us~": 551,
+      "p99_us~": 985,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "mode": "strict_order",
+      "recall_at_10~": 0.9795,
+      "rows_per_query~": 10,
+      "p50_us~": 552,
+      "p99_us~": 1021,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "mode": "off",
+      "recall_at_10~": 0.3835,
+      "rows_per_query~": 3.84,
+      "p50_us~": 609,
+      "p99_us~": 1493,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.971,
+      "rows_per_query~": 10,
+      "p50_us~": 1520,
+      "p99_us~": 3155,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "mode": "strict_order",
+      "recall_at_10~": 0.9455,
+      "rows_per_query~": 10,
+      "p50_us~": 1609,
+      "p99_us~": 3650,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "mode": "off",
+      "recall_at_10~": 0.0355,
+      "rows_per_query~": 0.36,
+      "p50_us~": 541,
+      "p99_us~": 951,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "mode": "relaxed_order",
+      "recall_at_10~": 0.9605,
+      "rows_per_query~": 10,
+      "p50_us~": 13045,
+      "p99_us~": 23183,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "mode": "strict_order",
+      "recall_at_10~": 0.9165,
+      "rows_per_query~": 10,
+      "p50_us~": 13513,
+      "p99_us~": 24464,
+      "plan": "Limit → Index Scan using docs_hnsw on docs",
+      "via_hnsw": true
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "mode": "off",
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 765,
+      "p99_us~": 818,
+      "plan": "Limit → Sort → Bitmap Heap Scan on docs → Bitmap Index Scan on docs_bucket",
+      "via_hnsw": false
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "mode": "relaxed_order",
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 759,
+      "p99_us~": 1463,
+      "plan": "Limit → Sort → Bitmap Heap Scan on docs → Bitmap Index Scan on docs_bucket",
+      "via_hnsw": false
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "mode": "strict_order",
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 744,
+      "p99_us~": 782,
+      "plan": "Limit → Sort → Bitmap Heap Scan on docs → Bitmap Index Scan on docs_bucket",
+      "via_hnsw": false
+     }
+    ],
+    "btree_at_01pct": true,
+    "exact_at_01pct": true,
+    "hnsw_at_50pct": true,
+    "outcome": "match"
+   }
+  },
+  "quant": {
+   "halfvec": {
+    "tool_cmd": "vbench index -kind halfvec; vbench halfvec -values 40,160",
+    "build_s~": 97.6,
+    "index_bytes~": 611401728,
+    "vector_index_bytes~": 1070039040,
+    "smaller_15x": true,
+    "ratio~": 1.75,
+    "plan": "Limit → Index Scan using docs_half on docs",
+    "points": [
+     {
+      "param": 40,
+      "recall_at_10~": 0.983,
+      "rows_per_query": 10,
+      "p50_us~": 626,
+      "p99_us~": 1157
+     },
+     {
+      "param": 160,
+      "recall_at_10~": 0.9932,
+      "rows_per_query": 10,
+      "p50_us~": 1468,
+      "p99_us~": 2443
+     }
+    ],
+    "max_gap~": 0.0008,
+    "same_recall": true,
+    "outcome": "match"
+   },
+   "hamming": {
+    "tool_cmd": "vbench hamming -values 10,100,1000",
+    "sign_skewed_dims": 279,
+    "centered_skewed_dims": 0,
+    "sign_recall~": {
+     "10": 0.25,
+     "100": 0.481,
+     "1000": 0.6955
+    },
+    "centered_recall~": {
+     "10": 0.652,
+     "100": 0.9615,
+     "1000": 0.993
+    },
+    "sign_code_loses": true,
+    "centering_fixes": true,
+    "outcome": "match"
+   },
+   "binary": {
+    "tool_cmd": "vbench index -kind binary; vbench binary -values 10,100,1000",
+    "build_s~": 60.9,
+    "index_bytes~": 182083584,
+    "vector_index_bytes~": 1070039040,
+    "smaller_3x": true,
+    "ratio~": 5.9,
+    "plan": "Limit → Sort → Subquery Scan on t → Limit → Index Scan using docs_bin on docs",
+    "uses_index": true,
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.1194,
+      "rows_per_query": 10,
+      "p50_us~": 293,
+      "p99_us~": 610
+     },
+     {
+      "param": 100,
+      "recall_at_10~": 0.3957,
+      "rows_per_query": 10,
+      "p50_us~": 1446,
+      "p99_us~": 1867
+     },
+     {
+      "param": 1000,
+      "recall_at_10~": 0.6192,
+      "rows_per_query": 10,
+      "p50_us~": 11961,
+      "p99_us~": 16541
+     }
+    ],
+    "sign_code_loses": true,
+    "graph_not_better_than_exact": true,
+    "outcome": "match"
+   },
+   "binary-centered": {
+    "tool_cmd": "vbench index -kind binary-centered; vbench binary -values 10,100,1000 -centered",
+    "build_s~": 49.5,
+    "index_bytes~": 182099968,
+    "vector_index_bytes~": 1070039040,
+    "smaller_3x": true,
+    "ratio~": 5.9,
+    "plan": "Limit → Sort → Subquery Scan on t → Limit → Index Scan using docs_bin on docs",
+    "uses_index": true,
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.5973,
+      "rows_per_query": 10,
+      "p50_us~": 395,
+      "p99_us~": 965
+     },
+     {
+      "param": 100,
+      "recall_at_10~": 0.9458,
+      "rows_per_query": 10,
+      "p50_us~": 1430,
+      "p99_us~": 2440
+     },
+     {
+      "param": 1000,
+      "recall_at_10~": 0.9927,
+      "rows_per_query": 10,
+      "p50_us~": 11637,
+      "p99_us~": 19848
+     }
+    ],
+    "rescored_1000_ok": true,
+    "beats_plain": true,
+    "same_size": true,
+    "outcome": "match"
+   }
+  },
+  "java": {
+   "jdbc": {
+    "tool_cmd": "java vdb.Dump /data/quora jdbc:postgresql://pg:5432/vdb 40",
+    "queries": 200,
+    "same_order": 200,
+    "identical": true,
+    "outcome": "match"
+   }
+  }
+ }
+}

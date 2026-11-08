@@ -1,0 +1,2 @@
+{"kind": "java", "variant": "jdbc", "probe": "SELECT id FROM docs ORDER BY embedding <#> ? LIMIT 10, hnsw.ef_search = 40: pgJDBC 42.7.14 + pgvector-java 0.1.6 против pgx 5.11.0 + pgvector-go 0.4.1", "cmd": "python3 scripts/run-java.py jdbc", "tool_cmd": "java vdb.Dump /data/quora jdbc:postgresql://pg:5432/vdb 40", "queries": 200, "same_order": 200, "identical": true, "outcome": "match", "detail": "выдача совпала id в id на 200 запросах из 200"}
+COMPLETE

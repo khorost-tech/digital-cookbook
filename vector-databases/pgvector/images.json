@@ -1,0 +1,5 @@
+{
+ "pgvector": {"ref": "pgvector/pgvector:0.8.7-pg17-trixie", "digest": "sha256:7a7e9f22015b67edb4bef5c59daeebcd7e74bfa570df6ce60ae01237c8648a84"},
+ "golang": {"ref": "golang:1.27", "digest": "sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2"},
+ "maven": {"ref": "maven:3.9-eclipse-temurin-21", "digest": "sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320"}
+}

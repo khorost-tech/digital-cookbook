@@ -1,0 +1,31 @@
+# PostgreSQL 17 + pgvector 0.8.7 — по дайджесту из images.json.
+# Память контейнера — 5 ГБ: таблица с векторами float32 и halfvec и индексы
+# HNSW, IVFFlat занимают около 3 ГБ на диске.
+services:
+  pg:
+    image: pgvector/pgvector:0.8.7-pg17-trixie@sha256:7a7e9f22015b67edb4bef5c59daeebcd7e74bfa570df6ce60ae01237c8648a84
+    environment:
+      POSTGRES_PASSWORD: pg
+      POSTGRES_DB: vdb
+    command:
+      - postgres
+      - -c
+      - shared_buffers=1GB
+      - -c
+      - max_parallel_maintenance_workers=4
+      - -c
+      - max_wal_size=8GB
+      - -c
+      - jit=off
+    shm_size: 2g
+    mem_limit: 5g
+    cpus: 8
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres", "-d", "vdb"]
+      interval: 2s
+      retries: 30
+
+volumes:
+  pgdata:

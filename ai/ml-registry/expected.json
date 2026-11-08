@@ -1,0 +1,157 @@
+{
+ "written": "2026-10-17, до первого прогона",
+ "checks": {
+  "controls": {
+   "registry_roundtrip_identical": true,
+   "missing_alias": "RestException",
+   "default_artifact": [
+    "model.skops"
+   ]
+  },
+  "five_parts": {
+   "same_inputs": {
+    "predictions_identical": true,
+    "differing_files": [
+     "MLmodel",
+     "model.skops"
+    ]
+   },
+   "data_slice": {
+    "flipped": true,
+    "digest_differs": true
+   },
+   "feature_version": {
+    "flipped": true
+   },
+   "preprocessing": {
+    "separate_flipped": true,
+    "pipeline_flipped": 0
+   }
+  },
+  "library_version": {
+   "by_version": {
+    "1.8.0": {
+     "outcome": "loaded",
+     "predictions_identical": true,
+     "version_warning": true
+    },
+    "1.7.2": {
+     "outcome": "loaded",
+     "predictions_identical": true,
+     "version_warning": true
+    },
+    "1.6.1": {
+     "outcome": "loaded",
+     "predictions_identical": true,
+     "version_warning": true
+    }
+   },
+   "artifact_pins_sklearn": true
+  },
+  "registry": {
+   "alias_resolves": true,
+   "stage_api_works": true,
+   "stage_api_warning": [
+    "FutureWarning"
+   ]
+  },
+  "stages": {
+   "before_move_serves_v1": true,
+   "after_move_serves_v1": true,
+   "after_move_serves_v2": false,
+   "after_restart_serves_v2": true,
+   "version_endpoint_is_mlflow_version": true,
+   "reconcile": {
+    "before_move": true,
+    "after_move": false,
+    "after_restart": true
+   },
+   "registry_says_after_move": "v2"
+  },
+  "data_versioning": {
+   "versions_differ": true,
+   "only_labels_file_changed": true,
+   "restored_bytes_identical": true,
+   "restored_model_identical": true,
+   "dvc_stores_changed_file_whole_and_unchanged_once": true,
+   "git_with_dvc_under_1mb": true,
+   "git_gc_smaller_than_dvc_cache": true
+  }
+ },
+ "notes": {
+  "five_parts": "Повторное обучение на тех же входах: предсказания совпадают, но MLmodel (run_id, время) и архив skops (время записи в zip) — другие байты; хеш артефакта — не идентичность модели.",
+  "library_version": "Модель сохранена MLflow по умолчанию — skops; грузится skops под scikit-learn 1.8.0, 1.7.2, 1.6.1 в отдельных окружениях с тем же numpy.",
+  "stages": "Своё обслуживание грузит модель по алиасу при старте и отдаёт /loaded; сверка — /loaded против алиаса в реестре."
+ },
+ "revision_after_probe": {
+  "written": "2026-10-17, после пробы, до сессий",
+  "observed": [
+   "MLflow 3.16.1 по умолчанию сохраняет модель scikit-learn в skops и отказывается сохранить HistGradientBoostingClassifier: TreePredictor — недоверенный тип, нужен skops_trusted_types. Стенд передаёт ровно этот тип; отказ без него — новая проверка в controls.",
+   "library_version: под scikit-learn 1.8.0, 1.7.2 и 1.6.1 тот же список доверия не грузит артефакт — skops сообщает недоверенный sklearn._loss._loss.CyHalfBinomialLoss (под 1.9.1 он в доверенных). Опыт разделён на два шага: тот же список (отказ) и список плюс типы самого scikit-learn из сообщения; гипотеза для второго шага — прежняя."
+  ],
+  "checks": {
+   "controls": {
+    "registry_roundtrip_identical": true,
+    "missing_alias": "RestException",
+    "default_artifact": [
+     "model.skops"
+    ],
+    "log_without_trusted_types": "MlflowException"
+   },
+   "library_version": {
+    "by_version": {
+     "1.8.0": {
+      "same_trust_list": "error",
+      "outcome": "loaded",
+      "predictions_identical": true,
+      "version_warning": true
+     },
+     "1.7.2": {
+      "same_trust_list": "error",
+      "outcome": "loaded",
+      "predictions_identical": true,
+      "version_warning": true
+     },
+     "1.6.1": {
+      "same_trust_list": "error",
+      "outcome": "loaded",
+      "predictions_identical": true,
+      "version_warning": true
+     }
+    },
+    "artifact_pins_sklearn": true
+   }
+  },
+  "harness": [
+   "Первая проба: контейнер измерений не нашёл сервер MLflow по имени — сервер (4 воркера, лимит 1 ГБ) к тому моменту выпал; вручную с теми же флагами он поднимался. Причина не установлена; раннер ставит 2 воркера и 2 ГБ и печатает состояние и лог сервера при сбое.",
+   "Перезапуск mlflow models serve: дочерние воркеры uvicorn переживали родителя, /ping нового запуска отвечал старый процесс, затем порт закрывался. Обслуживание останавливается группой процессов, перезапуск — после освобождения портов."
+  ]
+ },
+ "revision_review": {
+  "written": "2026-10-17, рецензия серии, до прогона",
+  "reason": [
+   "Версия обслуживаемого решения включает политику: порог при тех же весах и признаках меняет решения — новая ось decision_policy.",
+   "MLflow хранит текущее назначение алиаса (registered_model_aliases: name, alias, version; set_registered_model_alias — session.merge), истории назначений нет — в оси stages проверяется, остаётся ли у прежней версии след алиаса после переноса."
+  ],
+  "checks": {
+   "decision_policy": {
+    "same_model_other_threshold_flipped": true,
+    "threshold_from_older_window_differs": true
+   },
+   "stages": {
+    "before_move_serves_v1": true,
+    "after_move_serves_v1": true,
+    "after_move_serves_v2": false,
+    "after_restart_serves_v2": true,
+    "version_endpoint_is_mlflow_version": true,
+    "reconcile": {
+     "before_move": true,
+     "after_move": false,
+     "after_restart": true
+    },
+    "registry_says_after_move": "v2",
+    "old_version_alias_trace": false
+   }
+  }
+ }
+}
