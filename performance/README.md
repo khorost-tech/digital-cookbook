@@ -12,7 +12,7 @@
 | [`probabilistic/`](probabilistic/) | Вероятностные структуры: Bloom и родственники | [статья](https://khorost.tech/performance/bloom-filters-probabilistic-structures/) |
 | [`testcontainers-template-db/`](testcontainers-template-db/) | Шаблонная база вместо контейнера на каждый тест: CREATE DATABASE ... TEMPLATE, замеры ×10 и ×36, границы приёма (права, FORCE, размер шаблона) | [статья](https://khorost.tech/performance/testcontainers-template-db/) |
 | [`load-testing/`](load-testing/) | Нагрузочное тестирование и хаос: k6, Gatling, Locust, wrk, wrk2, vegeta, oha, hey против сервиса-эталона — открытая и закрытая модель, coordinated omission, виды тестов, потолок генераторов, Toxiproxy | [статья](https://khorost.tech/performance/load-testing-chaos/) |
-| [`data-oriented/`](data-oriented/) | Data-oriented design и CPU-кэши: одни и те же ядра на C и Go на Apple M5 и AMD Zen 4 — ступени иерархии кэшей, AoS против SoA и среза указателей, false sharing по расстоянию, ветвления и cmov, аппаратные счётчики perf | 🔜 скоро |
+| [`data-oriented/`](data-oriented/) | Data-oriented design и CPU-кэши: одни и те же ядра на C и Go на Apple M5 и AMD Zen 4 — ступени иерархии кэшей, AoS против SoA и среза указателей, false sharing по расстоянию, ветвления и cmov, аппаратные счётчики perf | [статья](https://khorost.tech/performance/data-oriented-design-cpu-cache/) |
 
 ---
 
