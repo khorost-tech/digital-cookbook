@@ -86,6 +86,7 @@
       "architecture/web-frameworks-across-languages.md"
     ],
     "capstone/shortlinks": [
+      "capstone/capstone-data-and-events.md",
       "capstone/capstone-service-overview-and-code.md"
     ],
     "cpp/build-and-package": [
