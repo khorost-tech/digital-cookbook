@@ -96,6 +96,7 @@
     ],
     "cpp/service-and-postgres": [
       "cpp/cpp-async-coroutines-asio.md",
+      "cpp/cpp-postgresql-libpqxx.md",
       "cpp/cpp-web-frameworks.md"
     ],
     "data-engineering/dimensional": [
