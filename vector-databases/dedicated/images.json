@@ -1,0 +1,7 @@
+{
+ "qdrant": {"ref": "qdrant/qdrant:v1.19.2", "digest": "sha256:b7b0444c4c351c970b98e90a6f89c2ee4287c65b44e52b4cb503fa5b2aa927ad"},
+ "milvus": {"ref": "milvusdb/milvus:v2.6.25", "digest": "sha256:29f7668e64df1c6d5cdadbfbee99f38c72e4001054f149a298725acae57230ad"},
+ "weaviate": {"ref": "semitechnologies/weaviate:1.39.11", "digest": "sha256:391088f8cab35270b2bfe68fe573f7e251145f119fcbc83cbdf3c2b8d566dfe9"},
+ "golang": {"ref": "golang:1.27", "digest": "sha256:162be5298a40ed317005c8339c6de4d10d3eef336d66dc8e9259b03ab9d3a6d2"},
+ "maven": {"ref": "maven:3.9-eclipse-temurin-21", "digest": "sha256:99e61abcff91a9b1333463bd8451fb18495d6eba9250ac66a338b518f8278320"}
+}

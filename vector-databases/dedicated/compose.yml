@@ -1,0 +1,62 @@
+# Три выделенных движка — по профилю на каждый, поднимаются по одному:
+# вместе с векторами 523 тыс. × 384 каждому нужно 2–3 ГБ, а VM Docker — 7,7 ГБ.
+# Образы — по дайджесту из images.json. Лимит памяти и ЦП у всех одинаковый.
+services:
+  qdrant:
+    profiles: ["qdrant"]
+    image: qdrant/qdrant:v1.19.2@sha256:b7b0444c4c351c970b98e90a6f89c2ee4287c65b44e52b4cb503fa5b2aa927ad
+    mem_limit: 5g
+    cpus: 8
+    volumes:
+      - qdrant:/qdrant/storage
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c ':> /dev/tcp/127.0.0.1/6333' || exit 1"]
+      interval: 2s
+      retries: 60
+
+  milvus:
+    profiles: ["milvus"]
+    image: milvusdb/milvus:v2.6.25@sha256:29f7668e64df1c6d5cdadbfbee99f38c72e4001054f149a298725acae57230ad
+    command: ["milvus", "run", "standalone"]
+    security_opt: ["seccomp:unconfined"]
+    environment:
+      ETCD_USE_EMBED: "true"
+      ETCD_DATA_DIR: /var/lib/milvus/etcd
+      ETCD_CONFIG_PATH: /milvus/configs/embedEtcd.yaml
+      COMMON_STORAGETYPE: local
+      DEPLOY_MODE: STANDALONE
+    mem_limit: 5g
+    cpus: 8
+    volumes:
+      - milvus:/var/lib/milvus
+      - ./config/embedEtcd.yaml:/milvus/configs/embedEtcd.yaml:ro
+      - ./config/user.yaml:/milvus/configs/user.yaml:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 5s
+      start_period: 90s
+      retries: 60
+
+  weaviate:
+    profiles: ["weaviate"]
+    image: semitechnologies/weaviate:1.39.11@sha256:391088f8cab35270b2bfe68fe573f7e251145f119fcbc83cbdf3c2b8d566dfe9
+    environment:
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      DEFAULT_VECTORIZER_MODULE: none
+      CLUSTER_HOSTNAME: node1
+      ASYNC_INDEXING: "false"
+      LIMIT_RESOURCES: "true"
+    mem_limit: 5g
+    cpus: 8
+    volumes:
+      - weaviate:/var/lib/weaviate
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://localhost:8080/v1/.well-known/ready || exit 1"]
+      interval: 2s
+      retries: 60
+
+volumes:
+  qdrant:
+  milvus:
+  weaviate:

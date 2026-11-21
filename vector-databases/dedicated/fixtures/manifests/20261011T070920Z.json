@@ -1,0 +1,514 @@
+{
+ "session": "20261011T070920Z",
+ "published": {
+  "qdrant": {
+   "load": {
+    "tool_cmd": "ebench load -engine qdrant",
+    "rows": 522931,
+    "insert_s~": 11,
+    "ready_s~": 138.5,
+    "anon_mib~": 280,
+    "file_mib~": 866,
+    "info~": {
+     "indexed_vectors": 522931,
+     "optimizer": "true",
+     "points": 522931,
+     "segments": 4,
+     "status": "Green"
+    },
+    "outcome": "match"
+   },
+   "hnsw": {
+    "tool_cmd": "ebench search -engine qdrant -values 10,20,40,80,160,400",
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.9188,
+      "rows_per_query": 10,
+      "p50_us~": 315,
+      "p99_us~": 447
+     },
+     {
+      "param": 20,
+      "recall_at_10~": 0.9653,
+      "rows_per_query": 10,
+      "p50_us~": 385,
+      "p99_us~": 651
+     },
+     {
+      "param": 40,
+      "recall_at_10~": 0.9854,
+      "rows_per_query": 10,
+      "p50_us~": 525,
+      "p99_us~": 752
+     },
+     {
+      "param": 80,
+      "recall_at_10~": 0.9923,
+      "rows_per_query": 10,
+      "p50_us~": 818,
+      "p99_us~": 927
+     },
+     {
+      "param": 160,
+      "recall_at_10~": 0.9967,
+      "rows_per_query": 10,
+      "p50_us~": 1419,
+      "p99_us~": 1721
+     },
+     {
+      "param": 400,
+      "recall_at_10~": 0.9993,
+      "rows_per_query": 10,
+      "p50_us~": 3019,
+      "p99_us~": 3805
+     }
+    ],
+    "recall_monotonic": true,
+    "near_pgvector": true,
+    "outcome": "match"
+   },
+   "exact": {
+    "tool_cmd": "ebench exact -engine qdrant",
+    "queries": 200,
+    "gt_agree": 199,
+    "near_tie": 1,
+    "only_near_ties": true,
+    "outcome": "match"
+   },
+   "filter": {
+    "tool_cmd": "ebench filter -engine qdrant -sel 500,100,10,1",
+    "points": [
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "recall_at_10~": 0.9425,
+      "rows_per_query~": 10,
+      "p50_us~": 548,
+      "p99_us~": 672
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "recall_at_10~": 0.9425,
+      "rows_per_query~": 10,
+      "p50_us~": 621,
+      "p99_us~": 752
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 564,
+      "p99_us~": 1051
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 202,
+      "p99_us~": 245
+     }
+    ],
+    "always_full": true,
+    "recall_min_ok": true,
+    "outcome": "match"
+   },
+   "java": {
+    "tool_cmd": "java vdb.Dump qdrant /data/quora 40",
+    "queries": 200,
+    "same_order": 200,
+    "identical": true,
+    "outcome": "match"
+   },
+   "quant": {
+    "tool_cmd": "ebench load -engine qdrant -quant int8; ebench quant -engine qdrant -values 40",
+    "anon_mib~": 439,
+    "file_mib~": 943,
+    "float_anon_mib~": 280,
+    "float_recall_at_40~": 0.9854,
+    "points": [
+     {
+      "ef": 40,
+      "mode": "codes",
+      "oversampling": 1,
+      "p50_us~": 263,
+      "p99_us~": 644,
+      "recall_at_10~": 0.9365
+     },
+     {
+      "ef": 40,
+      "mode": "rescore",
+      "oversampling": 2,
+      "p50_us~": 268,
+      "p99_us~": 665,
+      "recall_at_10~": 0.9829
+     }
+    ],
+    "codes_within_tolerance": true,
+    "rescore_within_001": true,
+    "outcome": "match"
+   },
+   "fresh": {
+    "tool_cmd": "ebench fresh -engine qdrant",
+    "inserted": 52294,
+    "probes": 1046,
+    "found_at_once~": 1046,
+    "p50_at_once_us~": 4494,
+    "ready_s~": 21.6,
+    "found_after_ready~": 1046,
+    "p50_after_ready_us~": 534,
+    "info_before~": {
+     "indexed_vectors": 470637,
+     "optimizer": "true",
+     "points": 522931,
+     "segments": 6,
+     "status": "Yellow"
+    },
+    "all_at_once": true,
+    "all_after_ready": true,
+    "unindexed_slower": true,
+    "outcome": "match"
+   }
+  },
+  "milvus": {
+   "load": {
+    "tool_cmd": "ebench load -engine milvus",
+    "rows": 522931,
+    "insert_s~": 4.2,
+    "ready_s~": 71.5,
+    "anon_mib~": 2729,
+    "file_mib~": 1676,
+    "info~": {
+     "indexed_rows": 522931,
+     "pending_rows": 0,
+     "total_rows": 522931
+    },
+    "outcome": "match"
+   },
+   "hnsw": {
+    "tool_cmd": "ebench search -engine milvus -values 10,20,40,80,160,400",
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.9088,
+      "rows_per_query": 10,
+      "p50_us~": 1814,
+      "p99_us~": 30205
+     },
+     {
+      "param": 20,
+      "recall_at_10~": 0.9564,
+      "rows_per_query": 10,
+      "p50_us~": 2547,
+      "p99_us~": 8925
+     },
+     {
+      "param": 40,
+      "recall_at_10~": 0.9787,
+      "rows_per_query": 10,
+      "p50_us~": 2647,
+      "p99_us~": 7199
+     },
+     {
+      "param": 80,
+      "recall_at_10~": 0.9902,
+      "rows_per_query": 10,
+      "p50_us~": 3796,
+      "p99_us~": 9183
+     },
+     {
+      "param": 160,
+      "recall_at_10~": 0.9965,
+      "rows_per_query": 10,
+      "p50_us~": 3035,
+      "p99_us~": 11609
+     },
+     {
+      "param": 400,
+      "recall_at_10~": 0.9994,
+      "rows_per_query": 10,
+      "p50_us~": 5910,
+      "p99_us~": 13589
+     }
+    ],
+    "recall_monotonic": true,
+    "near_pgvector": true,
+    "outcome": "match"
+   },
+   "filter": {
+    "tool_cmd": "ebench filter -engine milvus -sel 500,100,10,1",
+    "points": [
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "recall_at_10~": 0.9585,
+      "rows_per_query~": 10,
+      "p50_us~": 2565,
+      "p99_us~": 4800
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "recall_at_10~": 0.979,
+      "rows_per_query~": 10,
+      "p50_us~": 3540,
+      "p99_us~": 10268
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 4314,
+      "p99_us~": 10978
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 2856,
+      "p99_us~": 16602
+     }
+    ],
+    "always_full": true,
+    "recall_min_ok": true,
+    "outcome": "match"
+   },
+   "java": {
+    "tool_cmd": "java vdb.Dump milvus /data/quora 40",
+    "queries": 200,
+    "same_order": 200,
+    "identical": true,
+    "outcome": "match"
+   },
+   "fresh": {
+    "tool_cmd": "ebench fresh -engine milvus",
+    "inserted": 52294,
+    "probes": 1046,
+    "found_at_once~": 1046,
+    "p50_at_once_us~": 4449,
+    "ready_s~": 113,
+    "found_after_ready~": 1046,
+    "p50_after_ready_us~": 1702,
+    "info_before~": {
+     "indexed_rows": 470637,
+     "pending_rows": 233245,
+     "total_rows": 470637
+    },
+    "all_at_once": true,
+    "all_after_ready": true,
+    "outcome": "match"
+   },
+   "fresh-strong": {
+    "tool_cmd": "ebench fresh -engine milvus -strong",
+    "inserted": 52294,
+    "probes": 1046,
+    "found_at_once~": 1046,
+    "p50_at_once_us~": 3411,
+    "ready_s~": 64.2,
+    "found_after_ready~": 1046,
+    "p50_after_ready_us~": 1390,
+    "info_before~": {
+     "indexed_rows": 470637,
+     "pending_rows": 310000,
+     "total_rows": 470637
+    },
+    "all_at_once": true,
+    "all_after_ready": true,
+    "outcome": "match"
+   }
+  },
+  "weaviate": {
+   "load": {
+    "tool_cmd": "ebench load -engine weaviate",
+    "rows": 522931,
+    "insert_s~": 212.5,
+    "ready_s~": 212.5,
+    "anon_mib~": 2404,
+    "file_mib~": 475,
+    "info~": {
+     "indexing_status": "READY",
+     "objects": 520000,
+     "vector_queue": 0
+    },
+    "outcome": "match"
+   },
+   "hnsw": {
+    "tool_cmd": "ebench search -engine weaviate -values 10,20,40,80,160,400",
+    "points": [
+     {
+      "param": 10,
+      "recall_at_10~": 0.8923,
+      "rows_per_query": 10,
+      "p50_us~": 2624,
+      "p99_us~": 4655
+     },
+     {
+      "param": 20,
+      "recall_at_10~": 0.9451,
+      "rows_per_query": 10,
+      "p50_us~": 2693,
+      "p99_us~": 5304
+     },
+     {
+      "param": 40,
+      "recall_at_10~": 0.9709,
+      "rows_per_query": 10,
+      "p50_us~": 2813,
+      "p99_us~": 6402
+     },
+     {
+      "param": 80,
+      "recall_at_10~": 0.9823,
+      "rows_per_query": 10,
+      "p50_us~": 3127,
+      "p99_us~": 6022
+     },
+     {
+      "param": 160,
+      "recall_at_10~": 0.99,
+      "rows_per_query": 10,
+      "p50_us~": 3815,
+      "p99_us~": 7042
+     },
+     {
+      "param": 400,
+      "recall_at_10~": 0.9958,
+      "rows_per_query": 10,
+      "p50_us~": 5491,
+      "p99_us~": 8701
+     }
+    ],
+    "recall_monotonic": true,
+    "near_pgvector": true,
+    "outcome": "match"
+   },
+   "filter": {
+    "tool_cmd": "ebench filter -engine weaviate -sel 500,100,10,1",
+    "points": [
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "recall_at_10~": 0.9785,
+      "rows_per_query~": 10,
+      "p50_us~": 3649,
+      "p99_us~": 5586
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "recall_at_10~": 0.8545,
+      "rows_per_query~": 10,
+      "p50_us~": 4492,
+      "p99_us~": 7290
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 6227,
+      "p99_us~": 9688
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 3123,
+      "p99_us~": 6763
+     }
+    ],
+    "always_full": true,
+    "recall_min_ok": true,
+    "acorn_loses_at_10": true,
+    "outcome": "match"
+   },
+   "filter-sweeping": {
+    "tool_cmd": "ebench load -engine weaviate -filter-strategy sweeping; ebench filter -engine weaviate -sel 500,100,10,1",
+    "points": [
+     {
+      "bucket_lt": 500,
+      "selectivity": 0.5,
+      "rows_in_filter": 261464,
+      "recall_at_10~": 0.983,
+      "rows_per_query~": 10,
+      "p50_us~": 4688,
+      "p99_us~": 7039
+     },
+     {
+      "bucket_lt": 100,
+      "selectivity": 0.1,
+      "rows_in_filter": 52294,
+      "recall_at_10~": 0.9875,
+      "rows_per_query~": 10,
+      "p50_us~": 6661,
+      "p99_us~": 10854
+     },
+     {
+      "bucket_lt": 10,
+      "selectivity": 0.01,
+      "rows_in_filter": 5230,
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 6776,
+      "p99_us~": 9652
+     },
+     {
+      "bucket_lt": 1,
+      "selectivity": 0.001,
+      "rows_in_filter": 523,
+      "recall_at_10~": 1,
+      "rows_per_query~": 10,
+      "p50_us~": 3636,
+      "p99_us~": 7889
+     }
+    ],
+    "sweeping_better_at_10": true,
+    "always_full": true,
+    "outcome": "match"
+   },
+   "java": {
+    "tool_cmd": "java vdb.Dump weaviate /data/quora 40",
+    "queries": 200,
+    "same_order": 200,
+    "identical": true,
+    "outcome": "match"
+   },
+   "fresh": {
+    "tool_cmd": "ebench fresh -engine weaviate",
+    "inserted": 52294,
+    "probes": 1046,
+    "found_at_once~": 1046,
+    "p50_at_once_us~": 2805,
+    "ready_s~": 0,
+    "found_after_ready~": 1046,
+    "p50_after_ready_us~": 6592,
+    "info_before~": {
+     "indexing_status": "READY",
+     "objects": 470637,
+     "vector_queue": 0
+    },
+    "all_at_once": true,
+    "all_after_ready": true,
+    "outcome": "match"
+   }
+  }
+ }
+}

@@ -1,0 +1,9 @@
+{
+ "fixtures": {
+  "qdrant.jsonl": "00451dfb9c05e033877233dabbe6de38f20d1c32783516ca4b8cc7dff8003cf5",
+  "milvus.jsonl": "d850101e0ab4c9ac262b3414c086f3cb83a24e90153e86cbd686faeaadf5b066",
+  "weaviate.jsonl": "d2a32cb64808c4b0d9ccd23473993e7f987b23e68672ed5baf03eee784511118"
+ },
+ "tests": 18,
+ "sabotages": 17
+}

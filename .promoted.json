@@ -517,7 +517,11 @@
     ],
     "vector-databases/dataset": [
       "databases/vector-ann-algorithms-deep.md",
+      "databases/vector-dedicated-engines.md",
       "databases/vector-pgvector-deep.md"
+    ],
+    "vector-databases/dedicated": [
+      "databases/vector-dedicated-engines.md"
     ],
     "vector-databases/pgvector": [
       "databases/vector-pgvector-deep.md"
