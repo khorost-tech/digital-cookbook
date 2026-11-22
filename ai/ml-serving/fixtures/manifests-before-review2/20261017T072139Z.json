@@ -1,0 +1,204 @@
+{
+ "session": "20261017T072139Z",
+ "published": {
+  "checks": {
+   "controls": {
+    "actual": {
+     "service_matches_in_process": true,
+     "wrong_width_status": 500,
+     "missing_field_status": 400,
+     "nan_row_status": 200
+    },
+    "outcome": "match",
+    "versions": {
+     "bentoml": "1.4.39",
+     "sklearn": "1.9.1"
+    },
+    "total_s~": 216.2
+   },
+   "service_vs_library": {
+    "actual": {
+     "http_at_least_2x_in_process": true
+    },
+    "outcome": "match",
+    "in_process_ms~": 0.384,
+    "http_ms~": 0.984,
+    "ratio~": 2.6
+   },
+   "cold_start": {
+    "actual": {
+     "requests_before_ready_refused": true,
+     "model_load_under_20pct_of_start": false,
+     "rss_over_20x_artifact": true
+    },
+    "outcome": "match",
+    "artifact_mb": 0.53,
+    "to_ready_s~": 3.16,
+    "model_load_s~": 0.9614,
+    "refused_before_ready~": 19,
+    "first_request_ms~": 19.16,
+    "steady_p50_ms~": 0.95,
+    "rss_mb~": 89.8
+   },
+   "batching": {
+    "actual": {
+     "generator_ceiling_over_2x_best": true,
+     "c64_throughput_gain_over_1_5": true,
+     "c1_no_gain": true,
+     "c1_mean_batch_under_1_5": true,
+     "c64_mean_batch_over_4": true,
+     "c64_batching_rejects_some": true,
+     "without_batching_rejects_none": true
+    },
+    "outcome": "match",
+    "gain~": {
+     "1": 0.94,
+     "8": 1.55,
+     "64": 2.3
+    },
+    "generator_ceiling_rps~": 5058.0,
+    "rejected_share~": {
+     "off_c1": 0.0,
+     "off_c8": 0.0,
+     "off_c64": 0.0,
+     "on_c1": 0.0,
+     "on_c8": 0.0067,
+     "on_c64": 0.022
+    },
+    "runs~": {
+     "off_c1": {
+      "rps": 846.7,
+      "p50_ms": 1.09,
+      "p99_ms": 1.35,
+      "codes": {
+       "200": 1000
+      }
+     },
+     "off_c8": {
+      "rps": 932.76,
+      "p50_ms": 7.99,
+      "p99_ms": 35.46,
+      "codes": {
+       "200": 3000
+      }
+     },
+     "off_c64": {
+      "rps": 879.06,
+      "p50_ms": 66.03,
+      "p99_ms": 112.82,
+      "codes": {
+       "200": 3000
+      }
+     },
+     "on_c1": {
+      "rps": 796.25,
+      "p50_ms": 1.17,
+      "p99_ms": 1.47,
+      "codes": {
+       "200": 1000
+      },
+      "mean_batch": 1.18
+     },
+     "on_c8": {
+      "rps": 1443.36,
+      "p50_ms": 4.34,
+      "p99_ms": 6.19,
+      "codes": {
+       "200": 2980,
+       "503": 20
+      },
+      "mean_batch": 2.98
+     },
+     "on_c64": {
+      "rps": 2018.42,
+      "p50_ms": 24.68,
+      "p99_ms": 63.88,
+      "codes": {
+       "200": 2934,
+       "503": 66
+      },
+      "mean_batch": 16.41
+     }
+    }
+   },
+   "workers": {
+    "actual": {
+     "generator_ceiling_over_2x_best": true,
+     "four_workers_over_2x": true,
+     "rejected": {
+      "1": false,
+      "4": false
+     }
+    },
+    "outcome": "match",
+    "ratio~": 3.05,
+    "generator_ceiling_rps~": 6652.0,
+    "runs~": {
+     "1": {
+      "rps": 877.4493,
+      "p50_ms": 67.0578,
+      "p99_ms": 102.4496,
+      "rejected_share": 0.0,
+      "codes": {
+       "200": 4000
+      }
+     },
+     "4": {
+      "rps": 2675.7393,
+      "p50_ms": 20.094,
+      "p99_ms": 71.1938,
+      "rejected_share": 0.0,
+      "codes": {
+       "200": 4000
+      }
+     }
+    }
+   },
+   "degradation": {
+    "actual": {
+     "silent_zero": {
+      "visible_errors": 0,
+      "flagged": 0
+     },
+     "heuristic": {
+      "visible_errors": 0,
+      "catches_some": true
+     },
+     "explicit_error": {
+      "all_visible": true
+     },
+     "silent_mean_score_drop_over_90pct": true
+    },
+    "outcome": "match",
+    "requests": 636,
+    "fraud": 159,
+    "policies": {
+     "silent_zero": {
+      "visible_errors": 0,
+      "flagged": 0,
+      "fraud_caught": 0,
+      "mean_score": 0.0
+     },
+     "heuristic": {
+      "visible_errors": 0,
+      "flagged": 95,
+      "fraud_caught": 93,
+      "mean_score": 0.14937106918238993
+     },
+     "explicit_error": {
+      "visible_errors": 636,
+      "flagged": 0,
+      "fraud_caught": 0,
+      "mean_score": null
+     },
+     "healthy": {
+      "visible_errors": 0,
+      "flagged": 127,
+      "fraud_caught": 126,
+      "mean_score": 0.19751196694826922
+     }
+    }
+   }
+  }
+ }
+}

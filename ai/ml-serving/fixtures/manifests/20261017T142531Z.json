@@ -1,0 +1,224 @@
+{
+ "session": "20261017T142531Z",
+ "published": {
+  "checks": {
+   "controls": {
+    "actual": {
+     "service_matches_in_process": true,
+     "wrong_width_status": 500,
+     "missing_field_status": 400,
+     "nan_row_status": 200
+    },
+    "outcome": "match",
+    "versions": {
+     "bentoml": "1.4.39",
+     "sklearn": "1.9.1"
+    },
+    "total_s~": 217.6
+   },
+   "service_vs_library": {
+    "actual": {
+     "http_at_least_2x_in_process": true
+    },
+    "outcome": "match",
+    "in_process_ms~": 0.4,
+    "http_ms~": 1.098,
+    "ratio~": 2.7
+   },
+   "cold_start": {
+    "actual": {
+     "requests_before_ready_refused": true,
+     "model_load_under_20pct_of_start": false,
+     "rss_over_20x_artifact": true
+    },
+    "outcome": "match",
+    "artifact_mb": 0.53,
+    "to_ready_s~": 3.36,
+    "model_load_s~": 1.0298,
+    "refused_before_ready~": 21,
+    "first_request_ms~": 20.42,
+    "steady_p50_ms~": 0.99,
+    "rss_mb~": 89.9
+   },
+   "batching": {
+    "actual": {
+     "generator_ceiling_over_2x_best": true,
+     "c64_throughput_gain_over_1_5": true,
+     "c1_no_gain": true,
+     "c1_mean_batch_under_1_5": true,
+     "c64_mean_batch_over_4": true,
+     "c64_batching_rejects_some": true,
+     "without_batching_rejects_none": true,
+     "slo_100ms": {
+      "c1_batching_not_better": true,
+      "c64_batching_better": true
+     }
+    },
+    "outcome": "match",
+    "good_share~": {
+     "off_c1": 1.0,
+     "off_c8": 1.0,
+     "off_c64": 0.8217,
+     "on_c1": 1.0,
+     "on_c8": 0.9977,
+     "on_c64": 0.984
+    },
+    "gain~": {
+     "1": 0.98,
+     "8": 1.59,
+     "64": 2.52
+    },
+    "generator_ceiling_rps~": 4232.8,
+    "rejected_share~": {
+     "off_c1": 0.0,
+     "off_c8": 0.0,
+     "off_c64": 0.0,
+     "on_c1": 0.0,
+     "on_c8": 0.0023,
+     "on_c64": 0.016
+    },
+    "runs~": {
+     "off_c1": {
+      "good_share": 1.0,
+      "rps": 708.28,
+      "p50_ms": 1.21,
+      "p99_ms": 3.05,
+      "codes": {
+       "200": 1000
+      }
+     },
+     "off_c8": {
+      "good_share": 1.0,
+      "rps": 840.26,
+      "p50_ms": 8.43,
+      "p99_ms": 41.69,
+      "codes": {
+       "200": 3000
+      }
+     },
+     "off_c64": {
+      "good_share": 0.82,
+      "rps": 733.22,
+      "p50_ms": 74.27,
+      "p99_ms": 220.79,
+      "codes": {
+       "200": 3000
+      }
+     },
+     "on_c1": {
+      "good_share": 1.0,
+      "rps": 694.98,
+      "p50_ms": 1.26,
+      "p99_ms": 3.36,
+      "codes": {
+       "200": 1000
+      },
+      "mean_batch": 1.18
+     },
+     "on_c8": {
+      "good_share": 1.0,
+      "rps": 1335.89,
+      "p50_ms": 4.59,
+      "p99_ms": 35.0,
+      "codes": {
+       "200": 2993,
+       "503": 7
+      },
+      "mean_batch": 3.0
+     },
+     "on_c64": {
+      "good_share": 0.98,
+      "rps": 1846.88,
+      "p50_ms": 26.24,
+      "p99_ms": 80.42,
+      "codes": {
+       "200": 2952,
+       "503": 48
+      },
+      "mean_batch": 16.42
+     }
+    }
+   },
+   "workers": {
+    "actual": {
+     "generator_ceiling_over_2x_best": true,
+     "four_workers_over_2x": true,
+     "rejected": {
+      "1": false,
+      "4": false
+     }
+    },
+    "outcome": "match",
+    "ratio~": 2.42,
+    "generator_ceiling_rps~": 6622.1,
+    "runs~": {
+     "1": {
+      "good_share": 0.8407,
+      "rps": 788.5261,
+      "p50_ms": 70.3552,
+      "p99_ms": 139.8515,
+      "rejected_share": 0.0,
+      "codes": {
+       "200": 4000
+      }
+     },
+     "4": {
+      "good_share": 0.9965,
+      "rps": 1907.5158,
+      "p50_ms": 26.2566,
+      "p99_ms": 85.3699,
+      "rejected_share": 0.0,
+      "codes": {
+       "200": 4000
+      }
+     }
+    }
+   },
+   "degradation": {
+    "actual": {
+     "silent_zero": {
+      "visible_errors": 0,
+      "flagged": 0
+     },
+     "heuristic": {
+      "visible_errors": 0,
+      "catches_some": true
+     },
+     "explicit_error": {
+      "all_visible": true
+     },
+     "silent_mean_score_drop_over_90pct": true
+    },
+    "outcome": "match",
+    "requests": 636,
+    "fraud": 159,
+    "policies": {
+     "silent_zero": {
+      "visible_errors": 0,
+      "flagged": 0,
+      "fraud_caught": 0,
+      "mean_score": 0.0
+     },
+     "heuristic": {
+      "visible_errors": 0,
+      "flagged": 95,
+      "fraud_caught": 93,
+      "mean_score": 0.14937106918238993
+     },
+     "explicit_error": {
+      "visible_errors": 636,
+      "flagged": 0,
+      "fraud_caught": 0,
+      "mean_score": null
+     },
+     "healthy": {
+      "visible_errors": 0,
+      "flagged": 127,
+      "fraud_caught": 126,
+      "mean_score": 0.19751196694826922
+     }
+    }
+   }
+  }
+ }
+}

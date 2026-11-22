@@ -1,0 +1,4 @@
+bentoml==1.4.39
+numpy==2.5.3
+scikit-learn==1.9.1
+httpx

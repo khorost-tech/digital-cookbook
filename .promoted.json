@@ -2,13 +2,17 @@
   "stands": {
     "ai/ml-dataset": [
       "ai/ml-feature-store-and-skew.md",
-      "ai/ml-model-registry-versioning.md"
+      "ai/ml-model-registry-versioning.md",
+      "ai/ml-online-inference-serving.md"
     ],
     "ai/ml-features": [
       "ai/ml-feature-store-and-skew.md"
     ],
     "ai/ml-registry": [
       "ai/ml-model-registry-versioning.md"
+    ],
+    "ai/ml-serving": [
+      "ai/ml-online-inference-serving.md"
     ],
     "architecture/background-jobs": [
       "architecture/schedulers-distributed-cron.md",

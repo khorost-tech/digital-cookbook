@@ -1,0 +1,102 @@
+{
+ "written": "2026-10-17, до первого прогона",
+ "checks": {
+  "controls": {
+   "service_matches_in_process": true,
+   "wrong_width_status": 500,
+   "missing_field_status": 400,
+   "nan_row_status": 200
+  },
+  "service_vs_library": {
+   "http_at_least_2x_in_process": true
+  },
+  "cold_start": {
+   "requests_before_ready_refused": true,
+   "model_load_under_20pct_of_start": true,
+   "rss_over_20x_artifact": true
+  },
+  "batching": {
+   "c64_throughput_gain_over_1_5": true,
+   "c1_no_gain": true,
+   "c1_mean_batch_under_1_5": true,
+   "c64_mean_batch_over_4": true
+  },
+  "workers": {
+   "four_workers_over_2x": true
+  },
+  "degradation": {
+   "silent_zero": {
+    "visible_errors": 0,
+    "flagged": 0
+   },
+   "heuristic": {
+    "visible_errors": 0,
+    "catches_some": true
+   },
+   "explicit_error": {
+    "all_visible": true
+   },
+   "silent_mean_score_drop_over_90pct": true
+  }
+ },
+ "notes": {
+  "controls": "Неверная ширина строки падает в модели, а не на границе API — ожидаем 500, а не 4xx. Пропущенное поле ловит валидация BentoML — 400.",
+  "batching": "Адаптивный батчинг BentoML: до 64 строк, окно до 20 мс; при одном клиенте пачек нет и выигрыша нет, при 64 — пачки и выигрыш в пропускной способности.",
+  "degradation": "Модель отвечает за 200 мс, клиент ждёт 50 мс; три политики клиента: ноль вместо оценки, запасное правило, явная ошибка."
+ },
+ "revision_after_probe": {
+  "written": "2026-10-17, после пробы, до сессий",
+  "harness": [
+   "Генератор нагрузки — один асинхронный процесс на двух ядрах — упирался в себя: при 64 клиентах пропускная способность была ниже, чем при 8, а 4 воркера давали столько же, сколько 1. Генератор — шесть процессов на ядрах 4–9; в осях batching и workers добавлен контроль потолка генератора: тривиальный /livez при той же конкуренции больше чем вдвое быстрее лучшего /score."
+  ],
+  "observed": [
+   "cold_start: загрузка модели (с импортом scikit-learn при распаковке) — около трети времени до готовности, а не меньше 20 %; гипотеза неверна.",
+   "batching: адаптивный батчинг с max_latency_ms=20 под нагрузкой отвечает части запросов 503 — без батчинга отказов нет; добавлены проверки."
+  ],
+  "checks": {
+   "cold_start": {
+    "requests_before_ready_refused": true,
+    "model_load_under_20pct_of_start": false,
+    "rss_over_20x_artifact": true
+   },
+   "batching": {
+    "generator_ceiling_over_2x_best": true,
+    "c64_throughput_gain_over_1_5": true,
+    "c1_no_gain": true,
+    "c1_mean_batch_under_1_5": true,
+    "c64_mean_batch_over_4": true,
+    "c64_batching_rejects_some": true,
+    "without_batching_rejects_none": true
+   },
+   "workers": {
+    "generator_ceiling_over_2x_best": true,
+    "four_workers_over_2x": true,
+    "rejected": {
+     "1": false,
+     "4": false
+    }
+   }
+  }
+ },
+ "revision_review2": {
+  "written": "2026-10-17, вторая рецензия серии, до прогона",
+  "reason": [
+   "p99 и пропускная способность считались по успешным ответам, а батчинг отклоняет часть запросов. Добавлена доля запросов, получивших 200 не позже 100 мс, — с отказами в знаменателе; подписи — «успешных ответов»."
+  ],
+  "checks": {
+   "batching": {
+    "generator_ceiling_over_2x_best": true,
+    "c64_throughput_gain_over_1_5": true,
+    "c1_no_gain": true,
+    "c1_mean_batch_under_1_5": true,
+    "c64_mean_batch_over_4": true,
+    "c64_batching_rejects_some": true,
+    "without_batching_rejects_none": true,
+    "slo_100ms": {
+     "c1_batching_not_better": true,
+     "c64_batching_better": true
+    }
+   }
+  }
+ }
+}
