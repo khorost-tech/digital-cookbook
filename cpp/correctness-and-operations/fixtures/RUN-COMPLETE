@@ -1,0 +1,15 @@
+{
+ "fixtures": {
+  "tools.jsonl": "897cff880f10eec655c2ed393d863959098400451725a6c08c038e71c0d3636e",
+  "probe.jsonl": "7d2140201fd791d636e69aca55622ea7346d35f400a694f45aeacf4eb53c2294",
+  "defects.jsonl": "499b7f7ec9522e9b0720896fad73583c996fe3f67965253ab1bf2db87ac70d00",
+  "bench.jsonl": "70c9f75c4de12257ba49e9da4e915ad95d83d3c3c8f7d61c4fd48106a5d5a8ef",
+  "shutdown.jsonl": "7dc85cbb47a9efe9674a45e86eb8507bee3fdefcde72cae35bcd57b5c68d2b7e",
+  "config.jsonl": "b163b3084327f82bc3ba062f16702176f91f7e203a15d0714ce0f9bf1f04962e",
+  "fds.jsonl": "c0c6053f3f42ce599a46e4b9afd0492eedfc90c55afbdbe6f018209bc1cb8f2b",
+  "logs.jsonl": "a6c24c7f546a60c06b4776eae56ad0e01fc9e5d4f00f25c278b5b9b257ad6a51",
+  "coverage.jsonl": "649c065c0b666ff7f0100de18f4e8ad66a2bcb62f5791230836840059001031e"
+ },
+ "tests": 67,
+ "sabotages": 36
+}

@@ -1,0 +1,10 @@
+# Образ сервиса осей 3–5: собирается от базового образа стенда тем же g++.
+# Варианты задаются переменными окружения при запуске, а не сборкой: один
+# бинарник на все варианты — различие строк фикстуры не может прийти из
+# разных сборок.
+FROM cpp-correctness-and-operations-base:latest
+COPY service /src/service
+RUN cmake -S /src/service -B /build -DCMAKE_BUILD_TYPE=RelWithDebInfo >/dev/null \
+ && cmake --build /build -j4 >/dev/null \
+ && cp /build/service /usr/local/bin/service
+ENTRYPOINT ["/usr/local/bin/service"]

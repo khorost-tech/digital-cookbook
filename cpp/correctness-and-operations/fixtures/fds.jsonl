@@ -1,0 +1,5 @@
+{"kind": "fds", "variant": "raw/fail=0", "cmd": "python3 scripts/run-fds.py raw 0", "ownership": "raw", "fail": 0, "m": 100, "source": "/proc/1/fd", "fd_before": 9, "fd_after": 9, "delta": 0, "responses": {"200": 100}}
+{"kind": "fds", "variant": "raw/fail=1", "cmd": "python3 scripts/run-fds.py raw 1", "ownership": "raw", "fail": 1, "m": 100, "source": "/proc/1/fd", "fd_before": 9, "fd_after": 109, "delta": 100, "responses": {"500": 100}}
+{"kind": "fds", "variant": "raii/fail=0", "cmd": "python3 scripts/run-fds.py raii 0", "ownership": "raii", "fail": 0, "m": 100, "source": "/proc/1/fd", "fd_before": 9, "fd_after": 9, "delta": 0, "responses": {"200": 100}}
+{"kind": "fds", "variant": "raii/fail=1", "cmd": "python3 scripts/run-fds.py raii 1", "ownership": "raii", "fail": 1, "m": 100, "source": "/proc/1/fd", "fd_before": 9, "fd_after": 9, "delta": 0, "responses": {"500": 100}}
+COMPLETE

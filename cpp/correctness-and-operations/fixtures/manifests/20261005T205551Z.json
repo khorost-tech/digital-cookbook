@@ -1,0 +1,781 @@
+{
+ "session": "20261005T205551Z",
+ "published": {
+  "defects": {
+   "clean/plain-O0": [
+    "missed",
+    null
+   ],
+   "clean/plain-O2": [
+    "missed",
+    null
+   ],
+   "clean/gtest-O0": [
+    "missed",
+    null
+   ],
+   "clean/gtest-O2": [
+    "missed",
+    null
+   ],
+   "clean/asan-O0": [
+    "missed",
+    null
+   ],
+   "clean/asan-O2": [
+    "missed",
+    null
+   ],
+   "clean/ubsan-O0": [
+    "missed",
+    null
+   ],
+   "clean/ubsan-O2": [
+    "missed",
+    null
+   ],
+   "clean/tsan-O0": [
+    "missed",
+    null
+   ],
+   "clean/tsan-O2": [
+    "missed",
+    null
+   ],
+   "clean/valgrind-O0": [
+    "missed",
+    null
+   ],
+   "clean/valgrind-O2": [
+    "missed",
+    null
+   ],
+   "heap_overflow/plain-O0": [
+    "missed",
+    true
+   ],
+   "heap_overflow/plain-O2": [
+    "missed",
+    true
+   ],
+   "heap_overflow/gtest-O0": [
+    "missed",
+    true
+   ],
+   "heap_overflow/gtest-O2": [
+    "missed",
+    true
+   ],
+   "heap_overflow/asan-O0": [
+    "caught",
+    true
+   ],
+   "heap_overflow/asan-O2": [
+    "missed",
+    false
+   ],
+   "heap_overflow/ubsan-O0": [
+    "missed",
+    true
+   ],
+   "heap_overflow/ubsan-O2": [
+    "caught",
+    true
+   ],
+   "heap_overflow/tsan-O0": [
+    "missed",
+    true
+   ],
+   "heap_overflow/tsan-O2": [
+    "missed",
+    false
+   ],
+   "heap_overflow/valgrind-O0": [
+    "caught",
+    true
+   ],
+   "heap_overflow/valgrind-O2": [
+    "caught",
+    true
+   ],
+   "use_after_free/plain-O0": [
+    "missed",
+    true
+   ],
+   "use_after_free/plain-O2": [
+    "missed",
+    true
+   ],
+   "use_after_free/gtest-O0": [
+    "caught",
+    true
+   ],
+   "use_after_free/gtest-O2": [
+    "caught",
+    true
+   ],
+   "use_after_free/asan-O0": [
+    "caught",
+    true
+   ],
+   "use_after_free/asan-O2": [
+    "caught",
+    true
+   ],
+   "use_after_free/ubsan-O0": [
+    "missed",
+    true
+   ],
+   "use_after_free/ubsan-O2": [
+    "missed",
+    true
+   ],
+   "use_after_free/tsan-O0": [
+    "caught",
+    true
+   ],
+   "use_after_free/tsan-O2": [
+    "caught",
+    true
+   ],
+   "use_after_free/valgrind-O0": [
+    "caught",
+    true
+   ],
+   "use_after_free/valgrind-O2": [
+    "caught",
+    true
+   ],
+   "signed_overflow/plain-O0": [
+    "missed",
+    true
+   ],
+   "signed_overflow/plain-O2": [
+    "missed",
+    true
+   ],
+   "signed_overflow/gtest-O0": [
+    "missed",
+    true
+   ],
+   "signed_overflow/gtest-O2": [
+    "missed",
+    true
+   ],
+   "signed_overflow/asan-O0": [
+    "missed",
+    true
+   ],
+   "signed_overflow/asan-O2": [
+    "missed",
+    true
+   ],
+   "signed_overflow/ubsan-O0": [
+    "caught",
+    true
+   ],
+   "signed_overflow/ubsan-O2": [
+    "caught",
+    true
+   ],
+   "signed_overflow/tsan-O0": [
+    "missed",
+    true
+   ],
+   "signed_overflow/tsan-O2": [
+    "missed",
+    true
+   ],
+   "signed_overflow/valgrind-O0": [
+    "missed",
+    true
+   ],
+   "signed_overflow/valgrind-O2": [
+    "missed",
+    true
+   ],
+   "data_race/plain-O0": [
+    "missed",
+    true
+   ],
+   "data_race/plain-O2": [
+    "missed",
+    true
+   ],
+   "data_race/gtest-O0": [
+    "caught",
+    true
+   ],
+   "data_race/gtest-O2": [
+    "missed",
+    true
+   ],
+   "data_race/asan-O0": [
+    "missed",
+    true
+   ],
+   "data_race/asan-O2": [
+    "missed",
+    true
+   ],
+   "data_race/ubsan-O0": [
+    "missed",
+    true
+   ],
+   "data_race/ubsan-O2": [
+    "missed",
+    true
+   ],
+   "data_race/tsan-O0": [
+    "caught",
+    true
+   ],
+   "data_race/tsan-O2": [
+    "caught",
+    true
+   ],
+   "data_race/valgrind-O0": [
+    "missed",
+    true
+   ],
+   "data_race/valgrind-O2": [
+    "missed",
+    true
+   ],
+   "leak/plain-O0": [
+    "missed",
+    true
+   ],
+   "leak/plain-O2": [
+    "missed",
+    false
+   ],
+   "leak/gtest-O0": [
+    "missed",
+    true
+   ],
+   "leak/gtest-O2": [
+    "missed",
+    false
+   ],
+   "leak/asan-O0": [
+    "caught",
+    true
+   ],
+   "leak/asan-O2": [
+    "missed",
+    false
+   ],
+   "leak/ubsan-O0": [
+    "missed",
+    true
+   ],
+   "leak/ubsan-O2": [
+    "missed",
+    true
+   ],
+   "leak/tsan-O0": [
+    "missed",
+    true
+   ],
+   "leak/tsan-O2": [
+    "missed",
+    false
+   ],
+   "leak/valgrind-O0": [
+    "caught",
+    true
+   ],
+   "leak/valgrind-O2": [
+    "missed",
+    false
+   ],
+   "uninit_read/plain-O0": [
+    "missed",
+    true
+   ],
+   "uninit_read/plain-O2": [
+    "missed",
+    false
+   ],
+   "uninit_read/gtest-O0": [
+    "missed",
+    true
+   ],
+   "uninit_read/gtest-O2": [
+    "missed",
+    false
+   ],
+   "uninit_read/asan-O0": [
+    "missed",
+    true
+   ],
+   "uninit_read/asan-O2": [
+    "missed",
+    false
+   ],
+   "uninit_read/ubsan-O0": [
+    "missed",
+    true
+   ],
+   "uninit_read/ubsan-O2": [
+    "missed",
+    false
+   ],
+   "uninit_read/tsan-O0": [
+    "missed",
+    true
+   ],
+   "uninit_read/tsan-O2": [
+    "missed",
+    false
+   ],
+   "uninit_read/valgrind-O0": [
+    "caught",
+    true
+   ],
+   "uninit_read/valgrind-O2": [
+    "missed",
+    false
+   ],
+   "parser_edge/plain-O0": [
+    "missed",
+    true
+   ],
+   "parser_edge/plain-O2": [
+    "missed",
+    false
+   ],
+   "parser_edge/gtest-O0": [
+    "missed",
+    true
+   ],
+   "parser_edge/gtest-O2": [
+    "missed",
+    false
+   ],
+   "parser_edge/asan-O0": [
+    "missed",
+    true
+   ],
+   "parser_edge/asan-O2": [
+    "missed",
+    true
+   ],
+   "parser_edge/ubsan-O0": [
+    "missed",
+    true
+   ],
+   "parser_edge/ubsan-O2": [
+    "missed",
+    true
+   ],
+   "parser_edge/tsan-O0": [
+    "missed",
+    true
+   ],
+   "parser_edge/tsan-O2": [
+    "missed",
+    true
+   ],
+   "parser_edge/valgrind-O0": [
+    "missed",
+    true
+   ],
+   "parser_edge/valgrind-O2": [
+    "missed",
+    false
+   ],
+   "parser_edge/libfuzzer-O0": [
+    "caught",
+    true
+   ],
+   "parser_edge/libfuzzer-O2": [
+    "caught",
+    true
+   ]
+  },
+  "bench": {
+   "naive/g++-O0": "kept",
+   "do_not_optimize/g++-O0": "kept",
+   "clobber/g++-O0": "kept",
+   "opaque_input/g++-O0": "kept",
+   "empty/g++-O0": "lost",
+   "naive/g++-O2": "lost",
+   "do_not_optimize/g++-O2": "lost",
+   "clobber/g++-O2": "lost",
+   "opaque_input/g++-O2": "kept",
+   "empty/g++-O2": "lost",
+   "naive/g++-O3": "lost",
+   "do_not_optimize/g++-O3": "lost",
+   "clobber/g++-O3": "lost",
+   "opaque_input/g++-O3": "kept",
+   "empty/g++-O3": "lost",
+   "naive/clang++-O0": "kept",
+   "do_not_optimize/clang++-O0": "kept",
+   "clobber/clang++-O0": "kept",
+   "opaque_input/clang++-O0": "kept",
+   "empty/clang++-O0": "lost",
+   "naive/clang++-O2": "lost",
+   "do_not_optimize/clang++-O2": "lost",
+   "clobber/clang++-O2": "lost",
+   "opaque_input/clang++-O2": "replaced",
+   "empty/clang++-O2": "lost",
+   "naive/clang++-O3": "lost",
+   "do_not_optimize/clang++-O3": "lost",
+   "clobber/clang++-O3": "lost",
+   "opaque_input/clang++-O3": "replaced",
+   "empty/clang++-O3": "lost"
+  },
+  "shutdown": {
+   "control-no-signal": {
+    "outcome": "served",
+    "served": 4,
+    "dropped": 0,
+    "truncated": 0,
+    "accepted_after_signal": true,
+    "exit_code": null,
+    "exited_by_itself": false,
+    "exit_after_signal_s": null,
+    "repeats": 1
+   },
+   "no-handler": {
+    "outcome": "served",
+    "served": 4,
+    "dropped": 0,
+    "truncated": 0,
+    "accepted_after_signal": true,
+    "exit_code": null,
+    "exited_by_itself": false,
+    "exit_after_signal_s": null,
+    "repeats": 1
+   },
+   "no-handler-init": {
+    "outcome": "refused",
+    "served": 0,
+    "dropped": 4,
+    "truncated": 0,
+    "accepted_after_signal": false,
+    "exit_code": 143,
+    "exited_by_itself": true,
+    "exit_after_signal_s": 0.1,
+    "repeats": 1
+   },
+   "drain-enough": {
+    "outcome": "served",
+    "served": 4,
+    "dropped": 0,
+    "truncated": 0,
+    "accepted_after_signal": false,
+    "exit_code": 0,
+    "exited_by_itself": true,
+    "exit_after_signal_s": 3.1,
+    "repeats": 1
+   },
+   "drain-short": {
+    "outcome": "refused",
+    "served": 0,
+    "dropped": 4,
+    "truncated": 0,
+    "accepted_after_signal": false,
+    "exit_code": 0,
+    "exited_by_itself": true,
+    "exit_after_signal_s": 1.1,
+    "repeats": 1
+   },
+   "control-slow-reader": {
+    "outcome": "served",
+    "served": 5,
+    "dropped": 0,
+    "truncated": 0,
+    "accepted_after_signal": true,
+    "exit_code": null,
+    "exited_by_itself": false,
+    "exit_after_signal_s": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "repeats": 5
+   },
+   "control-slow-reader-halfclose": {
+    "outcome": "served",
+    "served": 5,
+    "dropped": 0,
+    "truncated": 0,
+    "accepted_after_signal": true,
+    "exit_code": null,
+    "exited_by_itself": false,
+    "exit_after_signal_s": [
+     null,
+     null,
+     null,
+     null,
+     null
+    ],
+    "repeats": 5
+   },
+   "drain-slow-after-ack": {
+    "outcome": "served",
+    "served": 5,
+    "dropped": 0,
+    "truncated": 0,
+    "accepted_after_signal": false,
+    "exit_code": 0,
+    "exited_by_itself": true,
+    "exit_after_signal_s": [
+     10.8,
+     10.8,
+     10.8,
+     10.9,
+     10.9
+    ],
+    "repeats": 5
+   },
+   "drain-slow-after-ack-halfclose": {
+    "outcome": "served",
+    "served": 5,
+    "dropped": 0,
+    "truncated": 0,
+    "accepted_after_signal": false,
+    "exit_code": 0,
+    "exited_by_itself": true,
+    "exit_after_signal_s": [
+     10.7,
+     10.8,
+     10.8,
+     10.9,
+     10.8
+    ],
+    "repeats": 5
+   },
+   "drain-slow-after-close": {
+    "outcome": "served",
+    "served": 5,
+    "dropped": 0,
+    "truncated": 0,
+    "accepted_after_signal": false,
+    "exit_code": 0,
+    "exited_by_itself": true,
+    "exit_after_signal_s": [
+     10.7,
+     10.8,
+     10.7,
+     10.7,
+     10.8
+    ],
+    "repeats": 5
+   },
+   "drain-slow-after-close-halfclose": {
+    "outcome~": "mixed",
+    "served~": 1,
+    "dropped~": 4,
+    "truncated~": 4,
+    "accepted_after_signal": false,
+    "exit_code": 0,
+    "exited_by_itself": true,
+    "exit_after_signal_s": [
+     10.7,
+     10.7,
+     10.7,
+     10.7,
+     10.6
+    ],
+    "repeats": 5
+   },
+   "drain-slow-after-write": {
+    "outcome~": "refused",
+    "served~": 0,
+    "dropped~": 5,
+    "truncated~": 5,
+    "accepted_after_signal": false,
+    "exit_code": 0,
+    "exited_by_itself": true,
+    "exit_after_signal_s": [
+     10.7,
+     10.6,
+     10.6,
+     10.6,
+     10.7
+    ],
+    "repeats": 5
+   },
+   "drain-slow-before-write": {
+    "outcome": "refused",
+    "served": 0,
+    "dropped": 5,
+    "truncated": 5,
+    "accepted_after_signal": false,
+    "exit_code": 0,
+    "exited_by_itself": true,
+    "exit_after_signal_s": [
+     1.1,
+     1.1,
+     1.0,
+     1.0,
+     1.1
+    ],
+    "repeats": 5
+   }
+  },
+  "config": {
+   "naive/missing": {
+    "outcome": "started-silently",
+    "effective_port@missing": 8080
+   },
+   "naive/empty": {
+    "outcome": "started-silently",
+    "effective_port@empty": 46003
+   },
+   "naive/letters": {
+    "outcome": "started-silently",
+    "effective_port@letters": 42265
+   },
+   "naive/trailing-garbage": {
+    "outcome": "started-silently",
+    "effective_port@trailing-garbage": 80
+   },
+   "naive/out-of-range": {
+    "outcome": "started-silently",
+    "effective_port@out-of-range": 4464
+   },
+   "naive/negative": {
+    "outcome": "started-silently",
+    "effective_port@negative": 65535
+   },
+   "naive/leading-space": {
+    "outcome": "started-silently",
+    "effective_port@leading-space": 8080
+   },
+   "naive/plus-sign": {
+    "outcome": "started-silently",
+    "effective_port@plus-sign": 80
+   },
+   "naive/valid": {
+    "outcome": "served",
+    "effective_port@valid": 8080
+   },
+   "strict/missing": {
+    "outcome": "refused",
+    "effective_port@missing": null
+   },
+   "strict/empty": {
+    "outcome": "refused",
+    "effective_port@empty": null
+   },
+   "strict/letters": {
+    "outcome": "refused",
+    "effective_port@letters": null
+   },
+   "strict/trailing-garbage": {
+    "outcome": "refused",
+    "effective_port@trailing-garbage": null
+   },
+   "strict/out-of-range": {
+    "outcome": "refused",
+    "effective_port@out-of-range": null
+   },
+   "strict/negative": {
+    "outcome": "refused",
+    "effective_port@negative": null
+   },
+   "strict/leading-space": {
+    "outcome": "refused",
+    "effective_port@leading-space": null
+   },
+   "strict/plus-sign": {
+    "outcome": "refused",
+    "effective_port@plus-sign": null
+   },
+   "strict/valid": {
+    "outcome": "served",
+    "effective_port@valid": 8080
+   }
+  },
+  "fds": {
+   "raw/fail=0": 0,
+   "raw/fail=1": 100,
+   "raii/fail=0": 0,
+   "raii/fail=1": 0
+  },
+  "logs": {
+   "pattern/plain": [
+    1,
+    1,
+    true,
+    true
+   ],
+   "pattern/quote": [
+    1,
+    0,
+    true,
+    false
+   ],
+   "pattern/backslash": [
+    1,
+    0,
+    true,
+    false
+   ],
+   "pattern/newline": [
+    2,
+    0,
+    true,
+    false
+   ],
+   "pattern/byte-ff": [
+    1,
+    1,
+    false,
+    true
+   ],
+   "escaped/plain": [
+    1,
+    1,
+    true,
+    true
+   ],
+   "escaped/quote": [
+    1,
+    1,
+    true,
+    true
+   ],
+   "escaped/backslash": [
+    1,
+    1,
+    true,
+    true
+   ],
+   "escaped/newline": [
+    1,
+    1,
+    true,
+    true
+   ],
+   "escaped/byte-ff": [
+    1,
+    1,
+    true,
+    false
+   ]
+  },
+  "coverage": {
+   "summary": {
+    "lines": 100,
+    "branches": 75,
+    "mcdc": 50,
+    "regions": 100
+   },
+   "uncovered": [
+    "|  Branch (11:12): [True: 6, False: 0]",
+    "|  C1-Pair: not covered"
+   ],
+   "suite_passed": true,
+   "boundary/on": false,
+   "boundary/off": true
+  }
+ }
+}

@@ -98,6 +98,9 @@
       "cpp/cpp-docker-minimal-images.md",
       "cpp/cpp-modern-backend-and-systems.md"
     ],
+    "cpp/correctness-and-operations": [
+      "cpp/cpp-production-patterns.md"
+    ],
     "cpp/service-and-postgres": [
       "cpp/cpp-async-coroutines-asio.md",
       "cpp/cpp-postgresql-libpqxx.md",

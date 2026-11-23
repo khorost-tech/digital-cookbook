@@ -1,0 +1,39 @@
+# Базовый образ стенда cpp/correctness-and-operations: ВСЕ инструменты волны C в
+# одном образе — компиляторы, тестовые фреймворки, бенчмарки, санитайзеры,
+# профилировщики. Отдельные образы на инструмент дали бы разные версии
+# компилятора от оси к оси, и различие величин имело бы две причины сразу.
+#
+# Закрепление по дайджесту индекса — тот же образ, что у волны B
+# (cpp/service-and-postgres/images/Dockerfile.base); значение продублировано в
+# images/base.json, их совпадение проверяет scripts/test_tools.py. Пакеты из живого
+# репозитория Debian не закреплены, поэтому версии СНИМАЮТСЯ замером
+# (scripts/docker.py, tool_versions) и лежат в фикстуре, а не объявляются.
+#
+# Компиляторов два, и это названо в спеке: libFuzzer и llvm-cov есть только у
+# clang; сервис, тесты и бенчмарки собираются g++, как в волнах A и B. Ни одна
+# ось не сравнивает компиляторы между собой.
+FROM debian:trixie-slim@sha256:d7e12182ce18b85b93007c1dedf31f2d29e01ccf3182cc4017c709b6259bc132
+
+RUN apt-get update -qq \
+ && apt-get install -y -qq --no-install-recommends \
+      binutils \
+      catch2 \
+      clang \
+      cmake \
+      g++ \
+      libasio-dev \
+      libbenchmark-dev \
+      libboost-dev \
+      libclang-rt-19-dev \
+      libgmock-dev \
+      libgtest-dev \
+      libspdlog-dev \
+      linux-perf \
+      llvm \
+      make \
+      procps \
+      iproute2 \
+      valgrind \
+ && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /work
