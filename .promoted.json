@@ -99,7 +99,8 @@
       "cpp/cpp-modern-backend-and-systems.md"
     ],
     "cpp/correctness-and-operations": [
-      "cpp/cpp-production-patterns.md"
+      "cpp/cpp-production-patterns.md",
+      "cpp/cpp-profiling-and-benchmarking.md"
     ],
     "cpp/service-and-postgres": [
       "cpp/cpp-async-coroutines-asio.md",
