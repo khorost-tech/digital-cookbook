@@ -1,0 +1,9 @@
+[package]
+name = "textunicode"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+serde_json = "=1.0.151"
+unicode-normalization = "=0.1.25"
+unicode-segmentation = "=1.13.3"

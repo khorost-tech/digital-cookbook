@@ -1,0 +1,3 @@
+# артефакты сборки C# (dotnet build пишет obj/ рядом с проектом)
+csharp/obj/
+csharp/bin/

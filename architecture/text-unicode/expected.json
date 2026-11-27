@@ -1,0 +1,1242 @@
+{
+ "written": "2026-10-19, до прогона пяти языков из шести. Честно: программа на Go один раз запущена при настройке (получить go.sum), её значения были видны до записи гипотез — для Go они не предсказание, их подтверждают только сессии.",
+ "checks": {
+  "lengths": {
+   "native_len_model": {
+    "go": "bytes",
+    "rust": "bytes",
+    "java": "utf16",
+    "python": "code_points",
+    "node": "utf16",
+    "csharp": "utf16"
+   },
+   "utf8_bytes_agree": true,
+   "code_points_agree": true,
+   "emoji_and_nfd_one_grapheme_all": true,
+   "java_breakiterator_agrees_with_regex": true
+  },
+  "graphemes": {
+   "hindi": {
+    "go": 4,
+    "rust": 3,
+    "java": 3,
+    "python": 3,
+    "node": 3,
+    "csharp": 3
+   }
+  },
+  "normalization": {
+   "raw_unequal_all": true,
+   "nfc_equal_all": true,
+   "nfd_equal_all": true,
+   "nfkc_compat_all": true
+  },
+  "casefold": {
+   "lower_dotted_I": {
+    "go": [
+     105
+    ],
+    "rust": [
+     105,
+     775
+    ],
+    "java": [
+     105,
+     775
+    ],
+    "python": [
+     105,
+     775
+    ],
+    "node": [
+     105,
+     775
+    ],
+    "csharp": [
+     105
+    ]
+   },
+   "turkish_lower_I": {
+    "go": [
+     305
+    ],
+    "rust": null,
+    "java": [
+     305
+    ],
+    "python": null,
+    "node": [
+     305
+    ],
+    "csharp": [
+     305
+    ]
+   },
+   "upper_sharp_s": {
+    "go": [
+     223
+    ],
+    "rust": [
+     83,
+     83
+    ],
+    "java": [
+     83,
+     83
+    ],
+    "python": [
+     83,
+     83
+    ],
+    "node": [
+     83,
+     83
+    ],
+    "csharp": [
+     223
+    ]
+   },
+   "simple_fold_equal_strasse": {
+    "go": false,
+    "rust": false,
+    "java": false,
+    "python": false,
+    "node": false,
+    "csharp": false
+   },
+   "full_fold_equal_strasse": {
+    "go": true,
+    "rust": null,
+    "java": null,
+    "python": true,
+    "node": true,
+    "csharp": true
+   }
+  },
+  "truncation": {
+   "naive": {
+    "go": "invalid_utf8",
+    "rust": "panic",
+    "java": "lone_surrogate",
+    "python": "split_grapheme",
+    "node": "lone_surrogate",
+    "csharp": "lone_surrogate"
+   },
+   "grapheme_truncation_intact_all": true
+  },
+  "security": {
+   "duplicate_without_normalization_all": true,
+   "nfc_dedups_all": true,
+   "homoglyph_survives_nfkc_fold_all": true,
+   "fullwidth_unified_by_nfkc_all": true
+  },
+  "database": {
+   "char_length_counts_code_points": true,
+   "octet_length_counts_bytes": true,
+   "varchar5_rejects_one_grapheme_family": true,
+   "varchar1_accepts_nfc_e": true,
+   "varchar1_rejects_nfd_e": true,
+   "unique_raw_accepts_both_forms": true,
+   "unique_on_normalize_rejects_second": true
+  }
+ },
+ "notes": {
+  "lengths": "Встроенная «длина»: Go и Rust — байты UTF-8, Java, JavaScript и C# — code units UTF-16, Python — code points. Байты и code points у всех совпадают; эмодзи (семья, флаг, тон кожи) и e+акут — одна графема в штатном средстве каждого языка; у Java BreakIterator (JDK 20+) и \\X согласны.",
+  "graphemes": "नमस्ते: правило GB9c (Unicode 15.1) склеивает согласные через вирам — 3 графемы; uniseg v0.4.7 (Unicode 15.0) — 4. Остальные — 3.",
+  "normalization": "café в NFC и NFD: без нормализации не равны, после NFC и NFD — равны; NFKC разворачивает лигатуру ﬁ и полноширинные буквы.",
+  "casefold": "İ в нижний регистр: полное отображение — i + точка сверху (два code point), простое (Go, .NET invariant) — i. Турецкая I → ı только с языком: x/text, Locale tr, toLocaleLowerCase, CultureInfo tr-TR; в std Rust и Python нет. ß в верхний: полное — SS, простое (Go, .NET) — ß. Простое сравнение без регистра Straße ≠ STRASSE везде; полное свёртывание или коллация — равно (Rust и Java — без средств в стандарте).",
+  "truncation": "Отрезать «Привет👨‍👩‍👧‍👦» внутри эмодзи: Go — битый UTF-8, Rust — паника на срезе, Java/JS/C# — одиночный суррогат, Python — корректная строка, но семья превращается в мужчину. По графемам — целая семья везде.",
+  "security": "Имена café в NFC и NFD без нормализации — два разных ключа, после NFC — один. NFKC + свёртка регистра объединяет полноширинные буквы, но не кириллическую а с латинской a — гомоглифы не задача нормализации.",
+  "database": "PostgreSQL 18: char_length — code points (семья — 7), octet_length — байты (25); varchar(5) не принимает одну графему-семью, varchar(1) принимает é в NFC и не принимает в NFD; уникальный индекс по сырому имени принимает обе формы café, по normalize(name, NFC) — отвергает вторую."
+ },
+ "revision_stage1_probe": {
+  "written": "2026-10-19, после первой пробы, до сессий",
+  "observed": [
+   "graphemes: .NET 10 StringInfo насчитал в नमस्ते 4 графемы, а не 3 — правило GB9c (Unicode 15.1, склейка согласных через вираму) в нём не реализовано, как и в uniseg v0.4.7 у Go. Остальные четыре языка — 3.",
+   "casefold: C# ToLowerInvariant(\"İ\") возвращает İ без изменений (U+0130), а не i; турецкая I через CultureInfo(tr-TR) даёт ı — ICU в образе есть, это не режим invariant globalization. Сравнение Straße и STRASSE через CultureInfo(de-DE) с CompareOptions.IgnoreCase — не равны, тогда как Intl.Collator(de, base) в Node — равны. Остальные значения пяти языков совпали с гипотезой."
+  ],
+  "checks": {
+   "graphemes": {
+    "hindi": {
+     "go": 4,
+     "rust": 3,
+     "java": 3,
+     "python": 3,
+     "node": 3,
+     "csharp": 4
+    }
+   },
+   "casefold": {
+    "lower_dotted_I": {
+     "go": [
+      105
+     ],
+     "rust": [
+      105,
+      775
+     ],
+     "java": [
+      105,
+      775
+     ],
+     "python": [
+      105,
+      775
+     ],
+     "node": [
+      105,
+      775
+     ],
+     "csharp": [
+      304
+     ]
+    },
+    "turkish_lower_I": {
+     "go": [
+      305
+     ],
+     "rust": null,
+     "java": [
+      305
+     ],
+     "python": null,
+     "node": [
+      305
+     ],
+     "csharp": [
+      305
+     ]
+    },
+    "upper_sharp_s": {
+     "go": [
+      223
+     ],
+     "rust": [
+      83,
+      83
+     ],
+     "java": [
+      83,
+      83
+     ],
+     "python": [
+      83,
+      83
+     ],
+     "node": [
+      83,
+      83
+     ],
+     "csharp": [
+      223
+     ]
+    },
+    "simple_fold_equal_strasse": {
+     "go": false,
+     "rust": false,
+     "java": false,
+     "python": false,
+     "node": false,
+     "csharp": false
+    },
+    "full_fold_equal_strasse": {
+     "go": true,
+     "rust": null,
+     "java": null,
+     "python": true,
+     "node": true,
+     "csharp": false
+    }
+   }
+  }
+ },
+ "revision_stage2_review": {
+  "written": "2026-10-19, после рецензии статьи, до пробы новых проверок",
+  "harness": [
+   "casefold: в одной колонке «полная свёртка» были три разных отношения равенства — свёртка регистра (Go cases.Fold, Python casefold), коллация (Node Intl.Collator base — игнорирует и диакритику: café = cafe; C# — культурное сравнение) и нижний регистр. Теперь — четыре отдельные операции с точным API: lower_compare, builtin_ignorecase (простая свёртка), casefold_compare, collation_compare (немецкие правила, без учёта регистра, с учётом диакритики: Collator SECONDARY, Intl.Collator accent, CompareInfo IgnoreCase, x/text collate IgnoreCase); добавлены ς/σ и café/cafe.",
+   "security: ключ уникальности строился разными операциями (Go и Python — NFKC + свёртка, остальные — NFKC + нижний регистр), а примеры этого не различали. Ключ теперь явный в выводе, добавлены Straße/STRASSE и οδος/οδοσ.",
+   "truncation: положительный контроль ничего не обрезал (в строке семь графем, сохранялось семь) — подмена обрезки на text оставалась зелёной (показал рецензент). Строка теперь «Привет👨‍👩‍👧‍👦XYZ»: лимит 7 графем — семья цела, XYZ нет; лимит 6 — семьи нет целиком; бюджет 20 байт кончается внутри семьи — только «Привет». Для Rust — str::get без паники.",
+   "Новые проверки: простое отображение регистра сохраняет число code points, но не длину в UTF-8 (İ, Ⱥ); a + 1000 акутов — одна графема на 2001 байт; ось invalid — что делает декодирование некорректного UTF-8 по умолчанию и как язык обходится с одиночным суррогатом; версии Unicode из рантаймов."
+  ],
+  "checks": {
+   "lengths": {
+    "native_len_model": {
+     "go": "bytes",
+     "rust": "bytes",
+     "java": "utf16",
+     "python": "code_points",
+     "node": "utf16",
+     "csharp": "utf16"
+    },
+    "utf8_bytes_agree": true,
+    "code_points_agree": true,
+    "emoji_and_nfd_one_grapheme_all": true,
+    "java_breakiterator_agrees_with_regex": true,
+    "zalgo_one_grapheme_all": true,
+    "zalgo_utf8_2001_all": true
+   },
+   "casefold": {
+    "lower_dotted_I": {
+     "go": [
+      105
+     ],
+     "rust": [
+      105,
+      775
+     ],
+     "java": [
+      105,
+      775
+     ],
+     "python": [
+      105,
+      775
+     ],
+     "node": [
+      105,
+      775
+     ],
+     "csharp": [
+      304
+     ]
+    },
+    "turkish_lower_I": {
+     "go": [
+      305
+     ],
+     "rust": null,
+     "java": [
+      305
+     ],
+     "python": null,
+     "node": [
+      305
+     ],
+     "csharp": [
+      305
+     ]
+    },
+    "upper_sharp_s": {
+     "go": [
+      223
+     ],
+     "rust": [
+      83,
+      83
+     ],
+     "java": [
+      83,
+      83
+     ],
+     "python": [
+      83,
+      83
+     ],
+     "node": [
+      83,
+      83
+     ],
+     "csharp": [
+      223
+     ]
+    },
+    "lower_dotted_I_utf8_bytes": {
+     "go": [
+      2,
+      1
+     ],
+     "rust": [
+      2,
+      3
+     ],
+     "java": [
+      2,
+      3
+     ],
+     "python": [
+      2,
+      3
+     ],
+     "node": [
+      2,
+      3
+     ],
+     "csharp": [
+      2,
+      2
+     ]
+    },
+    "lower_A_stroke_utf8_bytes": {
+     "go": [
+      2,
+      3
+     ],
+     "rust": [
+      2,
+      3
+     ],
+     "java": [
+      2,
+      3
+     ],
+     "python": [
+      2,
+      3
+     ],
+     "node": [
+      2,
+      3
+     ],
+     "csharp": [
+      2,
+      3
+     ]
+    },
+    "lower_compare": {
+     "go": {
+      "strasse": false,
+      "sigma": false
+     },
+     "rust": {
+      "strasse": false,
+      "sigma": false
+     },
+     "java": {
+      "strasse": false,
+      "sigma": false
+     },
+     "python": {
+      "strasse": false,
+      "sigma": false
+     },
+     "node": {
+      "strasse": false,
+      "sigma": false
+     },
+     "csharp": {
+      "strasse": false,
+      "sigma": false
+     }
+    },
+    "builtin_ignorecase": {
+     "go": {
+      "strasse": false
+     },
+     "rust": null,
+     "java": {
+      "strasse": false
+     },
+     "python": null,
+     "node": null,
+     "csharp": {
+      "strasse": false
+     }
+    },
+    "casefold_compare": {
+     "go": {
+      "strasse": true,
+      "sigma": true
+     },
+     "rust": null,
+     "java": null,
+     "python": {
+      "strasse": true,
+      "sigma": true
+     },
+     "node": null,
+     "csharp": null
+    },
+    "collation_compare": {
+     "go": {
+      "strasse": true,
+      "cafe": false
+     },
+     "rust": null,
+     "java": {
+      "strasse": true,
+      "cafe": false
+     },
+     "python": null,
+     "node": {
+      "strasse": true,
+      "cafe": false
+     },
+     "csharp": {
+      "strasse": false,
+      "cafe": false
+     }
+    }
+   },
+   "truncation": {
+    "naive": {
+     "go": "invalid_utf8",
+     "rust": "panic",
+     "java": "lone_surrogate",
+     "python": "split_grapheme",
+     "node": "lone_surrogate",
+     "csharp": "lone_surrogate"
+    },
+    "keep_family_intact_all": true,
+    "drop_family_whole_all": true,
+    "byte_budget_stops_before_all": true,
+    "rust_get_returns_none": true
+   },
+   "security": {
+    "key": {
+     "go": "nfkc+casefold",
+     "rust": "nfkc+lower",
+     "java": "nfkc+lower",
+     "python": "nfkc+casefold",
+     "node": "nfkc+lower",
+     "csharp": "nfkc+lower"
+    },
+    "duplicate_without_normalization_all": true,
+    "nfc_dedups_all": true,
+    "merges": {
+     "go": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": true,
+      "final_sigma": true
+     },
+     "rust": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": false,
+      "final_sigma": false
+     },
+     "java": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": false,
+      "final_sigma": false
+     },
+     "python": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": true,
+      "final_sigma": true
+     },
+     "node": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": false,
+      "final_sigma": false
+     },
+     "csharp": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": false,
+      "final_sigma": false
+     }
+    }
+   },
+   "invalid": {
+    "decode_default": {
+     "go": "keep_bytes",
+     "rust": "error",
+     "java": "replace",
+     "python": "error",
+     "node": "replace",
+     "csharp": "replace"
+    },
+    "lone_surrogate": {
+     "go": "replaced_on_conversion",
+     "rust": "not_representable",
+     "java": "kept_encodes_question_mark",
+     "python": "kept_encode_error",
+     "node": "kept_encodes_fffd",
+     "csharp": "kept_encodes_fffd"
+    }
+   }
+  },
+  "notes": {
+   "invalid": "Байты 66 6F FF 6F. Go: string(b) хранит байты как есть; Rust: String::from_utf8 — ошибка; Java, Node, C#: декодирование по умолчанию молча заменяет на U+FFFD; Python: bytes.decode() — ошибка. Одиночный суррогат U+D800: Go — rune в string даёт U+FFFD; Rust — не может быть char; Java хранит, в UTF-8 кодирует как «?»; Python хранит, кодирование падает; Node и C# хранят, кодируют как U+FFFD."
+  }
+ },
+ "revision_stage3_review_probe": {
+  "written": "2026-10-19, после пробы проверок по рецензии, до сессий",
+  "observed": [
+   "collation_compare: немецкая коллация без учёта регистра, но с учётом диакритики различает Straße и STRASSE в Go (x/text/collate IgnoreCase), Node (Intl.Collator accent, ICU) и C# (CompareInfo IgnoreCase) — по CLDR разница ß и ss вторичная, того же уровня, что диакритика. Равенство в Node из прежней версии стенда давала чувствительность base, отбрасывающая и вторичные различия (café = cafe). Уравнивает Straße и STRASSE на силе SECONDARY только Java Collator — у JDK собственные правила, не CLDR. Гипотеза для Go и Node была неверна."
+  ],
+  "checks": {
+   "casefold": {
+    "lower_dotted_I": {
+     "go": [
+      105
+     ],
+     "rust": [
+      105,
+      775
+     ],
+     "java": [
+      105,
+      775
+     ],
+     "python": [
+      105,
+      775
+     ],
+     "node": [
+      105,
+      775
+     ],
+     "csharp": [
+      304
+     ]
+    },
+    "turkish_lower_I": {
+     "go": [
+      305
+     ],
+     "rust": null,
+     "java": [
+      305
+     ],
+     "python": null,
+     "node": [
+      305
+     ],
+     "csharp": [
+      305
+     ]
+    },
+    "upper_sharp_s": {
+     "go": [
+      223
+     ],
+     "rust": [
+      83,
+      83
+     ],
+     "java": [
+      83,
+      83
+     ],
+     "python": [
+      83,
+      83
+     ],
+     "node": [
+      83,
+      83
+     ],
+     "csharp": [
+      223
+     ]
+    },
+    "lower_dotted_I_utf8_bytes": {
+     "go": [
+      2,
+      1
+     ],
+     "rust": [
+      2,
+      3
+     ],
+     "java": [
+      2,
+      3
+     ],
+     "python": [
+      2,
+      3
+     ],
+     "node": [
+      2,
+      3
+     ],
+     "csharp": [
+      2,
+      2
+     ]
+    },
+    "lower_A_stroke_utf8_bytes": {
+     "go": [
+      2,
+      3
+     ],
+     "rust": [
+      2,
+      3
+     ],
+     "java": [
+      2,
+      3
+     ],
+     "python": [
+      2,
+      3
+     ],
+     "node": [
+      2,
+      3
+     ],
+     "csharp": [
+      2,
+      3
+     ]
+    },
+    "lower_compare": {
+     "go": {
+      "strasse": false,
+      "sigma": false
+     },
+     "rust": {
+      "strasse": false,
+      "sigma": false
+     },
+     "java": {
+      "strasse": false,
+      "sigma": false
+     },
+     "python": {
+      "strasse": false,
+      "sigma": false
+     },
+     "node": {
+      "strasse": false,
+      "sigma": false
+     },
+     "csharp": {
+      "strasse": false,
+      "sigma": false
+     }
+    },
+    "builtin_ignorecase": {
+     "go": {
+      "strasse": false
+     },
+     "rust": null,
+     "java": {
+      "strasse": false
+     },
+     "python": null,
+     "node": null,
+     "csharp": {
+      "strasse": false
+     }
+    },
+    "casefold_compare": {
+     "go": {
+      "strasse": true,
+      "sigma": true
+     },
+     "rust": null,
+     "java": null,
+     "python": {
+      "strasse": true,
+      "sigma": true
+     },
+     "node": null,
+     "csharp": null
+    },
+    "collation_compare": {
+     "go": {
+      "strasse": false,
+      "cafe": false
+     },
+     "rust": null,
+     "java": {
+      "strasse": true,
+      "cafe": false
+     },
+     "python": null,
+     "node": {
+      "strasse": false,
+      "cafe": false
+     },
+     "csharp": {
+      "strasse": false,
+      "cafe": false
+     }
+    }
+   }
+  }
+ },
+ "revision_stage4_review2": {
+  "written": "2026-10-20, после второй рецензии статьи, до пробы новых проверок",
+  "harness": [
+   "database: отказ засчитывался по любому ненулевому коду psql — синтаксическая ошибка 42601 давала те же семь «да» (показал рецензент). Теперь отказ — только с нужным SQLSTATE: 22001 для длины, 23505 для уникальности; DDL проверяется на успех; отрицательный контроль — заведомо неверный запрос должен распознаться как неожиданная ошибка.",
+   "casefold: builtin_ignorecase проверял только Straße, и обобщение «встроенные сравнения не уравнивают ς и σ» в статье было неверным. Добавлены ς/σ и I/ı."
+  ],
+  "observed": [],
+  "checks": {
+   "casefold": {
+    "lower_dotted_I": {
+     "go": [
+      105
+     ],
+     "rust": [
+      105,
+      775
+     ],
+     "java": [
+      105,
+      775
+     ],
+     "python": [
+      105,
+      775
+     ],
+     "node": [
+      105,
+      775
+     ],
+     "csharp": [
+      304
+     ]
+    },
+    "turkish_lower_I": {
+     "go": [
+      305
+     ],
+     "rust": null,
+     "java": [
+      305
+     ],
+     "python": null,
+     "node": [
+      305
+     ],
+     "csharp": [
+      305
+     ]
+    },
+    "upper_sharp_s": {
+     "go": [
+      223
+     ],
+     "rust": [
+      83,
+      83
+     ],
+     "java": [
+      83,
+      83
+     ],
+     "python": [
+      83,
+      83
+     ],
+     "node": [
+      83,
+      83
+     ],
+     "csharp": [
+      223
+     ]
+    },
+    "lower_dotted_I_utf8_bytes": {
+     "go": [
+      2,
+      1
+     ],
+     "rust": [
+      2,
+      3
+     ],
+     "java": [
+      2,
+      3
+     ],
+     "python": [
+      2,
+      3
+     ],
+     "node": [
+      2,
+      3
+     ],
+     "csharp": [
+      2,
+      2
+     ]
+    },
+    "lower_A_stroke_utf8_bytes": {
+     "go": [
+      2,
+      3
+     ],
+     "rust": [
+      2,
+      3
+     ],
+     "java": [
+      2,
+      3
+     ],
+     "python": [
+      2,
+      3
+     ],
+     "node": [
+      2,
+      3
+     ],
+     "csharp": [
+      2,
+      3
+     ]
+    },
+    "lower_compare": {
+     "go": {
+      "strasse": false,
+      "sigma": false
+     },
+     "rust": {
+      "strasse": false,
+      "sigma": false
+     },
+     "java": {
+      "strasse": false,
+      "sigma": false
+     },
+     "python": {
+      "strasse": false,
+      "sigma": false
+     },
+     "node": {
+      "strasse": false,
+      "sigma": false
+     },
+     "csharp": {
+      "strasse": false,
+      "sigma": false
+     }
+    },
+    "builtin_ignorecase": {
+     "go": {
+      "strasse": false,
+      "sigma": true,
+      "dotless_i": false
+     },
+     "rust": null,
+     "java": {
+      "strasse": false,
+      "sigma": true,
+      "dotless_i": true
+     },
+     "python": null,
+     "node": null,
+     "csharp": {
+      "strasse": false,
+      "sigma": true,
+      "dotless_i": true
+     }
+    },
+    "casefold_compare": {
+     "go": {
+      "strasse": true,
+      "sigma": true
+     },
+     "rust": null,
+     "java": null,
+     "python": {
+      "strasse": true,
+      "sigma": true
+     },
+     "node": null,
+     "csharp": null
+    },
+    "collation_compare": {
+     "go": {
+      "strasse": false,
+      "cafe": false
+     },
+     "rust": null,
+     "java": {
+      "strasse": true,
+      "cafe": false
+     },
+     "python": null,
+     "node": {
+      "strasse": false,
+      "cafe": false
+     },
+     "csharp": {
+      "strasse": false,
+      "cafe": false
+     }
+    }
+   },
+   "security": {
+    "key": {
+     "go": "nfkc+casefold",
+     "rust": "nfkc+lower",
+     "java": "nfkc+lower",
+     "python": "nfkc+casefold",
+     "node": "nfkc+lower",
+     "csharp": "nfkc+lower"
+    },
+    "duplicate_without_normalization_all": true,
+    "nfc_dedups_all": true,
+    "merges": {
+     "go": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": true,
+      "final_sigma": true,
+      "a7ce_a7cf": true
+     },
+     "rust": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": false,
+      "final_sigma": false,
+      "a7ce_a7cf": true
+     },
+     "java": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": false,
+      "final_sigma": false,
+      "a7ce_a7cf": false
+     },
+     "python": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": true,
+      "final_sigma": true,
+      "a7ce_a7cf": false
+     },
+     "node": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": false,
+      "final_sigma": false,
+      "a7ce_a7cf": true
+     },
+     "csharp": {
+      "homoglyph": false,
+      "fullwidth": true,
+      "strasse": false,
+      "final_sigma": false,
+      "a7ce_a7cf": false
+     }
+    }
+   },
+   "database": {
+    "char_length_counts_code_points": true,
+    "octet_length_counts_bytes": true,
+    "ddl_succeeded": true,
+    "varchar5_rejects_family_22001": true,
+    "varchar1_accepts_nfc_e": true,
+    "varchar1_rejects_nfd_e_22001": true,
+    "unique_raw_accepts_both_forms": true,
+    "unique_on_normalize_rejects_second_23505": true,
+    "unexpected_sqlstate_detected": true
+   }
+  },
+  "notes": {
+   "builtin_ignorecase": "Go EqualFold — простая свёртка Unicode: ς = σ, I ≠ ı. Java equalsIgnoreCase сравнивает toLowerCase(toUpperCase(c)) посимвольно: ς = σ и I = ı (ı в верхнем — I). C# OrdinalIgnoreCase — простой верхний регистр: ς = σ, I = ı.",
+   "a7ce_a7cf": "U+A7CE и U+A7CF — пара букв, добавленная в Unicode 17. Ключ NFKC + свёртка (или нижний регистр) склеивает их там, где таблицы Unicode 17: Go x/text v0.42.0, Rust 1.98, Node с ICU 78; на Unicode 16 (Python 3.14, Java 25, .NET 10) — два разных ключа."
+  }
+ },
+ "revision_stage5_review2_probe": {
+  "written": "2026-10-20, после пробы проверок второй рецензии, до сессий",
+  "observed": [
+   "builtin_ignorecase: C# OrdinalIgnoreCase уравнивает ς и σ, но не I и ı — гипотеза «простой верхний регистр, ı → I» неверна; .NET в порядковом сравнении турецкую ı не сводит к I. Go EqualFold: ς = σ, I ≠ ı; Java equalsIgnoreCase: ς = σ, I = ı — как в гипотезе. U+A7CE/U+A7CF склеены ключом в Go, Rust и Node (таблицы Unicode 17) и различны в Java, Python и C# — как в гипотезе. Ось database с SQLSTATE — как в гипотезе."
+  ],
+  "checks": {
+   "casefold": {
+    "lower_dotted_I": {
+     "go": [
+      105
+     ],
+     "rust": [
+      105,
+      775
+     ],
+     "java": [
+      105,
+      775
+     ],
+     "python": [
+      105,
+      775
+     ],
+     "node": [
+      105,
+      775
+     ],
+     "csharp": [
+      304
+     ]
+    },
+    "turkish_lower_I": {
+     "go": [
+      305
+     ],
+     "rust": null,
+     "java": [
+      305
+     ],
+     "python": null,
+     "node": [
+      305
+     ],
+     "csharp": [
+      305
+     ]
+    },
+    "upper_sharp_s": {
+     "go": [
+      223
+     ],
+     "rust": [
+      83,
+      83
+     ],
+     "java": [
+      83,
+      83
+     ],
+     "python": [
+      83,
+      83
+     ],
+     "node": [
+      83,
+      83
+     ],
+     "csharp": [
+      223
+     ]
+    },
+    "lower_dotted_I_utf8_bytes": {
+     "go": [
+      2,
+      1
+     ],
+     "rust": [
+      2,
+      3
+     ],
+     "java": [
+      2,
+      3
+     ],
+     "python": [
+      2,
+      3
+     ],
+     "node": [
+      2,
+      3
+     ],
+     "csharp": [
+      2,
+      2
+     ]
+    },
+    "lower_A_stroke_utf8_bytes": {
+     "go": [
+      2,
+      3
+     ],
+     "rust": [
+      2,
+      3
+     ],
+     "java": [
+      2,
+      3
+     ],
+     "python": [
+      2,
+      3
+     ],
+     "node": [
+      2,
+      3
+     ],
+     "csharp": [
+      2,
+      3
+     ]
+    },
+    "lower_compare": {
+     "go": {
+      "strasse": false,
+      "sigma": false
+     },
+     "rust": {
+      "strasse": false,
+      "sigma": false
+     },
+     "java": {
+      "strasse": false,
+      "sigma": false
+     },
+     "python": {
+      "strasse": false,
+      "sigma": false
+     },
+     "node": {
+      "strasse": false,
+      "sigma": false
+     },
+     "csharp": {
+      "strasse": false,
+      "sigma": false
+     }
+    },
+    "builtin_ignorecase": {
+     "go": {
+      "strasse": false,
+      "sigma": true,
+      "dotless_i": false
+     },
+     "rust": null,
+     "java": {
+      "strasse": false,
+      "sigma": true,
+      "dotless_i": true
+     },
+     "python": null,
+     "node": null,
+     "csharp": {
+      "strasse": false,
+      "sigma": true,
+      "dotless_i": false
+     }
+    },
+    "casefold_compare": {
+     "go": {
+      "strasse": true,
+      "sigma": true
+     },
+     "rust": null,
+     "java": null,
+     "python": {
+      "strasse": true,
+      "sigma": true
+     },
+     "node": null,
+     "csharp": null
+    },
+    "collation_compare": {
+     "go": {
+      "strasse": false,
+      "cafe": false
+     },
+     "rust": null,
+     "java": {
+      "strasse": true,
+      "cafe": false
+     },
+     "python": null,
+     "node": {
+      "strasse": false,
+      "cafe": false
+     },
+     "csharp": {
+      "strasse": false,
+      "cafe": false
+     }
+    }
+   }
+  }
+ }
+}

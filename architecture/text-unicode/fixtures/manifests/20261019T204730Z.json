@@ -1,0 +1,566 @@
+{
+ "session": "20261019T204730Z",
+ "published": {
+  "checks": {
+   "lengths": {
+    "actual": {
+     "native_len_model": {
+      "go": "bytes",
+      "rust": "bytes",
+      "java": "utf16",
+      "python": "code_points",
+      "node": "utf16",
+      "csharp": "utf16"
+     },
+     "utf8_bytes_agree": true,
+     "code_points_agree": true,
+     "emoji_and_nfd_one_grapheme_all": true,
+     "java_breakiterator_agrees_with_regex": true,
+     "zalgo_one_grapheme_all": true,
+     "zalgo_utf8_2001_all": true
+    },
+    "outcome": "match",
+    "table": {
+     "go": {
+      "e_nfc": {
+       "code_points": 1,
+       "graphemes": 1,
+       "native": 2,
+       "utf16_units": 1,
+       "utf8_bytes": 2
+      },
+      "family": {
+       "code_points": 7,
+       "graphemes": 1,
+       "native": 25,
+       "utf16_units": 11,
+       "utf8_bytes": 25
+      },
+      "hindi": {
+       "code_points": 6,
+       "graphemes": 4,
+       "native": 18,
+       "utf16_units": 6,
+       "utf8_bytes": 18
+      },
+      "zalgo": {
+       "code_points": 1001,
+       "graphemes": 1,
+       "native": 2001,
+       "utf16_units": 1001,
+       "utf8_bytes": 2001
+      }
+     },
+     "rust": {
+      "e_nfc": {
+       "code_points": 1,
+       "graphemes": 1,
+       "native": 2,
+       "utf16_units": 1,
+       "utf8_bytes": 2
+      },
+      "family": {
+       "code_points": 7,
+       "graphemes": 1,
+       "native": 25,
+       "utf16_units": 11,
+       "utf8_bytes": 25
+      },
+      "hindi": {
+       "code_points": 6,
+       "graphemes": 3,
+       "native": 18,
+       "utf16_units": 6,
+       "utf8_bytes": 18
+      },
+      "zalgo": {
+       "code_points": 1001,
+       "graphemes": 1,
+       "native": 2001,
+       "utf16_units": 1001,
+       "utf8_bytes": 2001
+      }
+     },
+     "java": {
+      "e_nfc": {
+       "native": 1,
+       "utf8_bytes": 2,
+       "utf16_units": 1,
+       "code_points": 1,
+       "graphemes": 1,
+       "graphemes_breakiterator": 1
+      },
+      "family": {
+       "native": 11,
+       "utf8_bytes": 25,
+       "utf16_units": 11,
+       "code_points": 7,
+       "graphemes": 1,
+       "graphemes_breakiterator": 1
+      },
+      "hindi": {
+       "native": 6,
+       "utf8_bytes": 18,
+       "utf16_units": 6,
+       "code_points": 6,
+       "graphemes": 3,
+       "graphemes_breakiterator": 3
+      },
+      "zalgo": {
+       "native": 1001,
+       "utf8_bytes": 2001,
+       "utf16_units": 1001,
+       "code_points": 1001,
+       "graphemes": 1,
+       "graphemes_breakiterator": 1
+      }
+     },
+     "python": {
+      "e_nfc": {
+       "native": 1,
+       "utf8_bytes": 2,
+       "utf16_units": 1,
+       "code_points": 1,
+       "graphemes": 1
+      },
+      "family": {
+       "native": 7,
+       "utf8_bytes": 25,
+       "utf16_units": 11,
+       "code_points": 7,
+       "graphemes": 1
+      },
+      "hindi": {
+       "native": 6,
+       "utf8_bytes": 18,
+       "utf16_units": 6,
+       "code_points": 6,
+       "graphemes": 3
+      },
+      "zalgo": {
+       "native": 1001,
+       "utf8_bytes": 2001,
+       "utf16_units": 1001,
+       "code_points": 1001,
+       "graphemes": 1
+      }
+     },
+     "node": {
+      "e_nfc": {
+       "native": 1,
+       "utf8_bytes": 2,
+       "utf16_units": 1,
+       "code_points": 1,
+       "graphemes": 1
+      },
+      "family": {
+       "native": 11,
+       "utf8_bytes": 25,
+       "utf16_units": 11,
+       "code_points": 7,
+       "graphemes": 1
+      },
+      "hindi": {
+       "native": 6,
+       "utf8_bytes": 18,
+       "utf16_units": 6,
+       "code_points": 6,
+       "graphemes": 3
+      },
+      "zalgo": {
+       "native": 1001,
+       "utf8_bytes": 2001,
+       "utf16_units": 1001,
+       "code_points": 1001,
+       "graphemes": 1
+      }
+     },
+     "csharp": {
+      "e_nfc": {
+       "native": 1,
+       "utf8_bytes": 2,
+       "utf16_units": 1,
+       "code_points": 1,
+       "graphemes": 1
+      },
+      "family": {
+       "native": 11,
+       "utf8_bytes": 25,
+       "utf16_units": 11,
+       "code_points": 7,
+       "graphemes": 1
+      },
+      "hindi": {
+       "native": 6,
+       "utf8_bytes": 18,
+       "utf16_units": 6,
+       "code_points": 6,
+       "graphemes": 4
+      },
+      "zalgo": {
+       "native": 1001,
+       "utf8_bytes": 2001,
+       "utf16_units": 1001,
+       "code_points": 1001,
+       "graphemes": 1
+      }
+     }
+    },
+    "unicode": {
+     "go": "17.0.0",
+     "rust": "17.0.0",
+     "java": null,
+     "python": "16.0.0",
+     "node": "17.0",
+     "csharp": null
+    },
+    "icu": "78.3"
+   },
+   "graphemes": {
+    "actual": {
+     "hindi": {
+      "go": 4,
+      "rust": 3,
+      "java": 3,
+      "python": 3,
+      "node": 3,
+      "csharp": 4
+     }
+    },
+    "outcome": "match"
+   },
+   "normalization": {
+    "actual": {
+     "raw_unequal_all": true,
+     "nfc_equal_all": true,
+     "nfd_equal_all": true,
+     "nfkc_compat_all": true
+    },
+    "outcome": "match"
+   },
+   "casefold": {
+    "actual": {
+     "lower_dotted_I": {
+      "go": [
+       105
+      ],
+      "rust": [
+       105,
+       775
+      ],
+      "java": [
+       105,
+       775
+      ],
+      "python": [
+       105,
+       775
+      ],
+      "node": [
+       105,
+       775
+      ],
+      "csharp": [
+       304
+      ]
+     },
+     "turkish_lower_I": {
+      "go": [
+       305
+      ],
+      "rust": null,
+      "java": [
+       305
+      ],
+      "python": null,
+      "node": [
+       305
+      ],
+      "csharp": [
+       305
+      ]
+     },
+     "upper_sharp_s": {
+      "go": [
+       223
+      ],
+      "rust": [
+       83,
+       83
+      ],
+      "java": [
+       83,
+       83
+      ],
+      "python": [
+       83,
+       83
+      ],
+      "node": [
+       83,
+       83
+      ],
+      "csharp": [
+       223
+      ]
+     },
+     "lower_dotted_I_utf8_bytes": {
+      "go": [
+       2,
+       1
+      ],
+      "rust": [
+       2,
+       3
+      ],
+      "java": [
+       2,
+       3
+      ],
+      "python": [
+       2,
+       3
+      ],
+      "node": [
+       2,
+       3
+      ],
+      "csharp": [
+       2,
+       2
+      ]
+     },
+     "lower_A_stroke_utf8_bytes": {
+      "go": [
+       2,
+       3
+      ],
+      "rust": [
+       2,
+       3
+      ],
+      "java": [
+       2,
+       3
+      ],
+      "python": [
+       2,
+       3
+      ],
+      "node": [
+       2,
+       3
+      ],
+      "csharp": [
+       2,
+       3
+      ]
+     },
+     "lower_compare": {
+      "go": {
+       "sigma": false,
+       "strasse": false
+      },
+      "rust": {
+       "sigma": false,
+       "strasse": false
+      },
+      "java": {
+       "strasse": false,
+       "sigma": false
+      },
+      "python": {
+       "strasse": false,
+       "sigma": false
+      },
+      "node": {
+       "strasse": false,
+       "sigma": false
+      },
+      "csharp": {
+       "strasse": false,
+       "sigma": false
+      }
+     },
+     "builtin_ignorecase": {
+      "go": {
+       "dotless_i": false,
+       "sigma": true,
+       "strasse": false
+      },
+      "rust": null,
+      "java": {
+       "strasse": false,
+       "sigma": true,
+       "dotless_i": true
+      },
+      "python": null,
+      "node": null,
+      "csharp": {
+       "strasse": false,
+       "sigma": true,
+       "dotless_i": false
+      }
+     },
+     "casefold_compare": {
+      "go": {
+       "sigma": true,
+       "strasse": true
+      },
+      "rust": null,
+      "java": null,
+      "python": {
+       "strasse": true,
+       "sigma": true
+      },
+      "node": null,
+      "csharp": null
+     },
+     "collation_compare": {
+      "go": {
+       "cafe": false,
+       "strasse": false
+      },
+      "rust": null,
+      "java": {
+       "strasse": true,
+       "cafe": false
+      },
+      "python": null,
+      "node": {
+       "strasse": false,
+       "cafe": false
+      },
+      "csharp": {
+       "strasse": false,
+       "cafe": false
+      }
+     }
+    },
+    "outcome": "match"
+   },
+   "truncation": {
+    "actual": {
+     "naive": {
+      "go": "invalid_utf8",
+      "rust": "panic",
+      "java": "lone_surrogate",
+      "python": "split_grapheme",
+      "node": "lone_surrogate",
+      "csharp": "lone_surrogate"
+     },
+     "keep_family_intact_all": true,
+     "drop_family_whole_all": true,
+     "byte_budget_stops_before_all": true,
+     "rust_get_returns_none": true
+    },
+    "outcome": "match"
+   },
+   "security": {
+    "actual": {
+     "key": {
+      "go": "nfkc+casefold",
+      "rust": "nfkc+lower",
+      "java": "nfkc+lower",
+      "python": "nfkc+casefold",
+      "node": "nfkc+lower",
+      "csharp": "nfkc+lower"
+     },
+     "duplicate_without_normalization_all": true,
+     "nfc_dedups_all": true,
+     "merges": {
+      "go": {
+       "homoglyph": false,
+       "fullwidth": true,
+       "strasse": true,
+       "final_sigma": true,
+       "a7ce_a7cf": true
+      },
+      "rust": {
+       "homoglyph": false,
+       "fullwidth": true,
+       "strasse": false,
+       "final_sigma": false,
+       "a7ce_a7cf": true
+      },
+      "java": {
+       "homoglyph": false,
+       "fullwidth": true,
+       "strasse": false,
+       "final_sigma": false,
+       "a7ce_a7cf": false
+      },
+      "python": {
+       "homoglyph": false,
+       "fullwidth": true,
+       "strasse": true,
+       "final_sigma": true,
+       "a7ce_a7cf": false
+      },
+      "node": {
+       "homoglyph": false,
+       "fullwidth": true,
+       "strasse": false,
+       "final_sigma": false,
+       "a7ce_a7cf": true
+      },
+      "csharp": {
+       "homoglyph": false,
+       "fullwidth": true,
+       "strasse": false,
+       "final_sigma": false,
+       "a7ce_a7cf": false
+      }
+     }
+    },
+    "outcome": "match"
+   },
+   "database": {
+    "actual": {
+     "char_length_counts_code_points": true,
+     "octet_length_counts_bytes": true,
+     "ddl_succeeded": true,
+     "varchar5_rejects_family_22001": true,
+     "varchar1_accepts_nfc_e": true,
+     "varchar1_rejects_nfd_e_22001": true,
+     "unique_raw_accepts_both_forms": true,
+     "unique_on_normalize_rejects_second_23505": true,
+     "unexpected_sqlstate_detected": true
+    },
+    "outcome": "match",
+    "family": {
+     "char_length": 7,
+     "octet_length": 25
+    },
+    "server_version": "18.6 (Debian 18.6-1.pgdg13+2)",
+    "sqlstate": {
+     "varchar5_family": "22001",
+     "varchar1_nfd": "22001",
+     "unique_normalized_second": "23505",
+     "broken_insert": "42601"
+    }
+   },
+   "invalid": {
+    "actual": {
+     "decode_default": {
+      "go": "keep_bytes",
+      "rust": "error",
+      "java": "replace",
+      "python": "error",
+      "node": "replace",
+      "csharp": "replace"
+     },
+     "lone_surrogate": {
+      "go": "replaced_on_conversion",
+      "rust": "not_representable",
+      "java": "kept_encodes_question_mark",
+      "python": "kept_encode_error",
+      "node": "kept_encodes_fffd",
+      "csharp": "kept_encodes_fffd"
+     }
+    },
+    "outcome": "match"
+   }
+  }
+ }
+}

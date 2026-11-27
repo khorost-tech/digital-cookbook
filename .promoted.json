@@ -86,6 +86,9 @@
       "architecture/testing-distributed-systems.md",
       "architecture/writing-testable-code.md"
     ],
+    "architecture/text-unicode": [
+      "architecture/text-unicode-across-languages.md"
+    ],
     "architecture/web-frameworks": [
       "architecture/web-frameworks-across-languages.md"
     ],

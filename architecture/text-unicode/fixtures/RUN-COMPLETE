@@ -1,0 +1,7 @@
+{
+ "fixtures": {
+  "checks.jsonl": "ce73b894f250c5397fd284d0c4525c4acc274ae44bec7bdf0f48a4dd67a1f2b2"
+ },
+ "tests": 12,
+ "sabotages": 11
+}

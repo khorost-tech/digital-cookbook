@@ -20,6 +20,7 @@
 | [`temporal/`](temporal/) | Temporal: durable execution вглубь | [статья](https://khorost.tech/architecture/temporal-durable-workflows/) |
 | [`testing/`](testing/) | Тестирование: распределённые системы (Testcontainers), TDD/BDD, flaky-тесты | [статья](https://khorost.tech/architecture/flaky-tests-diagnose-and-fix/) |
 | [`schema-migrators/`](schema-migrators/) | goose, Flyway, Liquibase, Atlas и Alembic против PostgreSQL, CockroachDB и Picodata: журнал версий, применение, интроспекция и откат с проверкой состояния базы SQL-запросом; обходные пути для CockroachDB | [статья](https://khorost.tech/architecture/schema-migrators-across-databases/) |
+| [`text-unicode/`](text-unicode/) | Одни и те же строки в Go, Rust, Java, Python, Node и C#: что возвращает встроенная «длина» (байты, UTF-16 или code points), графемы эмодзи и хинди, NFC против NFD, турецкая I и ß, наивная обрезка (битый UTF-8, паника Rust, одиночный суррогат), дубли имён без нормализации и гомоглифы; длина и уникальность в PostgreSQL | 🔜 скоро |
 | [`web-frameworks/`](web-frameworks/) | Двенадцать приложений с одним API — пары «минимальный — полный» в Go, Rust, Python, Node, Java и C# (net/http и Gin, axum и actix-web, Flask и FastAPI, Express и NestJS, Javalin и Spring Boot, Minimal API и MVC): поведение по умолчанию — 405 или 404, слэш в конце пути, валидация тела, лимит размера, исключение в обработчике и утечка стека, заголовки сервера, соотношение времени старта | [статья](https://khorost.tech/architecture/web-frameworks-across-languages/) |
 
 ---
